@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"/Users/mohamedkhaled/Documents/Project Management\" && npm install)",
+      "Bash(cd \"/Users/mohamedkhaled/Documents/Project Management\" && npm run dev)",
+      "Bash(open http://localhost:5173/)",
+      "Bash(open http://localhost:5173/vendor-login)",
+      "Bash(cat \"/Users/mohamedkhaled/Documents/Project Management/ADMIN_PANEL_ISSUES.md\" | pbcopy)",
+      "Bash(find \"/Users/mohamedkhaled/Documents/Project Management/supabase/migrations/\" -name \"*.sql\" -exec grep -l \"project_items\" {} \\\\; | sort)",
+      "Bash(cd \"/Users/mohamedkhaled/Documents/Project Management\" && npx tsc --noEmit -p tsconfig.app.json 2>&1 | head -50)",
+      "Bash(which supabase 2>/dev/null || npx supabase --version 2>/dev/null || echo \"not-found\")",
+      "Bash(curl -s -X POST \"https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/bucket\" \\\\\n  -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrY3BranpmaHRtdXJ0d3p5emhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY3NjMyODgsImV4cCI6MjA4MjMzOTI4OH0.P3gFUrxKvvkZxjLbg3nQpZqicDK79zW3EvpDufonQPo\" \\\\\n  -H \"Content-Type: application/json\" \\\\\n  -d '{\"id\":\"project-files\",\"name\":\"project-files\",\"public\":true,\"file_size_limit\":52428800,\"allowed_mime_types\":[\"image/jpeg\",\"image/png\",\"image/webp\",\"image/gif\",\"application/pdf\",\"application/msword\",\"application/vnd.openxmlformats-officedocument.wordprocessingml.document\",\"application/vnd.ms-excel\",\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\",\"application/zip\",\"application/x-rar-compressed\",\"application/vnd.rar\",\"text/plain\",\"text/csv\"]}')",
+      "Bash(open http://localhost:5173/vendor-registration)"
+    ]
+  }
+}
