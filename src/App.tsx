@@ -14,12 +14,30 @@ import SupplierAuth from './components/SupplierAuth';
 import { getTheme } from './theme/tokens';
 
 // ─────────────────────────────────────────────────────────────
-// Vendor session helpers
+// ROUTE CONSTANTS
+// ─────────────────────────────────────────────────────────────
+const ROUTES = {
+  // Public
+  VENDOR_REGISTRATION: '/vendor-registration',
+  VENDOR_LOGIN:        '/vendor-login',
+  VENDOR_PORTAL:       '/vendor',
+  TERMS:               '/terms-and-conditions',
+  PRIVACY:             '/privacy-policy',
+
+  // Protected (obfuscated)
+  ADMIN_LOGIN:         '/portal-admin-hl',
+  ADMIN_DASHBOARD:     '/portal-admin-hl/dashboard',
+  CLIENT_DASHBOARD:    '/portal-client-hl/dashboard',
+} as const;
+
+// ─────────────────────────────────────────────────────────────
+// VENDOR SESSION HELPERS
 // ─────────────────────────────────────────────────────────────
 interface VendorSession {
   token: string;
   expiresAt: string;
 }
+
 interface VendorData {
   id: string;
   email: string;
@@ -42,7 +60,6 @@ function getStoredVendorSession(): { vendor: VendorData; session: VendorSession 
     const session: VendorSession = JSON.parse(sessionRaw);
     const vendor: VendorData     = JSON.parse(vendorRaw);
 
-    // Check expiry
     if (new Date(session.expiresAt) < new Date()) {
       localStorage.removeItem('vendor_session');
       localStorage.removeItem('vendor_data');
@@ -55,6 +72,11 @@ function getStoredVendorSession(): { vendor: VendorData; session: VendorSession 
   }
 }
 
+function navigate(path: string) {
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
 // ─────────────────────────────────────────────────────────────
 // APP CONTENT
 // ─────────────────────────────────────────────────────────────
@@ -64,82 +86,83 @@ function AppContent() {
   const theme = getTheme(isDarkMode);
 
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  const [vendorAuth, setVendorAuth]   = useState<{ vendor: VendorData; session: VendorSession } | null>(null);
 
   useEffect(() => {
-    // Listen for path changes
     const handlePathChange = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', handlePathChange);
     return () => window.removeEventListener('popstate', handlePathChange);
   }, []);
 
-  useEffect(() => {
-    // Check for stored vendor session on mount & when path changes to vendor area
-    if (
-      currentPath === '/vendor-login' ||
-      currentPath === '/supplier-login' ||
-      currentPath === '/vendor-portal'
-    ) {
-      const stored = getStoredVendorSession();
-      setVendorAuth(stored);
-    }
-  }, [currentPath]);
+  const renderVendorPortal = (stored: { vendor: VendorData; session: VendorSession }) => (
+    <VendorProvider
+      initialVendor={{
+        id:            stored.vendor.id,
+        email:         stored.vendor.email,
+        full_name:     stored.vendor.name,
+        phone:         stored.vendor.phone || '',
+        status:        stored.vendor.status || 'active',
+        vendor_type:   stored.vendor.vendor_type,
+        primary_city:  stored.vendor.primary_city,
+        profile_image: stored.vendor.profile_image,
+        nationality:   stored.vendor.nationality,
+        id_number:     stored.vendor.id_number,
+      }}
+      initialSession={stored.session}
+    >
+      <VendorPortal />
+    </VendorProvider>
+  );
 
-  // ── PUBLIC ROUTES ── (checked before auth)
-  if (currentPath === '/vendor-registration') {
+  // ── PUBLIC ROUTES ──
+
+  if (currentPath === ROUTES.VENDOR_REGISTRATION) {
     return <VendorRegistrationForm />;
   }
 
-  if (currentPath === '/terms-and-conditions' || currentPath === '/terms') {
+  if (currentPath === ROUTES.TERMS || currentPath === '/terms') {
     return <TermsAndConditions />;
   }
 
-  if (currentPath === '/privacy-policy' || currentPath === '/privacy') {
+  if (currentPath === ROUTES.PRIVACY || currentPath === '/privacy') {
     return <PrivacyPolicy />;
   }
 
-  // ── VENDOR AUTH ROUTES ──
-  if (currentPath === '/supplier-login' || currentPath === '/vendor-login') {
+  // ── VENDOR ROUTES ──
+
+  // /vendor → has session? show portal : redirect to login
+  if (currentPath === ROUTES.VENDOR_PORTAL) {
     const stored = getStoredVendorSession();
+    if (stored) return renderVendorPortal(stored);
+    navigate(ROUTES.VENDOR_LOGIN);
+    return null;
+  }
 
-    // Already logged in → go to portal
+  // /vendor-login → has session? go to portal : show login
+  if (currentPath === ROUTES.VENDOR_LOGIN) {
+    const stored = getStoredVendorSession();
     if (stored) {
-      return (
-        <VendorProvider
-          initialVendor={{
-            id: stored.vendor.id,
-            email: stored.vendor.email,
-            full_name: stored.vendor.name,
-            phone: stored.vendor.phone || '',
-            status: stored.vendor.status || 'active',
-            vendor_type: stored.vendor.vendor_type,
-            primary_city: stored.vendor.primary_city,
-            profile_image: stored.vendor.profile_image,
-            nationality: stored.vendor.nationality,
-            id_number: stored.vendor.id_number,
-          }}
-          initialSession={stored.session}
-        >
-          <VendorPortal />
-        </VendorProvider>
-      );
+      navigate(ROUTES.VENDOR_PORTAL);
+      return null;
     }
-
-    // Show login + handle success → render portal
     return (
       <SupplierAuth
-        onSuccess={(data: any) => {
-          // SupplierAuth already stores in localStorage
-          setVendorAuth({ vendor: data.vendor, session: data.session });
-          // Push to portal path
-          window.history.pushState({}, '', '/vendor-login');
-          setCurrentPath('/vendor-login');
-        }}
+        onSuccess={() => navigate(ROUTES.VENDOR_PORTAL)}
       />
     );
   }
 
-  // ── ADMIN / CLIENT LOADING ──
+  // ── ADMIN / CLIENT ROUTES ──
+
+  const isAdminPath =
+    currentPath === ROUTES.ADMIN_LOGIN ||
+    currentPath.startsWith('/portal-admin-hl') ||
+    currentPath.startsWith('/portal-client-hl');
+
+  if (!isAdminPath) {
+    navigate(ROUTES.ADMIN_LOGIN);
+    return null;
+  }
+
   if (loading) {
     return (
       <div style={{
@@ -152,7 +175,6 @@ function AppContent() {
     );
   }
 
-  // ── ADMIN / CLIENT AUTH ──
   if (!user || !profile) {
     return <Login />;
   }
