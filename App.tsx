@@ -11,6 +11,7 @@ import { VendorRegistrationForm } from './components/vendor-registration/VendorR
 import { TermsAndConditions } from './components/TermsAndConditions';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import SupplierAuth from './components/SupplierAuth';
+import ClientAuth from './components/ClientAuth';
 import { getTheme } from './theme/tokens';
 
 // ─────────────────────────────────────────────────────────────
@@ -21,34 +22,25 @@ const ROUTES = {
   VENDOR_REGISTRATION: '/vendor-registration',
   VENDOR_LOGIN:        '/vendor-login',
   VENDOR_PORTAL:       '/vendor',
+  CLIENT_LOGIN:        '/client-login',
+  CLIENT_PORTAL:       '/client',
   TERMS:               '/terms-and-conditions',
   PRIVACY:             '/privacy-policy',
 
   // Protected (obfuscated)
   ADMIN_LOGIN:         '/portal-admin-hl',
   ADMIN_DASHBOARD:     '/portal-admin-hl/dashboard',
-  CLIENT_DASHBOARD:    '/portal-client-hl/dashboard',
 } as const;
 
 // ─────────────────────────────────────────────────────────────
-// VENDOR SESSION HELPERS
+// SESSION HELPERS
 // ─────────────────────────────────────────────────────────────
-interface VendorSession {
-  token: string;
-  expiresAt: string;
-}
-
+interface VendorSession { token: string; expiresAt: string; }
 interface VendorData {
-  id: string;
-  email: string;
-  name: string;
-  vendor_type?: string;
-  primary_city?: string;
-  profile_image?: string;
-  nationality?: string;
-  id_number?: string;
-  phone?: string;
-  status?: string;
+  id: string; email: string; name: string;
+  vendor_type?: string; primary_city?: string;
+  profile_image?: string; nationality?: string;
+  id_number?: string; phone?: string; status?: string;
 }
 
 function getStoredVendorSession(): { vendor: VendorData; session: VendorSession } | null {
@@ -56,20 +48,30 @@ function getStoredVendorSession(): { vendor: VendorData; session: VendorSession 
     const sessionRaw = localStorage.getItem('vendor_session');
     const vendorRaw  = localStorage.getItem('vendor_data');
     if (!sessionRaw || !vendorRaw) return null;
-
     const session: VendorSession = JSON.parse(sessionRaw);
     const vendor: VendorData     = JSON.parse(vendorRaw);
-
     if (new Date(session.expiresAt) < new Date()) {
       localStorage.removeItem('vendor_session');
       localStorage.removeItem('vendor_data');
       return null;
     }
-
     return { vendor, session };
-  } catch {
-    return null;
-  }
+  } catch { return null; }
+}
+
+function getStoredClientSession(): any | null {
+  try {
+    const sessionRaw = localStorage.getItem('client_session');
+    const clientRaw  = localStorage.getItem('client_data');
+    if (!sessionRaw || !clientRaw) return null;
+    const session = JSON.parse(sessionRaw);
+    if (new Date(session.expiresAt) < new Date()) {
+      localStorage.removeItem('client_session');
+      localStorage.removeItem('client_data');
+      return null;
+    }
+    return { client: JSON.parse(clientRaw), session };
+  } catch { return null; }
 }
 
 function navigate(path: string) {
@@ -84,13 +86,12 @@ function AppContent() {
   const { user, profile, loading } = useAuth();
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
-
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
   useEffect(() => {
-    const handlePathChange = () => setCurrentPath(window.location.pathname);
-    window.addEventListener('popstate', handlePathChange);
-    return () => window.removeEventListener('popstate', handlePathChange);
+    const handler = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
   }, []);
 
   const renderVendorPortal = (stored: { vendor: VendorData; session: VendorSession }) => (
@@ -114,75 +115,52 @@ function AppContent() {
   );
 
   // ── PUBLIC ROUTES ──
-
-  if (currentPath === ROUTES.VENDOR_REGISTRATION) {
-    return <VendorRegistrationForm />;
-  }
-
-  if (currentPath === ROUTES.TERMS || currentPath === '/terms') {
-    return <TermsAndConditions />;
-  }
-
-  if (currentPath === ROUTES.PRIVACY || currentPath === '/privacy') {
-    return <PrivacyPolicy />;
-  }
+  if (currentPath === ROUTES.VENDOR_REGISTRATION) return <VendorRegistrationForm />;
+  if (currentPath === ROUTES.TERMS  || currentPath === '/terms')   return <TermsAndConditions />;
+  if (currentPath === ROUTES.PRIVACY || currentPath === '/privacy') return <PrivacyPolicy />;
 
   // ── VENDOR ROUTES ──
-
-  // /vendor → has session? show portal : redirect to login
   if (currentPath === ROUTES.VENDOR_PORTAL) {
     const stored = getStoredVendorSession();
     if (stored) return renderVendorPortal(stored);
-    navigate(ROUTES.VENDOR_LOGIN);
-    return null;
+    navigate(ROUTES.VENDOR_LOGIN); return null;
   }
-
-  // /vendor-login → has session? go to portal : show login
   if (currentPath === ROUTES.VENDOR_LOGIN) {
     const stored = getStoredVendorSession();
-    if (stored) {
-      navigate(ROUTES.VENDOR_PORTAL);
-      return null;
-    }
-    return (
-      <SupplierAuth
-        onSuccess={() => navigate(ROUTES.VENDOR_PORTAL)}
-      />
-    );
+    if (stored) { navigate(ROUTES.VENDOR_PORTAL); return null; }
+    return <SupplierAuth onSuccess={() => navigate(ROUTES.VENDOR_PORTAL)} />;
   }
 
-  // ── ADMIN / CLIENT ROUTES ──
+  // ── CLIENT ROUTES ──
+  if (currentPath === ROUTES.CLIENT_PORTAL) {
+    const stored = getStoredClientSession();
+    if (stored) return <ClientDashboard />;
+    navigate(ROUTES.CLIENT_LOGIN); return null;
+  }
+  if (currentPath === ROUTES.CLIENT_LOGIN) {
+    const stored = getStoredClientSession();
+    if (stored) { navigate(ROUTES.CLIENT_PORTAL); return null; }
+    return <ClientAuth onSuccess={() => navigate(ROUTES.CLIENT_PORTAL)} />;
+  }
 
+  // ── ADMIN ROUTES ──
   const isAdminPath =
     currentPath === ROUTES.ADMIN_LOGIN ||
     currentPath.startsWith('/portal-admin-hl') ||
     currentPath.startsWith('/portal-client-hl');
 
-  if (!isAdminPath) {
-    navigate(ROUTES.ADMIN_LOGIN);
-    return null;
-  }
+  if (!isAdminPath) { navigate(ROUTES.ADMIN_LOGIN); return null; }
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: theme.background.page,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div style={{ color: theme.text.secondary }}>جارٍ التحميل...</div>
+      <div style={{ minHeight:'100vh', backgroundColor:theme.background.page, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ color:theme.text.secondary }}>جارٍ التحميل...</div>
       </div>
     );
   }
 
-  if (!user || !profile) {
-    return <Login />;
-  }
-
-  if (profile.role === 'admin' || profile.role === 'super_admin') {
-    return <NewAdminDashboard />;
-  }
-
+  if (!user || !profile) return <Login />;
+  if (profile.role === 'admin' || profile.role === 'super_admin') return <NewAdminDashboard />;
   return <ClientDashboard />;
 }
 
