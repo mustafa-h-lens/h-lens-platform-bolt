@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
 interface UserProfile {
@@ -34,6 +34,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -76,11 +81,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      // Demo mode: any credentials → admin login
+      const demoUser = { id: 'demo-user', email } as User;
+      setUser(demoUser);
+      setProfile({ id: 'demo-user', email, full_name: 'Demo Admin', role: 'admin' });
+      return;
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'super_admin' | 'client') => {
+    if (!isSupabaseConfigured) {
+      const demoUser = { id: 'demo-user', email } as User;
+      setUser(demoUser);
+      setProfile({ id: 'demo-user', email, full_name: fullName, role });
+      return;
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -104,6 +122,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (!isSupabaseConfigured) {
+      setUser(null);
+      setProfile(null);
+      return;
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

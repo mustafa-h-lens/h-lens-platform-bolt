@@ -47,7 +47,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose }: SidebarPro
   ];
 
   const adminItems: MenuItem[] = [
-    { id: 'activity', label: 'سجل النشاط', icon: Activity, comingSoon: true },
+    { id: 'activity', label: 'سجل النشاط', icon: Activity },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
     { id: 'users', label: 'إدارة المستخدمين', icon: UserCog },
   ];

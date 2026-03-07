@@ -12,6 +12,7 @@ import { TermsAndConditions } from './components/TermsAndConditions';
 import { PrivacyPolicy } from './components/PrivacyPolicy';
 import SupplierAuth from './components/SupplierAuth';
 import { getTheme } from './theme/tokens';
+import { useRouter, navigate } from './lib/router';
 
 // ─────────────────────────────────────────────────────────────
 // Vendor session helpers
@@ -63,22 +64,15 @@ function AppContent() {
   const { isDarkMode } = useTheme();
   const theme = getTheme(isDarkMode);
 
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const { pathname: currentPath } = useRouter();
   const [vendorAuth, setVendorAuth]   = useState<{ vendor: VendorData; session: VendorSession } | null>(null);
-
-  useEffect(() => {
-    // Listen for path changes
-    const handlePathChange = () => setCurrentPath(window.location.pathname);
-    window.addEventListener('popstate', handlePathChange);
-    return () => window.removeEventListener('popstate', handlePathChange);
-  }, []);
 
   useEffect(() => {
     // Check for stored vendor session on mount & when path changes to vendor area
     if (
       currentPath === '/vendor-login' ||
       currentPath === '/supplier-login' ||
-      currentPath === '/vendor-portal'
+      currentPath.startsWith('/vendor-portal')
     ) {
       const stored = getStoredVendorSession();
       setVendorAuth(stored);
@@ -99,11 +93,17 @@ function AppContent() {
   }
 
   // ── VENDOR AUTH ROUTES ──
-  if (currentPath === '/supplier-login' || currentPath === '/vendor-login') {
-    const stored = getStoredVendorSession();
+  const isVendorLoginRoute = currentPath === '/supplier-login' || currentPath === '/vendor-login';
+  const isVendorPortalRoute = currentPath.startsWith('/vendor-portal');
 
-    // Already logged in → go to portal
+  if (isVendorLoginRoute || isVendorPortalRoute) {
+    const stored = vendorAuth || getStoredVendorSession();
+
     if (stored) {
+      // Redirect login pages to portal
+      if (isVendorLoginRoute) {
+        navigate('/vendor-portal', true);
+      }
       return (
         <VendorProvider
           initialVendor={{
@@ -125,15 +125,17 @@ function AppContent() {
       );
     }
 
+    // Not logged in on portal route → redirect to login
+    if (isVendorPortalRoute) {
+      navigate('/vendor-login', true);
+    }
+
     // Show login + handle success → render portal
     return (
       <SupplierAuth
         onSuccess={(data: any) => {
-          // SupplierAuth already stores in localStorage
           setVendorAuth({ vendor: data.vendor, session: data.session });
-          // Push to portal path
-          window.history.pushState({}, '', '/vendor-login');
-          setCurrentPath('/vendor-login');
+          navigate('/vendor-portal', true);
         }}
       />
     );
@@ -158,9 +160,17 @@ function AppContent() {
   }
 
   if (profile.role === 'admin' || profile.role === 'super_admin') {
+    // If admin lands on /client/* path (client portal), redirect to dashboard
+    if (currentPath === '/client' || currentPath.startsWith('/client/')) {
+      navigate('/', true);
+    }
     return <NewAdminDashboard />;
   }
 
+  // Client user — ensure URL has /client prefix or redirect
+  if (currentPath !== '/client' && !currentPath.startsWith('/client/') && currentPath !== '/') {
+    navigate('/client', true);
+  }
   return <ClientDashboard />;
 }
 

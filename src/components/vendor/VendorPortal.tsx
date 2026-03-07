@@ -11,6 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { getTheme } from '../../theme/tokens';
 import { toEnglishNumbers } from '../../lib/numberUtils';
+import { useRouter, navigate as routerNavigate, parsePath } from '../../lib/router';
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -127,7 +128,12 @@ export const VendorPortal = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const theme = getTheme(isDarkMode);
 
-  const [page, setPage]         = useState('profile');
+  const { pathname } = useRouter();
+  const segments = parsePath(pathname);
+  // /vendor-portal/projects → segments = ['vendor-portal', 'projects']
+  const validPages = ['profile', 'projects', 'invoices', 'equipment', 'documents'];
+  const page = (segments[1] && validPages.includes(segments[1])) ? segments[1] : 'profile';
+
   const [drawerOpen, setDrawer] = useState(false);
 
   const pageTitles: Record<string, string> = {
@@ -138,7 +144,11 @@ export const VendorPortal = () => {
     documents: 'المستندات',
   };
 
-  const navigate = (id: string) => { setPage(id); setDrawer(false); };
+  const navigate = (id: string) => {
+    const path = id === 'profile' ? '/vendor-portal' : '/vendor-portal/' + id;
+    routerNavigate(path);
+    setDrawer(false);
+  };
 
   // Avatar initials
   const initials = vendor?.full_name

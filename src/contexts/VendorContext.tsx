@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { navigate } from '../lib/router';
 
 interface VendorProfile {
   id: string;
@@ -66,8 +67,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
   const signOut = () => {
     localStorage.removeItem('vendor_session');
     localStorage.removeItem('vendor_data');
-    window.history.pushState({}, '', '/vendor-login');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    navigate('/vendor-login');
   };
 
   return (

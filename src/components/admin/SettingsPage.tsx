@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Sparkles, Tag, FileText, Building2, Shield, ChevronDown } from 'lucide-react';
 import { ServiceItemsCatalog } from './ServiceItemsCatalog';
 import { ItemCategoriesManagement } from './ItemCategoriesManagement';
@@ -93,8 +93,31 @@ const tabGroups: TabGroup[] = [
   }
 ];
 
-export const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState<TabId>('items-catalog');
+interface SettingsPageProps {
+  initialTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+const allTabs = tabGroups.flatMap(g => g.tabs);
+const isValidTab = (tab: string | undefined): tab is TabId =>
+  !!tab && allTabs.some(t => t.id === tab);
+
+export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps = {}) => {
+  const [activeTab, setActiveTab] = useState<TabId>(
+    isValidTab(initialTab) ? initialTab : 'items-catalog'
+  );
+  // Sync from URL prop
+  useEffect(() => {
+    if (isValidTab(initialTab)) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
+
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group', 'ai-group'])
   );
@@ -169,7 +192,7 @@ export const SettingsPage = () => {
                           return (
                             <button
                               key={tab.id}
-                              onClick={() => setActiveTab(tab.id)}
+                              onClick={() => handleTabChange(tab.id)}
                               className={`
                                 w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-right
                                 transition-all duration-200 text-sm

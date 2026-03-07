@@ -13,8 +13,10 @@ import { SettingsPage } from './SettingsPage';
 import { ClientDetails } from './ClientDetails';
 import { ImprovedProjectDetails } from './ImprovedProjectDetails';
 import { EnhancedProjectsPage } from './EnhancedProjectsPage';
+import { ActivityLogPage } from './ActivityLogPage';
 import { CreateProjectModal } from './CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
+import { useRouter, navigate, parsePath } from '../../lib/router';
 
 interface Stats {
   totalProjects: number;
@@ -26,11 +28,16 @@ interface Stats {
 
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
-  const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
+  const { pathname } = useRouter();
+  const segments = parsePath(pathname);
+
+  // Derive all navigation state from URL
+  const currentPage = segments[0] || 'dashboard';
+  const selectedProjectId = currentPage === 'projects' && segments[1] ? segments[1] : null;
+  const selectedClientId = currentPage === 'clients' && segments[1] ? segments[1] : null;
+  const selectedVendorId = currentPage === 'vendors' && segments[1] ? segments[1] : null;
+  const settingsTab = currentPage === 'settings' ? segments[1] || undefined : undefined;
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [reloadProjectsCallback, setReloadProjectsCallback] = useState<(() => void) | null>(null);
@@ -47,17 +54,12 @@ export const NewAdminDashboard = () => {
   }, []);
 
   const handleNavigation = (page: string) => {
-    setCurrentPage(page);
-    setSelectedProjectId(null);
-    setSelectedClientId(null);
-    setSelectedVendorId(null);
-    setClientView(null);
+    const path = page === 'dashboard' ? '/' : '/' + page;
+    navigate(path);
   };
 
   const handleViewVendor = (vendorId: string) => {
-    setSelectedVendorId(vendorId);
-    setSelectedProjectId(null);
-    setCurrentPage('vendors');
+    navigate('/vendors/' + vendorId);
   };
 
   const loadStats = async () => {
@@ -120,7 +122,7 @@ export const NewAdminDashboard = () => {
           <main className="flex-1 overflow-auto">
             <ImprovedProjectDetails
               projectId={selectedProjectId}
-              onBack={() => setSelectedProjectId(null)}
+              onBack={() => navigate('/projects')}
               onViewVendor={handleViewVendor}
             />
           </main>
@@ -144,7 +146,29 @@ export const NewAdminDashboard = () => {
             onMenuClick={() => setSidebarOpen(true)}
           />
           <main className="flex-1 overflow-auto">
-            <UserManagement onBack={() => setCurrentPage('dashboard')} />
+            <UserManagement onBack={() => navigate('/')} />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'activity') {
+    return (
+      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <div className="flex-1 flex flex-col md:mr-64">
+          <Header
+            currentPageTitle={getPageTitle()}
+            onMenuClick={() => setSidebarOpen(true)}
+          />
+          <main className="flex-1 overflow-auto p-6">
+            <ActivityLogPage />
           </main>
         </div>
       </div>
@@ -166,7 +190,16 @@ export const NewAdminDashboard = () => {
             onMenuClick={() => setSidebarOpen(true)}
           />
           <main className="flex-1 overflow-auto p-6">
-            <VendorsPage initialVendorId={selectedVendorId} />
+            <VendorsPage
+              initialVendorId={selectedVendorId}
+              onSelectVendor={(id) => {
+                if (id) {
+                  navigate('/vendors/' + id);
+                } else {
+                  navigate('/vendors');
+                }
+              }}
+            />
           </main>
         </div>
       </div>
@@ -188,7 +221,10 @@ export const NewAdminDashboard = () => {
             onMenuClick={() => setSidebarOpen(true)}
           />
           <main className="flex-1 overflow-auto bg-slate-50 dark:bg-dark-bg">
-            <SettingsPage />
+            <SettingsPage
+              initialTab={settingsTab}
+              onTabChange={(tab) => navigate('/settings/' + tab)}
+            />
           </main>
         </div>
       </div>
@@ -213,13 +249,8 @@ export const NewAdminDashboard = () => {
             <main className="flex-1 overflow-auto">
               <ClientDetails
                 clientId={selectedClientId}
-                onBack={() => {
-                  setSelectedClientId(null);
-                  setClientView(null);
-                }}
-                onViewProject={(projectId) => {
-                  setSelectedProjectId(projectId);
-                }}
+                onBack={() => navigate('/clients')}
+                onViewProject={(projectId) => navigate('/projects/' + projectId)}
               />
             </main>
           </div>
@@ -242,9 +273,7 @@ export const NewAdminDashboard = () => {
           />
           <main className="flex-1 overflow-auto">
             <ClientsPage
-              onViewClient={(clientId) => {
-                setSelectedClientId(clientId);
-              }}
+              onViewClient={(clientId) => navigate('/clients/' + clientId)}
             />
           </main>
         </div>
@@ -412,7 +441,7 @@ export const NewAdminDashboard = () => {
                   overflow-hidden hover:shadow-2xl transition-all duration-300">
                   <div className="p-6">
                     <ProjectsList
-                      onSelectProject={setSelectedProjectId}
+                      onSelectProject={(id) => navigate('/projects/' + id)}
                       onCreateProject={() => setShowCreateProjectModal(true)}
                       onLoadProjects={(loadFn) => setReloadProjectsCallback(() => loadFn)}
                     />
@@ -425,7 +454,7 @@ export const NewAdminDashboard = () => {
           {currentPage === 'projects' && (
             <div className="space-y-6">
               <EnhancedProjectsPage
-                onSelectProject={setSelectedProjectId}
+                onSelectProject={(id) => navigate('/projects/' + id)}
                 onCreateProject={() => setShowCreateProjectModal(true)}
               />
             </div>
