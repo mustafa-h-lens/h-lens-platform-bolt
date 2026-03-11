@@ -14,6 +14,7 @@ import { ClientDetails } from './ClientDetails';
 import { ImprovedProjectDetails } from './ImprovedProjectDetails';
 import { EnhancedProjectsPage } from './EnhancedProjectsPage';
 import { ActivityLogPage } from './ActivityLogPage';
+import { ExpensesPage } from './ExpensesPage';
 import { CreateProjectModal } from './CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
 import { useRouter, navigate, parsePath } from '../../lib/router';
@@ -225,6 +226,28 @@ export const NewAdminDashboard = () => {
               initialTab={settingsTab}
               onTabChange={(tab) => navigate('/settings/' + tab)}
             />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'expenses') {
+    return (
+      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <div className="flex-1 flex flex-col md:mr-64">
+          <Header
+            currentPageTitle={getPageTitle()}
+            onMenuClick={() => setSidebarOpen(true)}
+          />
+          <main className="flex-1 overflow-auto p-6">
+            <ExpensesPage />
           </main>
         </div>
       </div>
