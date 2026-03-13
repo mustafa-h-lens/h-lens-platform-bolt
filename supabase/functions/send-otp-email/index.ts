@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { createTransport } from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -433,23 +434,58 @@ Deno.serve(async (req: Request) => {
     // Generate email HTML
     const emailHtml = getEmailTemplate(otp, email, deviceInfo, requestTime);
 
-    // TODO: Send email using SMTP service
-    // For now, we'll log the OTP (in production, integrate with an email service)
-    console.log(`OTP for ${email}: ${otp}`);
-    console.log("Email HTML generated successfully");
+    // Send email using SMTP
+    try {
+      const smtpHost = Deno.env.get("SMTP_HOST");
+      const smtpPort = Deno.env.get("SMTP_PORT");
+      const smtpUser = Deno.env.get("SMTP_USER");
+      const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+      const smtpFromEmail = Deno.env.get("SMTP_FROM_EMAIL");
+      const smtpFromName = Deno.env.get("SMTP_FROM_NAME");
 
-    // In development, return the OTP for testing
-    // REMOVE THIS IN PRODUCTION
-    const isDevelopment = true;
+      if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail || !smtpFromName) {
+        console.error("Missing SMTP configuration");
+        return new Response(
+          JSON.stringify({ error: "إعدادات البريد الإلكتروني غير مكتملة" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
-        ...(isDevelopment && { otp, email_preview: emailHtml })
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+      // Create SMTP transport
+      const transporter = createTransport({
+        host: smtpHost,
+        port: parseInt(smtpPort),
+        secure: false, // use STARTTLS
+        auth: {
+          user: smtpUser,
+          pass: smtpPassword,
+        },
+      });
+
+      // Send email
+      const info = await transporter.sendMail({
+        from: `"${smtpFromName}" <${smtpFromEmail}>`,
+        to: email,
+        subject: "رمز التحقق - Half Lens",
+        html: emailHtml,
+      });
+
+      console.log(`OTP email sent successfully to ${email}. Message ID: ${info.messageId}`);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch (emailError) {
+      console.error("Error sending email:", emailError);
+      return new Response(
+        JSON.stringify({ error: "حدث خطأ أثناء إرسال البريد الإلكتروني" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
   } catch (error) {
     console.error("Error in send-otp-email:", error);
