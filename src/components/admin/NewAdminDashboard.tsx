@@ -15,6 +15,7 @@ import { ImprovedProjectDetails } from './ImprovedProjectDetails';
 import { EnhancedProjectsPage } from './EnhancedProjectsPage';
 import { CreateProjectModal } from './CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
+import { ExpensesPage } from './ExpensesPage';
 
 interface Stats {
   totalProjects: number;
@@ -422,14 +423,20 @@ export const NewAdminDashboard = () => {
             </div>
           )}
 
-          {currentPage === 'projects' && (
-            <div className="space-y-6">
-              <EnhancedProjectsPage
-                onSelectProject={setSelectedProjectId}
-                onCreateProject={() => setShowCreateProjectModal(true)}
-              />
-            </div>
-          )}
+        {currentPage === 'projects' && (
+  <div className="space-y-6">
+    <EnhancedProjectsPage
+      onSelectProject={setSelectedProjectId}
+      onCreateProject={() => setShowCreateProjectModal(true)}
+    />
+  </div>
+)}
+
+{currentPage === 'expenses' && (
+  <div className="space-y-6">
+    <ExpensesPage onViewProject={setSelectedProjectId} />
+  </div>
+)}
         </main>
       </div>
 

@@ -3,7 +3,6 @@ import { DollarSign, ChevronLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../lib/formatters';
 import type { VendorField } from '../../types/database';
-import { navigate } from '../../lib/router';
 
 interface ExpenseRow {
   id: string;
@@ -19,8 +18,10 @@ interface ExpenseRow {
   currency: string;
 }
 
-export const ExpensesPage = () => {
-  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
+interface ExpensesPageProps {
+  onViewProject?: (projectId: string) => void;
+}
+export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -247,7 +248,7 @@ export const ExpensesPage = () => {
                       style={{
                         borderBottom: index < expenses.length - 1 ? '1px solid var(--color-table-border)' : 'none',
                       }}
-                      onClick={() => navigate(`/projects/${expense.project_id}`)}
+                      onClick={() => onViewProject?.(expense.project_id)}
                     >
                       <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
                         {expense.vendor_name}

@@ -41,8 +41,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose }: SidebarPro
     { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'invoices', label: 'الفواتير', icon: FileText, comingSoon: true },
-    { id: 'expenses', label: 'المصروفات', icon: DollarSign, comingSoon: true },
-    { id: 'reports', label: 'التقارير', icon: BarChart3, comingSoon: true },
+    { id: 'expenses', label: 'المصروفات', icon: DollarSign },
     { id: 'files', label: 'الملفات', icon: File, comingSoon: true },
   ];
 
