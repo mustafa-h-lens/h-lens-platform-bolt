@@ -259,7 +259,7 @@ function getEmailTemplate(otp: string, email: string, deviceInfo: string, reques
   <div class="email-container">
     <!-- Header -->
     <div class="header">
-      <img src="https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/images/half_lens_logo_-_color.png" alt="Half Lens" class="logo">
+      <img src="https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/Logo_White.png" alt="Half Lens" class="logo">
       <h1 class="header-title">رمز التحقق الخاص بك</h1>
       <p class="header-subtitle">نظام إدارة الموردين</p>
     </div>
