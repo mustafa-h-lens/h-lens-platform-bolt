@@ -320,7 +320,7 @@ function getEmailTemplate(
 
       <!-- CTA Button -->
       <div style="text-align: center;">
-        <a href="https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login" class="cta-button">
+        <a href="${loginUrl}"" class="cta-button">
           الانتقال لصفحة تسجيل الدخول
         </a>
       </div>
