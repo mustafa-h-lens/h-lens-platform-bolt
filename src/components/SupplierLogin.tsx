@@ -25,13 +25,9 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         body: JSON.stringify({ email, deviceInfo }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        const errorMsg = data.error || 'حدث خطأ أثناء إرسال رمز التحقق';
-        throw new Error(errorMsg);
-      }
+      if (!response.ok) throw new Error(data.error || 'حدث خطأ أثناء إرسال رمز التحقق');
       onOTPSent(email, data.otp);
     } catch (err) {
-      console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال');
     } finally { setLoading(false); }
   };

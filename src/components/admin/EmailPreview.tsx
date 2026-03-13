@@ -10,336 +10,299 @@ const EmailPreview: React.FC = () => {
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Riyadh'
+    minute: '2-digit'
   });
 
-  const digits = otp.padStart(4, '0').slice(0, 4).split('');
+  const digits = otp.split('');
 
   return (
-    <div style={{ padding: '32px 16px', backgroundColor: '#0a0f1e', minHeight: '100vh' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto', marginBottom: '24px' }}>
-        <h1 style={{ color: '#ffffff', marginBottom: '10px', fontSize: '24px', fontWeight: 700 }}>OTP Email Template Preview</h1>
-        <p style={{ color: '#94a3b8', marginBottom: '20px', fontSize: '15px', fontWeight: 500 }}>
+    <div style={{ padding: '20px', backgroundColor: '#f5f7fa', minHeight: '100vh' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', marginBottom: '20px' }}>
+        <h1 style={{ color: '#1e293b', marginBottom: '10px' }}>OTP Email Template Preview</h1>
+        <p style={{ color: '#64748b', marginBottom: '20px' }}>
           This is how your OTP email appears to vendors. Scroll down to see the full template.
         </p>
       </div>
 
-      {/* Email Preview - Exact copy from send-otp-email */}
-      <div style={{ fontFamily: 'Cairo, Arial, sans-serif' }}>
+      {/* Email Preview */}
+      <div style={{ fontFamily: 'Cairo, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif' }}>
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
         `}</style>
 
-        <div className="email-wrap" style={{
-          maxWidth: '640px',
+        <div style={{
+          maxWidth: '600px',
           margin: '0 auto',
-          borderRadius: '18px',
+          backgroundColor: '#ffffff',
+          borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.6)'
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)'
         }}>
           {/* Header */}
-          <div className="email-header" style={{
-            background: 'linear-gradient(135deg, #04081a 0%, #0a1628 100%)',
-            padding: '32px 36px',
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden'
+          <div style={{
+            background: 'linear-gradient(135deg, #0a0f1e 0%, #1a2332 100%)',
+            padding: '40px 30px',
+            textAlign: 'center'
           }}>
-            <div style={{
-              content: '',
-              position: 'absolute',
-              top: '-30%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '400px',
-              height: '400px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(29,78,216,0.15) 0%, transparent 65%)',
-              pointerEvents: 'none'
-            }} />
-
-            <div className="logo-area" style={{ position: 'relative', zIndex: 1 }}>
-              <img
-                src="/Logo_White.png"
-                alt="Half Lens"
-                style={{ height: '42px', objectFit: 'contain' }}
-              />
-              <div className="header-badge" style={{
-                display: 'inline-block',
-                marginTop: '14px',
-                padding: '6px 14px',
-                borderRadius: '999px',
-                background: 'rgba(37,99,235,0.12)',
-                border: '1px solid rgba(59,130,246,0.2)',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#93c5fd',
-                letterSpacing: '.04em'
-              }}>
-                Vendor Portal Access
-              </div>
-            </div>
+            <img
+              src="/Logo_White.png"
+              alt="Half Lens"
+              style={{
+                width: '120px',
+                height: 'auto',
+                marginBottom: '20px'
+              }}
+            />
+            <h1 style={{
+              color: '#ffffff',
+              fontSize: '24px',
+              fontWeight: 700,
+              marginBottom: '8px'
+            }}>
+              رمز التحقق الخاص بك
+            </h1>
+            <p style={{
+              color: '#94a3b8',
+              fontSize: '14px',
+              fontWeight: 400
+            }}>
+              نظام إدارة الموردين
+            </p>
           </div>
 
-          {/* Body */}
-          <div className="email-body" style={{
-            background: '#060d1e',
-            padding: '36px',
-            direction: 'rtl'
-          }}>
-            <div className="greeting" style={{
-              fontSize: '20px',
-              fontWeight: 700,
-              color: '#e2e8f0',
-              marginBottom: '10px'
+          {/* Content */}
+          <div style={{ padding: '40px 30px', direction: 'rtl' }}>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: 600,
+              color: '#1e293b',
+              marginBottom: '16px'
             }}>
-              مرحبًا،
-            </div>
-            <div className="body-text" style={{
-              fontSize: '14px',
-              color: 'rgba(255,255,255,0.58)',
-              lineHeight: '1.9',
-              marginBottom: '22px'
+              مرحباً
+            </h2>
+            <p style={{
+              fontSize: '15px',
+              color: '#475569',
+              lineHeight: '1.6',
+              marginBottom: '30px'
             }}>
-              تلقّينا طلبًا لتسجيل الدخول إلى حسابك في منصة <strong style={{ color: '#ffffff' }}>Half Lens</strong>.
-              استخدم رمز التحقق التالي لإكمال عملية الدخول بشكل آمن.
-            </div>
+              لقد تلقينا طلباً لتسجيل الدخول إلى حسابك في نظام Half Lens. استخدم رمز التحقق التالي لإتمام عملية الدخول:
+            </p>
 
             {/* OTP Container */}
-            <div className="otp-container" style={{ textAlign: 'center', margin: '28px 0' }}>
-              <div className="otp-label" style={{
-                fontSize: '12px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.34)',
-                letterSpacing: '.08em',
-                marginBottom: '12px',
-                textTransform: 'uppercase'
-              }}>
-                OTP Verification Code
-              </div>
-              <div className="otp-boxes" style={{
-                direction: 'ltr',
-                textAlign: 'center',
-                marginBottom: '12px'
-              }}>
-                {digits.map((digit, index) => (
-                  <span key={index} className="otp-digit" style={{
-                    display: 'inline-block',
-                    width: '58px',
-                    height: '64px',
-                    lineHeight: '64px',
-                    margin: '0 5px',
-                    borderRadius: '12px',
-                    background: 'rgba(37,99,235,0.15)',
-                    border: '2px solid rgba(59,130,246,0.35)',
-                    fontSize: '32px',
-                    fontWeight: 900,
-                    color: '#93c5fd',
-                    fontFamily: 'Cairo, Arial, sans-serif',
-                    boxShadow: '0 0 20px rgba(37,99,235,0.15)',
-                    textAlign: 'center'
-                  }}>
-                    {digit}
-                  </span>
-                ))}
-              </div>
-              <div className="otp-expiry" style={{
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.34)',
-                marginTop: '12px',
-                textAlign: 'center'
-              }}>
-                صالح لمدة 10 دقائق فقط
-              </div>
-            </div>
-
-            {/* Warning Box */}
-            <div className="warning-box" style={{
-              background: 'rgba(245,158,11,0.07)',
-              border: '1px solid rgba(245,158,11,0.2)',
-              borderRadius: '11px',
-              padding: '13px 15px',
-              margin: '20px 0'
+            <div style={{
+              backgroundColor: '#f8fafc',
+              borderRadius: '12px',
+              padding: '30px',
+              marginBottom: '30px',
+              textAlign: 'center'
             }}>
               <p style={{
-                fontSize: '13px',
-                color: 'rgba(255,255,255,0.52)',
-                lineHeight: '1.8',
-                margin: 0
+                fontSize: '14px',
+                color: '#64748b',
+                marginBottom: '16px',
+                fontWeight: 500
               }}>
-                <strong style={{ color: 'rgba(255,255,255,0.82)' }}>تنبيه أمني:</strong>
-                {' '}إذا لم تقم أنت بطلب هذا الرمز، يمكنك تجاهل هذه الرسالة بأمان. لا تشارك هذا الرمز مع أي شخص.
+                رمز التحقق (OTP)
+              </p>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '12px',
+                marginBottom: '20px',
+                direction: 'ltr'
+              }}>
+                {digits.map((digit, index) => (
+                  <div key={index} style={{
+                    width: '56px',
+                    height: '64px',
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '28px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                  }}>
+                    {digit}
+                  </div>
+                ))}
+              </div>
+              <p style={{
+                fontSize: '13px',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}>
+                <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                صالح لمدة 10 دقائق فقط
               </p>
             </div>
 
-            {/* Info Row */}
-            <div className="info-row" style={{
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              borderRadius: '10px',
-              padding: '13px 15px',
-              margin: '16px 0'
+            {/* Request Info */}
+            <div style={{
+              backgroundColor: '#f1f5f9',
+              borderRadius: '8px',
+              padding: '20px',
+              marginBottom: '24px'
             }}>
-              <div className="info-title" style={{
-                fontSize: '13px',
-                fontWeight: 700,
-                color: 'rgba(255,255,255,0.72)',
-                marginBottom: '8px'
+              <p style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#334155',
+                marginBottom: '12px'
               }}>
-                تفاصيل الطلب
-              </div>
-              <div className="info-item" style={{
+                تفاصيل الطلب:
+              </p>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 padding: '8px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                fontSize: '13px'
+                borderBottom: '1px solid #e2e8f0'
               }}>
-                <span className="info-label" style={{
-                  display: 'inline-block',
-                  color: 'rgba(255,255,255,0.38)',
-                  fontWeight: 500,
-                  minWidth: '110px'
-                }}>
-                  الوقت
-                </span>
-                <span className="info-value" style={{
-                  color: 'rgba(255,255,255,0.78)',
-                  fontWeight: 700,
-                  direction: 'ltr',
-                  unicodeBidi: 'plaintext',
-                  wordBreak: 'break-word'
-                }}>
-                  {requestTime}
-                </span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#64748b',
+                  fontWeight: 500
+                }}>الوقت</span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#1e293b',
+                  fontWeight: 600
+                }}>{requestTime}</span>
               </div>
-              <div className="info-item" style={{
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 padding: '8px 0',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                fontSize: '13px'
+                borderBottom: '1px solid #e2e8f0'
               }}>
-                <span className="info-label" style={{
-                  display: 'inline-block',
-                  color: 'rgba(255,255,255,0.38)',
-                  fontWeight: 500,
-                  minWidth: '110px'
-                }}>
-                  البريد الإلكتروني
-                </span>
-                <span className="info-value" style={{
-                  color: 'rgba(255,255,255,0.78)',
-                  fontWeight: 700,
-                  direction: 'ltr',
-                  unicodeBidi: 'plaintext',
-                  wordBreak: 'break-word'
-                }}>
-                  {email}
-                </span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#64748b',
+                  fontWeight: 500
+                }}>البريد الإلكتروني</span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#1e293b',
+                  fontWeight: 600
+                }}>{email}</span>
               </div>
-              <div className="info-item" style={{
-                padding: '8px 0',
-                fontSize: '13px',
-                border: 'none'
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '8px 0'
               }}>
-                <span className="info-label" style={{
-                  display: 'inline-block',
-                  color: 'rgba(255,255,255,0.38)',
-                  fontWeight: 500,
-                  minWidth: '110px'
-                }}>
-                  الجهاز
-                </span>
-                <span className="info-value" style={{
-                  color: 'rgba(255,255,255,0.78)',
-                  fontWeight: 700,
-                  direction: 'ltr',
-                  unicodeBidi: 'plaintext',
-                  wordBreak: 'break-word'
-                }}>
-                  {deviceInfo}
-                </span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#64748b',
+                  fontWeight: 500
+                }}>الجهاز</span>
+                <span style={{
+                  fontSize: '13px',
+                  color: '#1e293b',
+                  fontWeight: 600
+                }}>{deviceInfo}</span>
               </div>
             </div>
 
-            {/* CTA Button */}
-            <div className="cta-wrap" style={{
-              textAlign: 'center',
-              margin: '24px 0'
+            {/* Warning */}
+            <div style={{
+              backgroundColor: '#fef3c7',
+              borderRight: '4px solid #f59e0b',
+              borderRadius: '8px',
+              padding: '16px',
+              marginBottom: '30px'
             }}>
+              <p style={{
+                fontSize: '13px',
+                color: '#92400e',
+                lineHeight: '1.5'
+              }}>
+                ⚠️ إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذه الرسالة. لا تشارك هذا الرمز مع أي شخص للحفاظ على أمان حسابك.
+              </p>
+            </div>
+
+            {/* CTA Button */}
+            <div style={{ textAlign: 'center' }}>
               <a
                 href="#"
                 onClick={(e) => e.preventDefault()}
-                className="cta-btn"
                 style={{
                   display: 'inline-block',
-                  padding: '13px 30px',
-                  borderRadius: '11px',
-                  background: 'linear-gradient(135deg, #1d4ed8, #2563eb)',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   color: '#ffffff',
                   textDecoration: 'none',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  boxShadow: '0 4px 20px rgba(37,99,235,0.4)',
-                  letterSpacing: '.02em'
+                  padding: '14px 32px',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+                  cursor: 'pointer'
                 }}
               >
-                الانتقال إلى صفحة تسجيل الدخول
+                الانتقال لصفحة تسجيل الدخول
               </a>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="email-footer" style={{
-            background: '#040910',
-            padding: '22px 36px',
+          <div style={{
+            backgroundColor: '#f8fafc',
+            padding: '30px',
             textAlign: 'center',
-            borderTop: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid #e2e8f0',
             direction: 'rtl'
           }}>
-            <img
-              className="footer-logo"
-              src="/Logo_White.png"
-              alt="Half Lens"
-              style={{
-                height: '24px',
-                objectFit: 'contain',
-                opacity: 0.35,
-                marginBottom: '10px'
-              }}
-            />
-            <div className="footer-links" style={{ marginBottom: '10px' }}>
+            <p style={{
+              fontSize: '13px',
+              color: '#64748b',
+              lineHeight: '1.6',
+              marginBottom: '16px'
+            }}>
+              هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br />
+              للمساعدة والدعم، يرجى التواصل معنا.
+            </p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '16px'
+            }}>
               <a href="#" onClick={(e) => e.preventDefault()} style={{
-                display: 'inline-block',
-                margin: '0 8px 8px 8px',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.36)',
+                fontSize: '13px',
+                color: '#2563eb',
                 textDecoration: 'none',
                 fontWeight: 500
               }}>سياسة الخصوصية</a>
               <a href="#" onClick={(e) => e.preventDefault()} style={{
-                display: 'inline-block',
-                margin: '0 8px 8px 8px',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.36)',
+                fontSize: '13px',
+                color: '#2563eb',
                 textDecoration: 'none',
                 fontWeight: 500
               }}>شروط الاستخدام</a>
               <a href="#" onClick={(e) => e.preventDefault()} style={{
-                display: 'inline-block',
-                margin: '0 8px 8px 8px',
-                fontSize: '12px',
-                color: 'rgba(255,255,255,0.36)',
+                fontSize: '13px',
+                color: '#2563eb',
                 textDecoration: 'none',
                 fontWeight: 500
               }}>تواصل معنا</a>
             </div>
-            <div className="footer-copy" style={{
-              fontSize: '11px',
-              color: 'rgba(255,255,255,0.2)',
-              lineHeight: '1.7'
+            <p style={{
+              fontSize: '12px',
+              color: '#94a3b8'
             }}>
-              هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br />
               © 2024 Half Lens. جميع الحقوق محفوظة.
-            </div>
+            </p>
           </div>
         </div>
       </div>
