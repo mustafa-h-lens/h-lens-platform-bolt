@@ -301,7 +301,7 @@ const EmailPreview: React.FC = () => {
               fontSize: '12px',
               color: '#94a3b8'
             }}>
-              © 2024 Half Lens. جميع الحقوق محفوظة.
+              © 2026 Half Lens Production — جميع الحقوق محفوظة
             </p>
           </div>
         </div>

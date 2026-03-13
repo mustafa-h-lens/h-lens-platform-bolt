@@ -173,7 +173,7 @@ function getEmailTemplate(
               </div>
 
               <div style="font-size:12px;color:#94a3b8;line-height:1.6;">
-                © 2024 Half Lens. جميع الحقوق محفوظة.
+                © 2026 Half Lens Production — جميع الحقوق محفوظة
               </div>
             </td>
           </tr>
