@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Sparkles, Tag, FileText, Building2, Shield, ChevronDown } from 'lucide-react';
+import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Sparkles, Tag, FileText, Building2, Shield, ChevronDown, Mail } from 'lucide-react';
 import { ServiceItemsCatalog } from './ServiceItemsCatalog';
 import { ItemCategoriesManagement } from './ItemCategoriesManagement';
 import { ProjectStatusSettings } from './settings/ProjectStatusSettings';
@@ -12,8 +12,9 @@ import { TermsSettings } from './settings/TermsSettings';
 import { PrivacySettings } from './settings/PrivacySettings';
 import { BanksSettings } from './settings/BanksSettings';
 import AIExtractionTest from './settings/AIExtractionTest';
+import EmailPreview from './EmailPreview';
 
-type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'ai-test';
+type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'ai-test' | 'email-preview';
 
 interface SubTab {
   id: TabId;
@@ -90,13 +91,22 @@ const tabGroups: TabGroup[] = [
     tabs: [
       { id: 'ai-test', label: 'اختبار الذكاء الاصطناعي', icon: Sparkles, component: AIExtractionTest }
     ]
+  },
+  {
+    id: 'email-group',
+    label: 'قوالب البريد الإلكتروني',
+    icon: Mail,
+    color: '#8B5CF6',
+    tabs: [
+      { id: 'email-preview', label: 'معاينة قالب OTP', icon: Mail, component: EmailPreview }
+    ]
   }
 ];
 
 export const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState<TabId>('items-catalog');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group', 'ai-group'])
+    new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group', 'ai-group', 'email-group'])
   );
 
   const toggleGroup = (groupId: string) => {
