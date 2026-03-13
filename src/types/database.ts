@@ -263,3 +263,19 @@ export interface EquipmentCatalogWithRelations extends EquipmentCatalog {
   equipment_brands?: EquipmentBrand;
   equipment_categories?: EquipmentCategory;
 }
+
+// Vendor field from vendor_fields table (loaded dynamically)
+export interface VendorField {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  parent_id: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
+export const PAYMENT_METHODS: Record<string, string> = {
+  bank_transfer: 'تحويل بنكي',
+  cash: 'نقدي',
+  check: 'شيك',
+};
