@@ -31,326 +31,157 @@ function getEmailTemplate(
     "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
 
   return `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>رمز التحقق - Half Lens</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background-color: #f5f7fa;
-      padding: 20px;
-      direction: rtl;
-    }
-
-    .email-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    .header {
-      background: linear-gradient(135deg, #0a0f1e 0%, #1a2332 100%);
-      padding: 40px 30px;
-      text-align: center;
-    }
-
-    .logo {
-      width: 120px;
-      height: auto;
-      margin-bottom: 20px;
-    }
-
-    .header-title {
-      color: #ffffff;
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-
-    .header-subtitle {
-      color: #94a3b8;
-      font-size: 14px;
-      font-weight: 400;
-    }
-
-    .content {
-      padding: 40px 30px;
-    }
-
-    .greeting {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 16px;
-    }
-
-    .message {
-      font-size: 15px;
-      color: #475569;
-      line-height: 1.6;
-      margin-bottom: 30px;
-    }
-
-    .otp-container {
-      background-color: #f8fafc;
-      border-radius: 12px;
-      padding: 30px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .otp-label {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 16px;
-      font-weight: 500;
-    }
-
-    .otp-boxes {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      direction: ltr;
-    }
-
-    .otp-box {
-      width: 56px;
-      height: 64px;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      font-weight: 700;
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
-
-    .expiry-notice {
-      font-size: 13px;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .clock-icon {
-      width: 16px;
-      height: 16px;
-    }
-
-    .info-box {
-      background-color: #f1f5f9;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }
-
-    .info-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 12px;
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid #e2e8f0;
-      gap: 12px;
-    }
-
-    .info-row:last-child {
-      border-bottom: none;
-    }
-
-    .info-label {
-      font-size: 13px;
-      color: #64748b;
-      font-weight: 500;
-      white-space: nowrap;
-    }
-
-    .info-value {
-      font-size: 13px;
-      color: #1e293b;
-      font-weight: 600;
-      word-break: break-word;
-      text-align: left;
-    }
-
-    .warning-box {
-      background-color: #fef3c7;
-      border-right: 4px solid #f59e0b;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 30px;
-    }
-
-    .warning-text {
-      font-size: 13px;
-      color: #92400e;
-      line-height: 1.5;
-    }
-
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #ffffff !important;
-      text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
-      text-align: center;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
-
-    .footer {
-      background-color: #f8fafc;
-      padding: 30px;
-      text-align: center;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .footer-text {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.6;
-      margin-bottom: 16px;
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .footer-link {
-      font-size: 13px;
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .copyright {
-      font-size: 12px;
-      color: #94a3b8;
-    }
-
-    @media only screen and (max-width: 600px) {
-      .content,
-      .header,
-      .footer {
-        padding: 24px 18px !important;
-      }
-
-      .otp-boxes {
-        gap: 8px;
-      }
-
-      .otp-box {
-        width: 48px;
-        height: 56px;
-        font-size: 24px;
-      }
-    }
-  </style>
 </head>
-<body>
-  <div class="email-container">
-    <div class="header">
-      <img src="${logoUrl}" alt="Half Lens" class="logo">
-      <h1 class="header-title">رمز التحقق الخاص بك</h1>
-      <p class="header-subtitle">نظام إدارة الموردين</p>
-    </div>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6;margin:0;padding:0;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;">
+          
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background:linear-gradient(135deg,#0a0f1e 0%,#1a2332 100%);padding:32px 24px;">
+              <img src="${logoUrl}" alt="Half Lens" width="120" style="display:block;margin:0 auto 16px auto;border:0;max-width:120px;height:auto;" />
+              <div style="color:#ffffff;font-size:28px;font-weight:700;line-height:1.4;margin-bottom:6px;">
+                رمز التحقق الخاص بك
+              </div>
+              <div style="color:#94a3b8;font-size:14px;line-height:1.6;">
+                نظام إدارة الموردين
+              </div>
+            </td>
+          </tr>
 
-    <div class="content">
-      <h2 class="greeting">مرحباً</h2>
-      <p class="message">
-        لقد تلقينا طلباً لتسجيل الدخول إلى حسابك في نظام Half Lens. استخدم رمز التحقق التالي لإتمام عملية الدخول:
-      </p>
+          <!-- Content -->
+          <tr>
+            <td style="padding:32px 24px;">
+              <div style="font-size:20px;font-weight:700;color:#1e293b;line-height:1.6;margin-bottom:12px;">
+                مرحباً
+              </div>
 
-      <div class="otp-container">
-        <p class="otp-label">رمز التحقق (OTP)</p>
-        <div class="otp-boxes">
-          <div class="otp-box">${digits[0]}</div>
-          <div class="otp-box">${digits[1]}</div>
-          <div class="otp-box">${digits[2]}</div>
-          <div class="otp-box">${digits[3]}</div>
-        </div>
-        <p class="expiry-notice">
-          <svg class="clock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          صالح لمدة 10 دقائق فقط
-        </p>
-      </div>
+              <div style="font-size:15px;color:#475569;line-height:1.9;margin-bottom:28px;">
+                لقد تلقينا طلباً لتسجيل الدخول إلى حسابك في نظام Half Lens. استخدم رمز التحقق التالي لإتمام عملية الدخول:
+              </div>
 
-      <div class="info-box">
-        <p class="info-title">تفاصيل الطلب:</p>
-        <div class="info-row">
-          <span class="info-label">الوقت</span>
-          <span class="info-value">${requestTime}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">البريد الإلكتروني</span>
-          <span class="info-value">${email}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">الجهاز</span>
-          <span class="info-value">${deviceInfo}</span>
-        </div>
-      </div>
+              <!-- OTP box -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f8fafc;border-radius:12px;margin-bottom:28px;">
+                <tr>
+                  <td align="center" style="padding:28px 16px;">
+                    <div style="font-size:14px;color:#64748b;font-weight:600;margin-bottom:18px;">
+                      رمز التحقق (OTP)
+                    </div>
 
-      <div class="warning-box">
-        <p class="warning-text">
-          ⚠️ إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذه الرسالة. لا تشارك هذا الرمز مع أي شخص للحفاظ على أمان حسابك.
-        </p>
-      </div>
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto 16px auto;">
+                      <tr>
+                        <td align="center" valign="middle" width="56" height="64" style="width:56px;height:64px;background:#2563eb;border-radius:10px;color:#ffffff;font-size:30px;font-weight:700;">${digits[0]}</td>
+                        <td width="8" style="width:8px;"></td>
+                        <td align="center" valign="middle" width="56" height="64" style="width:56px;height:64px;background:#2563eb;border-radius:10px;color:#ffffff;font-size:30px;font-weight:700;">${digits[1]}</td>
+                        <td width="8" style="width:8px;"></td>
+                        <td align="center" valign="middle" width="56" height="64" style="width:56px;height:64px;background:#2563eb;border-radius:10px;color:#ffffff;font-size:30px;font-weight:700;">${digits[2]}</td>
+                        <td width="8" style="width:8px;"></td>
+                        <td align="center" valign="middle" width="56" height="64" style="width:56px;height:64px;background:#2563eb;border-radius:10px;color:#ffffff;font-size:30px;font-weight:700;">${digits[3]}</td>
+                      </tr>
+                    </table>
 
-      <div style="text-align: center;">
-        <a href="${loginUrl}" class="cta-button">
-          الانتقال لصفحة تسجيل الدخول
-        </a>
-      </div>
-    </div>
+                    <div style="font-size:13px;color:#64748b;line-height:1.7;">
+                      صالح لمدة 10 دقائق فقط
+                    </div>
+                  </td>
+                </tr>
+              </table>
 
-    <div class="footer">
-      <p class="footer-text">
-        هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br>
-        للمساعدة والدعم، يرجى التواصل معنا.
-      </p>
-      <div class="footer-links">
-        <a href="#" class="footer-link">سياسة الخصوصية</a>
-        <a href="#" class="footer-link">شروط الاستخدام</a>
-        <a href="#" class="footer-link">تواصل معنا</a>
-      </div>
-      <p class="copyright">
-        © 2024 Half Lens. جميع الحقوق محفوظة.
-      </p>
-    </div>
-  </div>
+              <!-- Request details -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f1f5f9;border-radius:10px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:18px 18px 8px 18px;font-size:15px;font-weight:700;color:#334155;">
+                    تفاصيل الطلب:
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:0 18px 18px 18px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;font-weight:600;width:120px;">
+                          الوقت
+                        </td>
+                        <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;font-weight:700;text-align:left;" dir="rtl">
+                          ${requestTime}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:13px;color:#64748b;font-weight:600;width:120px;">
+                          البريد الإلكتروني
+                        </td>
+                        <td style="padding:10px 0;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;font-weight:700;text-align:left;" dir="ltr">
+                          ${email}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="padding:10px 0;font-size:13px;color:#64748b;font-weight:600;width:120px;">
+                          الجهاز
+                        </td>
+                        <td style="padding:10px 0;font-size:13px;color:#1e293b;font-weight:700;text-align:left;" dir="rtl">
+                          ${deviceInfo}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Warning -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#fef3c7;border-right:4px solid #f59e0b;border-radius:8px;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:16px;font-size:13px;line-height:1.8;color:#92400e;font-weight:600;">
+                    ⚠️ إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذه الرسالة. لا تشارك هذا الرمز مع أي شخص للحفاظ على أمان حسابك.
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Button -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a href="${loginUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:700;">
+                      الانتقال لصفحة تسجيل الدخول
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="background-color:#f8fafc;padding:24px;border-top:1px solid #e2e8f0;">
+              <div style="font-size:13px;color:#64748b;line-height:1.8;margin-bottom:12px;">
+                هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br />
+                للمساعدة والدعم، يرجى التواصل معنا.
+              </div>
+
+              <div style="margin-bottom:12px;">
+                <a href="#" style="font-size:13px;color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a href="#" style="font-size:13px;color:#2563eb;text-decoration:none;margin:0 8px;">شروط الاستخدام</a>
+                <a href="#" style="font-size:13px;color:#2563eb;text-decoration:none;margin:0 8px;">تواصل معنا</a>
+              </div>
+
+              <div style="font-size:12px;color:#94a3b8;line-height:1.6;">
+                © 2024 Half Lens. جميع الحقوق محفوظة.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
