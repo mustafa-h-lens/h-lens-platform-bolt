@@ -19,7 +19,13 @@ function generateOTP(): string {
 }
 
 // Get Arabic email template matching the provided design exactly
-function getEmailTemplate(otp: string, email: string, deviceInfo: string, requestTime: string): string {
+function getEmailTemplate(
+  otp: string,
+  email: string,
+  deviceInfo: string,
+  requestTime: string,
+  loginUrl: string
+): stringTemplate(otp: string, email: string, deviceInfo: string, requestTime: string): string {
   const digits = otp.split('');
 
   return `<!DOCTYPE html>
@@ -431,8 +437,19 @@ Deno.serve(async (req: Request) => {
       minute: "2-digit",
     });
 
-    // Generate email HTML
-    const emailHtml = getEmailTemplate(otp, email, deviceInfo, requestTime);
+    // Login URL
+const loginUrl =
+  Deno.env.get("APP_LOGIN_URL") ||
+  "https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login";
+
+// Generate email HTML
+const emailHtml = getEmailTemplate(
+  otp,
+  email,
+  deviceInfo,
+  requestTime,
+  loginUrl
+);
 
     // Send email using SMTP
     try {
