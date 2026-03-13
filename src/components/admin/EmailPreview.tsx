@@ -45,7 +45,7 @@ const EmailPreview: React.FC = () => {
             textAlign: 'center'
           }}>
             <img
-              src="https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/Logo_White.png"
+              src="/Logo_White.png"
               alt="Half Lens"
               style={{
                 width: '120px',
