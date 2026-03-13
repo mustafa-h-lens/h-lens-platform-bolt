@@ -335,9 +335,9 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeTab === 'basic' && <ImprovedProjectBasicInfo project={project} client={client} onUpdate={loadProject} />}
-        {activeTab === 'items' && project.project_mode === 'STANDARD' && <ProjectItems projectId={projectId} currency={project.currency} />}
+        {activeTab === 'items' && project.project_mode === 'STANDARD' && <ProjectItems projectId={projectId} />}
         {activeTab === 'invoices' && <ProjectInvoices projectId={projectId} />}
-        {activeTab === 'expenses' && <ProjectExpenses projectId={projectId} currency={project.currency} />}
+        {activeTab === 'expenses' && <ProjectExpenses projectId={projectId} />}
         {activeTab === 'vendors' && <ProjectVendors projectId={projectId} onViewVendor={onViewVendor} />}
         {activeTab === 'files' && <ProjectFiles projectId={projectId} />}
       </div>

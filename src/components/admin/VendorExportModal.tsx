@@ -270,7 +270,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
-    const logoBase64 = await convertImageToBase64('/half_lens_logo_-_color.png');
+    const logoBase64 = await convertImageToBase64('/Logo_Blue.png');
 
     const header = document.createElement('div');
     header.style.cssText = `
@@ -525,7 +525,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     link.rel = 'stylesheet';
     document.head.appendChild(link);
 
-    const logoBase64 = await convertImageToBase64('/half_lens_logo_-_color.png');
+    const logoBase64 = await convertImageToBase64('/Logo_Blue.png');
 
     const header = document.createElement('div');
     header.style.cssText = `

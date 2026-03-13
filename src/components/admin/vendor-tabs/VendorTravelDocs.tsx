@@ -182,30 +182,6 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
     }
   };
 
-  const startEditingVisa = (visa: TravelDocument) => {
-    setEditingVisa(visa.id);
-    setVisaForm({
-      visa_country: visa.visa_country || '',
-      visa_type: visa.visa_type || '',
-      visa_start_date: visa.visa_start_date || '',
-      visa_expiry_date: visa.visa_expiry_date || '',
-      visa_file: visa.visa_file || '',
-    });
-    setAddingVisa(false);
-  };
-
-  const cancelVisaForm = () => {
-    setAddingVisa(false);
-    setEditingVisa(null);
-    setVisaForm({
-      visa_country: '',
-      visa_type: '',
-      visa_start_date: '',
-      visa_expiry_date: '',
-      visa_file: '',
-    });
-  };
-
   const saveVisa = async () => {
     if (!visaForm.visa_country.trim() || !visaForm.visa_expiry_date) {
       showError('يرجى إدخال دولة التأشيرة وتاريخ الانتهاء');
@@ -215,7 +191,9 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
     try {
       const visaStatus = calculateVisaStatus(visaForm.visa_expiry_date);
 
-      const saveData = {
+      const insertData = {
+        vendor_id: vendorId,
+        document_type: 'visa' as const,
         visa_country: visaForm.visa_country.trim(),
         visa_type: visaForm.visa_type.trim() || null,
         visa_start_date: visaForm.visa_start_date || null,
@@ -224,29 +202,22 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
         visa_status: visaStatus,
       };
 
-      if (editingVisa) {
-        const { error } = await supabase
-          .from('vendor_travel_documents')
-          .update({ ...saveData, updated_at: new Date().toISOString() })
-          .eq('id', editingVisa);
+      const { error } = await supabase
+        .from('vendor_travel_documents')
+        .insert([insertData]);
 
-        if (error) throw error;
-        showSuccess('تم تعديل التأشيرة بنجاح');
-      } else {
-        const { error } = await supabase
-          .from('vendor_travel_documents')
-          .insert([{
-            vendor_id: vendorId,
-            document_type: 'visa' as const,
-            ...saveData,
-          }]);
+      if (error) throw error;
 
-        if (error) throw error;
-        showSuccess('تم إضافة التأشيرة بنجاح');
-      }
-
-      cancelVisaForm();
+      setAddingVisa(false);
+      setVisaForm({
+        visa_country: '',
+        visa_type: '',
+        visa_start_date: '',
+        visa_expiry_date: '',
+        visa_file: '',
+      });
       fetchDocuments();
+      showSuccess('تم إضافة التأشيرة بنجاح');
     } catch (error) {
       console.error('Error saving visa:', error);
       showError('حدث خطأ أثناء حفظ البيانات');
@@ -466,18 +437,16 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">الفيزا</h3>
-          {!addingVisa && !editingVisa && (
-            <button
-              onClick={() => { cancelVisaForm(); setAddingVisa(true); }}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              إضافة فيزا
-            </button>
-          )}
+          <button
+            onClick={() => setAddingVisa(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            إضافة فيزا
+          </button>
         </div>
 
-        {(addingVisa || editingVisa) && (
+        {addingVisa && (
           <div className="bg-slate-50 rounded-lg p-6 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -575,7 +544,16 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
 
             <div className="flex gap-2">
               <button
-                onClick={cancelVisaForm}
+                onClick={() => {
+                  setAddingVisa(false);
+                  setVisaForm({
+                    visa_country: '',
+                    visa_type: '',
+                    visa_start_date: '',
+                    visa_expiry_date: '',
+                    visa_file: '',
+                  });
+                }}
                 className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 إلغاء
@@ -606,16 +584,8 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                   <div className="flex items-center gap-2">
                     {getVisaStatusBadge(visa.visa_status)}
                     <button
-                      onClick={() => startEditingVisa(visa)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="تعديل"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button
                       onClick={() => deleteVisa(visa.id)}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="حذف"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

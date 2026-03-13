@@ -3,7 +3,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { LogOut, FolderOpen, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { ClientProjectDetails } from './ClientProjectDetails';
-import { useRouter, navigate, parsePath } from '../../lib/router';
 
 interface Stats {
   totalInvoices: number;
@@ -29,12 +28,8 @@ export const ClientDashboard = () => {
     paidInvoices: 0,
     unpaidInvoices: 0,
   });
-  const { pathname } = useRouter();
-  const segments = parsePath(pathname);
-  // /client/projects/:id → segments = ['client', 'projects', ':id']
-  const selectedProjectId = (segments[1] === 'projects' && segments[2]) ? segments[2] : null;
-
   const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,7 +75,7 @@ export const ClientDashboard = () => {
     return (
       <ClientProjectDetails
         projectId={selectedProjectId}
-        onBack={() => navigate('/client')}
+        onBack={() => setSelectedProjectId(null)}
       />
     );
   }
@@ -180,7 +175,7 @@ export const ClientDashboard = () => {
                   {projects.map((project) => (
                     <tr
                       key={project.id}
-                      onClick={() => navigate('/client/projects/' + project.id)}
+                      onClick={() => setSelectedProjectId(project.id)}
                       className="hover:bg-slate-50 cursor-pointer transition-colors"
                     >
                       <td className="px-6 py-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Phone, MapPin, CheckCircle, XCircle, Ban, Download, Trash2 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { Modal } from '../shared/Modal';
@@ -27,29 +27,15 @@ interface Vendor {
 
 interface VendorsPageProps {
   initialVendorId?: string | null;
-  onSelectVendor?: (id: string | null) => void;
 }
 
-export const VendorsPage = ({ initialVendorId, onSelectVendor }: VendorsPageProps = {}) => {
+export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
   const { showSuccess, showError } = useNotification();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedVendorId, setSelectedVendorIdLocal] = useState<string | null>(initialVendorId || null);
-
-  // Sync from URL-driven prop
-  useEffect(() => {
-    setSelectedVendorIdLocal(initialVendorId || null);
-  }, [initialVendorId]);
-
-  const setSelectedVendorId = useCallback((id: string | null) => {
-    if (onSelectVendor) {
-      onSelectVendor(id);
-    } else {
-      setSelectedVendorIdLocal(id);
-    }
-  }, [onSelectVendor]);
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(initialVendorId || null);
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

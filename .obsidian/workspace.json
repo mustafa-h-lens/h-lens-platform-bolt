@@ -1,0 +1,196 @@
+{
+  "main": {
+    "id": "0d480f338d03fcd0",
+    "type": "split",
+    "children": [
+      {
+        "id": "20e29da4d2ec2b3e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8647168b76e68046",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "EXPENSES_BENCHMARKING.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "EXPENSES_BENCHMARKING"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "bbca453bd0d2c1a0",
+    "type": "split",
+    "children": [
+      {
+        "id": "02c0a9bd8a251b2b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "066bfa6e065e6a44",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "1968807ca5c719e8",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "1cec88a23f2ce570",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "22693bd62acbcc3b",
+    "type": "split",
+    "children": [
+      {
+        "id": "a19acad96cbf2ce8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5ef244fdbc160c93",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "EXPENSES_BENCHMARKING.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for EXPENSES_BENCHMARKING"
+            }
+          },
+          {
+            "id": "060ebcd0932fb27d",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "EXPENSES_BENCHMARKING.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from EXPENSES_BENCHMARKING"
+            }
+          },
+          {
+            "id": "b721cb5faca716ef",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "7783c374bd09ebda",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "81bc32c06910515e",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "EXPENSES_BENCHMARKING.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of EXPENSES_BENCHMARKING"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "8647168b76e68046",
+  "lastOpenFiles": [
+    "src/components/admin/ExpensesPage.tsx",
+    "Half_Lens_Logo.png",
+    "Half_Lens_Logo copy.png",
+    "ITEMS_EXPENSES_SCOPE.md",
+    "QA_REPORT.md",
+    "DESIGN_SYSTEM.md",
+    "BUSINESS_SUMMARY.md"
+  ]
+}

@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { navigate } from '../lib/router';
 
-interface VendorProfile {
+// ─────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────
+export interface VendorProfile {
   id: string;
   email: string;
   full_name: string;
@@ -13,29 +15,50 @@ interface VendorProfile {
   profile_image?: string;
   nationality?: string;
   id_number?: string;
+  id_expiry_date?: string;
+  available_other_cities?: boolean;
+  other_cities?: string[];
+  created_at?: string;
 }
 
-interface VendorSession {
+export interface VendorSession {
   token: string;
   expiresAt: string;
 }
+
+export type VendorPage =
+  | 'dashboard'
+  | 'profile'
+  | 'projects'
+  | 'invoices'
+  | 'equipment'
+  | 'documents';
 
 interface VendorContextType {
   vendor: VendorProfile | null;
   session: VendorSession | null;
   loading: boolean;
+  currentPage: VendorPage;
+  navigateTo: (page: VendorPage) => void;
   signOut: () => void;
   refreshVendor: () => Promise<void>;
+  setVendor: (v: VendorProfile) => void;
 }
 
+// ─────────────────────────────────────────────────────────────
+// CONTEXT
+// ─────────────────────────────────────────────────────────────
 const VendorContext = createContext<VendorContextType | undefined>(undefined);
 
 export const useVendor = () => {
-  const context = useContext(VendorContext);
-  if (!context) throw new Error('useVendor must be used within VendorProvider');
-  return context;
+  const ctx = useContext(VendorContext);
+  if (!ctx) throw new Error('useVendor must be used within VendorProvider');
+  return ctx;
 };
 
+// ─────────────────────────────────────────────────────────────
+// PROVIDER
+// ─────────────────────────────────────────────────────────────
 interface VendorProviderProps {
   children: ReactNode;
   initialVendor: VendorProfile;
@@ -43,9 +66,28 @@ interface VendorProviderProps {
 }
 
 export const VendorProvider = ({ children, initialVendor, initialSession }: VendorProviderProps) => {
-  const [vendor, setVendor] = useState<VendorProfile | null>(initialVendor);
-  const [session] = useState<VendorSession | null>(initialSession);
-  const [loading, setLoading] = useState(false);
+  const [vendor, setVendorState]   = useState<VendorProfile>(initialVendor);
+  const [session]                  = useState<VendorSession>(initialSession);
+  const [loading, setLoading]      = useState(false);
+  const [currentPage, setCurrentPage] = useState<VendorPage>('dashboard');
+
+  // Sync page with URL hash
+  useEffect(() => {
+    const syncFromHash = () => {
+      const hash = window.location.hash.replace('#', '') as VendorPage;
+      const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','documents'];
+      if (valid.includes(hash)) setCurrentPage(hash);
+      else setCurrentPage('dashboard');
+    };
+    syncFromHash();
+    window.addEventListener('hashchange', syncFromHash);
+    return () => window.removeEventListener('hashchange', syncFromHash);
+  }, []);
+
+  const navigateTo = (page: VendorPage) => {
+    setCurrentPage(page);
+    window.location.hash = page;
+  };
 
   const refreshVendor = async () => {
     if (!vendor?.id) return;
@@ -53,10 +95,10 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('id, full_name, phone, email, status, primary_city, profile_image, nationality, id_number')
+        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at')
         .eq('id', vendor.id)
         .single();
-      if (!error && data) setVendor(data);
+      if (!error && data) setVendorState(data as VendorProfile);
     } catch (err) {
       console.error('Error refreshing vendor:', err);
     } finally {
@@ -64,14 +106,20 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     }
   };
 
+  const setVendor = (v: VendorProfile) => setVendorState(v);
+
   const signOut = () => {
     localStorage.removeItem('vendor_session');
     localStorage.removeItem('vendor_data');
-    navigate('/vendor-login');
+    window.history.pushState({}, '', '/vendor-login');
+    window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
   return (
-    <VendorContext.Provider value={{ vendor, session, loading, signOut, refreshVendor }}>
+    <VendorContext.Provider value={{
+      vendor, session, loading, currentPage,
+      navigateTo, signOut, refreshVendor, setVendor,
+    }}>
       {children}
     </VendorContext.Provider>
   );
