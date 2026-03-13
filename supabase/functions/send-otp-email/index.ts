@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { createTransport } from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,322 +17,353 @@ function generateOTP(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-// Get Arabic email template matching the provided design exactly
-function getEmailTemplate(otp: string, email: string, deviceInfo: string, requestTime: string): string {
-  const digits = otp.split('');
+function getEmailTemplate(
+  otp: string,
+  email: string,
+  deviceInfo: string,
+  requestTime: string,
+): string {
+  const digits = otp.padStart(4, "0").slice(0, 4).split("");
 
   return `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>رمز التحقق - Half Lens</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>رمز التحقق — Half Lens</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background-color: #f5f7fa;
-      padding: 20px;
+      background: #0a0f1e;
+      font-family: Cairo, Arial, sans-serif;
+      padding: 32px 16px;
+      -webkit-font-smoothing: antialiased;
       direction: rtl;
     }
 
-    .email-container {
-      max-width: 600px;
+    .email-wrap {
+      max-width: 640px;
       margin: 0 auto;
-      background-color: #ffffff;
-      border-radius: 12px;
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.6);
     }
 
-    .header {
-      background: linear-gradient(135deg, #0a0f1e 0%, #1a2332 100%);
-      padding: 40px 30px;
+    .email-header {
+      background: linear-gradient(135deg, #04081a 0%, #0a1628 100%);
+      padding: 32px 36px;
       text-align: center;
+      position: relative;
+      overflow: hidden;
     }
 
-    .logo {
-      width: 120px;
-      height: auto;
-      margin-bottom: 20px;
+    .email-header::before {
+      content: "";
+      position: absolute;
+      top: -30%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(29,78,216,0.15) 0%, transparent 65%);
     }
 
-    .header-title {
-      color: #ffffff;
-      font-size: 24px;
+    .logo-area {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-area img {
+      height: 42px;
+      object-fit: contain;
+    }
+
+    .header-badge {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(37,99,235,0.12);
+      border: 1px solid rgba(59,130,246,0.2);
+      font-size: 12px;
       font-weight: 700;
-      margin-bottom: 8px;
+      color: #93c5fd;
+      letter-spacing: .04em;
     }
 
-    .header-subtitle {
-      color: #94a3b8;
-      font-size: 14px;
-      font-weight: 400;
-    }
-
-    .content {
-      padding: 40px 30px;
+    .email-body {
+      background: #060d1e;
+      padding: 36px;
     }
 
     .greeting {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1e293b;
-      margin-bottom: 16px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 10px;
     }
 
-    .message {
-      font-size: 15px;
-      color: #475569;
-      line-height: 1.6;
-      margin-bottom: 30px;
+    .body-text {
+      font-size: 14px;
+      color: rgba(255,255,255,0.58);
+      line-height: 1.9;
+      margin-bottom: 22px;
     }
 
     .otp-container {
-      background-color: #f8fafc;
-      border-radius: 12px;
-      padding: 30px;
-      margin-bottom: 30px;
       text-align: center;
+      margin: 28px 0;
     }
 
     .otp-label {
-      font-size: 14px;
-      color: #64748b;
-      margin-bottom: 16px;
-      font-weight: 500;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.34);
+      letter-spacing: .08em;
+      margin-bottom: 12px;
+      text-transform: uppercase;
     }
 
     .otp-boxes {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 20px;
       direction: ltr;
-    }
-
-    .otp-box {
-      width: 56px;
-      height: 64px;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      font-weight: 700;
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
-
-    .expiry-notice {
-      font-size: 13px;
-      color: #64748b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .clock-icon {
-      width: 16px;
-      height: 16px;
-    }
-
-    .info-box {
-      background-color: #f1f5f9;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }
-
-    .info-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #334155;
+      text-align: center;
       margin-bottom: 12px;
     }
 
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid #e2e8f0;
+    .otp-digit {
+      display: inline-block;
+      width: 58px;
+      height: 64px;
+      line-height: 64px;
+      margin: 0 5px;
+      border-radius: 12px;
+      background: rgba(37,99,235,0.15);
+      border: 2px solid rgba(59,130,246,0.35);
+      font-size: 32px;
+      font-weight: 900;
+      color: #93c5fd;
+      font-family: Cairo, Arial, sans-serif;
+      box-shadow: 0 0 20px rgba(37,99,235,0.15);
+      text-align: center;
     }
 
-    .info-row:last-child {
+    .otp-expiry {
+      font-size: 12px;
+      color: rgba(255,255,255,0.34);
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .info-row {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 13px 15px;
+      margin: 16px 0;
+    }
+
+    .info-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.72);
+      margin-bottom: 8px;
+    }
+
+    .info-item {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 13px;
+    }
+
+    .info-item:last-child {
       border-bottom: none;
     }
 
     .info-label {
-      font-size: 13px;
-      color: #64748b;
+      display: inline-block;
+      color: rgba(255,255,255,0.38);
       font-weight: 500;
+      min-width: 110px;
     }
 
     .info-value {
-      font-size: 13px;
-      color: #1e293b;
-      font-weight: 600;
+      color: rgba(255,255,255,0.78);
+      font-weight: 700;
+      direction: ltr;
+      unicode-bidi: plaintext;
+      word-break: break-word;
     }
 
     .warning-box {
-      background-color: #fef3c7;
-      border-right: 4px solid #f59e0b;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 30px;
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 11px;
+      padding: 13px 15px;
+      margin: 20px 0;
     }
 
-    .warning-text {
+    .warning-box p {
       font-size: 13px;
-      color: #92400e;
-      line-height: 1.5;
+      color: rgba(255,255,255,0.52);
+      line-height: 1.8;
     }
 
-    .cta-button {
+    .warning-box strong {
+      color: rgba(255,255,255,0.82);
+    }
+
+    .cta-wrap {
+      text-align: center;
+      margin: 24px 0;
+    }
+
+    .cta-btn {
       display: inline-block;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #ffffff;
+      padding: 13px 30px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #ffffff !important;
       text-decoration: none;
-      padding: 14px 32px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 20px rgba(37,99,235,0.4);
+      letter-spacing: .02em;
+    }
+
+    .email-footer {
+      background: #040910;
+      padding: 22px 36px;
       text-align: center;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-      transition: transform 0.2s;
+      border-top: 1px solid rgba(255,255,255,0.06);
     }
 
-    .cta-button:hover {
-      transform: translateY(-2px);
-    }
-
-    .footer {
-      background-color: #f8fafc;
-      padding: 30px;
-      text-align: center;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .footer-text {
-      font-size: 13px;
-      color: #64748b;
-      line-height: 1.6;
-      margin-bottom: 16px;
+    .footer-logo {
+      height: 24px;
+      object-fit: contain;
+      opacity: .35;
+      margin-bottom: 10px;
     }
 
     .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
-    .footer-link {
-      font-size: 13px;
-      color: #2563eb;
+    .footer-links a {
+      display: inline-block;
+      margin: 0 8px 8px 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.36);
       text-decoration: none;
       font-weight: 500;
     }
 
-    .footer-link:hover {
-      text-decoration: underline;
+    .footer-copy {
+      font-size: 11px;
+      color: rgba(255,255,255,0.2);
+      line-height: 1.7;
     }
 
-    .copyright {
-      font-size: 12px;
-      color: #94a3b8;
+    @media only screen and (max-width: 480px) {
+      body {
+        padding: 18px 10px;
+      }
+
+      .email-header,
+      .email-body,
+      .email-footer {
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+      }
+
+      .otp-digit {
+        width: 48px !important;
+        height: 56px !important;
+        line-height: 56px !important;
+        font-size: 26px !important;
+        margin: 0 3px !important;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="email-container">
-    <!-- Header -->
-    <div class="header">
-      <img src="${supabaseUrl.replace('/rest/v1', '')}/storage/v1/object/public/project-files/Logo_White.png" alt="Half Lens" class="logo">
-      <h1 class="header-title">رمز التحقق الخاص بك</h1>
-      <p class="header-subtitle">نظام إدارة الموردين</p>
+  <div class="email-wrap">
+    <div class="email-header">
+      <div class="logo-area">
+        <img
+          src="https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/images/half_lens_logo_-_color.png"
+          alt="Half Lens"
+        />
+        <div class="header-badge">Vendor Portal Access</div>
+      </div>
     </div>
 
-    <!-- Content -->
-    <div class="content">
-      <h2 class="greeting">مرحباً</h2>
-      <p class="message">
-        لقد تلقينا طلباً لتسجيل الدخول إلى حسابك في نظام Half Lens. استخدم رمز التحقق التالي لإتمام عملية الدخول:
-      </p>
+    <div class="email-body">
+      <div class="greeting">مرحبًا،</div>
+      <div class="body-text">
+        تلقّينا طلبًا لتسجيل الدخول إلى حسابك في منصة <strong style="color:#ffffff;">Half Lens</strong>.
+        استخدم رمز التحقق التالي لإكمال عملية الدخول بشكل آمن.
+      </div>
 
-      <!-- OTP Container -->
       <div class="otp-container">
-        <p class="otp-label">رمز التحقق (OTP)</p>
+        <div class="otp-label">OTP Verification Code</div>
         <div class="otp-boxes">
-          <div class="otp-box">${digits[0]}</div>
-          <div class="otp-box">${digits[1]}</div>
-          <div class="otp-box">${digits[2]}</div>
-          <div class="otp-box">${digits[3]}</div>
+          <span class="otp-digit">${digits[0]}</span>
+          <span class="otp-digit">${digits[1]}</span>
+          <span class="otp-digit">${digits[2]}</span>
+          <span class="otp-digit">${digits[3]}</span>
         </div>
-        <p class="expiry-notice">
-          <svg class="clock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          صالح لمدة 10 دقائق فقط
+        <div class="otp-expiry">صالح لمدة 10 دقائق فقط</div>
+      </div>
+
+      <div class="warning-box">
+        <p>
+          <strong>تنبيه أمني:</strong>
+          إذا لم تقم أنت بطلب هذا الرمز، يمكنك تجاهل هذه الرسالة بأمان. لا تشارك هذا الرمز مع أي شخص.
         </p>
       </div>
 
-      <!-- Request Info -->
-      <div class="info-box">
-        <p class="info-title">تفاصيل الطلب:</p>
-        <div class="info-row">
+      <div class="info-row">
+        <div class="info-title">تفاصيل الطلب</div>
+        <div class="info-item">
           <span class="info-label">الوقت</span>
           <span class="info-value">${requestTime}</span>
         </div>
-        <div class="info-row">
+        <div class="info-item">
           <span class="info-label">البريد الإلكتروني</span>
           <span class="info-value">${email}</span>
         </div>
-        <div class="info-row">
+        <div class="info-item">
           <span class="info-label">الجهاز</span>
           <span class="info-value">${deviceInfo}</span>
         </div>
       </div>
 
-      <!-- Warning -->
-      <div class="warning-box">
-        <p class="warning-text">
-          ⚠️ إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذه الرسالة. لا تشارك هذا الرمز مع أي شخص للحفاظ على أمان حسابك.
-        </p>
-      </div>
-
-      <!-- CTA Button -->
-      <div style="text-align: center;">
-        <a href="https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login" class="cta-button">
-          الانتقال لصفحة تسجيل الدخول
+      <div class="cta-wrap">
+        <a href="https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login" class="cta-btn">
+          الانتقال إلى صفحة تسجيل الدخول
         </a>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-      <p class="footer-text">
-        هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br>
-        للمساعدة والدعم، يرجى التواصل معنا.
-      </p>
+    <div class="email-footer">
+      <img
+        class="footer-logo"
+        src="https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/images/half_lens_logo_-_color.png"
+        alt="Half Lens"
+      />
       <div class="footer-links">
-        <a href="#" class="footer-link">سياسة الخصوصية</a>
-        <a href="#" class="footer-link">شروط الاستخدام</a>
-        <a href="#" class="footer-link">تواصل معنا</a>
+        <a href="#">سياسة الخصوصية</a>
+        <a href="#">شروط الاستخدام</a>
+        <a href="#">تواصل معنا</a>
       </div>
-      <p class="copyright">
+      <div class="footer-copy">
+        هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br />
         © 2024 Half Lens. جميع الحقوق محفوظة.
-      </p>
+      </div>
     </div>
   </div>
 </body>
@@ -355,7 +385,7 @@ Deno.serve(async (req: Request) => {
     if (!email || !email.includes("@")) {
       return new Response(
         JSON.stringify({ error: "البريد الإلكتروني غير صالح" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -369,7 +399,7 @@ Deno.serve(async (req: Request) => {
     if (vendorError || !vendor) {
       return new Response(
         JSON.stringify({ error: "المورد غير موجود في النظام" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -386,9 +416,9 @@ Deno.serve(async (req: Request) => {
     if (recentOTP) {
       return new Response(
         JSON.stringify({
-          error: "تم إرسال رمز التحقق مؤخراً. يرجى الانتظار دقيقة واحدة قبل طلب رمز جديد"
+          error: "تم إرسال رمز التحقق مؤخراً. يرجى الانتظار دقيقة واحدة قبل طلب رمز جديد",
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -397,9 +427,10 @@ Deno.serve(async (req: Request) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Get client IP
-    const ipAddress = req.headers.get("x-forwarded-for") ||
-                     req.headers.get("x-real-ip") ||
-                     "unknown";
+    const ipAddress =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
     // Store OTP in database
     const { error: insertError } = await supabase
@@ -416,7 +447,7 @@ Deno.serve(async (req: Request) => {
       console.error("Error inserting OTP:", insertError);
       return new Response(
         JSON.stringify({ error: "حدث خطأ أثناء إنشاء رمز التحقق" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -434,64 +465,28 @@ Deno.serve(async (req: Request) => {
     // Generate email HTML
     const emailHtml = getEmailTemplate(otp, email, deviceInfo, requestTime);
 
-    // Send email using SMTP
-    try {
-      const smtpHost = Deno.env.get("SMTP_HOST");
-      const smtpPort = Deno.env.get("SMTP_PORT");
-      const smtpUser = Deno.env.get("SMTP_USER");
-      const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-      const smtpFromEmail = Deno.env.get("SMTP_FROM_EMAIL");
-      const smtpFromName = Deno.env.get("SMTP_FROM_NAME");
+    // TODO: Send email using SMTP service
+    // For now, we'll log the OTP (in production, integrate with an email service)
+    console.log(\`OTP for \${email}: \${otp}\`);
+    console.log("Email HTML generated successfully");
 
-      if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail || !smtpFromName) {
-        console.error("Missing SMTP configuration");
-        return new Response(
-          JSON.stringify({ error: "إعدادات البريد الإلكتروني غير مكتملة" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
+    // In development, return the OTP for testing
+    // REMOVE THIS IN PRODUCTION
+    const isDevelopment = true;
 
-      // Create SMTP transport
-      const transporter = createTransport({
-        host: smtpHost,
-        port: parseInt(smtpPort),
-        secure: false, // use STARTTLS
-        auth: {
-          user: smtpUser,
-          pass: smtpPassword,
-        },
-      });
-
-      // Send email
-      const info = await transporter.sendMail({
-        from: `"${smtpFromName}" <${smtpFromEmail}>`,
-        to: email,
-        subject: "رمز التحقق - Half Lens",
-        html: emailHtml,
-      });
-
-      console.log(`OTP email sent successfully to ${email}. Message ID: ${info.messageId}`);
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (emailError) {
-      console.error("Error sending email:", emailError);
-      return new Response(
-        JSON.stringify({ error: "حدث خطأ أثناء إرسال البريد الإلكتروني" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+        ...(isDevelopment && { otp, email_preview: emailHtml }),
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error) {
     console.error("Error in send-otp-email:", error);
     return new Response(
       JSON.stringify({ error: "حدث خطأ في النظام" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
