@@ -18,15 +18,17 @@ function generateOTP(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
-// Get Arabic email template matching the provided design exactly
+// Email template
 function getEmailTemplate(
   otp: string,
   email: string,
   deviceInfo: string,
   requestTime: string,
-  loginUrl: string
-): stringTemplate(otp: string, email: string, deviceInfo: string, requestTime: string): string {
-  const digits = otp.split('');
+  loginUrl: string,
+): string {
+  const digits = otp.padStart(4, "0").slice(0, 4).split("");
+  const logoUrl =
+    "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
 
   return `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -130,7 +132,7 @@ function getEmailTemplate(
       height: 64px;
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       border-radius: 10px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 28px;
@@ -173,6 +175,7 @@ function getEmailTemplate(
       align-items: center;
       padding: 8px 0;
       border-bottom: 1px solid #e2e8f0;
+      gap: 12px;
     }
 
     .info-row:last-child {
@@ -183,12 +186,15 @@ function getEmailTemplate(
       font-size: 13px;
       color: #64748b;
       font-weight: 500;
+      white-space: nowrap;
     }
 
     .info-value {
       font-size: 13px;
       color: #1e293b;
       font-weight: 600;
+      word-break: break-word;
+      text-align: left;
     }
 
     .warning-box {
@@ -208,7 +214,7 @@ function getEmailTemplate(
     .cta-button {
       display: inline-block;
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #ffffff;
+      color: #ffffff !important;
       text-decoration: none;
       padding: 14px 32px;
       border-radius: 8px;
@@ -216,11 +222,6 @@ function getEmailTemplate(
       font-weight: 600;
       text-align: center;
       box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-      transition: transform 0.2s;
-    }
-
-    .cta-button:hover {
-      transform: translateY(-2px);
     }
 
     .footer {
@@ -242,6 +243,7 @@ function getEmailTemplate(
       justify-content: center;
       gap: 20px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
     }
 
     .footer-link {
@@ -251,33 +253,44 @@ function getEmailTemplate(
       font-weight: 500;
     }
 
-    .footer-link:hover {
-      text-decoration: underline;
-    }
-
     .copyright {
       font-size: 12px;
       color: #94a3b8;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .content,
+      .header,
+      .footer {
+        padding: 24px 18px !important;
+      }
+
+      .otp-boxes {
+        gap: 8px;
+      }
+
+      .otp-box {
+        width: 48px;
+        height: 56px;
+        font-size: 24px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="email-container">
-    <!-- Header -->
     <div class="header">
-      <img src="${supabaseUrl.replace('/rest/v1', '')}/storage/v1/object/public/project-files/Logo_White.png" alt="Half Lens" class="logo">
+      <img src="${logoUrl}" alt="Half Lens" class="logo">
       <h1 class="header-title">رمز التحقق الخاص بك</h1>
       <p class="header-subtitle">نظام إدارة الموردين</p>
     </div>
 
-    <!-- Content -->
     <div class="content">
       <h2 class="greeting">مرحباً</h2>
       <p class="message">
         لقد تلقينا طلباً لتسجيل الدخول إلى حسابك في نظام Half Lens. استخدم رمز التحقق التالي لإتمام عملية الدخول:
       </p>
 
-      <!-- OTP Container -->
       <div class="otp-container">
         <p class="otp-label">رمز التحقق (OTP)</p>
         <div class="otp-boxes">
@@ -294,7 +307,6 @@ function getEmailTemplate(
         </p>
       </div>
 
-      <!-- Request Info -->
       <div class="info-box">
         <p class="info-title">تفاصيل الطلب:</p>
         <div class="info-row">
@@ -311,22 +323,19 @@ function getEmailTemplate(
         </div>
       </div>
 
-      <!-- Warning -->
       <div class="warning-box">
         <p class="warning-text">
           ⚠️ إذا لم تقم بطلب هذا الرمز، يرجى تجاهل هذه الرسالة. لا تشارك هذا الرمز مع أي شخص للحفاظ على أمان حسابك.
         </p>
       </div>
 
-      <!-- CTA Button -->
       <div style="text-align: center;">
-        <a href="${loginUrl}"" class="cta-button">
+        <a href="${loginUrl}" class="cta-button">
           الانتقال لصفحة تسجيل الدخول
         </a>
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="footer">
       <p class="footer-text">
         هذه رسالة آلية من نظام Half Lens لإدارة الموردين.<br>
@@ -352,8 +361,16 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return new Response(
+        JSON.stringify({ error: "إعدادات قاعدة البيانات غير مكتملة" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { email, deviceInfo = "غير معروف" }: OTPRequest = await req.json();
@@ -361,40 +378,58 @@ Deno.serve(async (req: Request) => {
     if (!email || !email.includes("@")) {
       return new Response(
         JSON.stringify({ error: "البريد الإلكتروني غير صالح" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    const normalizedEmail = email.toLowerCase().trim();
 
     // Check if vendor exists
     const { data: vendor, error: vendorError } = await supabase
       .from("vendors")
       .select("id, email, full_name")
-      .eq("email", email.toLowerCase())
+      .eq("email", normalizedEmail)
       .maybeSingle();
 
-    if (vendorError || !vendor) {
+    if (vendorError) {
+      console.error("Vendor lookup error:", vendorError);
       return new Response(
-        JSON.stringify({ error: "المورد غير موجود في النظام" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "حدث خطأ أثناء التحقق من البريد الإلكتروني" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Rate limiting: Check if OTP was sent in the last 60 seconds
-    const { data: recentOTP } = await supabase
+    if (!vendor) {
+      return new Response(
+        JSON.stringify({ error: "المورد غير موجود في النظام" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Rate limiting: check if OTP was sent in the last 60 seconds
+    const { data: recentOTP, error: recentOtpError } = await supabase
       .from("otp_codes")
       .select("created_at")
-      .eq("email", email.toLowerCase())
-      .gte("created_at", new Date(Date.now() - 60000).toISOString())
+      .eq("email", normalizedEmail)
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
+    if (recentOtpError) {
+      console.error("Recent OTP lookup error:", recentOtpError);
+      return new Response(
+        JSON.stringify({ error: "حدث خطأ أثناء التحقق من حالة الرمز" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     if (recentOTP) {
       return new Response(
         JSON.stringify({
-          error: "تم إرسال رمز التحقق مؤخراً. يرجى الانتظار دقيقة واحدة قبل طلب رمز جديد"
+          error: "تم إرسال رمز التحقق مؤخراً. يرجى الانتظار دقيقة واحدة قبل طلب رمز جديد",
         }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -403,15 +438,16 @@ Deno.serve(async (req: Request) => {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Get client IP
-    const ipAddress = req.headers.get("x-forwarded-for") ||
-                     req.headers.get("x-real-ip") ||
-                     "unknown";
+    const ipAddress =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
     // Store OTP in database
     const { error: insertError } = await supabase
       .from("otp_codes")
       .insert({
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         code: otp,
         expires_at: expiresAt.toISOString(),
         ip_address: ipAddress,
@@ -422,11 +458,11 @@ Deno.serve(async (req: Request) => {
       console.error("Error inserting OTP:", insertError);
       return new Response(
         JSON.stringify({ error: "حدث خطأ أثناء إنشاء رمز التحقق" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Get current time in Arabic format
+    // Current time in Arabic format
     const now = new Date();
     const requestTime = now.toLocaleString("ar-SA", {
       timeZone: "Asia/Riyadh",
@@ -437,78 +473,72 @@ Deno.serve(async (req: Request) => {
       minute: "2-digit",
     });
 
-    // Login URL
-const loginUrl =
-  Deno.env.get("APP_LOGIN_URL") ||
-  "https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login";
+    // Keep this hardcoded for now to avoid missing secret issues
+    const loginUrl = "https://akcpkjzfhtmurtwzyzhn.supabase.co/vendor-login";
 
-// Generate email HTML
-const emailHtml = getEmailTemplate(
-  otp,
-  email,
-  deviceInfo,
-  requestTime,
-  loginUrl
-);
+    const emailHtml = getEmailTemplate(
+      otp,
+      normalizedEmail,
+      deviceInfo,
+      requestTime,
+      loginUrl,
+    );
 
-    // Send email using SMTP
-    try {
-      const smtpHost = Deno.env.get("SMTP_HOST");
-      const smtpPort = Deno.env.get("SMTP_PORT");
-      const smtpUser = Deno.env.get("SMTP_USER");
-      const smtpPassword = Deno.env.get("SMTP_PASSWORD");
-      const smtpFromEmail = Deno.env.get("SMTP_FROM_EMAIL");
-      const smtpFromName = Deno.env.get("SMTP_FROM_NAME");
+    // SMTP config
+    const smtpHost = Deno.env.get("SMTP_HOST");
+    const smtpPort = Deno.env.get("SMTP_PORT");
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+    const smtpFromEmail = Deno.env.get("SMTP_FROM_EMAIL");
+    const smtpFromName = Deno.env.get("SMTP_FROM_NAME");
 
-      if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail || !smtpFromName) {
-        console.error("Missing SMTP configuration");
-        return new Response(
-          JSON.stringify({ error: "إعدادات البريد الإلكتروني غير مكتملة" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      // Create SMTP transport
-      const transporter = createTransport({
-        host: smtpHost,
-        port: parseInt(smtpPort),
-        secure: false, // use STARTTLS
-        auth: {
-          user: smtpUser,
-          pass: smtpPassword,
-        },
-      });
-
-      // Send email
-      const info = await transporter.sendMail({
-        from: `"${smtpFromName}" <${smtpFromEmail}>`,
-        to: email,
-        subject: "رمز التحقق - Half Lens",
-        html: emailHtml,
-      });
-
-      console.log(`OTP email sent successfully to ${email}. Message ID: ${info.messageId}`);
-
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail || !smtpFromName) {
+      console.error("Missing SMTP configuration");
       return new Response(
-        JSON.stringify({
-          success: true,
-          message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (emailError) {
-      console.error("Error sending email:", emailError);
-      return new Response(
-        JSON.stringify({ error: "حدث خطأ أثناء إرسال البريد الإلكتروني" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "إعدادات البريد الإلكتروني غير مكتملة" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
+    const port = Number(smtpPort);
+    if (Number.isNaN(port)) {
+      return new Response(
+        JSON.stringify({ error: "منفذ SMTP غير صالح" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const transporter = createTransport({
+      host: smtpHost,
+      port,
+      secure: port === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPassword,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"${smtpFromName}" <${smtpFromEmail}>`,
+      to: normalizedEmail,
+      subject: "رمز التحقق - Half Lens",
+      html: emailHtml,
+    });
+
+    console.log(`OTP email sent successfully to ${normalizedEmail}. Message ID: ${info.messageId}`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+      }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error) {
     console.error("Error in send-otp-email:", error);
     return new Response(
       JSON.stringify({ error: "حدث خطأ في النظام" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
