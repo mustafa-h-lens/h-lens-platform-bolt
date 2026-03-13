@@ -70,7 +70,7 @@ export const Login = () => {
         .hl-left-z { position: relative; z-index: 1; }
 
         .hl-logo { padding: 20px 0; display: flex; justify-content: flex-start; }
-        .hl-logo img { height: 192px; width: auto; object-fit: contain; filter: brightness(0) invert(1); }
+        .hl-logo img { height: 192px; width: auto; object-fit: contain; }
 
         .hl-badge {
           display: inline-flex; align-items: center; gap: 8px;
@@ -119,7 +119,7 @@ export const Login = () => {
         .hl-mobile-logo {
           display: flex; justify-content: flex-end; margin-bottom: 48px; padding: 20px 0;
         }
-        .hl-mobile-logo img { height: 176px; object-fit: contain; filter: brightness(0) invert(1); }
+        .hl-mobile-logo img { height: 176px; object-fit: contain; }
         @media (min-width: 1024px) { .hl-mobile-logo { display: none; } }
 
         .hl-title { font-size: 1.8rem; font-weight: 800; color: #f0f4ff; margin-bottom: 6px; text-align: right; }
@@ -203,7 +203,7 @@ export const Login = () => {
           <div className="hl-orb2" />
 
           <div className="hl-left-z hl-logo">
-            <img src="/Half_Lens_Logo.png" alt="Half Lens" />
+            <img src="/Logo_White.png" alt="Half Lens" />
           </div>
 
           <div className="hl-left-z">
@@ -231,7 +231,7 @@ export const Login = () => {
             <div className="hl-desc">سجّل دخولك للوصول إلى لوحة التحكم</div>
 
             <div className="hl-mobile-logo">
-              <img src="/Half_Lens_Logo.png" alt="Half Lens" />
+              <img src="/Logo_White.png" alt="Half Lens" />
             </div>
 
             <form onSubmit={handleSubmit}>

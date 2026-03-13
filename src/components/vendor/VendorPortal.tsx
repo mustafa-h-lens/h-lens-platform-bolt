@@ -265,7 +265,7 @@ function SidebarContent({ page, navigate, initials, vendor, signOut, isDarkMode,
     <>
       {/* Logo + close */}
       <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <img src="/half_lens_logo_-_color.png" alt="هاف لينس" style={{ height: 28, objectFit: 'contain' }} />
+        <img src="/Logo_White.png" alt="هاف لينس" style={{ height: 28, objectFit: 'contain' }} />
         {onClose && (
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.5)' }}>
             <X size={18} />

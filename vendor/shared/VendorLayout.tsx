@@ -56,7 +56,7 @@ export const VendorLayout = ({ page, onNavigate, children }: VendorLayoutProps) 
         padding: '18px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0,
       }}>
-        <img src="/half_lens_logo_-_color.png" alt="هاف لينس" style={{ height: 28, objectFit: 'contain' }} />
+        <img src="/Logo_White.png" alt="هاف لينس" style={{ height: 28, objectFit: 'contain' }} />
         <button
           className="md:hidden"
           onClick={() => setMobileOpen(false)}

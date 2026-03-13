@@ -144,9 +144,7 @@ export default function VendorLogin({ onLogin }) {
       transition: 'all 0.3s'
     },
     header: {
-      background: isDark
-        ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-        : 'linear-gradient(135deg, #0a0f1e 0%, #1a2332 100%)',
+      background: 'linear-gradient(135deg, #0a0f1e 0%, #1a2332 100%)',
       padding: '48px 32px',
       textAlign: 'center',
       position: 'relative'
@@ -329,7 +327,7 @@ export default function VendorLogin({ onLogin }) {
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </button>
           <img
-            src="/half_lens_logo_-_color.png"
+            src="/Logo_White.png"
             alt="Half Lens"
             style={styles.logo}
           />
