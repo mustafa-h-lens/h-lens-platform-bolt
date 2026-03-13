@@ -19,8 +19,8 @@ const EmailPreview: React.FC = () => {
   return (
     <div style={{ padding: '32px 16px', backgroundColor: '#0a0f1e', minHeight: '100vh' }}>
       <div style={{ maxWidth: '800px', margin: '0 auto', marginBottom: '24px' }}>
-        <h1 style={{ color: '#e2e8f0', marginBottom: '10px', fontSize: '24px', fontWeight: 700 }}>OTP Email Template Preview</h1>
-        <p style={{ color: 'rgba(255,255,255,0.58)', marginBottom: '20px', fontSize: '14px' }}>
+        <h1 style={{ color: '#ffffff', marginBottom: '10px', fontSize: '24px', fontWeight: 700 }}>OTP Email Template Preview</h1>
+        <p style={{ color: '#94a3b8', marginBottom: '20px', fontSize: '15px', fontWeight: 500 }}>
           This is how your OTP email appears to vendors. Scroll down to see the full template.
         </p>
       </div>
