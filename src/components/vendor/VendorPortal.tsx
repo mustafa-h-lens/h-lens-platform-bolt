@@ -688,7 +688,7 @@ function PageProfile() {
               </div>
               <div>
                 <FieldLabel>📱 رقم الجوال</FieldLabel>
-                <TextInput value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="05XXXXXXXX" dir="ltr" />
+                <TextInput value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="05XXXXXXXX\" dir="ltr" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -698,7 +698,7 @@ function PageProfile() {
               </div>
               <div>
                 <FieldLabel>🪪 رقم الهوية</FieldLabel>
-                <TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX" dir="ltr" />
+                <TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr" />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
