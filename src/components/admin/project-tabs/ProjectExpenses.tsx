@@ -1,23 +1,38 @@
-import { useState, useEffect } from 'react';
-import { Plus, Download, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { Modal } from '../../shared/Modal';
 import { ConfirmationModal } from '../../shared/ConfirmationModal';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { PAYMENT_METHODS } from '../../../types/database';
+import type { VendorField } from '../../../types/database';
+
+interface Payment {
+  id: string;
+  amount: number;
+  payment_method: string;
+  payment_date: string;
+  notes: string | null;
+  created_at: string;
+}
 
 interface Expense {
   id: string;
   vendor_id: string;
   vendor_name: string;
-  field: string;
+  category: string | null;
   amount: number;
   amount_paid: number;
   amount_remaining: number;
   due_date: string | null;
   status: string;
+  notes: string | null;
+  invoice_file_url: string | null;
   created_at: string;
+  payments: Payment[];
 }
 
 interface Vendor {
@@ -28,32 +43,61 @@ interface Vendor {
 
 interface ProjectExpensesProps {
   projectId: string;
+  currency: string;
 }
 
-export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
+export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [formData, setFormData] = useState({
-    vendor_id: '',
-    field: '',
-    amount: '',
-    tax_included: false,
-    due_date: '',
-  });
+  const [projectTotalPrice, setProjectTotalPrice] = useState(0);
+
+  // UI state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentExpense, setPaymentExpense] = useState<Expense | null>(null);
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
+
+  // Expense form state
+  const [expenseForm, setExpenseForm] = useState({
+    vendor_id: '',
+    category: '',
+    amount: '',
+    due_date: '',
+    notes: '',
+  });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Payment form state
+  const [paymentForm, setPaymentForm] = useState({
+    amount: '',
+    payment_method: 'bank_transfer',
+    payment_date: new Date().toISOString().split('T')[0],
+    notes: '',
+  });
 
   useEffect(() => {
     loadExpenses();
     loadVendors();
+    loadVendorFields();
+    loadProjectData();
   }, [projectId]);
 
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // Try full query with payments join first; fall back without it if table doesn't exist yet
+      let data: any[] | null = null;
+      const fullQuery = supabase
         .from('vendor_invoices')
         .select(`
           id,
@@ -63,27 +107,71 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
           amount_remaining,
           status,
           due_date,
+          category,
+          notes,
+          invoice_file_url,
           created_at,
           vendors (
             full_name,
             primary_field
+          ),
+          expense_payments (
+            id,
+            amount,
+            payment_method,
+            payment_date,
+            notes,
+            created_at
           )
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      const fullResult = await fullQuery;
+
+      if (fullResult.error) {
+        // Fallback: query without expense_payments join and new columns (migration may not be applied yet)
+        const fallbackResult = await supabase
+          .from('vendor_invoices')
+          .select(`
+            id,
+            vendor_id,
+            amount_total,
+            amount_paid,
+            amount_remaining,
+            status,
+            due_date,
+            created_at,
+            vendors (
+              full_name,
+              primary_field
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false });
+
+        if (fallbackResult.error) throw fallbackResult.error;
+        data = fallbackResult.data;
+      } else {
+        data = fullResult.data;
+      }
+
       const mapped = (data || []).map((item: any) => ({
         id: item.id,
         vendor_id: item.vendor_id,
         vendor_name: item.vendors?.full_name || '',
-        field: item.vendors?.primary_field || '',
+        category: item.category || null,
         amount: item.amount_total,
-        amount_paid: item.amount_paid,
-        amount_remaining: item.amount_remaining,
+        amount_paid: item.amount_paid || 0,
+        amount_remaining: item.amount_remaining || item.amount_total,
         due_date: item.due_date,
         status: item.status,
+        notes: item.notes || null,
+        invoice_file_url: item.invoice_file_url || null,
         created_at: item.created_at,
+        payments: (item.expense_payments || []).sort(
+          (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ),
       }));
       setExpenses(mapped);
     } catch (error) {
@@ -108,47 +196,293 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loadVendorFields = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_fields')
+        .select('id, name_ar, name_en, parent_id, display_order, is_active')
+        .eq('is_active', true)
+        .order('display_order');
 
-    if (!formData.vendor_id || !formData.amount) {
+      if (error) throw error;
+      setVendorFields(data || []);
+    } catch (error) {
+      console.error('Error loading vendor fields:', error);
+    }
+  };
+
+  // Get grouped fields: parent categories with their children
+  const parentFields = vendorFields.filter(f => f.parent_id === null);
+  const getChildren = (parentId: string) => vendorFields.filter(f => f.parent_id === parentId);
+
+  // Resolve category name from vendor_fields
+  const getCategoryLabel = (category: string | null): string => {
+    if (!category) return '-';
+    const field = vendorFields.find(f => f.id === category);
+    if (field) return field.name_ar;
+    return category;
+  };
+
+  const loadProjectData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('total_price')
+        .eq('id', projectId)
+        .single();
+
+      if (error) throw error;
+      setProjectTotalPrice(data?.total_price || 0);
+    } catch (error) {
+      console.error('Error loading project data:', error);
+    }
+  };
+
+  // Derived status with overdue detection
+  const deriveStatus = (expense: Expense): string => {
+    if (expense.status === 'paid') return 'paid';
+    if (expense.amount_paid > 0 && expense.amount_paid < expense.amount) return 'partial';
+    if (expense.due_date && new Date(expense.due_date) < new Date() && expense.amount_paid === 0) return 'overdue';
+    if (expense.status === 'overdue') return 'overdue';
+    return 'pending';
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'paid': return 'مدفوع';
+      case 'partial': return 'جزئي';
+      case 'overdue': return 'متأخر';
+      default: return 'معلق';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'var(--color-success)';
+      case 'partial': return 'var(--color-warning)';
+      case 'overdue': return 'var(--color-danger)';
+      default: return 'var(--color-text-secondary)';
+    }
+  };
+
+  // Summary calculations
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalPaid = expenses.reduce((sum, e) => sum + e.amount_paid, 0);
+  const totalRemaining = expenses.reduce((sum, e) => sum + e.amount_remaining, 0);
+  const profit = projectTotalPrice - totalExpenses;
+  const margin = projectTotalPrice > 0 ? (profit / projectTotalPrice) * 100 : 0;
+  const costRatio = projectTotalPrice > 0 ? (totalExpenses / projectTotalPrice) * 100 : 0;
+
+  const getMarginColor = () => {
+    if (totalExpenses > projectTotalPrice) return 'var(--color-danger)';
+    if (costRatio > 70) return '#f97316';
+    if (costRatio > 50) return 'var(--color-warning)';
+    return 'var(--color-success)';
+  };
+
+  // Toggle row expansion
+  const toggleRow = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Upload invoice file
+  const uploadFile = async (file: File): Promise<string | null> => {
+    const filePath = `projects/${projectId}/invoices/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from('vendor-images')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('vendor-images')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
+  };
+
+  // Remove old file from storage
+  const removeOldFile = async (fileUrl: string) => {
+    const bucketName = 'vendor-images';
+    const urlParts = fileUrl.split(`/storage/v1/object/public/${bucketName}/`);
+    if (urlParts.length === 2) {
+      const storagePath = decodeURIComponent(urlParts[1]);
+      await supabase.storage.from(bucketName).remove([storagePath]);
+    }
+  };
+
+  // Open add modal
+  const openAddModal = () => {
+    setEditingExpense(null);
+    setExpenseForm({ vendor_id: '', category: '', amount: '', due_date: '', notes: '' });
+    setSelectedFile(null);
+    setShowExpenseModal(true);
+  };
+
+  // Open edit modal
+  const openEditModal = (expense: Expense) => {
+    setEditingExpense(expense);
+    setExpenseForm({
+      vendor_id: expense.vendor_id,
+      category: expense.category || '',
+      amount: String(expense.amount),
+      due_date: expense.due_date || '',
+      notes: expense.notes || '',
+    });
+    setSelectedFile(null);
+    setShowExpenseModal(true);
+  };
+
+  // Open payment modal
+  const openPaymentModal = (expense: Expense) => {
+    setPaymentExpense(expense);
+    setPaymentForm({
+      amount: '',
+      payment_method: 'bank_transfer',
+      payment_date: new Date().toISOString().split('T')[0],
+      notes: '',
+    });
+    setShowPaymentModal(true);
+  };
+
+  // Submit expense (add or edit)
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!expenseForm.vendor_id || !expenseForm.amount) {
       showError('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
 
-    try {
-      const amount = parseFloat(toEnglishNumbers(formData.amount));
-      const { error } = await supabase
-        .from('vendor_invoices')
-        .insert({
-          vendor_id: formData.vendor_id,
-          project_id: projectId,
-          amount_total: amount,
-          amount_remaining: amount,
-          due_date: formData.due_date || null,
-          status: 'pending',
-        });
+    const amount = parseFloat(toEnglishNumbers(expenseForm.amount));
+    if (isNaN(amount) || amount <= 0) {
+      showError('يرجى إدخال مبلغ صحيح');
+      return;
+    }
 
-      if (error) throw error;
-      showSuccess('تم تعيين المورد بنجاح');
-      setShowAddModal(false);
-      setFormData({ vendor_id: '', field: '', amount: '', tax_included: false, due_date: '' });
+    if (editingExpense && amount < editingExpense.amount_paid) {
+      showError(`لا يمكن تقليل المبلغ عن المدفوع (${formatCurrency(editingExpense.amount_paid, currency)})`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let fileUrl = editingExpense?.invoice_file_url || null;
+
+      // Handle file upload
+      if (selectedFile) {
+        // Remove old file if replacing
+        if (fileUrl) await removeOldFile(fileUrl);
+        fileUrl = await uploadFile(selectedFile);
+      }
+
+      if (editingExpense) {
+        // Update existing expense
+        const { error } = await supabase
+          .from('vendor_invoices')
+          .update({
+            category: expenseForm.category || null,
+            amount_total: amount,
+            amount_remaining: amount - editingExpense.amount_paid,
+            due_date: expenseForm.due_date || null,
+            notes: expenseForm.notes || null,
+            invoice_file_url: fileUrl,
+          })
+          .eq('id', editingExpense.id);
+
+        if (error) throw error;
+        showSuccess('تم تحديث المصروف بنجاح');
+      } else {
+        // Insert new expense
+        const { error } = await supabase
+          .from('vendor_invoices')
+          .insert({
+            vendor_id: expenseForm.vendor_id,
+            project_id: projectId,
+            category: expenseForm.category || null,
+            amount_total: amount,
+            amount_remaining: amount,
+            due_date: expenseForm.due_date || null,
+            notes: expenseForm.notes || null,
+            invoice_file_url: fileUrl,
+            status: 'pending',
+          });
+
+        if (error) throw error;
+        showSuccess('تم إضافة المصروف بنجاح');
+      }
+
+      setShowExpenseModal(false);
       loadExpenses();
     } catch (error) {
-      console.error('Error adding expense:', error);
-      showError('حدث خطأ أثناء تعيين المورد');
+      console.error('Error saving expense:', error);
+      showError('حدث خطأ أثناء حفظ المصروف');
+    } finally {
+      setSaving(false);
     }
   };
 
+  // Submit payment
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentExpense || !paymentForm.amount) return;
+
+    const amount = parseFloat(toEnglishNumbers(paymentForm.amount));
+    if (isNaN(amount) || amount <= 0) {
+      showError('يرجى إدخال مبلغ صحيح');
+      return;
+    }
+
+    if (amount > paymentExpense.amount_remaining) {
+      showError(`المبلغ يتجاوز المتبقي (${formatCurrency(paymentExpense.amount_remaining, currency)})`);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('expense_payments')
+        .insert({
+          expense_id: paymentExpense.id,
+          amount,
+          payment_method: paymentForm.payment_method,
+          payment_date: paymentForm.payment_date,
+          notes: paymentForm.notes || null,
+          created_by: user?.id,
+        });
+
+      if (error) throw error;
+      showSuccess('تم تسجيل الدفعة بنجاح');
+      setShowPaymentModal(false);
+      loadExpenses();
+    } catch (error) {
+      console.error('Error recording payment:', error);
+      showError('حدث خطأ أثناء تسجيل الدفعة');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Delete expense
   const handleDelete = async (expenseId: string) => {
     try {
+      // Remove file from storage if exists
+      const expense = expenses.find(e => e.id === expenseId);
+      if (expense?.invoice_file_url) {
+        await removeOldFile(expense.invoice_file_url);
+      }
+
       const { error } = await supabase
         .from('vendor_invoices')
         .delete()
         .eq('id', expenseId);
 
       if (error) throw error;
-      showSuccess('تم حذف المورد بنجاح');
+      showSuccess('تم حذف المصروف بنجاح');
       loadExpenses();
     } catch (error) {
       console.error('Error deleting expense:', error);
@@ -168,23 +502,92 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          المصروفات والموردين
+          تكاليف فريق العمل
         </h2>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
-          style={{
-            backgroundColor: 'var(--color-primary)',
-            color: '#ffffff',
-          }}
+          style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
         >
           <Plus size={18} />
-          تعيين مورد
+          إضافة مصروف
         </button>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>إجمالي تكاليف الفريق</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+            {formatCurrency(totalExpenses, currency)}
+          </p>
+        </div>
+        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المدفوع</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--color-success)' }} dir="ltr">
+            {formatCurrency(totalPaid, currency)}
+          </p>
+        </div>
+        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المتبقي</p>
+          <p className="text-2xl font-bold" style={{ color: totalRemaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
+            {formatCurrency(totalRemaining, currency)}
+          </p>
+        </div>
+      </div>
+
+      {/* Budget vs Actual */}
+      {projectTotalPrice > 0 && (
+        <div className="rounded-xl border p-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>الميزانية مقابل الفعلي</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>إيرادات المشروع</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                {formatCurrency(projectTotalPrice, currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>تكاليف الفريق</p>
+              <p className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                {formatCurrency(totalExpenses, currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>الربح المتوقع</p>
+              <p className="text-lg font-bold" style={{ color: getMarginColor() }} dir="ltr">
+                {formatCurrency(profit, currency)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>نسبة الربح</p>
+              <p className="text-lg font-bold" style={{ color: getMarginColor() }} dir="ltr">
+                {margin.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+          {/* Progress bar */}
+          <div className="mt-4">
+            <div className="w-full h-3 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+              <div
+                className="h-3 rounded-full transition-all"
+                style={{
+                  width: `${Math.min(costRatio, 100)}%`,
+                  backgroundColor: getMarginColor(),
+                }}
+              />
+            </div>
+            <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+              {costRatio.toFixed(1)}% من الإيرادات
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Expenses Table */}
       {expenses.length === 0 ? (
         <div
           className="text-center py-16 rounded-lg border"
@@ -195,7 +598,7 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
           }}
         >
           <p className="text-lg mb-2">لا توجد مصروفات</p>
-          <p className="text-sm">قم بتعيين موردين للمشروع</p>
+          <p className="text-sm">قم بإضافة تكاليف فريق العمل للمشروع</p>
         </div>
       ) : (
         <div
@@ -206,96 +609,184 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
             boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <table className="w-full">
-            <thead
-              style={{
-                backgroundColor: 'var(--color-table-header)',
-                borderBottom: '1px solid var(--color-table-border)',
-              }}
-            >
-              <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  اسم المورد
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  المجال
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  المبلغ
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  المدفوع
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  المتبقي
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  الحالة
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  تاريخ الاستحقاق
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  الإجراءات
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenses.map((expense, index) => (
-                <tr
-                  key={expense.id}
-                  style={{
-                    borderBottom: index < expenses.length - 1 ? '1px solid var(--color-table-border)' : 'none',
-                  }}
-                >
-                  <td className="px-6 py-4" style={{ color: 'var(--color-text-primary)' }}>
-                    {expense.vendor_name}
-                  </td>
-                  <td className="px-6 py-4" style={{ color: 'var(--color-text-secondary)' }}>
-                    {expense.field}
-                  </td>
-                  <td className="px-6 py-4 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                    {formatCurrency(expense.amount, 'SAR')}
-                  </td>
-                  <td className="px-6 py-4 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                    {formatCurrency(expense.amount_paid, 'SAR')}
-                  </td>
-                  <td className="px-6 py-4 font-semibold" style={{ color: expense.amount_remaining > 0 ? 'var(--color-danger)' : 'var(--color-success)' }} dir="ltr">
-                    {formatCurrency(expense.amount_remaining, 'SAR')}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className="px-3 py-1 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: expense.status === 'paid' ? 'var(--color-success)' : expense.status === 'overdue' ? 'var(--color-danger)' : 'var(--color-warning)',
-                        color: '#ffffff',
-                      }}
-                    >
-                      {expense.status === 'paid' ? 'مدفوع' : expense.status === 'partial' ? 'جزئي' : expense.status === 'overdue' ? 'متأخر' : 'معلق'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-                    {expense.due_date ? formatDateArabic(expense.due_date) : '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      className="text-red-500 hover:text-red-700 transition-colors"
-                      onClick={() => setDeleteExpenseId(expense.id)}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead
+                style={{
+                  backgroundColor: 'var(--color-table-header)',
+                  borderBottom: '1px solid var(--color-table-border)',
+                }}
+              >
+                <tr>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}></th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الفريلانسر</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الدور</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المبلغ</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدفوع</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المتبقي</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الحالة</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الاستحقاق</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>فاتورة</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الإجراءات</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {expenses.map((expense, index) => {
+                  const status = deriveStatus(expense);
+                  const isExpanded = expandedRows.has(expense.id);
+                  return (
+                    <>
+                      <tr
+                        key={expense.id}
+                        style={{
+                          borderBottom: (isExpanded || index < expenses.length - 1) ? '1px solid var(--color-table-border)' : 'none',
+                        }}
+                      >
+                        {/* Expand toggle */}
+                        <td className="px-4 py-3">
+                          {expense.payments.length > 0 && (
+                            <button
+                              onClick={() => toggleRow(expense.id)}
+                              className="p-1 rounded hover:bg-black/5 transition-colors"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                          {expense.vendor_name}
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                          {getCategoryLabel(expense.category)}
+                        </td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                          {formatCurrency(expense.amount, currency)}
+                        </td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-success)' }} dir="ltr">
+                          {formatCurrency(expense.amount_paid, currency)}
+                        </td>
+                        <td className="px-4 py-3 font-semibold" style={{ color: expense.amount_remaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
+                          {formatCurrency(expense.amount_remaining, currency)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className="px-3 py-1 rounded-full text-xs font-medium"
+                            style={{ backgroundColor: getStatusColor(status), color: '#ffffff' }}
+                          >
+                            {getStatusLabel(status)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+                          {expense.due_date ? formatDateArabic(expense.due_date) : '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {expense.invoice_file_url ? (
+                            <button
+                              onClick={() => window.open(expense.invoice_file_url!, '_blank')}
+                              className="p-1 rounded transition-colors"
+                              style={{ color: 'var(--color-primary)' }}
+                              title="عرض الفاتورة"
+                            >
+                              <FileText size={18} />
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--color-text-secondary)' }}>-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1">
+                            {status !== 'paid' && (
+                              <button
+                                onClick={() => openPaymentModal(expense)}
+                                className="p-1.5 rounded transition-colors hover:bg-black/5"
+                                style={{ color: 'var(--color-success)' }}
+                                title="تسجيل دفعة"
+                              >
+                                <CreditCard size={16} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openEditModal(expense)}
+                              className="p-1.5 rounded transition-colors hover:bg-black/5"
+                              style={{ color: 'var(--color-primary)' }}
+                              title="تعديل"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteExpenseId(expense.id)}
+                              className="p-1.5 rounded transition-colors hover:bg-black/5"
+                              style={{ color: 'var(--color-danger)' }}
+                              title="حذف"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {/* Expanded payments row */}
+                      {isExpanded && (
+                        <tr key={`${expense.id}-payments`} style={{ borderBottom: index < expenses.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}>
+                          <td colSpan={10} className="px-8 py-3" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+                            <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                              سجل الدفعات ({expense.payments.length})
+                            </p>
+                            <table className="w-full">
+                              <thead>
+                                <tr>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>المبلغ</th>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>طريقة الدفع</th>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الدفع</th>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>ملاحظات</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {expense.payments.map((payment) => (
+                                  <tr key={payment.id} style={{ borderTop: '1px solid var(--color-border)' }}>
+                                    <td className="px-3 py-2 text-sm font-medium" style={{ color: 'var(--color-success)' }} dir="ltr">
+                                      {formatCurrency(payment.amount, currency)}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                                      {PAYMENT_METHODS[payment.payment_method] || payment.payment_method}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+                                      {formatDateArabic(payment.payment_date)}
+                                    </td>
+                                    <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                                      {payment.notes || '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Table footer total */}
+          <div className="bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-lg font-bold text-white">إجمالي تكاليف الفريق</span>
+              <span className="text-xl font-bold text-white" dir="ltr">
+                {formatCurrency(totalExpenses, currency)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Delete Confirmation */}
       <ConfirmationModal
         isOpen={!!deleteExpenseId}
-        title="حذف المورد"
-        message="هل أنت متأكد من حذف هذا المورد من المشروع؟ هذا الإجراء لا يمكن التراجع عنه."
+        title="حذف المصروف"
+        message="هل أنت متأكد من حذف هذا المصروف؟ سيتم حذف جميع الدفعات المرتبطة. هذا الإجراء لا يمكن التراجع عنه."
         confirmText="حذف"
         cancelText="إلغاء"
         type="danger"
@@ -303,23 +794,22 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
         onCancel={() => setDeleteExpenseId(null)}
       />
 
-      {showAddModal && (
-        <Modal isOpen={true} onClose={() => setShowAddModal(false)} title="تعيين مورد للمشروع">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Add/Edit Expense Modal */}
+      {showExpenseModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowExpenseModal(false)}
+          title={editingExpense ? 'تعديل مصروف' : 'إضافة مصروف جديد'}
+        >
+          <form onSubmit={handleExpenseSubmit} className="space-y-4">
+            {/* Vendor select */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                اختر المورد *
+                الفريلانسر <span className="text-red-500">*</span>
               </label>
               <select
-                value={formData.vendor_id}
-                onChange={(e) => {
-                  const vendor = vendors.find(v => v.id === e.target.value);
-                  setFormData({
-                    ...formData,
-                    vendor_id: e.target.value,
-                    field: vendor?.primary_field || '',
-                  });
-                }}
+                value={expenseForm.vendor_id}
+                onChange={(e) => setExpenseForm({ ...expenseForm, vendor_id: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--color-surface)',
@@ -327,8 +817,9 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
                   color: 'var(--color-text-primary)',
                 }}
                 required
+                disabled={!!editingExpense}
               >
-                <option value="">اختر المورد</option>
+                <option value="">اختر الفريلانسر</option>
                 {vendors.map((vendor) => (
                   <option key={vendor.id} value={vendor.id}>
                     {vendor.full_name}
@@ -337,32 +828,42 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
               </select>
             </div>
 
+            {/* Category select */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                المجال
+                الدور / التصنيف
               </label>
-              <input
-                type="text"
-                value={formData.field}
-                onChange={(e) => setFormData({ ...formData, field: e.target.value })}
+              <select
+                value={expenseForm.category}
+                onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--color-surface)',
                   borderColor: 'var(--color-border)',
                   color: 'var(--color-text-primary)',
                 }}
-                placeholder="مثال: تصوير، إضاءة..."
-              />
+              >
+                <option value="">اختر التصنيف</option>
+                {parentFields.map((parent) => (
+                  <optgroup key={parent.id} label={parent.name_ar}>
+                    {getChildren(parent.id).map((child) => (
+                      <option key={child.id} value={child.id}>{child.name_ar}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
             </div>
 
+            {/* Amount */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                المبلغ *
+                المبلغ ({currency}) <span className="text-red-500">*</span>
               </label>
               <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                type="text"
+                inputMode="decimal"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--color-surface)',
@@ -371,17 +872,24 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
                 }}
                 placeholder="0"
                 required
+                dir="ltr"
               />
+              {editingExpense && editingExpense.amount_paid > 0 && (
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  الحد الأدنى: {formatCurrency(editingExpense.amount_paid, currency)} (المبلغ المدفوع)
+                </p>
+              )}
             </div>
 
+            {/* Due date */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                 تاريخ الاستحقاق
               </label>
               <input
                 type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                value={expenseForm.due_date}
+                onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--color-surface)',
@@ -391,27 +899,219 @@ export const ProjectExpenses = ({ projectId }: ProjectExpensesProps) => {
               />
             </div>
 
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                ملاحظات
+              </label>
+              <textarea
+                value={expenseForm.notes}
+                onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 resize-none"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+                rows={2}
+                placeholder="ملاحظات إضافية..."
+              />
+            </div>
+
+            {/* Invoice file upload */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                فاتورة (PDF)
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                accept="application/pdf,image/jpeg,image/png"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setSelectedFile(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                <Upload size={18} />
+                {selectedFile ? selectedFile.name : editingExpense?.invoice_file_url ? 'استبدال الملف الحالي' : 'اضغط لاختيار ملف'}
+              </button>
+              {selectedFile && (
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs" style={{ color: 'var(--color-success)' }}>
+                    تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                  </p>
+                  <button type="button" onClick={() => setSelectedFile(null)} className="text-xs" style={{ color: 'var(--color-danger)' }}>
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              {!selectedFile && editingExpense?.invoice_file_url && (
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  ملف فاتورة موجود بالفعل
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={() => setShowExpenseModal(false)}
                 className="flex-1 px-4 py-2 rounded-lg font-medium transition-all"
-                style={{
-                  backgroundColor: 'var(--color-background-hover)',
-                  color: 'var(--color-text-secondary)',
-                }}
+                style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-secondary)' }}
               >
                 إلغاء
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all"
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+              >
+                {saving ? 'جاري الحفظ...' : editingExpense ? 'تحديث' : 'حفظ'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Record Payment Modal */}
+      {showPaymentModal && paymentExpense && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowPaymentModal(false)}
+          title="تسجيل دفعة"
+        >
+          <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            {/* Read-only info */}
+            <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>الفريلانسر: </span>
+                  <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{paymentExpense.vendor_name}</span>
+                </div>
+                <div dir="ltr" className="text-right">
+                  <span style={{ color: 'var(--color-text-secondary)' }}>الإجمالي: </span>
+                  <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{formatCurrency(paymentExpense.amount, currency)}</span>
+                </div>
+                <div dir="ltr" className="text-right">
+                  <span style={{ color: 'var(--color-text-secondary)' }}>المدفوع: </span>
+                  <span className="font-medium" style={{ color: 'var(--color-success)' }}>{formatCurrency(paymentExpense.amount_paid, currency)}</span>
+                </div>
+                <div dir="ltr" className="text-right">
+                  <span style={{ color: 'var(--color-text-secondary)' }}>المتبقي: </span>
+                  <span className="font-medium" style={{ color: '#f97316' }}>{formatCurrency(paymentExpense.amount_remaining, currency)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment amount */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                مبلغ الدفعة ({currency}) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={paymentForm.amount}
+                onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                 style={{
-                  backgroundColor: 'var(--color-primary)',
-                  color: '#ffffff',
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+                placeholder={`الحد الأقصى: ${paymentExpense.amount_remaining}`}
+                required
+                dir="ltr"
+              />
+            </div>
+
+            {/* Payment method */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                طريقة الدفع
+              </label>
+              <select
+                value={paymentForm.payment_method}
+                onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
                 }}
               >
-                حفظ
+                {Object.entries(PAYMENT_METHODS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Payment date */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                تاريخ الدفع
+              </label>
+              <input
+                type="date"
+                value={paymentForm.payment_date}
+                onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+              />
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                ملاحظات
+              </label>
+              <textarea
+                value={paymentForm.notes}
+                onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 resize-none"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+                rows={2}
+                placeholder="ملاحظات عن الدفعة..."
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all"
+                style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-secondary)' }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-success)', color: '#ffffff' }}
+              >
+                {saving ? 'جاري التسجيل...' : 'تسجيل الدفعة'}
               </button>
             </div>
           </form>

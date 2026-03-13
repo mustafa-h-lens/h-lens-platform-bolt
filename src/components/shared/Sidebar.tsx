@@ -41,13 +41,13 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose }: SidebarPro
     { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'invoices', label: 'الفواتير', icon: FileText, comingSoon: true },
-    { id: 'expenses', label: 'المصروفات', icon: DollarSign, comingSoon: true },
+    { id: 'expenses', label: 'المصروفات', icon: DollarSign },
     { id: 'reports', label: 'التقارير', icon: BarChart3, comingSoon: true },
     { id: 'files', label: 'الملفات', icon: File, comingSoon: true },
   ];
 
   const adminItems: MenuItem[] = [
-    { id: 'activity', label: 'سجل النشاط', icon: Activity, comingSoon: true },
+    { id: 'activity', label: 'سجل النشاط', icon: Activity },
     { id: 'settings', label: 'الإعدادات', icon: Settings },
     { id: 'users', label: 'إدارة المستخدمين', icon: UserCog },
   ];
