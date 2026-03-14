@@ -223,7 +223,7 @@ function AppContent() {
     return <Login />;
   }
 
-  if (profile.role === 'admin' || profile.role === 'super_admin') {
+  if (profile.role === 'super_admin' || profile.role === 'project_manager' || profile.role === 'admin') {
     return <NewAdminDashboard />;
   }
 

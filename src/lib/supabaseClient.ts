@@ -17,7 +17,7 @@ export interface Database {
           id: string;
           email: string;
           full_name: string;
-          role: 'admin' | 'super_admin' | 'client';
+          role: 'super_admin' | 'project_manager' | 'client';
           created_at: string;
           updated_at: string;
         };
@@ -25,7 +25,7 @@ export interface Database {
           id: string;
           email: string;
           full_name: string;
-          role?: 'admin' | 'super_admin' | 'client';
+          role?: 'super_admin' | 'project_manager' | 'client';
           created_at?: string;
           updated_at?: string;
         };
@@ -33,7 +33,7 @@ export interface Database {
           id?: string;
           email?: string;
           full_name?: string;
-          role?: 'admin' | 'super_admin' | 'client';
+          role?: 'super_admin' | 'project_manager' | 'client';
           created_at?: string;
           updated_at?: string;
         };

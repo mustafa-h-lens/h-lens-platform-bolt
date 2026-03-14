@@ -56,7 +56,7 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
     const { data } = await supabase
       .from('users')
       .select('id, full_name')
-      .in('role', ['admin', 'super_admin'])
+      .in('role', ['project_manager', 'super_admin'])
       .eq('is_active', true)
       .order('full_name');
     setUsers(data || []);

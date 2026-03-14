@@ -40,9 +40,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
   const getRoleText = (role: string) => {
     switch (role) {
       case 'super_admin': return 'مدير عام';
-      case 'admin': return 'مدير';
-      case 'client': return 'عميل';
-      case 'client_user': return 'مستخدم عميل';
+      case 'project_manager': return 'مدير مشاريع';
       default: return role;
     }
   };
@@ -50,9 +48,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'super_admin': return 'bg-purple-100 text-purple-700';
-      case 'admin': return 'bg-blue-100 text-blue-700';
-      case 'client': return 'bg-green-100 text-green-700';
-      case 'client_user': return 'bg-slate-100 text-slate-700';
+      case 'project_manager': return 'bg-blue-100 text-blue-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -201,7 +197,7 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
     full_name: user?.full_name || '',
     email: user?.email || '',
     username: user?.username || '',
-    role: user?.role || 'client_user',
+    role: user?.role || 'project_manager',
     password: ''
   });
   const [loading, setLoading] = useState(false);
@@ -313,9 +309,7 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
             >
-              <option value="client_user">مستخدم عميل</option>
-              <option value="client">عميل</option>
-              <option value="admin">مدير</option>
+              <option value="project_manager">مدير مشاريع</option>
               <option value="super_admin">مدير عام</option>
             </select>
           </div>

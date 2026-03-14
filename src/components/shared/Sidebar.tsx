@@ -14,7 +14,8 @@ import {
   Moon,
   Sun,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -41,16 +42,16 @@ interface MenuItem {
 export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) => {
   const { profile, signOut } = useAuth();
   const { theme: themeMode, toggleTheme } = useTheme();
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
   const [pendingVendorCount, setPendingVendorCount] = useState(0);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isSuperAdmin) {
       fetchPendingVendorCount();
       const interval = setInterval(fetchPendingVendorCount, 60000); // refresh every minute
       return () => clearInterval(interval);
     }
-  }, [isAdmin]);
+  }, [isSuperAdmin]);
 
   const fetchPendingVendorCount = async () => {
     try {
@@ -68,6 +69,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
     { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false, badge: pendingVendorCount },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'expenses', label: 'المصروفات', icon: DollarSign },
+    { id: 'reports', label: 'التقارير', icon: BarChart3, comingSoon: true },
   ];
 
   const adminItems: MenuItem[] = [
@@ -96,8 +98,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
   const getRoleLabel = (role?: string) => {
     switch (role) {
       case 'super_admin': return 'مدير عام';
-      case 'admin': return 'مدير';
-      case 'client': return 'عميل';
+      case 'project_manager': return 'مدير مشاريع';
       default: return '';
     }
   };
@@ -118,7 +119,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
           transition-all duration-200 group relative
           ${collapsed ? 'justify-center px-0' : 'justify-between'}
           ${isLocked
-            ? 'opacity-40 cursor-not-allowed'
+            ? 'opacity-60 cursor-not-allowed'
             : isActive
               ? 'bg-[#113975] text-white'
               : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -133,10 +134,9 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
           {!collapsed && <span className="font-medium">{item.label}</span>}
         </div>
         {!collapsed && isLocked && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/50">Coming Soon</span>
-            <Lock className="w-4 h-4 text-white/50" />
-          </div>
+          <span className="px-2.5 py-1 rounded-full text-[9px] leading-none font-semibold bg-white/10 text-white/40">
+            قريباً
+          </span>
         )}
         {!collapsed && !isLocked && item.badge && item.badge > 0 ? (
           <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white min-w-[20px] text-center">
@@ -198,12 +198,12 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
           <nav className="flex-1 overflow-y-auto py-6">
             <div className={`space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
               {menuItems.map((item) => {
-                if (item.adminOnly && !isAdmin) return null;
+                if (item.adminOnly && !isSuperAdmin) return null;
                 return renderNavItem(item);
               })}
             </div>
 
-            {isAdmin && (
+            {isSuperAdmin && (
               <>
                 <div className={`py-3 mt-4 ${collapsed ? 'px-2' : 'px-6'}`}>
                   {collapsed ? (

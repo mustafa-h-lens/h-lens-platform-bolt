@@ -6,7 +6,7 @@ interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'super_admin' | 'client';
+  role: 'super_admin' | 'project_manager' | 'client';
 }
 
 interface AuthContextType {
@@ -14,7 +14,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: 'admin' | 'super_admin' | 'client') => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: 'super_admin' | 'project_manager' | 'client') => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'super_admin' | 'client') => {
+  const signUp = async (email: string, password: string, fullName: string, role: 'super_admin' | 'project_manager' | 'client') => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

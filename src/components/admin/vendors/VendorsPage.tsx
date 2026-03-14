@@ -137,12 +137,6 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     }
   };
 
-  const handleExport = () => {
-    if (selectedVendors.size === 0) {
-      return;
-    }
-    setShowExportModal(true);
-  };
 
   const handleDelete = async () => {
     if (selectedVendors.size === 0) return;
@@ -270,25 +264,26 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         </h1>
         <div className="flex items-center gap-2">
           {selectedVendors.size > 0 && (
-            <>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
-                style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
-              >
-                <Trash2 size={18} />
-                حذف ({toEnglishNumbers(selectedVendors.size.toString())})
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
-                style={{ borderColor: 'var(--color-success)', color: 'var(--color-success)' }}
-              >
-                <Download size={18} />
-                تصدير ({toEnglishNumbers(selectedVendors.size.toString())})
-              </button>
-            </>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
+              style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+            >
+              <Trash2 size={18} />
+              حذف ({toEnglishNumbers(selectedVendors.size.toString())})
+            </button>
           )}
+          <button
+            onClick={() => setShowExportModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
+            style={{ borderColor: 'var(--color-success)', color: 'var(--color-success)' }}
+          >
+            <Download size={18} />
+            {selectedVendors.size > 0
+              ? `تصدير (${toEnglishNumbers(selectedVendors.size.toString())})`
+              : 'تصدير الكل'
+            }
+          </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
@@ -587,7 +582,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
       {showExportModal && (
         <VendorExportModal
-          vendors={vendors.filter(v => selectedVendors.has(v.id))}
+          vendors={selectedVendors.size > 0 ? vendors.filter(v => selectedVendors.has(v.id)) : filteredVendors}
           onClose={() => setShowExportModal(false)}
           onSuccess={() => {
             setShowExportModal(false);

@@ -44,9 +44,17 @@ interface Stats {
   totalRevenue: number;
 }
 
+const SUPER_ADMIN_ONLY_PAGES = ['users', 'settings', 'activity'];
+
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
+  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
   const initialHash = parseHash();
+
+  // Redirect project_manager away from super_admin-only pages
+  if (!isSuperAdmin && SUPER_ADMIN_ONLY_PAGES.includes(initialHash.page)) {
+    initialHash.page = 'dashboard';
+  }
   const [currentPage, setCurrentPage] = useState(initialHash.page);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     initialHash.page === 'projects' ? initialHash.id : null
@@ -98,13 +106,15 @@ export const NewAdminDashboard = () => {
   // Listen for browser back/forward
   const handleHashChange = useCallback(() => {
     const { page, id, tab } = parseHash();
-    setCurrentPage(page);
-    setSelectedProjectId(page === 'projects' ? id : null);
-    setSelectedClientId(page === 'clients' ? id : null);
-    setSelectedVendorId(page === 'vendors' ? id : null);
+    // Block project_manager from super_admin-only pages
+    const safePage = (!isSuperAdmin && SUPER_ADMIN_ONLY_PAGES.includes(page)) ? 'dashboard' : page;
+    setCurrentPage(safePage);
+    setSelectedProjectId(safePage === 'projects' ? id : null);
+    setSelectedClientId(safePage === 'clients' ? id : null);
+    setSelectedVendorId(safePage === 'vendors' ? id : null);
     setActiveSubTab(tab);
-    if (page !== 'clients') setClientView(null);
-  }, []);
+    if (safePage !== 'clients') setClientView(null);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     window.addEventListener('hashchange', handleHashChange);
