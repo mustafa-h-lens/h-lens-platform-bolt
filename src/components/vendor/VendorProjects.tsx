@@ -18,11 +18,8 @@ export function VendorProjects() {
     if (!vendor?.id) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('production_tasks')
-        .select('id, name, status, created_at, projects(id, name, status, start_date, end_date), clients(name)')
-        .eq('assigned_vendor_id', vendor.id)
-        .order('created_at', { ascending: false });
+      // TODO: production_tasks doesn't have vendor assignment yet
+      const { data, error } = { data: [], error: null };
 
       if (!error && data) {
         const mapped = data

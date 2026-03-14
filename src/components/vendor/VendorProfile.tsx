@@ -159,9 +159,8 @@ export function VendorProfile() {
   const [infoForm, setInfoForm] = useState({
     full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '',
     nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '',
-    id_number: vendor?.id_number || '', portfolio_url: (vendor as any)?.portfolio_url || '',
+    id_number: vendor?.id_number || '',
     vendor_type: vendor?.vendor_type || 'individual',
-    country_code: (vendor as any)?.country_code || '+966',
     available_other_cities: vendor?.available_other_cities || false,
     other_cities: vendor?.other_cities || [] as string[],
   });
@@ -318,9 +317,6 @@ export function VendorProfile() {
         other_cities: infoForm.other_cities,
         updated_at: new Date().toISOString(),
       };
-      // Only include optional fields if column exists (won't error if column missing)
-      if (infoForm.country_code) payload.country_code = infoForm.country_code;
-      if (infoForm.portfolio_url !== undefined) payload.portfolio_url = infoForm.portfolio_url;
 
       const { error } = await supabase.from('vendors').update(payload).eq('id', vendor!.id);
       if (error) throw error;
@@ -466,36 +462,19 @@ export function VendorProfile() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div>
                 <FieldLabel icon={Phone}>رقم الجوال</FieldLabel>
-                <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
-                  {/* Country code LEFT in LTR */}
-                  <SearchableSelect
-                    value={infoForm.country_code}
-                    onChange={v => setInfoForm(f => ({ ...f, country_code: v }))}
-                    items={COUNTRY_CODES.map(c => ({ value: c.code, label: `${c.code} ${c.name}`, prefix: c.flag }))}
-                    placeholder="+966"
-                    disabled={!editingInfo}
-                    compact
-                  />
-                  {/* Phone number RIGHT in LTR */}
-                  <div style={{ flex: 1 }}>
-                    <input
-                      value={infoForm.phone}
-                      onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
-                      placeholder="5XXXXXXXX"
-                      dir="ltr"
-                      disabled={!editingInfo}
-                      className="vp-inp"
-                      style={{ borderRadius: '0 9px 9px 0', borderLeft: 'none' }}
-                    />
-                  </div>
-                </div>
-                <div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.phone.length}/9</div>
+                <TextInput
+                  value={infoForm.phone}
+                  onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value }))}
+                  placeholder="+966512345678"
+                  dir="ltr"
+                  disabled={!editingInfo}
+                />
               </div>
               <div><FieldLabel icon={Mail}>البريد الإلكتروني</FieldLabel><TextInput value={infoForm.email} disabled placeholder="name@email.com" dir="ltr" /></div>
             </div>
             {/* Row 3: ID Number + Nationality */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
             </div>
             {/* Row 4: City + ID Image */}
@@ -563,11 +542,6 @@ export function VendorProfile() {
                   )}
                 </div>
               )}
-            </div>
-            {/* Row 6: Portfolio */}
-            <div>
-              <FieldLabel icon={Globe}>رابط الأعمال / Portfolio</FieldLabel>
-              <TextInput value={infoForm.portfolio_url || ''} onChange={(e: any) => setInfoForm(f => ({ ...f, portfolio_url: e.target.value }))} placeholder="https://your-portfolio.com" dir="ltr" disabled={!editingInfo} />
             </div>
             {editingInfo && <SaveButton loading={savingInfo} saved={savedInfo} onClick={saveInfo} />}
           </div>
@@ -687,7 +661,7 @@ export function VendorProfile() {
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
               <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
                 <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519" dir="ltr" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir="ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>

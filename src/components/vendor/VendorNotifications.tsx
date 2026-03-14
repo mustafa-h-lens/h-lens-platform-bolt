@@ -37,13 +37,7 @@ export function VendorNotifications() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       const [projRes, invRes, docRes] = await Promise.all([
-        supabase
-          .from('production_tasks')
-          .select('id, name, created_at, projects(name)')
-          .eq('assigned_vendor_id', vendor.id)
-          .gte('created_at', thirtyDaysAgo)
-          .order('created_at', { ascending: false })
-          .limit(20),
+        Promise.resolve({ data: [], error: null }), // TODO: production_tasks doesn't have vendor assignment yet
         supabase
           .from('vendor_invoices')
           .select('id, amount_total, status, created_at, projects(name)')

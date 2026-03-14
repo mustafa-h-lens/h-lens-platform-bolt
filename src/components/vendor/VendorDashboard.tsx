@@ -37,7 +37,7 @@ export function VendorDashboard() {
     setLoading(true);
     try {
       const [projRes, invRes, eqRes, docRes] = await Promise.all([
-        supabase.from('production_tasks').select('id, name, created_at, projects(id, name, status)').eq('assigned_vendor_id', vendor!.id).order('created_at', { ascending: false }),
+        Promise.resolve({ data: [], error: null }), // TODO: production_tasks doesn't have vendor assignment yet
         supabase.from('vendor_invoices').select('id, amount_total, status, created_at, projects(name)').eq('vendor_id', vendor!.id).order('created_at', { ascending: false }),
         supabase.from('vendor_equipment').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
         supabase.from('vendor_documents').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
