@@ -194,7 +194,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
             {/* Dark mode toggle */}
             <button
               onClick={toggleTheme}
-              title={collapsed ? 'الوضع الداكن' : undefined}
+              title={collapsed ? (themeMode === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح') : undefined}
               className={`
                 w-full flex items-center gap-3 px-4 py-3 rounded-lg
                 text-white/70 hover:text-white hover:bg-white/5
@@ -207,7 +207,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
               ) : (
                 <Sun className="w-5 h-5 flex-shrink-0" />
               )}
-              {!collapsed && <span className="font-medium text-sm">الوضع الداكن</span>}
+              {!collapsed && <span className="font-medium text-sm">{themeMode === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'}</span>}
             </button>
 
             {/* User info */}
