@@ -3,14 +3,14 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { VendorProvider } from './contexts/VendorContext';
-import { Login } from './components/Login';
+import { Login } from './components/auth/Login';
 import { NewAdminDashboard } from './components/admin/NewAdminDashboard';
 import { ClientDashboard } from './components/client/ClientDashboard';
 import { VendorPortal } from './components/vendor/VendorPortal';
 import { VendorRegistrationForm } from './components/vendor-registration/VendorRegistrationForm';
-import { TermsAndConditions } from './components/TermsAndConditions';
-import { PrivacyPolicy } from './components/PrivacyPolicy';
-import SupplierAuth from './components/SupplierAuth';
+import { TermsAndConditions } from './components/legal/TermsAndConditions';
+import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
+import SupplierAuth from './components/auth/SupplierAuth';
 import { getTheme } from './theme/tokens';
 
 // ─────────────────────────────────────────────────────────────

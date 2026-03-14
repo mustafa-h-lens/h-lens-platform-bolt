@@ -27,7 +27,7 @@ export const vendorTheme = {
   accentDark: brand.navy,         // تدرج الأيقونة (الجهة الداكنة)
   bg:         `linear-gradient(170deg, ${brand.bgDark} 0%, #081628 55%, #0a1c36 100%)`,
   cardBg:     brand.bgCard,
-  logo:       { dark: '/Logo_White.png', light: '/Logo_Blue.png' },
+  logo:       { dark: '/assets/logo-white.png', light: '/assets/logo-blue.png' },
 } as const;
 
 // ── إعدادات بوابة العملاء ────────────────────────────────
@@ -36,7 +36,7 @@ export const clientTheme = {
   accentDark: '#1a7a65',          // تدرج الأيقونة (الجهة الداكنة)
   bg:         `linear-gradient(170deg, #06141e 0%, #082018 55%, #0a261e 100%)`,
   cardBg:     'rgba(8,28,24,0.65)',
-  logo:       { dark: '/Logo_White.png', light: '/Logo_Blue.png' },
+  logo:       { dark: '/assets/logo-white.png', light: '/assets/logo-blue.png' },
 } as const;
 
 // ── نوع مشترك ────────────────────────────────────────────
