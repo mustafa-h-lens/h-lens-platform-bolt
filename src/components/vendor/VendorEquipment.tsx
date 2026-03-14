@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, Lightbulb, Plus, X, CheckCircle, Trash2, Hash, ChevronLeft } from 'lucide-react';
+import { Camera, Lightbulb, Plus, X, CheckCircle, Trash2, Hash, ChevronLeft, Pencil, Save, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useVendor } from '../../contexts/VendorContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -32,6 +32,31 @@ export function VendorEquipment() {
   // Suggest form
   const [suggForm, setSuggForm] = useState({ name: '', category: '', brand: '' });
   const [suggSent, setSuggSent] = useState(false);
+
+  // Edit equipment
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ quantity: 1, serial_number: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const startEdit = (eq: Equipment) => {
+    setEditingId(eq.id);
+    setEditForm({ quantity: eq.quantity, serial_number: (eq as any).serial_number || '' });
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase.from('vendor_equipment').update({
+        quantity: editForm.quantity, serial_number: editForm.serial_number || null,
+      }).eq('id', editingId);
+      if (error) throw error;
+      showSuccess('تم تحديث المعدة');
+      setEditingId(null);
+      await fetchEquipment();
+    } catch { showError('حدث خطأ أثناء التحديث'); }
+    finally { setSavingEdit(false); }
+  };
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; equipmentId: string | null }>({
@@ -310,23 +335,62 @@ export function VendorEquipment() {
                       <span style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(139,92,246,0.12)', color: '#8b5cf6', fontSize: '.68rem', fontWeight: 700 }}>{(cat as any).equipment_brands.name}</span>
                     )}
                   </div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--textMut)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {eq.quantity > 1 && <span>الكمية: {eq.quantity}</span>}
-                    {(eq as any).serial_number && <span>S/N: {(eq as any).serial_number}</span>}
-                  </div>
+                  {/* View or Edit mode */}
+                  {editingId === eq.id ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '.65rem', color: 'var(--textMut)', marginBottom: 2 }}>الكمية</div>
+                          <input value={editForm.quantity} onChange={e => setEditForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))} type="number" dir="ltr" className="vp-inp" style={{ padding: '6px 8px', fontSize: '.78rem' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '.65rem', color: 'var(--textMut)', marginBottom: 2 }}>S/N</div>
+                          <input value={editForm.serial_number} onChange={e => setEditForm(f => ({ ...f, serial_number: e.target.value }))} dir="ltr" className="vp-inp" style={{ padding: '6px 8px', fontSize: '.78rem' }} placeholder="اختياري" />
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={saveEdit} disabled={savingEdit} className="vp-btn-primary" style={{ flex: 1, padding: '6px', fontSize: '.72rem' }}>
+                          {savingEdit ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} حفظ
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="vp-btn-ghost" style={{ flex: 1, padding: '6px', fontSize: '.72rem' }}>
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '.72rem', color: 'var(--textMut)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span>الكمية: {eq.quantity}</span>
+                      {(eq as any).serial_number && <span>S/N: {(eq as any).serial_number}</span>}
+                    </div>
+                  )}
                 </div>
-                <button onClick={() => deleteEquipment(eq.id)} style={{
-                  position: 'absolute', top: 8, left: 8,
-                  width: 30, height: 30, borderRadius: 8,
-                  background: 'rgba(239,68,68,0.9)', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'white', transition: 'all .2s',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
-                >
-                  <Trash2 size={14} />
-                </button>
+                {/* Action buttons */}
+                <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4 }}>
+                  {editingId !== eq.id && (
+                    <button onClick={() => startEdit(eq)} style={{
+                      width: 30, height: 30, borderRadius: 8,
+                      background: 'rgba(59,130,246,0.9)', border: 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: 'white', transition: 'all .2s',
+                    }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  )}
+                  <button onClick={() => deleteEquipment(eq.id)} style={{
+                    width: 30, height: 30, borderRadius: 8,
+                    background: 'rgba(239,68,68,0.9)', border: 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'white', transition: 'all .2s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             );
           })}

@@ -383,7 +383,18 @@ export function VendorProfile() {
       showSuccess('تم حفظ الخدمات'); setSavedFields(true); setEditingServices(false); setTimeout(() => setSavedFields(false), 2500); await fetchFields();
     } catch { showError('حدث خطأ'); } finally { setSavingFields(false); }
   };
+  const validateIBAN = (iban: string): string | null => {
+    if (!iban) return null; // optional
+    const clean = iban.replace(/\s/g, '').toUpperCase();
+    if (!clean.startsWith('SA')) return 'رقم الآيبان يجب أن يبدأ بـ SA';
+    if (clean.length !== 24) return `رقم الآيبان يجب أن يكون 24 حرف (حالياً ${clean.length})`;
+    if (!/^SA\d{22}$/.test(clean)) return 'رقم الآيبان يجب أن يحتوي على SA متبوعاً بـ 22 رقم';
+    return null;
+  };
   const saveFinancial = async () => {
+    // Validate IBAN before save
+    const ibanErr = validateIBAN(financial.iban);
+    if (ibanErr) { showError(ibanErr); return; }
     setSavingFin(true);
     try {
       const payload = { ...financial, vendor_id: vendor!.id, updated_at: new Date().toISOString() };
