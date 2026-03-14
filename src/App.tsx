@@ -12,6 +12,7 @@ import { TermsAndConditions } from './components/legal/TermsAndConditions';
 import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import SupplierAuth from './components/auth/SupplierAuth';
 import { getTheme } from './theme/tokens';
+import { useRouteTracking, getLastVisitedPage } from './lib/router';
 
 // ─────────────────────────────────────────────────────────────
 // ROUTE CONSTANTS
@@ -86,12 +87,55 @@ function AppContent() {
   const theme = getTheme(isDarkMode);
 
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const [hasRestoredRoute, setHasRestoredRoute] = useState(false);
+
+  // Track route changes and save to localStorage
+  useRouteTracking();
 
   useEffect(() => {
     const handlePathChange = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', handlePathChange);
     return () => window.removeEventListener('popstate', handlePathChange);
   }, []);
+
+  // Restore last visited page on initial load
+  useEffect(() => {
+    if (hasRestoredRoute || loading) return;
+
+    const lastVisitedPage = getLastVisitedPage();
+    const currentPathname = window.location.pathname;
+
+    // Only restore if:
+    // 1. We have a last visited page
+    // 2. User is authenticated (for admin/client routes) OR it's a vendor route
+    // 3. Current path is a login page or root
+    const isLoginPage = currentPathname === ROUTES.ADMIN_LOGIN ||
+                        currentPathname === ROUTES.VENDOR_LOGIN ||
+                        currentPathname === '/';
+
+    if (lastVisitedPage && isLoginPage) {
+      const storedVendorSession = getStoredVendorSession();
+      const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
+      const isAdminRoute = lastVisitedPage.startsWith('/portal-admin-hl') ||
+                          lastVisitedPage.startsWith('/portal-client-hl');
+
+      // Restore vendor route if vendor is logged in
+      if (isVendorRoute && storedVendorSession) {
+        navigate(lastVisitedPage);
+        setHasRestoredRoute(true);
+        return;
+      }
+
+      // Restore admin/client route if user is logged in
+      if (isAdminRoute && user && profile) {
+        navigate(lastVisitedPage);
+        setHasRestoredRoute(true);
+        return;
+      }
+    }
+
+    setHasRestoredRoute(true);
+  }, [loading, user, profile, hasRestoredRoute]);
 
   const renderVendorPortal = (stored: { vendor: VendorData; session: VendorSession }) => (
     <VendorProvider
