@@ -478,7 +478,7 @@ export function VendorProfile() {
             </div>
             {/* Row 3: ID Number + Nationality */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir=\"ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
             </div>
             {/* Row 4: City + ID Image */}
@@ -665,7 +665,7 @@ export function VendorProfile() {
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
               <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
                 <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir=\"ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir="ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>
