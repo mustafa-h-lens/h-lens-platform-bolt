@@ -36,11 +36,10 @@ export function VendorNotifications() {
       // Derive notifications from recent data (Strategy A - no extra table needed)
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [projRes, invRes, docRes] = await Promise.all([
-        Promise.resolve({ data: [], error: null }), // TODO: production_tasks doesn't have vendor assignment yet
+      const [invRes, docRes] = await Promise.all([
         supabase
           .from('vendor_invoices')
-          .select('id, amount_total, status, created_at, projects(name)')
+          .select('id, amount_total, status, created_at, project_id, projects(name)')
           .eq('vendor_id', vendor.id)
           .gte('created_at', thirtyDaysAgo)
           .order('created_at', { ascending: false })
@@ -54,14 +53,17 @@ export function VendorNotifications() {
           .limit(10),
       ]);
 
-      // Project assignments
-      (projRes.data || []).forEach((t: any) => {
-        items.push({
-          id: `proj-${t.id}`,
-          type: 'project',
-          title: 'تم إسنادك لمشروع جديد',
-          description: `${t.projects?.name || 'مشروع'} — ${t.name || 'مهمة'}`,
-          created_at: t.created_at,
+      // Project assignments (derived from first invoice per project)
+      const seenProjects = new Set<string>();
+      (invRes.data || []).forEach((inv: any) => {
+        if (inv.projects && inv.project_id && !seenProjects.has(inv.project_id)) {
+          seenProjects.add(inv.project_id);
+          items.push({
+            id: `proj-${inv.project_id}`,
+            type: 'project',
+            title: 'تم إسنادك لمشروع',
+            description: inv.projects.name || 'مشروع',
+            created_at: inv.created_at,
         });
       });
 

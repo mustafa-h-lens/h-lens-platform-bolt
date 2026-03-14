@@ -36,20 +36,33 @@ export function VendorDashboard() {
   const fetchDashboard = async () => {
     setLoading(true);
     try {
-      const [projRes, invRes, eqRes, docRes] = await Promise.all([
-        Promise.resolve({ data: [], error: null }), // TODO: production_tasks doesn't have vendor assignment yet
-        supabase.from('vendor_invoices').select('id, amount_total, status, created_at, projects(name)').eq('vendor_id', vendor!.id).order('created_at', { ascending: false }),
+      const [invRes, eqRes, docRes] = await Promise.all([
+        supabase.from('vendor_invoices').select('id, amount_total, status, created_at, project_id, projects(id, name, status)').eq('vendor_id', vendor!.id).order('created_at', { ascending: false }),
         supabase.from('vendor_equipment').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
         supabase.from('vendor_documents').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
       ]);
-      const projects = projRes.data || [];
       const invoices = invRes.data || [];
-      const activeCount = projects.filter((t: any) => t.projects && ['in_progress', 'active', 'pending'].includes(t.projects.status)).length;
+      // Derive unique projects from invoices (vendors are linked to projects via invoices)
+      const projectMap = new Map<string, any>();
+      invoices.forEach((inv: any) => {
+        if (inv.projects && inv.project_id && !projectMap.has(inv.project_id)) {
+          projectMap.set(inv.project_id, inv.projects);
+        }
+      });
+      const uniqueProjects = Array.from(projectMap.values());
+      const activeCount = uniqueProjects.filter((p: any) => ['in_progress', 'active', 'pending', 'request', 'quoted', 'invoiced', 'po_issued'].includes(p.status)).length;
       const pendingAmount = invoices.filter((i: any) => i.status !== 'paid').reduce((a: number, i: any) => a + (i.amount_total || 0), 0);
       setStats({ activeProjects: activeCount, pendingInvoicesAmount: pendingAmount, equipmentCount: eqRes.count ?? 0, documentsCount: docRes.count ?? 0 });
 
       const items: ActivityItem[] = [];
-      projects.slice(0, 5).forEach((t: any) => { if (t.projects) items.push({ id: `proj-${t.id}`, type: 'project', title: `تم إسنادك لمشروع: ${t.projects.name}`, description: t.name || 'مهمة جديدة', created_at: t.created_at }); });
+      // Project activity from invoices (first invoice per project = assignment)
+      const seenProjects = new Set<string>();
+      invoices.forEach((inv: any) => {
+        if (inv.projects && inv.project_id && !seenProjects.has(inv.project_id)) {
+          seenProjects.add(inv.project_id);
+          items.push({ id: `proj-${inv.project_id}`, type: 'project', title: `تم إسنادك لمشروع: ${inv.projects.name}`, description: `${inv.amount_total?.toLocaleString('en-US')} SAR`, created_at: inv.created_at });
+        }
+      });
       invoices.slice(0, 5).forEach((i: any) => { items.push({ id: `inv-${i.id}`, type: 'invoice', title: i.status === 'paid' ? 'فاتورة مدفوعة' : 'فاتورة جديدة', description: `${i.amount_total?.toLocaleString('en-US')} SAR — ${i.projects?.name || ''}`, created_at: i.created_at }); });
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setActivity(items.slice(0, 8));

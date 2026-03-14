@@ -264,11 +264,20 @@ export const VendorRegistrationForm = () => {
         }]);
       }
 
+      // Map registration field names to DB column names
+      // Registration uses bank_id (UUID) but DB expects bank_name (string)
+      // Registration uses account_name but DB expects beneficiary_name
+      let bankName = formData.bank_id;
+      // If bank_id is a UUID, look up the bank name
+      if (formData.bank_id && formData.bank_id.includes('-')) {
+        const { data: bankData } = await supabase.from('banks').select('name_ar').eq('id', formData.bank_id).single();
+        if (bankData) bankName = bankData.name_ar;
+      }
       await supabase.from('vendor_financial_data').insert([{
         vendor_id: vendor.id,
         payment_method: 'bank_transfer',
-        bank_id: formData.bank_id,
-        account_name: formData.account_name,
+        bank_name: bankName,
+        beneficiary_name: formData.account_name,
         iban: formData.iban,
         price_includes_tax: formData.price_includes_tax,
       }]);
