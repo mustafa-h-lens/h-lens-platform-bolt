@@ -103,8 +103,22 @@ const tabGroups: TabGroup[] = [
   }
 ];
 
-export const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState<TabId>('items-catalog');
+const ALL_TAB_IDS: string[] = tabGroups.flatMap(g => g.tabs.map(t => t.id));
+
+interface SettingsPageProps {
+  initialTab?: string | null;
+  onTabChange?: (tab: string | null) => void;
+}
+
+export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => {
+  const [activeTab, setActiveTab] = useState<TabId>(
+    initialTab && ALL_TAB_IDS.includes(initialTab) ? initialTab as TabId : 'items-catalog'
+  );
+
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group', 'ai-group', 'email-group'])
   );
@@ -178,7 +192,7 @@ export const SettingsPage = () => {
                           return (
                             <button
                               key={tab.id}
-                              onClick={() => setActiveTab(tab.id)}
+                              onClick={() => handleTabChange(tab.id)}
                               className={`
                                 w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-right
                                 transition-all duration-200 text-sm

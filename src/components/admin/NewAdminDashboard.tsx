@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu } from 'lucide-react';
@@ -16,6 +16,26 @@ import { formatNumber, formatCurrency } from '../../lib/formatters';
 import { ExpensesPage } from './expenses/ExpensesPage';
 import { ActivityLogPage } from './ActivityLogPage';
 
+const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity'];
+
+const parseHash = (): { page: string; id: string | null; tab: string | null } => {
+  const hash = window.location.hash.slice(1); // remove '#'
+  const segments = hash.split('/');
+  const page = VALID_PAGES.includes(segments[0]) ? segments[0] : 'dashboard';
+
+  // For settings: #settings/tab-name (no entity id)
+  if (page === 'settings') {
+    return { page, id: null, tab: segments[1] || null };
+  }
+
+  // For detail pages: #page/entityId/tab
+  return {
+    page,
+    id: segments[1] || null,
+    tab: segments[2] || null,
+  };
+};
+
 interface Stats {
   totalProjects: number;
   activeProjects: number;
@@ -26,10 +46,18 @@ interface Stats {
 
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
+  const initialHash = parseHash();
+  const [currentPage, setCurrentPage] = useState(initialHash.page);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    initialHash.page === 'projects' ? initialHash.id : null
+  );
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(
+    initialHash.page === 'clients' ? initialHash.id : null
+  );
+  const [selectedVendorId, setSelectedVendorId] = useState<string | null>(
+    initialHash.page === 'vendors' ? initialHash.id : null
+  );
+  const [activeSubTab, setActiveSubTab] = useState<string | null>(initialHash.tab);
   const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -43,6 +71,46 @@ export const NewAdminDashboard = () => {
     totalRevenue: 0,
   });
 
+  // Sync hash to URL whenever navigation state changes
+  useEffect(() => {
+    let hash = currentPage;
+    if (currentPage === 'settings' && activeSubTab) {
+      hash = `settings/${activeSubTab}`;
+    } else if (currentPage === 'projects' && selectedProjectId) {
+      hash = activeSubTab
+        ? `projects/${selectedProjectId}/${activeSubTab}`
+        : `projects/${selectedProjectId}`;
+    } else if (currentPage === 'clients' && selectedClientId) {
+      hash = activeSubTab
+        ? `clients/${selectedClientId}/${activeSubTab}`
+        : `clients/${selectedClientId}`;
+    } else if (currentPage === 'vendors' && selectedVendorId) {
+      hash = activeSubTab
+        ? `vendors/${selectedVendorId}/${activeSubTab}`
+        : `vendors/${selectedVendorId}`;
+    }
+    const newHash = `#${hash}`;
+    if (window.location.hash !== newHash) {
+      window.location.hash = newHash;
+    }
+  }, [currentPage, selectedProjectId, selectedClientId, selectedVendorId, activeSubTab]);
+
+  // Listen for browser back/forward
+  const handleHashChange = useCallback(() => {
+    const { page, id, tab } = parseHash();
+    setCurrentPage(page);
+    setSelectedProjectId(page === 'projects' ? id : null);
+    setSelectedClientId(page === 'clients' ? id : null);
+    setSelectedVendorId(page === 'vendors' ? id : null);
+    setActiveSubTab(tab);
+    if (page !== 'clients') setClientView(null);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [handleHashChange]);
+
   useEffect(() => {
     loadStats();
   }, []);
@@ -52,6 +120,7 @@ export const NewAdminDashboard = () => {
     setSelectedProjectId(null);
     setSelectedClientId(null);
     setSelectedVendorId(null);
+    setActiveSubTab(null);
     setClientView(null);
   };
 
@@ -114,8 +183,10 @@ export const NewAdminDashboard = () => {
           <main className="flex-1 overflow-auto">
             <ImprovedProjectDetails
               projectId={selectedProjectId}
-              onBack={() => setSelectedProjectId(null)}
+              onBack={() => { setSelectedProjectId(null); setActiveSubTab(null); }}
               onViewVendor={handleViewVendor}
+              initialTab={activeSubTab}
+              onTabChange={setActiveSubTab}
             />
           </main>
         </div>
@@ -158,7 +229,12 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
-            <VendorsPage initialVendorId={selectedVendorId} />
+            <VendorsPage
+              initialVendorId={selectedVendorId}
+              onVendorSelect={setSelectedVendorId}
+              initialTab={activeSubTab}
+              onTabChange={setActiveSubTab}
+            />
           </main>
         </div>
       </div>
@@ -179,7 +255,7 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto bg-slate-50 dark:bg-dark-bg">
-            <SettingsPage />
+            <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
           </main>
         </div>
       </div>
@@ -227,10 +303,14 @@ export const NewAdminDashboard = () => {
                 onBack={() => {
                   setSelectedClientId(null);
                   setClientView(null);
+                  setActiveSubTab(null);
                 }}
                 onViewProject={(projectId) => {
                   setSelectedProjectId(projectId);
+                  setActiveSubTab(null);
                 }}
+                initialTab={activeSubTab}
+                onTabChange={setActiveSubTab}
               />
             </main>
           </div>
@@ -309,12 +389,12 @@ export const NewAdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Revenue</p>
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">الإيرادات</p>
                       <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatCurrency(stats.totalRevenue)}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Collected</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">المحصّل</p>
                   </div>
                   <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
@@ -332,12 +412,12 @@ export const NewAdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Invoices</p>
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">الفواتير</p>
                       <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalInvoices)}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Total Invoices</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">إجمالي الفواتير</p>
                   </div>
                   <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
@@ -355,12 +435,12 @@ export const NewAdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Clients</p>
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">العملاء</p>
                       <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalClients)}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Total Clients</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">إجمالي العملاء</p>
                   </div>
                   <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
@@ -378,13 +458,13 @@ export const NewAdminDashboard = () => {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Projects</p>
+                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">المشاريع</p>
                       <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalProjects)}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3" dir="ltr">
-                      {formatNumber(stats.activeProjects)} Active Projects
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">
+                      {formatNumber(stats.activeProjects)} مشروع نشط
                     </p>
                   </div>
                   <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"

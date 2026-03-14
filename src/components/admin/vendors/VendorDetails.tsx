@@ -31,12 +31,23 @@ interface Vendor {
 interface VendorDetailsProps {
   vendorId: string;
   onBack: () => void;
+  initialTab?: string | null;
+  onTabChange?: (tab: string | null) => void;
 }
 
-export const VendorDetails = ({ vendorId, onBack }: VendorDetailsProps) => {
+const VALID_VENDOR_TABS = ['dashboard', 'personal', 'travel', 'equipment', 'financial', 'invoices', 'documents'];
+
+export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: VendorDetailsProps) => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(
+    initialTab && VALID_VENDOR_TABS.includes(initialTab) ? initialTab : 'dashboard'
+  );
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
 
   useEffect(() => {
     fetchVendor();
@@ -122,7 +133,7 @@ export const VendorDetails = ({ vendorId, onBack }: VendorDetailsProps) => {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'text-blue-600 border-b-2 border-blue-600'

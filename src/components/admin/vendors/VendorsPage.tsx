@@ -27,9 +27,12 @@ interface Vendor {
 
 interface VendorsPageProps {
   initialVendorId?: string | null;
+  onVendorSelect?: (vendorId: string | null) => void;
+  initialTab?: string | null;
+  onTabChange?: (tab: string | null) => void;
 }
 
-export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
+export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange }: VendorsPageProps = {}) => {
   const { showSuccess, showError } = useNotification();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -181,7 +184,13 @@ export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
     return (
       <VendorDetails
         vendorId={selectedVendorId}
-        onBack={() => setSelectedVendorId(null)}
+        onBack={() => {
+          setSelectedVendorId(null);
+          onVendorSelect?.(null);
+          onTabChange?.(null);
+        }}
+        initialTab={initialTab}
+        onTabChange={onTabChange}
       />
     );
   }
@@ -381,7 +390,10 @@ export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
                 return (
                   <tr
                     key={vendor.id}
-                    onClick={() => setSelectedVendorId(vendor.id)}
+                    onClick={() => {
+                      setSelectedVendorId(vendor.id);
+                      onVendorSelect?.(vendor.id);
+                    }}
                     className="cursor-pointer transition-colors"
                     style={{ borderBottom: index < filteredVendors.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}
                     onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)'; }}

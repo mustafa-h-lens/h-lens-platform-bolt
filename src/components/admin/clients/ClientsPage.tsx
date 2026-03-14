@@ -130,13 +130,13 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
   const getSortLabel = (option: SortOption) => {
     switch (option) {
       case 'name':
-        return 'Name';
+        return 'الاسم';
       case 'updated':
-        return 'Last Updated';
+        return 'آخر تحديث';
       case 'projects':
-        return 'Projects Count';
+        return 'عدد المشاريع';
       default:
-        return 'Last Updated';
+        return 'آخر تحديث';
     }
   };
 
@@ -178,7 +178,7 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
               rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300
               hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors min-w-[200px] justify-between"
           >
-            <span className="text-sm">Sort by: {getSortLabel(sortBy)}</span>
+            <span className="text-sm">ترتيب حسب: {getSortLabel(sortBy)}</span>
             <ChevronDown className="w-4 h-4" />
           </button>
 
@@ -253,13 +253,13 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
                   <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
                       <FolderOpen className="w-4 h-4 text-[#0A2A66] dark:text-[#47A1FF]" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400" style={{ direction: 'ltr', textAlign: 'right' }}>
-                        {formatNumber(client.projects_count || 0)} Projects
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        {formatNumber(client.projects_count || 0)} مشروع
                       </span>
                     </div>
 
-                    <div className="text-xs text-slate-500 dark:text-slate-400" style={{ direction: 'ltr', textAlign: 'right' }}>
-                      Updated on {formatDateArabic(client.updated_at)}
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      آخر تحديث {formatDateArabic(client.updated_at)}
                     </div>
                   </div>
                 </div>

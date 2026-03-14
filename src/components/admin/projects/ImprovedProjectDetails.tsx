@@ -42,6 +42,8 @@ interface ImprovedProjectDetailsProps {
   projectId: string;
   onBack: () => void;
   onViewVendor?: (vendorId: string) => void;
+  initialTab?: string | null;
+  onTabChange?: (tab: string | null) => void;
 }
 
 type TabType = 'basic' | 'items' | 'invoices' | 'expenses' | 'vendors' | 'files';
@@ -55,11 +57,20 @@ const TABS = [
   { id: 'files', label: 'الملفات', icon: Folder },
 ] as const;
 
-export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: ImprovedProjectDetailsProps) => {
+const VALID_TAB_IDS: string[] = TABS.map(t => t.id);
+
+export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initialTab, onTabChange }: ImprovedProjectDetailsProps) => {
   const [project, setProject] = useState<Project | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [projectManager, setProjectManager] = useState<ProjectManager | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('basic');
+  const [activeTab, setActiveTab] = useState<TabType>(
+    initialTab && VALID_TAB_IDS.includes(initialTab) ? initialTab as TabType : 'basic'
+  );
+
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -288,7 +299,7 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as TabType)}
+                  onClick={() => handleTabChange(tab.id as TabType)}
                   className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap"
                   style={{
                     backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
