@@ -53,6 +53,7 @@ export const VendorRegistrationForm = () => {
   const { showSuccess, showError } = useNotification();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [formData, setFormData] = useState<VendorFormData>({
@@ -211,11 +212,13 @@ export const VendorRegistrationForm = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
     if (!validateStep(7)) {
       showError('يرجى إكمال جميع الحقول المطلوبة');
       return;
     }
 
+    setIsSubmitting(true);
     try {
       // Duplicate detection — check email, phone, ID number
       const phone = `${formData.country_code}${formData.phone}`;
@@ -363,6 +366,7 @@ export const VendorRegistrationForm = () => {
     } catch (error) {
       console.error('Error submitting form:', error);
       showError('حدث خطأ أثناء إرسال الطلب');
+      setIsSubmitting(false);
     }
   };
 
@@ -481,14 +485,14 @@ export const VendorRegistrationForm = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={currentStep === TOTAL_STEPS ? handleSubmit : nextStep}
-                  disabled={!validateStep(currentStep)}
+                  disabled={!validateStep(currentStep) || (currentStep === TOTAL_STEPS && isSubmitting)}
                   className="vr-button vr-glow flex-1 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: 'var(--color-primary)',
                     color: 'var(--vr-text-primary)',
                   }}
                 >
-                  {currentStep === TOTAL_STEPS ? 'إرسال الطلب' : 'التالي'}
+                  {currentStep === TOTAL_STEPS ? (isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب') : 'التالي'}
                 </motion.button>
               </div>
             </motion.div>
