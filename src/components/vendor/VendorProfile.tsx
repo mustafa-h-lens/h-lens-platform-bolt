@@ -4,6 +4,7 @@ import {
   Wrench, Landmark, Hash, ChevronDown, ChevronUp,
   Loader2, Upload, Pencil, X, Search, Check,
   Plane, FileText, Lock, Award, Paperclip, Trash2, Download, AlertTriangle, Image,
+  MapPin, Briefcase, ToggleLeft, ToggleRight, Eye,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useVendor } from '../../contexts/VendorContext';
@@ -58,13 +59,39 @@ const KSA_CITIES = [
   'القنفذة', 'الليث', 'أضم', 'العرضيات', 'المخواة',
 ];
 
+// Country codes with flags — Saudi first, then Gulf, Arab, rest
+const COUNTRY_CODES = [
+  { code: '+966', flag: '🇸🇦', name: 'السعودية' },
+  { code: '+971', flag: '🇦🇪', name: 'الإمارات' }, { code: '+965', flag: '🇰🇼', name: 'الكويت' },
+  { code: '+974', flag: '🇶🇦', name: 'قطر' }, { code: '+973', flag: '🇧🇭', name: 'البحرين' },
+  { code: '+968', flag: '🇴🇲', name: 'عُمان' },
+  { code: '+20', flag: '🇪🇬', name: 'مصر' }, { code: '+962', flag: '🇯🇴', name: 'الأردن' },
+  { code: '+961', flag: '🇱🇧', name: 'لبنان' }, { code: '+964', flag: '🇮🇶', name: 'العراق' },
+  { code: '+963', flag: '🇸🇾', name: 'سوريا' }, { code: '+970', flag: '🇵🇸', name: 'فلسطين' },
+  { code: '+967', flag: '🇾🇪', name: 'اليمن' }, { code: '+249', flag: '🇸🇩', name: 'السودان' },
+  { code: '+218', flag: '🇱🇾', name: 'ليبيا' }, { code: '+216', flag: '🇹🇳', name: 'تونس' },
+  { code: '+213', flag: '🇩🇿', name: 'الجزائر' }, { code: '+212', flag: '🇲🇦', name: 'المغرب' },
+  { code: '+222', flag: '🇲🇷', name: 'موريتانيا' }, { code: '+252', flag: '🇸🇴', name: 'الصومال' },
+  { code: '+90', flag: '🇹🇷', name: 'تركيا' }, { code: '+98', flag: '🇮🇷', name: 'إيران' },
+  { code: '+92', flag: '🇵🇰', name: 'باكستان' }, { code: '+91', flag: '🇮🇳', name: 'الهند' },
+  { code: '+880', flag: '🇧🇩', name: 'بنغلاديش' }, { code: '+94', flag: '🇱🇰', name: 'سريلانكا' },
+  { code: '+63', flag: '🇵🇭', name: 'الفلبين' }, { code: '+62', flag: '🇮🇩', name: 'إندونيسيا' },
+  { code: '+60', flag: '🇲🇾', name: 'ماليزيا' }, { code: '+86', flag: '🇨🇳', name: 'الصين' },
+  { code: '+44', flag: '🇬🇧', name: 'بريطانيا' }, { code: '+1', flag: '🇺🇸', name: 'أمريكا' },
+  { code: '+33', flag: '🇫🇷', name: 'فرنسا' }, { code: '+49', flag: '🇩🇪', name: 'ألمانيا' },
+  { code: '+39', flag: '🇮🇹', name: 'إيطاليا' }, { code: '+34', flag: '🇪🇸', name: 'إسبانيا' },
+  { code: '+61', flag: '🇦🇺', name: 'أستراليا' }, { code: '+81', flag: '🇯🇵', name: 'اليابان' },
+  { code: '+82', flag: '🇰🇷', name: 'كوريا' }, { code: '+55', flag: '🇧🇷', name: 'البرازيل' },
+  { code: '+7', flag: '🇷🇺', name: 'روسيا' }, { code: '+27', flag: '🇿🇦', name: 'جنوب أفريقيا' },
+];
+
 interface City { id: string; name_ar: string; }
 
 // Searchable dropdown — hides arrow in view mode
-function SearchableSelect({ value, onChange, items, placeholder, disabled }: {
+function SearchableSelect({ value, onChange, items, placeholder, disabled, compact }: {
   value: string; onChange: (v: string) => void;
   items: { value: string; label: string; prefix?: string }[];
-  placeholder: string; disabled?: boolean;
+  placeholder: string; disabled?: boolean; compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -82,14 +109,23 @@ function SearchableSelect({ value, onChange, items, placeholder, disabled }: {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button type="button" disabled={disabled} onClick={() => !disabled && setOpen(!open)} className="vp-inp"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'right', padding: '9px 14px' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {selected ? (<>{selected.prefix && <span>{selected.prefix}</span>} {selected.label}</>) : (<span style={{ color: 'var(--textMut)' }}>{placeholder}</span>)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'right',
+          padding: compact ? '9px 10px' : '9px 14px',
+          width: compact ? 'auto' : '100%', minWidth: compact ? 110 : undefined,
+          borderRadius: compact ? '9px 0 0 9px' : 9,
+          whiteSpace: 'nowrap', gap: 4,
+        }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: compact ? '.78rem' : undefined }}>
+          {selected ? (
+            compact ? (<>{selected.prefix && <span>{selected.prefix}</span>} <span style={{ direction: 'ltr' }}>{selected.value}</span></>) : (<>{selected.prefix && <span>{selected.prefix}</span>} {selected.label}</>)
+          ) : (<span style={{ color: 'var(--textMut)' }}>{placeholder}</span>)}
         </span>
-        {!disabled && <ChevronDown size={14} style={{ color: 'var(--textMut)', flexShrink: 0, marginRight: 4 }} />}
+        {!disabled && <ChevronDown size={compact ? 12 : 14} style={{ color: 'var(--textMut)', flexShrink: 0 }} />}
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 50, marginTop: 4, borderRadius: 10, background: 'var(--cardSolid, var(--card))', border: '1px solid var(--border)', boxShadow: '0 12px 32px rgba(0,0,0,0.3)', maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'absolute', top: '100%', zIndex: 50, marginTop: 4, borderRadius: 10, background: 'var(--cardSolid, var(--card))', border: '1px solid var(--border)', boxShadow: '0 12px 32px rgba(0,0,0,0.3)', maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column', ...(compact ? { left: 0, width: 240 } : { right: 0, left: 0 }) }}>
           <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Search size={14} style={{ color: 'var(--textMut)', flexShrink: 0 }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..." autoFocus
@@ -120,12 +156,25 @@ export function VendorProfile() {
   const [tab, setTab] = useState<'info' | 'services' | 'financial' | 'travel' | 'docs'>('info');
 
   // Info
-  const [infoForm, setInfoForm] = useState({ full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '', nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '', id_number: vendor?.id_number || '', portfolio_url: (vendor as any)?.portfolio_url || '' });
+  const [infoForm, setInfoForm] = useState({
+    full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '',
+    nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '',
+    id_number: vendor?.id_number || '', portfolio_url: (vendor as any)?.portfolio_url || '',
+    vendor_type: vendor?.vendor_type || 'individual',
+    country_code: (vendor as any)?.country_code || '+966',
+    available_other_cities: vendor?.available_other_cities || false,
+    other_cities: vendor?.other_cities || [] as string[],
+  });
   const [savingInfo, setSavingInfo] = useState(false);
   const [savedInfo, setSavedInfo] = useState(false);
   const [editingInfo, setEditingInfo] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingIdImage, setUploadingIdImage] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
+  const idImageRef = useRef<HTMLInputElement>(null);
+
+  // Passport number (stored in vendor_travel_documents)
+  const [passportNumber, setPassportNumber] = useState('');
 
   // Services
   const [allFields, setAllFields] = useState<VendorField[]>([]);
@@ -153,7 +202,7 @@ export function VendorProfile() {
   const [docType, setDocType] = useState('contract');
   const docRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); } }, [vendor?.id]);
+  useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); fetchPassport(); } }, [vendor?.id]);
 
   const fetchBanks = async () => { const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar'); if (data) setBanks(data); };
   const fetchFields = async () => {
@@ -172,6 +221,27 @@ export function VendorProfile() {
     finally { setLoadingFields(false); }
   };
   const fetchFinancial = async () => { const { data } = await supabase.from('vendor_financial_data').select('*').eq('vendor_id', vendor!.id).maybeSingle(); if (data) setFinancial(data); };
+  const fetchPassport = async () => {
+    const { data } = await supabase.from('vendor_travel_documents').select('passport_number').eq('vendor_id', vendor!.id).maybeSingle();
+    if (data?.passport_number) setPassportNumber(data.passport_number);
+  };
+  const uploadIdImage = async (file: File) => {
+    if (!vendor?.id) return;
+    const err = validateFile(file);
+    if (err) { showError(err); return; }
+    setUploadingIdImage(true);
+    try {
+      const path = `id_images/${vendor.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: upErr } = await supabase.storage.from('vendor-images').upload(path, file, { upsert: true });
+      if (upErr) { console.error('Storage upload error:', upErr); throw upErr; }
+      const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
+      const { error: dbErr } = await supabase.from('vendors').update({ id_image: publicUrl, updated_at: new Date().toISOString() }).eq('id', vendor.id);
+      if (dbErr) { console.error('DB update error:', dbErr); throw dbErr; }
+      showSuccess('تم تحديث صورة الهوية');
+      await refreshVendor();
+    } catch (e) { console.error('uploadIdImage error:', e); showError('حدث خطأ أثناء رفع الصورة'); }
+    finally { setUploadingIdImage(false); }
+  };
 
   const TRAVEL_TYPES = ['passport', 'visa', 'travel', 'visa_usa', 'visa_uk', 'visa_schengen', 'visa_japan'];
   const fetchTravelDocs = async () => {
@@ -201,15 +271,15 @@ export function VendorProfile() {
       const ext = file.name.split('.').pop();
       const path = `vendor-docs/${vendor.id}/${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('vendor-images').upload(path, file);
-      if (upErr) throw upErr;
+      if (upErr) { console.error('Storage upload error:', upErr); throw upErr; }
       const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
       const { error: dbErr } = await supabase.from('vendor_documents').insert({
         vendor_id: vendor.id, document_type: type, file_url: publicUrl, file_name: file.name, uploaded_by: vendor.id,
       });
-      if (dbErr) throw dbErr;
+      if (dbErr) { console.error('DB insert error:', dbErr); throw dbErr; }
       showSuccess('تم رفع المستند بنجاح');
       isTravelDoc ? await fetchTravelDocs() : await fetchOtherDocs();
-    } catch { showError('حدث خطأ أثناء رفع المستند'); }
+    } catch (e) { console.error('uploadDocument error:', e); showError('حدث خطأ أثناء رفع المستند'); }
     finally { isTravelDoc ? setUploadingTravel(false) : setUploadingDoc(false); }
   };
 
@@ -226,16 +296,60 @@ export function VendorProfile() {
     try {
       const path = `profile_images/${vendor.id}-${Date.now()}.${file.name.split('.').pop()}`;
       const { error: upErr } = await supabase.storage.from('vendor-images').upload(path, file, { upsert: true });
-      if (upErr) throw upErr;
+      if (upErr) { console.error('Storage upload error:', upErr); throw upErr; }
       const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
-      await supabase.from('vendors').update({ profile_image: publicUrl, updated_at: new Date().toISOString() }).eq('id', vendor.id);
+      const { error: dbErr } = await supabase.from('vendors').update({ profile_image: publicUrl, updated_at: new Date().toISOString() }).eq('id', vendor.id);
+      if (dbErr) { console.error('DB update error:', dbErr); throw dbErr; }
       showSuccess('تم تحديث الصورة'); await refreshVendor();
-    } catch { showError('حدث خطأ أثناء رفع الصورة'); } finally { setUploadingImage(false); }
+    } catch (e) { console.error('uploadProfileImage error:', e); showError('حدث خطأ أثناء رفع الصورة'); } finally { setUploadingImage(false); }
   };
   const saveInfo = async () => {
     setSavingInfo(true);
-    try { await supabase.from('vendors').update({ ...infoForm, updated_at: new Date().toISOString() }).eq('id', vendor!.id); showSuccess('تم حفظ البيانات'); setSavedInfo(true); setEditingInfo(false); setTimeout(() => setSavedInfo(false), 2500); await refreshVendor(); }
-    catch { showError('حدث خطأ'); } finally { setSavingInfo(false); }
+    try {
+      // Only send fields that exist in the vendors table
+      const payload: Record<string, any> = {
+        full_name: infoForm.full_name,
+        phone: infoForm.phone,
+        nationality: infoForm.nationality,
+        primary_city: infoForm.primary_city,
+        id_number: infoForm.id_number,
+        vendor_type: infoForm.vendor_type,
+        available_other_cities: infoForm.available_other_cities,
+        other_cities: infoForm.other_cities,
+        updated_at: new Date().toISOString(),
+      };
+      // Only include optional fields if column exists (won't error if column missing)
+      if (infoForm.country_code) payload.country_code = infoForm.country_code;
+      if (infoForm.portfolio_url !== undefined) payload.portfolio_url = infoForm.portfolio_url;
+
+      const { error } = await supabase.from('vendors').update(payload).eq('id', vendor!.id);
+      if (error) throw error;
+      showSuccess('تم حفظ البيانات');
+      setSavedInfo(true); setEditingInfo(false);
+      setTimeout(() => setSavedInfo(false), 2500);
+      await refreshVendor();
+    } catch (err: any) {
+      console.error('Save error:', err);
+      // If error is about unknown column, retry without optional fields
+      if (err?.message?.includes('column') || err?.code === '42703') {
+        try {
+          await supabase.from('vendors').update({
+            full_name: infoForm.full_name, phone: infoForm.phone,
+            nationality: infoForm.nationality, primary_city: infoForm.primary_city,
+            id_number: infoForm.id_number, vendor_type: infoForm.vendor_type,
+            available_other_cities: infoForm.available_other_cities,
+            other_cities: infoForm.other_cities,
+            updated_at: new Date().toISOString(),
+          }).eq('id', vendor!.id);
+          showSuccess('تم حفظ البيانات');
+          setSavedInfo(true); setEditingInfo(false);
+          setTimeout(() => setSavedInfo(false), 2500);
+          await refreshVendor();
+        } catch { showError('حدث خطأ أثناء الحفظ'); }
+      } else {
+        showError('حدث خطأ أثناء الحفظ');
+      }
+    } finally { setSavingInfo(false); }
   };
   const toggleField = (fieldId: string) => {
     if (!editingServices) return;
@@ -297,7 +411,12 @@ export function VendorProfile() {
           </button>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--textPri)' }}>{vendor?.full_name || '—'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--textPri)' }}>{vendor?.full_name || '—'}</span>
+            <span style={{ padding: '2px 8px', borderRadius: 5, background: vendor?.vendor_type === 'company' ? 'rgba(139,92,246,0.12)' : 'var(--tagBg)', color: vendor?.vendor_type === 'company' ? '#8b5cf6' : 'var(--tagC)', fontSize: '.65rem', fontWeight: 700 }}>
+              {vendor?.vendor_type === 'company' ? 'شركة' : 'فرد'}
+            </span>
+          </div>
           <div style={{ fontSize: '.78rem', color: 'var(--textMut)', marginTop: 2 }}>{vendor?.email}</div>
           <div style={{ fontSize: '.72rem', color: 'var(--textMut)', marginTop: 1, display: 'flex', gap: 8 }}>
             {vendor?.primary_city && <span>{vendor.primary_city}</span>}
@@ -320,21 +439,132 @@ export function VendorProfile() {
         <PageCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <span style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)' }}>البيانات الشخصية</span>
-            <EditBtn editing={editingInfo} onEdit={() => setEditingInfo(true)} onCancel={() => { setEditingInfo(false); setInfoForm({ full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '', nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '', id_number: vendor?.id_number || '', portfolio_url: (vendor as any)?.portfolio_url || '' }); }} />
+            <EditBtn editing={editingInfo} onEdit={() => setEditingInfo(true)} onCancel={() => { setEditingInfo(false); setInfoForm({ full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '', nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '', id_number: vendor?.id_number || '', portfolio_url: (vendor as any)?.portfolio_url || '', vendor_type: vendor?.vendor_type || 'individual', country_code: (vendor as any)?.country_code || '+966', available_other_cities: vendor?.available_other_cities || false, other_cities: vendor?.other_cities || [] }); }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {/* Row 1: Name + Vendor Type */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div><FieldLabel icon={User}>الاسم الكامل</FieldLabel><TextInput value={infoForm.full_name} onChange={(e: any) => setInfoForm(f => ({ ...f, full_name: e.target.value }))} placeholder="الاسم كما في الهوية" disabled={!editingInfo} /></div>
-              <div><FieldLabel icon={Phone}>رقم الجوال</FieldLabel><TextInput value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="05XXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.phone.length}/10</div></div>
+              <div>
+                <FieldLabel icon={Briefcase}>نوع المورد</FieldLabel>
+                {editingInfo ? (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[{ k: 'individual', l: 'فرد' }, { k: 'company', l: 'شركة' }].map(t => (
+                      <button key={t.k} onClick={() => setInfoForm(f => ({ ...f, vendor_type: t.k }))} className={`vp-chip${infoForm.vendor_type === t.k ? ' active' : ''}`} style={{ flex: 1, justifyContent: 'center' }}>
+                        {t.l}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '9px 12px', borderRadius: 9, background: 'var(--inp)', border: '1px solid var(--inpBorder)', fontSize: '.82rem', color: 'var(--textPri)', opacity: 0.6 }}>
+                    {infoForm.vendor_type === 'company' ? 'شركة' : 'فرد'}
+                  </div>
+                )}
+              </div>
             </div>
+            {/* Row 2: Phone with country code + Email */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <FieldLabel icon={Phone}>رقم الجوال</FieldLabel>
+                <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
+                  {/* Country code LEFT in LTR */}
+                  <SearchableSelect
+                    value={infoForm.country_code}
+                    onChange={v => setInfoForm(f => ({ ...f, country_code: v }))}
+                    items={COUNTRY_CODES.map(c => ({ value: c.code, label: `${c.code} ${c.name}`, prefix: c.flag }))}
+                    placeholder="+966"
+                    disabled={!editingInfo}
+                    compact
+                  />
+                  {/* Phone number RIGHT in LTR */}
+                  <div style={{ flex: 1 }}>
+                    <input
+                      value={infoForm.phone}
+                      onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
+                      placeholder="5XXXXXXXX"
+                      dir="ltr"
+                      disabled={!editingInfo}
+                      className="vp-inp"
+                      style={{ borderRadius: '0 9px 9px 0', borderLeft: 'none' }}
+                    />
+                  </div>
+                </div>
+                <div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.phone.length}/9</div>
+              </div>
               <div><FieldLabel icon={Mail}>البريد الإلكتروني</FieldLabel><TextInput value={infoForm.email} disabled placeholder="name@email.com" dir="ltr" /></div>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
             </div>
+            {/* Row 3: ID Number + Nationality */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
-              <div><FieldLabel icon={Building2}>مدينة الإقامة</FieldLabel><SearchableSelect value={infoForm.primary_city} onChange={v => setInfoForm(f => ({ ...f, primary_city: v }))} items={cityItems} placeholder="اختر المدينة" disabled={!editingInfo} /></div>
             </div>
+            {/* Row 4: City + ID Image */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div><FieldLabel icon={Building2}>مدينة الإقامة</FieldLabel><SearchableSelect value={infoForm.primary_city} onChange={v => setInfoForm(f => ({ ...f, primary_city: v }))} items={cityItems} placeholder="اختر المدينة" disabled={!editingInfo} /></div>
+              <div>
+                <FieldLabel icon={Image}>صورة الهوية</FieldLabel>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {(vendor as any)?.id_image ? (
+                    <a href={(vendor as any).id_image} target="_blank" rel="noopener noreferrer" className="vp-btn-ghost" style={{ fontSize: '.76rem', padding: '7px 12px' }}>
+                      <Eye size={14} /> عرض صورة الهوية
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '.75rem', color: 'var(--textMut)' }}>لم يتم رفع صورة الهوية</span>
+                  )}
+                  {editingInfo && (
+                    <>
+                      <input ref={idImageRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadIdImage(f); e.target.value = ''; }} />
+                      <button onClick={() => idImageRef.current?.click()} disabled={uploadingIdImage} className="vp-btn-primary" style={{ padding: '6px 12px', fontSize: '.74rem' }}>
+                        {uploadingIdImage ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                        {(vendor as any)?.id_image ? 'تحديث' : 'رفع'}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            {/* Row 5: Other cities toggle + cities */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: editingInfo && infoForm.available_other_cities ? 8 : 0 }}>
+                <FieldLabel icon={MapPin}>متاح للعمل في مدن أخرى</FieldLabel>
+                <button
+                  onClick={() => editingInfo && setInfoForm(f => ({ ...f, available_other_cities: !f.available_other_cities }))}
+                  style={{ background: 'none', border: 'none', cursor: editingInfo ? 'pointer' : 'default', display: 'flex', color: infoForm.available_other_cities ? '#10b981' : 'var(--textMut)' }}
+                >
+                  {infoForm.available_other_cities ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                </button>
+                <span style={{ fontSize: '.72rem', color: infoForm.available_other_cities ? '#10b981' : 'var(--textMut)', fontWeight: 600 }}>
+                  {infoForm.available_other_cities ? 'نعم' : 'لا'}
+                </span>
+              </div>
+              {infoForm.available_other_cities && (
+                <div style={{ animation: 'fadeUp .2s ease' }}>
+                  {editingInfo ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 160, overflowY: 'auto', padding: '8px 0' }}>
+                      {KSA_CITIES.filter(c => c !== infoForm.primary_city).map(city => {
+                        const isSel = infoForm.other_cities.includes(city);
+                        return (
+                          <button key={city} onClick={() => setInfoForm(f => ({ ...f, other_cities: isSel ? f.other_cities.filter(c => c !== city) : [...f.other_cities, city] }))}
+                            className={`vp-chip${isSel ? ' active' : ''}`} style={{ fontSize: '.72rem', padding: '4px 10px' }}>
+                            {isSel && <Check size={11} />} {city}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                      {(infoForm.other_cities || []).length === 0 ? (
+                        <span style={{ fontSize: '.75rem', color: 'var(--textMut)' }}>لم يتم تحديد مدن</span>
+                      ) : infoForm.other_cities.map(c => (
+                        <span key={c} style={{ padding: '3px 10px', borderRadius: 6, background: 'var(--tagBg)', color: 'var(--tagC)', fontSize: '.72rem', fontWeight: 600 }}>{c}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Row 6: Portfolio */}
             <div>
               <FieldLabel icon={Globe}>رابط الأعمال / Portfolio</FieldLabel>
               <TextInput value={infoForm.portfolio_url || ''} onChange={(e: any) => setInfoForm(f => ({ ...f, portfolio_url: e.target.value }))} placeholder="https://your-portfolio.com" dir="ltr" disabled={!editingInfo} />
@@ -462,13 +692,26 @@ export function VendorProfile() {
               </div>
             </div>
             <div><FieldLabel icon={CreditCard}>طريقة الدفع</FieldLabel><SelectInput value={financial.payment_method} onChange={(e: any) => setFinancial(f => ({ ...f, payment_method: e.target.value }))} disabled={!editingFin}><option value="bank_transfer">تحويل بنكي</option><option value="cash">نقدي</option><option value="other">أخرى</option></SelectInput></div>
+            {/* Price includes tax */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FieldLabel>السعر يشمل الضريبة (VAT)</FieldLabel>
+              <button
+                onClick={() => editingFin && setFinancial(f => ({ ...f, price_includes_tax: !f.price_includes_tax }))}
+                style={{ background: 'none', border: 'none', cursor: editingFin ? 'pointer' : 'default', display: 'flex', color: financial.price_includes_tax ? '#10b981' : 'var(--textMut)' }}
+              >
+                {financial.price_includes_tax ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+              </button>
+              <span style={{ fontSize: '.72rem', color: financial.price_includes_tax ? '#10b981' : 'var(--textMut)', fontWeight: 600 }}>
+                {financial.price_includes_tax ? 'نعم' : 'لا'}
+              </span>
+            </div>
             {editingFin && <SaveButton loading={savingFin} saved={savedFin} onClick={saveFinancial} />}
           </div>
         </PageCard>
       )}
 
       {/* ── TRAVEL DOCUMENTS TAB ── */}
-      {tab === 'travel' && <TravelDocsTab vendor={vendor} travelDocs={travelDocs} uploadingTravel={uploadingTravel} travelRef={travelRef} uploadDocument={uploadDocument} deleteDocument={deleteDocument} />}
+      {tab === 'travel' && <TravelDocsTab vendor={vendor} travelDocs={travelDocs} uploadingTravel={uploadingTravel} travelRef={travelRef} uploadDocument={uploadDocument} deleteDocument={deleteDocument} passportNumber={passportNumber} setPassportNumber={setPassportNumber} />}
 
       {/* ── OTHER DOCUMENTS TAB ── */}
       {tab === 'docs' && <OtherDocsTab vendor={vendor} otherDocs={otherDocs} uploadingDoc={uploadingDoc} docType={docType} setDocType={setDocType} docRef={docRef} uploadDocument={uploadDocument} deleteDocument={deleteDocument} />}
@@ -487,9 +730,12 @@ const VISA_TYPES = [
   { k: 'visa_japan', label: 'تأشيرة اليابان', flag: '🇯🇵' },
 ];
 
-function TravelDocsTab({ travelDocs, uploadingTravel, travelRef, uploadDocument, deleteDocument }: any) {
+function TravelDocsTab({ vendor, travelDocs, uploadingTravel, travelRef, uploadDocument, deleteDocument, passportNumber, setPassportNumber }: any) {
   const [travelType, setTravelType] = useState('passport');
   const [selectedVisa, setSelectedVisa] = useState('visa_usa');
+  const [editingPassport, setEditingPassport] = useState(false);
+  const [savingPassport, setSavingPassport] = useState(false);
+  const { showSuccess, showError } = useNotification();
 
   const currentType = travelType === 'passport' ? 'passport' : selectedVisa;
   const typeLabels: Record<string, string> = {
@@ -497,10 +743,45 @@ function TravelDocsTab({ travelDocs, uploadingTravel, travelRef, uploadDocument,
     visa_schengen: '🇪🇺 تأشيرة شنغن', visa_japan: '🇯🇵 تأشيرة اليابان',
   };
 
+  const savePassport = async () => {
+    setSavingPassport(true);
+    try {
+      const { data: existing } = await supabase.from('vendor_travel_documents').select('id').eq('vendor_id', vendor.id).maybeSingle();
+      if (existing) {
+        await supabase.from('vendor_travel_documents').update({ passport_number: passportNumber }).eq('id', existing.id);
+      } else {
+        await supabase.from('vendor_travel_documents').insert({ vendor_id: vendor.id, passport_number: passportNumber });
+      }
+      showSuccess('تم حفظ رقم جواز السفر');
+      setEditingPassport(false);
+    } catch { showError('حدث خطأ'); }
+    finally { setSavingPassport(false); }
+  };
+
   return (
     <PageCard>
       <div style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)', marginBottom: 6 }}>وثائق السفر</div>
       <div style={{ fontSize: '.72rem', color: 'var(--textMut)', marginBottom: 14 }}>جواز السفر، التأشيرات، وتصاريح السفر</div>
+
+      {/* Passport number */}
+      <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--statBg)', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <FieldLabel icon={Hash}>رقم جواز السفر</FieldLabel>
+          {!editingPassport ? (
+            <button onClick={() => setEditingPassport(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tagC)', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Pencil size={11} /> تعديل</button>
+          ) : (
+            <button onClick={() => setEditingPassport(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><X size={11} /> إلغاء</button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <TextInput value={passportNumber} onChange={(e: any) => setPassportNumber(e.target.value)} placeholder="رقم جواز السفر" dir="ltr" disabled={!editingPassport} />
+          {editingPassport && (
+            <button onClick={savePassport} disabled={savingPassport} className="vp-btn-primary" style={{ padding: '8px 14px', fontSize: '.76rem', flexShrink: 0 }}>
+              {savingPassport ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} حفظ
+            </button>
+          )}
+        </div>
+      </div>
 
       <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--statBg)', border: '1px solid var(--border)', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <AlertTriangle size={15} style={{ color: '#f59e0b', flexShrink: 0, marginTop: 2 }} />
