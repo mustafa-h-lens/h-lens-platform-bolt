@@ -64,7 +64,8 @@ export function VendorNotifications() {
             title: 'تم إسنادك لمشروع',
             description: inv.projects.name || 'مشروع',
             created_at: inv.created_at,
-        });
+          });
+        }
       });
 
       // Invoices
