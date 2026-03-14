@@ -191,19 +191,30 @@ export const VendorRegistrationForm = () => {
   };
 
   const uploadFile = async (file: File, path: string): Promise<string> => {
+    console.log('uploadFile called with:', { fileName: file.name, path, fileSize: file.size, fileType: file.type });
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
     const filePath = `${path}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    console.log('Attempting upload to:', filePath);
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('vendor-images')
       .upload(filePath, file);
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('Upload successful:', uploadData);
 
     const { data: { publicUrl } } = supabase.storage
       .from('vendor-images')
       .getPublicUrl(filePath);
+
+    console.log('Public URL generated:', publicUrl);
 
     return publicUrl;
   };
@@ -219,17 +230,26 @@ export const VendorRegistrationForm = () => {
       let profileImageUrl = formData.profile_image_url;
       let visaFileUrl = formData.visa_file_url;
 
+      console.log('Upload check - id_image:', formData.id_image ? 'File present' : 'No file');
+      console.log('Upload check - id_image_url:', formData.id_image_url);
+
       if (formData.id_image) {
+        console.log('Uploading ID image...');
         idImageUrl = await uploadFile(formData.id_image, 'id_images');
+        console.log('ID image uploaded:', idImageUrl);
       }
 
       if (formData.profile_image) {
+        console.log('Uploading profile image...');
         profileImageUrl = await uploadFile(formData.profile_image, 'profile_images');
+        console.log('Profile image uploaded:', profileImageUrl);
       }
 
       if (formData.visa_file) {
         visaFileUrl = await uploadFile(formData.visa_file, 'visa_documents');
       }
+
+      console.log('Final URLs - ID:', idImageUrl, 'Profile:', profileImageUrl);
 
       const vendorData = {
         full_name: formData.full_name,
@@ -245,6 +265,8 @@ export const VendorRegistrationForm = () => {
         profile_image: profileImageUrl,
         status: 'active',
       };
+
+      console.log('Vendor data to insert:', vendorData);
 
       const { data: vendor, error: vendorError } = await supabase
         .from('vendors')
