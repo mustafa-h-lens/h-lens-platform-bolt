@@ -95,7 +95,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at, id_image, country_code, portfolio_url')
+        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at, id_image')
         .eq('id', vendor.id)
         .single();
       if (!error && data) setVendorState(data as VendorProfile);
