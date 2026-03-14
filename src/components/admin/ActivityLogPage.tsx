@@ -26,6 +26,7 @@ interface UserOption {
 const PAGE_SIZE = 30;
 
 const ACTION_LABELS: Record<string, string> = {
+  // General
   created: 'أنشأ',
   updated: 'عدل',
   deleted: 'حذف',
@@ -34,6 +35,7 @@ const ACTION_LABELS: Record<string, string> = {
   sent: 'أرسل',
   paid: 'دفع',
   status_changed: 'غير الحالة',
+  // Projects
   project_created: 'أنشأ مشروع',
   item_added: 'أضاف بند',
   item_updated: 'عدل بند',
@@ -42,6 +44,39 @@ const ACTION_LABELS: Record<string, string> = {
   file_deleted: 'حذف ملف',
   invoice_created: 'أنشأ فاتورة',
   invoice_status_changed: 'غير حالة الفاتورة',
+  // Vendors
+  vendor_created: 'أنشأ مورد',
+  vendor_updated: 'عدل بيانات مورد',
+  vendor_deleted: 'حذف مورد',
+  vendor_status_changed: 'غير حالة مورد',
+  // Vendor approval
+  vendor_approved: 'وافق على مورد',
+  vendor_rejected: 'رفض مورد',
+  vendor_revision_requested: 'طلب تعديلات من مورد',
+  vendor_submitted: 'تقدم بطلب تسجيل',
+  vendor_resubmitted: 'أعاد تقديم طلب التسجيل',
+  // Vendor sub-entities
+  equipment_added: 'أضاف معدة',
+  equipment_updated: 'عدل معدة',
+  equipment_deleted: 'حذف معدة',
+  document_uploaded: 'رفع مستند',
+  document_deleted: 'حذف مستند',
+  // Expenses
+  expense_created: 'أنشأ مصروف',
+  expense_status_changed: 'غير حالة مصروف',
+  expense_deleted: 'حذف مصروف',
+  payment_added: 'أضاف دفعة',
+  payment_deleted: 'حذف دفعة',
+  // Purchase orders
+  po_created: 'أنشأ أمر شراء',
+  po_status_changed: 'غير حالة أمر شراء',
+  po_deleted: 'حذف أمر شراء',
+  // Production tasks
+  task_created: 'أنشأ مهمة إنتاجية',
+  task_status_changed: 'غير حالة مهمة',
+  task_deleted: 'حذف مهمة',
+  // Settings
+  settings_updated: 'عدل الإعدادات',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -58,6 +93,13 @@ const ENTITY_LABELS: Record<string, string> = {
   invoice: 'فاتورة',
   item: 'بند',
   file: 'ملف',
+  equipment: 'معدة',
+  document: 'مستند',
+  expense: 'مصروف',
+  payment: 'دفعة',
+  purchase_order: 'أمر شراء',
+  production_task: 'مهمة إنتاجية',
+  settings: 'إعدادات',
 };
 
 const SOURCE_COLORS: Record<string, { bg: string; text: string; border: string }> = {

@@ -126,4 +126,19 @@ If not set, the email links will use a URL derived from the Supabase project URL
 
 ---
 
-**After these 4 steps, the approval flow will be fully active.**
+---
+
+## 5. Run the comprehensive activity logging migration
+
+There's a second SQL migration that adds activity logging triggers for vendors, expenses, purchase orders, production tasks, and settings. Run the contents of this file in the Supabase SQL Editor:
+
+**File:** `supabase/migrations/20260314170000_add_comprehensive_activity_logging.sql`
+
+This creates:
+- `vendor_activity_log` table (was referenced but never created)
+- Triggers on: `vendors`, `vendor_equipment`, `vendor_documents`, `vendor_invoices`, `expense_payments`, `purchase_orders`, `production_tasks`, `settings_config`, `terms_and_privacy_settings`
+- Recreates the `global_activity_log` view to include all sources
+
+---
+
+**After these 5 steps, the approval flow and full activity logging will be active.**
