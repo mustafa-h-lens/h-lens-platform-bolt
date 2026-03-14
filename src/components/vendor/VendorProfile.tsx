@@ -478,7 +478,7 @@ export function VendorProfile() {
             </div>
             {/* Row 3: ID Number + Nationality */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir=\"ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
             </div>
             {/* Row 4: City + ID Image */}
@@ -486,12 +486,13 @@ export function VendorProfile() {
               <div><FieldLabel icon={Building2}>مدينة الإقامة</FieldLabel><SearchableSelect value={infoForm.primary_city} onChange={v => setInfoForm(f => ({ ...f, primary_city: v }))} items={cityItems} placeholder="اختر المدينة" disabled={!editingInfo} /></div>
               <div>
                 <FieldLabel icon={Image}>صورة الهوية</FieldLabel>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {(vendor as any)?.id_image ? (
-                    <a href={(vendor as any).id_image} target="_blank" rel="noopener noreferrer" className="vp-btn-ghost" style={{ fontSize: '.76rem', padding: '7px 12px' }}>
-                      <Eye size={14} /> عرض صورة الهوية
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  {(vendor as any)?.id_image && (
+                    <a href={(vendor as any).id_image} target="_blank" rel="noopener noreferrer" className="vp-btn-ghost" style={{ fontSize: '.76rem', padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Eye size={14} /> عرض
                     </a>
-                  ) : (
+                  )}
+                  {!editingInfo && !(vendor as any)?.id_image && (
                     <span style={{ fontSize: '.75rem', color: 'var(--textMut)' }}>لم يتم رفع صورة الهوية</span>
                   )}
                   {editingInfo && (
@@ -665,7 +666,7 @@ export function VendorProfile() {
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
               <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
                 <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir="ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir=\"ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>
@@ -814,7 +815,9 @@ function TravelDocsTab({ vendor, travelDocs, uploadingTravel, travelRef, uploadD
                 <div style={{ fontSize: '.8rem', fontWeight: 600, color: 'var(--textPri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.file_name}</div>
                 <div style={{ fontSize: '.67rem', color: 'var(--textMut)', marginTop: 1 }}>{typeLabels[doc.document_type] || doc.document_type} · {new Date(doc.created_at).toLocaleDateString('en-US')}</div>
               </div>
-              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', display: 'flex', padding: '4px 6px' }} title="عرض"><Download size={15} /></a>
+              <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="vp-btn-ghost" style={{ fontSize: '.76rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }} title="عرض">
+                <Eye size={14} /> عرض
+              </a>
               <button onClick={() => deleteDocument(doc.id, true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px 6px', borderRadius: 5, display: 'flex' }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}><Trash2 size={15} /></button>
             </div>
@@ -905,7 +908,9 @@ function OtherDocsTab({ otherDocs, uploadingDoc, docType, setDocType, docRef, up
                   <div style={{ fontSize: '.8rem', fontWeight: 600, color: 'var(--textPri)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customLabel || doc.file_name}</div>
                   <div style={{ fontSize: '.67rem', color: 'var(--textMut)', marginTop: 1 }}>{isCustom ? 'أخرى' : t.l} · {new Date(doc.created_at).toLocaleDateString('en-US')}</div>
                 </div>
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', display: 'flex', padding: '4px 6px' }} title="عرض"><Download size={15} /></a>
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="vp-btn-ghost" style={{ fontSize: '.76rem', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }} title="عرض">
+                <Eye size={14} /> عرض
+              </a>
                 <button onClick={() => deleteDocument(doc.id, false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px 6px', borderRadius: 5, display: 'flex' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}><Trash2 size={15} /></button>
               </div>
