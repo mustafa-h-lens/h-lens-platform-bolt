@@ -5,6 +5,7 @@ import { useVendor } from '../../contexts/VendorContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { FieldLabel, TextInput, SelectInput, EmptyState, LoadingSpinner } from './shared';
 import type { Equipment, CatalogItem } from './shared/types';
+import { ConfirmationModal } from '../shared/ConfirmationModal';
 
 interface EqCategory { id: string; name: string; }
 interface EqBrand { id: string; name: string; }
@@ -31,6 +32,12 @@ export function VendorEquipment() {
   // Suggest form
   const [suggForm, setSuggForm] = useState({ name: '', category: '', brand: '' });
   const [suggSent, setSuggSent] = useState(false);
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; equipmentId: string | null }>({
+    isOpen: false,
+    equipmentId: null,
+  });
 
   useEffect(() => { if (vendor?.id) { fetchEquipment(); fetchCatalog(); fetchCategories(); fetchBrands(); } }, [vendor?.id]);
 
@@ -96,10 +103,22 @@ export function VendorEquipment() {
     } catch { showError('حدث خطأ أثناء الإضافة'); }
   };
 
-  const deleteEquipment = async (id: string) => {
-    const { error } = await supabase.from('vendor_equipment').delete().eq('id', id);
-    if (!error) { showSuccess('تم الحذف'); setEquipment(prev => prev.filter(e => e.id !== id)); }
-    else showError('حدث خطأ أثناء الحذف');
+  const deleteEquipment = (id: string) => {
+    setDeleteConfirm({ isOpen: true, equipmentId: id });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.equipmentId) return;
+
+    const { error } = await supabase.from('vendor_equipment').delete().eq('id', deleteConfirm.equipmentId);
+    if (!error) {
+      showSuccess('تم الحذف');
+      setEquipment(prev => prev.filter(e => e.id !== deleteConfirm.equipmentId));
+    } else {
+      showError('حدث خطأ أثناء الحذف');
+    }
+
+    setDeleteConfirm({ isOpen: false, equipmentId: null });
   };
 
   const sendSuggestion = async () => {
@@ -313,6 +332,17 @@ export function VendorEquipment() {
           })}
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        title="تأكيد الحذف"
+        message="هل أنت متأكد من حذف هذه المعدة؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        cancelText="إلغاء"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, equipmentId: null })}
+      />
     </div>
   );
 }

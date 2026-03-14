@@ -5,6 +5,7 @@ import { useVendor } from '../../contexts/VendorContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { PageCard, EmptyState, LoadingSpinner } from './shared';
 import type { VendorDoc } from './shared/types';
+import { ConfirmationModal } from '../shared/ConfirmationModal';
 
 const DOC_TYPES = [
   { k: 'contract',    l: 'عقد',    Icon: FileText  },
@@ -22,6 +23,10 @@ export function VendorDocuments() {
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<string>('contract');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; docId: string | null }>({
+    isOpen: false,
+    docId: null,
+  });
 
   useEffect(() => { if (vendor?.id) fetchDocs(); }, [vendor?.id]);
 
@@ -55,10 +60,22 @@ export function VendorDocuments() {
     finally { setUploading(false); }
   };
 
-  const deleteDoc = async (id: string) => {
-    const { error } = await supabase.from('vendor_documents').delete().eq('id', id);
-    if (!error) { showSuccess('تم الحذف'); setDocs(prev => prev.filter(d => d.id !== id)); }
-    else showError('حدث خطأ أثناء الحذف');
+  const deleteDoc = (id: string) => {
+    setDeleteConfirm({ isOpen: true, docId: id });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.docId) return;
+
+    const { error } = await supabase.from('vendor_documents').delete().eq('id', deleteConfirm.docId);
+    if (!error) {
+      showSuccess('تم الحذف');
+      setDocs(prev => prev.filter(d => d.id !== deleteConfirm.docId));
+    } else {
+      showError('حدث خطأ أثناء الحذف');
+    }
+
+    setDeleteConfirm({ isOpen: false, docId: null });
   };
 
   return (
@@ -149,6 +166,17 @@ export function VendorDocuments() {
           })
         )}
       </PageCard>
+
+      <ConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        title="تأكيد الحذف"
+        message="هل أنت متأكد من حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        cancelText="إلغاء"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, docId: null })}
+      />
     </div>
   );
 }

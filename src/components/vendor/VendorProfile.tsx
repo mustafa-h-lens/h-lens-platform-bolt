@@ -12,6 +12,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../lib/numberUtils';
 import { PageCard, TabButton, FieldLabel, TextInput, SelectInput, SaveButton, LoadingSpinner } from './shared';
 import type { VendorField, SelectedField, FinancialData, Bank } from './shared/types';
+import { ConfirmationModal } from '../shared/ConfirmationModal';
 
 // Countries — Saudi → Gulf → Arab → Islamic/Asian → Western → African (no Israel)
 const COUNTRIES = [
@@ -201,6 +202,13 @@ export function VendorProfile() {
   const [docType, setDocType] = useState('contract');
   const docRef = useRef<HTMLInputElement>(null);
 
+  // Confirmation modal for deleting documents
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; docId: string | null; isTravelDoc: boolean }>({
+    isOpen: false,
+    docId: null,
+    isTravelDoc: false,
+  });
+
   useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); fetchPassport(); } }, [vendor?.id]);
 
   const fetchBanks = async () => { const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar'); if (data) setBanks(data); };
@@ -287,11 +295,23 @@ export function VendorProfile() {
   };
 
   const deleteDocument = async (id: string, isTravelDoc: boolean) => {
-    const { error } = await supabase.from('vendor_documents').delete().eq('id', id);
+    setDeleteConfirm({ isOpen: true, docId: id, isTravelDoc });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.docId) return;
+
+    const { error } = await supabase.from('vendor_documents').delete().eq('id', deleteConfirm.docId);
     if (!error) {
       showSuccess('تم الحذف');
-      isTravelDoc ? setTravelDocs(prev => prev.filter(d => d.id !== id)) : setOtherDocs(prev => prev.filter(d => d.id !== id));
-    } else showError('حدث خطأ أثناء الحذف');
+      deleteConfirm.isTravelDoc
+        ? setTravelDocs(prev => prev.filter(d => d.id !== deleteConfirm.docId))
+        : setOtherDocs(prev => prev.filter(d => d.id !== deleteConfirm.docId));
+    } else {
+      showError('حدث خطأ أثناء الحذف');
+    }
+
+    setDeleteConfirm({ isOpen: false, docId: null, isTravelDoc: false });
   };
 
   const uploadProfileImage = async (file: File) => {
@@ -478,7 +498,7 @@ export function VendorProfile() {
             </div>
             {/* Row 3: ID Number + Nationality */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir=\"ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
             </div>
             {/* Row 4: City + ID Image */}
@@ -666,7 +686,7 @@ export function VendorProfile() {
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
               <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
                 <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir="ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir=\"ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>
@@ -695,6 +715,16 @@ export function VendorProfile() {
       {/* ── OTHER DOCUMENTS TAB ── */}
       {tab === 'docs' && <OtherDocsTab vendor={vendor} otherDocs={otherDocs} uploadingDoc={uploadingDoc} docType={docType} setDocType={setDocType} docRef={docRef} uploadDocument={uploadDocument} deleteDocument={deleteDocument} />}
 
+      <ConfirmationModal
+        isOpen={deleteConfirm.isOpen}
+        title="تأكيد الحذف"
+        message="هل أنت متأكد من حذف هذا المستند؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        cancelText="إلغاء"
+        type="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, docId: null, isTravelDoc: false })}
+      />
     </div>
   );
 }
