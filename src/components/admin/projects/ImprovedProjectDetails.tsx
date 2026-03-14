@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, Edit, Home, ShoppingCart, FileText, DollarSign, Users, Folder, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowRight, Home, ShoppingCart, FileText, DollarSign, Users, Folder, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
@@ -9,7 +9,6 @@ import { ProjectInvoices } from './project-tabs/ProjectInvoices';
 import { ProjectExpenses } from './project-tabs/ProjectExpenses';
 import { ProjectVendors } from './project-tabs/ProjectVendors';
 import { ProjectFiles } from './project-tabs/ProjectFiles';
-import { EditProjectModal } from './EditProjectModal';
 
 interface Project {
   id: string;
@@ -49,10 +48,10 @@ type TabType = 'basic' | 'items' | 'invoices' | 'expenses' | 'vendors' | 'files'
 
 const TABS = [
   { id: 'basic', label: 'البيانات الأساسية', icon: Home },
-  { id: 'items', label: 'البنود', icon: ShoppingCart },
-  { id: 'invoices', label: 'الفواتير', icon: FileText },
-  { id: 'expenses', label: 'المصروفات', icon: DollarSign },
   { id: 'vendors', label: 'الموردين', icon: Users },
+  { id: 'expenses', label: 'المصروفات', icon: DollarSign },
+  { id: 'invoices', label: 'الفواتير', icon: FileText },
+  { id: 'items', label: 'البنود', icon: ShoppingCart },
   { id: 'files', label: 'الملفات', icon: Folder },
 ] as const;
 
@@ -62,7 +61,6 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
   const [projectManager, setProjectManager] = useState<ProjectManager | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const [loading, setLoading] = useState(true);
-  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadProject();
@@ -171,7 +169,7 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <div
-        className="sticky top-0 z-40 border-b"
+        className="border-b"
         style={{
           backgroundColor: 'var(--color-surface)',
           borderColor: 'var(--color-border)',
@@ -188,38 +186,22 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
             العودة إلى المشاريع
           </button>
 
-          <div className="flex items-start justify-between gap-6 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
+              <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
                 {project.name}
               </h1>
-              <div className="flex items-center gap-4 flex-wrap">
-                <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                  العميل: {client.name}
-                </span>
-                {projectManager && (
-                  <>
-                    <span style={{ color: 'var(--color-text-muted)' }}>•</span>
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                      المدير: {projectManager.full_name}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
               <span
-                className="px-4 py-2 rounded-lg text-sm font-medium"
+                className="px-3 py-1 rounded-full text-xs font-medium"
                 style={{
-                  backgroundColor: project.project_mode === 'STANDARD' ? '#10b981' : '#3b82f6',
-                  color: '#ffffff',
+                  backgroundColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.12)' : 'rgba(59,130,246,0.12)',
+                  color: project.project_mode === 'STANDARD' ? '#059669' : '#2563eb',
                 }}
               >
-                {project.project_mode === 'STANDARD' ? '📋 مشروع' : '📑 عقد إطاري'}
+                {project.project_mode === 'STANDARD' ? 'مشروع' : 'عقد إطاري'}
               </span>
               <span
-                className="px-4 py-2 rounded-lg text-sm font-medium"
+                className="px-3 py-1 rounded-full text-xs font-medium"
                 style={{
                   backgroundColor: statusBadge.bgColor,
                   color: statusBadge.color,
@@ -227,17 +209,6 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
               >
                 {statusBadge.label}
               </span>
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
-                style={{
-                  backgroundColor: 'var(--color-primary)',
-                  color: '#ffffff',
-                }}
-              >
-                <Edit size={18} />
-                تعديل
-              </button>
             </div>
           </div>
 
@@ -342,31 +313,6 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor }: Impr
         {activeTab === 'files' && <ProjectFiles projectId={projectId} />}
       </div>
 
-      {showEditModal && (
-        <EditProjectModal
-          projectId={project.id}
-          currentData={{
-            name: project.name,
-            client_id: project.client_id,
-            project_code: project.project_code,
-            description: project.description,
-            project_mode: project.project_mode,
-            status: project.status,
-            start_date: project.start_date,
-            end_date: project.end_date,
-            project_manager_id: project.project_manager_id,
-            internal_notes: project.internal_notes,
-            total_cost: project.total_cost || 0,
-            total_price: project.total_price,
-            currency: project.currency,
-          }}
-          onClose={() => setShowEditModal(false)}
-          onSuccess={() => {
-            loadProject();
-            setShowEditModal(false);
-          }}
-        />
-      )}
     </div>
   );
 };

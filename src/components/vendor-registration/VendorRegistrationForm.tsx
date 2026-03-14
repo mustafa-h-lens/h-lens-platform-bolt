@@ -335,12 +335,15 @@ export const VendorRegistrationForm = () => {
                   whileTap={{ scale: 0.95 }}
                   className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
                     step === currentStep
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 shadow-lg shadow-blue-500/50'
+                      ? 'shadow-lg'
                       : step < currentStep
-                      ? 'bg-blue-500'
+                      ? ''
                       : 'bg-gray-700'
                   }`}
-                  style={{ color: 'var(--vr-text-primary)' }}
+                  style={{
+                    color: 'var(--vr-text-primary)',
+                    ...(step <= currentStep ? { backgroundColor: 'var(--color-primary)' } : {})
+                  }}
                 >
                   {step < currentStep ? '✓' : step}
                 </motion.div>
@@ -408,7 +411,7 @@ export const VendorRegistrationForm = () => {
                   disabled={!validateStep(currentStep)}
                   className="vr-button vr-glow flex-1 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
-                    background: 'linear-gradient(135deg, var(--vr-primary), var(--vr-accent))',
+                    backgroundColor: 'var(--color-primary)',
                     color: 'var(--vr-text-primary)',
                   }}
                 >

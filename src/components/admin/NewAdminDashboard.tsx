@@ -279,8 +279,7 @@ export const NewAdminDashboard = () => {
         <main className="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-dark-bg" dir="rtl">
           {currentPage === 'dashboard' && (
             <div className="space-y-6">
-              <div className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                rounded-[32px] p-8 text-white shadow-2xl border border-white/20">
+              <div className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] rounded-[32px] p-8 text-white shadow-2xl border border-white/20">
                 <div className="relative z-10 flex items-center gap-4">
                   <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm
                     border border-white/30 flex items-center justify-center">
@@ -303,25 +302,22 @@ export const NewAdminDashboard = () => {
                   hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0A2A66]/10 to-[#143D8D]/10
-                        dark:from-[#0A2A66]/20 dark:to-[#143D8D]/20
-                        border border-[#0A2A66]/20 dark:border-[#0A2A66]/30 flex items-center justify-center
-                        group-hover:scale-110 transition-transform">
-                        <Wallet className="w-7 h-7 text-[#0A2A66] dark:text-[#47A1FF]" strokeWidth={2} />
+                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
+                        group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                        <Wallet className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
                       </div>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Revenue</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                        dark:from-[#47A1FF] dark:to-[#6BB6FF]
-                        bg-clip-text text-transparent" dir="ltr">
+                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatCurrency(stats.totalRevenue)}
                       </p>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Collected</p>
                   </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-[#0A2A66]/5 to-[#1B4FA9]/5
-                    rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
                 </div>
 
                 <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
@@ -329,25 +325,22 @@ export const NewAdminDashboard = () => {
                   hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-                        dark:from-[#0A2A66]/20 dark:to-[#1B4FA9]/20
-                        border border-[#0A2A66]/20 dark:border-[#0A2A66]/30 flex items-center justify-center
-                        group-hover:scale-110 transition-transform">
-                        <CreditCard className="w-7 h-7 text-[#0A2A66] dark:text-[#47A1FF]" strokeWidth={2} />
+                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
+                        group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                        <CreditCard className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
                       </div>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Invoices</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                        dark:from-[#47A1FF] dark:to-[#6BB6FF]
-                        bg-clip-text text-transparent" dir="ltr">
+                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalInvoices)}
                       </p>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Total Invoices</p>
                   </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-[#0A2A66]/5 to-[#1B4FA9]/5
-                    rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
                 </div>
 
                 <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
@@ -355,25 +348,22 @@ export const NewAdminDashboard = () => {
                   hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0A2A66]/10 to-[#143D8D]/10
-                        dark:from-[#0A2A66]/20 dark:to-[#143D8D]/20
-                        border border-[#0A2A66]/20 dark:border-[#0A2A66]/30 flex items-center justify-center
-                        group-hover:scale-110 transition-transform">
-                        <Users className="w-7 h-7 text-[#0A2A66] dark:text-[#47A1FF]" strokeWidth={2} />
+                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
+                        group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                        <Users className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
                       </div>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Clients</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                        dark:from-[#47A1FF] dark:to-[#6BB6FF]
-                        bg-clip-text text-transparent" dir="ltr">
+                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalClients)}
                       </p>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">Total Clients</p>
                   </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-[#0A2A66]/5 to-[#143D8D]/5
-                    rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
                 </div>
 
                 <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
@@ -381,18 +371,15 @@ export const NewAdminDashboard = () => {
                   hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
                   <div className="flex flex-col h-full">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gradient-to-br from-[#143D8D]/10 to-[#47A1FF]/10
-                        dark:from-[#143D8D]/20 dark:to-[#47A1FF]/20
-                        border border-[#143D8D]/20 dark:border-[#143D8D]/30 flex items-center justify-center
-                        group-hover:scale-110 transition-transform">
-                        <FolderOpen className="w-7 h-7 text-[#143D8D] dark:text-[#47A1FF]" strokeWidth={2} />
+                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
+                        group-hover:scale-110 transition-transform"
+                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                        <FolderOpen className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
                       </div>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Projects</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#143D8D] to-[#47A1FF]
-                        dark:from-[#47A1FF] dark:to-[#6BB6FF]
-                        bg-clip-text text-transparent" dir="ltr">
+                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
                         {formatNumber(stats.totalProjects)}
                       </p>
                     </div>
@@ -400,21 +387,27 @@ export const NewAdminDashboard = () => {
                       {formatNumber(stats.activeProjects)} Active Projects
                     </p>
                   </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-[#143D8D]/5 to-[#47A1FF]/5
-                    rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-                      dark:from-[#0A2A66]/20 dark:to-[#1B4FA9]/20
-                      border border-[#0A2A66]/20 dark:border-[#0A2A66]/30">
-                      <FolderOpen className="w-5 h-5 text-[#0A2A66] dark:text-[#47A1FF]" />
+                    <div className="p-2 rounded-xl border"
+                      style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                      <FolderOpen className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
                     </div>
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">المشاريع الأخيرة</h2>
                   </div>
+                  <button
+                    onClick={() => setCurrentPage('projects')}
+                    className="text-sm font-medium transition-all hover:opacity-70"
+                    style={{ color: 'var(--color-primary)' }}
+                  >
+                    عرض جميع المشاريع
+                  </button>
                 </div>
 
                 <div className="backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none rounded-[32px] shadow-xl border border-white/60 dark:border-dark-border

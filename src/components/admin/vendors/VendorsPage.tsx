@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Phone, MapPin, CheckCircle, XCircle, Ban, Download, Trash2 } from 'lucide-react';
+import { Plus, Search, Phone, MapPin, Download, Trash2, Filter, X, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { Modal } from '../../shared/Modal';
 import { VendorDetails } from './VendorDetails';
@@ -90,45 +90,6 @@ export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
     return matchesSearch && matchesNationality && matchesCity && matchesField && matchesStatus && matchesCost;
   });
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'inactive':
-        return <XCircle className="w-5 h-5 text-gray-400" />;
-      case 'blocked':
-        return <Ban className="w-5 h-5 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'نشط';
-      case 'inactive':
-        return 'غير نشط';
-      case 'blocked':
-        return 'محظور';
-      default:
-        return status;
-    }
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'blocked':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const toggleVendorSelection = (vendorId: string) => {
     const newSelected = new Set(selectedVendors);
     if (newSelected.has(vendorId)) {
@@ -178,10 +139,40 @@ export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
+      active: { label: 'نشط', color: '#ffffff', bgColor: 'var(--color-success)' },
+      inactive: { label: 'غير نشط', color: 'var(--color-text-primary)', bgColor: 'var(--color-background-hover)' },
+      blocked: { label: 'محظور', color: '#ffffff', bgColor: 'var(--color-danger)' },
+    };
+    return statusMap[status] || statusMap.active;
+  };
+
+  const hasActiveFilters = filters.nationality || filters.primary_city || filters.primary_field || filters.status;
+
+  const activeCount = filteredVendors.filter(v => v.status === 'active').length;
+  const inactiveCount = filteredVendors.filter(v => v.status === 'inactive').length;
+  const blockedCount = filteredVendors.filter(v => v.status === 'blocked').length;
+
+  // Derive unique filter options from data
+  const uniqueNationalities = Array.from(new Set(vendors.filter(v => v.nationality).map(v => v.nationality!))).sort();
+  const uniqueCities = (() => {
+    const cities = Array.from(new Set(vendors.filter(v => v.primary_city).map(v => v.primary_city!)));
+    const priority = ['الرياض', 'جدة', 'الدمام'];
+    return [...priority.filter(c => cities.includes(c)), ...cities.filter(c => !priority.includes(c)).sort()];
+  })();
+  const uniqueFields = Array.from(new Set(vendors.filter(v => v.primary_field).map(v => v.primary_field!))).sort();
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-slate-600 dark:text-slate-300">جاري التحميل...</div>
+        <div className="text-center">
+          <div
+            className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
+            style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
+          />
+          <p style={{ color: 'var(--color-text-secondary)' }}>جاري تحميل الموردين...</p>
+        </div>
       </div>
     );
   }
@@ -196,332 +187,264 @@ export const VendorsPage = ({ initialVendorId }: VendorsPageProps = {}) => {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">الموردين</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">إدارة الموردين والمستقلين</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="relative group">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              disabled={selectedVendors.size === 0}
-              className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-all shadow-lg font-medium ${
-                selectedVendors.size === 0
-                  ? 'bg-slate-300 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700 hover:shadow-xl transform hover:-translate-y-0.5'
-              }`}
-            >
-              <Trash2 className="w-5 h-5" />
-              {selectedVendors.size > 0 ? `حذف (${selectedVendors.size})` : 'حذف'}
-            </button>
-            {selectedVendors.size === 0 && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                يرجى تحديد مورد واحد على الأقل للحذف
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
-              </div>
-            )}
-          </div>
-          <div className="relative group">
-            <button
-              onClick={handleExport}
-              disabled={selectedVendors.size === 0}
-              className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-all shadow-lg font-medium ${
-                selectedVendors.size === 0
-                  ? 'bg-slate-300 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 hover:shadow-xl transform hover:-translate-y-0.5'
-              }`}
-            >
-              <Download className="w-5 h-5" />
-              {selectedVendors.size > 0 ? `تصدير (${selectedVendors.size})` : 'تصدير'}
-            </button>
-            {selectedVendors.size === 0 && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                يرجى تحديد مورد واحد على الأقل للتصدير
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
-              </div>
-            )}
-          </div>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+          الموردين
+        </h1>
+        <div className="flex items-center gap-2">
+          {selectedVendors.size > 0 && (
+            <>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
+                style={{ borderColor: 'var(--color-danger)', color: 'var(--color-danger)' }}
+              >
+                <Trash2 size={18} />
+                حذف ({toEnglishNumbers(selectedVendors.size.toString())})
+              </button>
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all border"
+                style={{ borderColor: 'var(--color-success)', color: 'var(--color-success)' }}
+              >
+                <Download size={18} />
+                تصدير ({toEnglishNumbers(selectedVendors.size.toString())})
+              </button>
+            </>
+          )}
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0A2A66] to-[#1B4FA9]
-              hover:from-[#0d3380] hover:to-[#2260c4] text-white rounded-xl transition-all
-              shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
+            style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
           >
-            <Plus className="w-5 h-5" />
+            <Plus size={20} />
             إضافة مورد
           </button>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200 dark:border-dark-border">
-        <div className="p-4 border-b border-slate-200 dark:border-dark-border space-y-4">
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="البحث بالاسم أو رقم الجوال أو المجال..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-10 pl-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-              dir="rtl"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <select
-              value={filters.nationality}
-              onChange={(e) => setFilters({ ...filters, nationality: e.target.value })}
-              className="px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع الجنسيات</option>
-              <option value="سعودي">سعودي</option>
-              <option value="يمني">يمني</option>
-              <option value="سوري">سوري</option>
-              <option value="مصري">مصري</option>
-              <option value="إماراتي">إماراتي</option>
-              <option value="كويتي">كويتي</option>
-              <option value="قطري">قطري</option>
-              <option value="بحريني">بحريني</option>
-              <option value="عماني">عماني</option>
-              <option value="أردني">أردني</option>
-              <option value="لبناني">لبناني</option>
-              <option value="عراقي">عراقي</option>
-              <option value="فلسطيني">فلسطيني</option>
-              <option value="ليبي">ليبي</option>
-              <option value="تونسي">تونسي</option>
-              <option value="جزائري">جزائري</option>
-              <option value="مغربي">مغربي</option>
-              <option value="سوداني">سوداني</option>
-              <option value="صومالي">صومالي</option>
-              <option value="جيبوتي">جيبوتي</option>
-              <option value="موريتاني">موريتاني</option>
-              <option value="هندي">هندي</option>
-              <option value="باكستاني">باكستاني</option>
-              <option value="بنغلاديشي">بنغلاديشي</option>
-              <option value="فلبيني">فلبيني</option>
-              <option value="إندونيسي">إندونيسي</option>
-              <option value="تركي">تركي</option>
-              <option value="إيراني">إيراني</option>
-              <option value="أفغاني">أفغاني</option>
-              <option value="إثيوبي">إثيوبي</option>
-              <option value="إريتري">إريتري</option>
-              <option value="كيني">كيني</option>
-              <option value="نيجيري">نيجيري</option>
-              <option value="أمريكي">أمريكي</option>
-              <option value="بريطاني">بريطاني</option>
-              <option value="كندي">كندي</option>
-              <option value="أسترالي">أسترالي</option>
-              <option value="فرنسي">فرنسي</option>
-              <option value="ألماني">ألماني</option>
-              <option value="إيطالي">إيطالي</option>
-              <option value="إسباني">إسباني</option>
-              <option value="روسي">روسي</option>
-              <option value="صيني">صيني</option>
-              <option value="ياباني">ياباني</option>
-              <option value="كوري">كوري</option>
-            </select>
-
-            <select
-              value={filters.primary_city}
-              onChange={(e) => setFilters({ ...filters, primary_city: e.target.value })}
-              className="px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع المدن</option>
-              {(() => {
-                const cities = Array.from(new Set(vendors.filter(v => v.primary_city).map(v => v.primary_city)));
-                const priorityCities = ['الرياض', 'جدة', 'الدمام'];
-                const sortedCities = [
-                  ...priorityCities.filter(city => cities.includes(city)),
-                  ...cities.filter(city => !priorityCities.includes(city)).sort()
-                ];
-                return sortedCities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ));
-              })()}
-            </select>
-
-            <select
-              value={filters.primary_field}
-              onChange={(e) => setFilters({ ...filters, primary_field: e.target.value })}
-              className="px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع المجالات</option>
-              {Array.from(new Set(vendors.filter(v => v.primary_field).map(v => v.primary_field))).map(field => (
-                <option key={field} value={field}>{field}</option>
-              ))}
-            </select>
-
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              className="px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع الحالات</option>
-              <option value="active">نشط</option>
-              <option value="inactive">غير نشط</option>
-              <option value="blocked">محظور</option>
-            </select>
-
-            <div className="flex gap-2 col-span-1 md:col-span-2 lg:col-span-2">
-              <input
-                type="number"
-                placeholder="الحد الأدنى للتكلفة"
-                value={filters.minCost}
-                onChange={(e) => setFilters({ ...filters, minCost: e.target.value })}
-                className="flex-1 px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                  bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                  focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-                dir="rtl"
-              />
-              <input
-                type="number"
-                placeholder="الحد الأقصى للتكلفة"
-                value={filters.maxCost}
-                onChange={(e) => setFilters({ ...filters, maxCost: e.target.value })}
-                className="flex-1 px-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-                  bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                  focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-                dir="rtl"
-              />
-            </div>
-
-            {(filters.nationality || filters.primary_city || filters.primary_field || filters.status || filters.minCost || filters.maxCost) && (
-              <button
-                onClick={() => setFilters({ nationality: '', primary_city: '', primary_field: '', status: '', minCost: '', maxCost: '' })}
-                className="px-4 py-3 text-[#0A2A66] hover:bg-[#0A2A66]/10 rounded-lg transition-colors font-medium"
-              >
-                مسح الفلاتر
-              </button>
-            )}
+      {/* Insight Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي الموردين</div>
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            {toEnglishNumbers(filteredVendors.length.toString())}
           </div>
         </div>
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>نشط</div>
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-success)' }}>
+            {toEnglishNumbers(activeCount.toString())}
+          </div>
+        </div>
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>غير نشط</div>
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-text-secondary)' }}>
+            {toEnglishNumbers(inactiveCount.toString())}
+          </div>
+        </div>
+        <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>محظور</div>
+          <div className="text-2xl font-bold" style={{ color: 'var(--color-danger)' }}>
+            {toEnglishNumbers(blockedCount.toString())}
+          </div>
+        </div>
+      </div>
 
-        <div className="overflow-x-auto">
+      {/* Filters + Search */}
+      <div
+        className="flex items-center gap-3 flex-wrap p-4 rounded-lg border"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      >
+        <Filter size={18} style={{ color: 'var(--color-text-muted)' }} />
+
+        <div className="relative">
+          <select
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+          >
+            <option value="">الحالة</option>
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+            <option value="blocked">محظور</option>
+          </select>
+          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
+        </div>
+
+        <div className="relative">
+          <select
+            value={filters.nationality}
+            onChange={(e) => setFilters({ ...filters, nationality: e.target.value })}
+            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+          >
+            <option value="">الجنسية</option>
+            {uniqueNationalities.map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
+        </div>
+
+        <div className="relative">
+          <select
+            value={filters.primary_city}
+            onChange={(e) => setFilters({ ...filters, primary_city: e.target.value })}
+            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+          >
+            <option value="">المدينة</option>
+            {uniqueCities.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
+        </div>
+
+        <div className="relative">
+          <select
+            value={filters.primary_field}
+            onChange={(e) => setFilters({ ...filters, primary_field: e.target.value })}
+            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+          >
+            <option value="">المجال</option>
+            {uniqueFields.map(f => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            onClick={() => setFilters({ nationality: '', primary_city: '', primary_field: '', status: '', minCost: '', maxCost: '' })}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{ color: 'var(--color-danger)' }}
+          >
+            <X size={14} />
+            مسح الفلاتر
+          </button>
+        )}
+
+        <div className="relative mr-auto">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--color-text-muted)' }} />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="بحث..."
+            className="pr-9 pl-3 py-2 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 w-48"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      {filteredVendors.length === 0 ? (
+        <div
+          className="text-center py-16 rounded-lg border"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+        >
+          <p className="text-lg">لا توجد موردين تطابق البحث أو الفلاتر</p>
+        </div>
+      ) : (
+        <div
+          className="rounded-lg border overflow-hidden"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
+        >
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-dark-border">
+            <thead style={{ backgroundColor: 'var(--color-table-header)', borderBottom: '1px solid var(--color-table-border)' }}>
               <tr>
-                <th className="px-6 py-4">
+                <th className="px-4 py-4 w-12">
                   <input
                     type="checkbox"
                     checked={filteredVendors.length > 0 && selectedVendors.size === filteredVendors.length}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-slate-300 text-[#0A2A66] focus:ring-[#0A2A66] cursor-pointer"
+                    className="w-4 h-4 rounded cursor-pointer"
                   />
                 </th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">الاسم</th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">المجال الأساسي</th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">رقم الجوال</th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">المدينة</th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">الحالة</th>
-                <th className="text-right px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-200">الإجراءات</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المجال</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>رقم الجوال</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدينة</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الحالة</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-dark-border">
-              {filteredVendors.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
-                    لا توجد موردين
-                  </td>
-                </tr>
-              ) : (
-                filteredVendors.map((vendor) => (
+            <tbody>
+              {filteredVendors.map((vendor, index) => {
+                const statusBadge = getStatusBadge(vendor.status);
+                return (
                   <tr
                     key={vendor.id}
-                    className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                    onClick={() => setSelectedVendorId(vendor.id)}
+                    className="cursor-pointer transition-colors"
+                    style={{ borderBottom: index < filteredVendors.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-4 w-12" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedVendors.has(vendor.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleVendorSelection(vendor.id);
-                        }}
-                        className="w-4 h-4 rounded border-slate-300 text-[#0A2A66] focus:ring-[#0A2A66] cursor-pointer"
+                        onChange={() => toggleVendorSelection(vendor.id)}
+                        className="w-4 h-4 rounded cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
-                      <div className="flex items-center gap-3">
-                        {vendor.profile_image ? (
-                          <img
-                            src={vendor.profile_image}
-                            alt={vendor.full_name}
-                            className="w-20 h-20 rounded-full object-cover border-2 border-slate-200"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-slate-200">
-                            <span className="text-white font-bold text-2xl">
-                              {vendor.full_name.charAt(0)}
-                            </span>
-                          </div>
-                        )}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0 text-xs font-bold"
+                          style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-muted)' }}
+                        >
+                          {vendor.profile_image ? (
+                            <img src={vendor.profile_image} alt={vendor.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            vendor.full_name.charAt(0)
+                          )}
+                        </div>
                         <div>
-                          <div className="font-medium text-slate-900 dark:text-slate-100">{vendor.full_name}</div>
+                          <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{vendor.full_name}</span>
                           {vendor.nationality && (
-                            <div className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{vendor.nationality}</div>
+                            <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{vendor.nationality}</div>
                           )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
-                      <span className="text-slate-700 dark:text-slate-300">{vendor.primary_field || '-'}</span>
-                    </td>
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
-                      <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300" dir="ltr">
-                        <Phone className="w-4 h-4 text-slate-400" />
-                        {toEnglishNumbers(vendor.phone)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
-                      {vendor.primary_city ? (
-                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                          <MapPin className="w-4 h-4 text-slate-400" />
-                          {vendor.primary_city}
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 cursor-pointer" onClick={() => setSelectedVendorId(vendor.id)}>
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(vendor.status)}`}>
-                        {getStatusIcon(vendor.status)}
-                        {getStatusText(vendor.status)}
-                      </span>
+                    <td className="px-6 py-4">
+                      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{vendor.primary_field || '-'}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedVendorId(vendor.id);
-                        }}
-                        className="text-[#0A2A66] dark:text-[#47A1FF] hover:text-[#1B4FA9] dark:hover:text-[#6BB6FF] font-medium text-sm"
+                      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">{toEnglishNumbers(vendor.phone)}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{vendor.primary_city || '-'}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className="px-3 py-1 rounded-full text-xs font-medium inline-block"
+                        style={{ backgroundColor: statusBadge.bgColor, color: statusBadge.color }}
                       >
-                        عرض التفاصيل
-                      </button>
+                        {statusBadge.label}
+                      </span>
                     </td>
                   </tr>
-                ))
-              )}
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
+
+      {filteredVendors.length > 0 && (
+        <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+          عرض {toEnglishNumbers(filteredVendors.length.toString())} من {toEnglishNumbers(vendors.length.toString())} مورد
+        </div>
+      )}
 
       {showAddModal && (
         <AddVendorModal
@@ -790,7 +713,8 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-[#0A2A66] to-[#1B4FA9] hover:from-[#0d3380] hover:to-[#2260c4] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             {loading ? 'جاري الإضافة...' : 'إضافة'}
           </button>

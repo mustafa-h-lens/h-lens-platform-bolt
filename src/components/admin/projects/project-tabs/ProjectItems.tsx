@@ -92,19 +92,11 @@ export const ProjectItems = ({ projectId, currency }: ProjectItemsProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-            border border-[#0A2A66]/20">
-            <ShoppingBasket className="w-5 h-5 text-[#0A2A66]" />
-          </div>
-          بنود المشروع
-        </h2>
-
+      <div className="flex items-center justify-end">
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-            text-white rounded-xl hover:shadow-lg transition-all font-medium"
+          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-4 h-4" />
           <span>إضافة بند</span>
@@ -188,8 +180,8 @@ export const ProjectItems = ({ projectId, currency }: ProjectItemsProps) => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-            rounded-2xl border border-[#0A2A66]/20 p-6">
+          <div className="rounded-2xl p-6"
+            style={{ backgroundColor: 'var(--color-primary)' }}>
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-white">إجمالي قيمة المشروع</span>
               <span className="text-2xl font-bold text-white" dir="ltr">

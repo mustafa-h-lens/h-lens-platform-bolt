@@ -147,9 +147,9 @@ export const ItemCategoriesManagement = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-              border border-[#0A2A66]/20">
-              <Tag className="w-6 h-6 text-[#0A2A66]" />
+            <div className="p-3 rounded-xl border"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+              <Tag className="w-6 h-6" style={{ color: 'var(--color-primary)' }} />
             </div>
             تصنيفات البنود
           </h1>
@@ -160,8 +160,8 @@ export const ItemCategoriesManagement = () => {
 
         <button
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-            text-white rounded-xl hover:shadow-lg transition-all font-medium"
+          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-4 h-4" />
           <span>إضافة تصنيف</span>
@@ -187,8 +187,9 @@ export const ItemCategoriesManagement = () => {
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10">
-                    <Tag className="w-5 h-5 text-[#0A2A66]" />
+                  <div className="p-2 rounded-lg"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)' }}>
+                    <Tag className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
@@ -291,8 +292,8 @@ export const ItemCategoriesManagement = () => {
               <div className="flex items-center gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                    text-white rounded-xl hover:shadow-lg transition-all font-medium"
+                  className="flex-1 px-6 py-3 text-white rounded-lg transition-all font-medium"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
                   {editingCategory ? 'حفظ التعديلات' : 'إضافة التصنيف'}
                 </button>

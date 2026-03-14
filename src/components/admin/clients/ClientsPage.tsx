@@ -149,9 +149,8 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
             setSelectedClient(null);
             setShowModal(true);
           }}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-[#0A2A66] to-[#1B4FA9]
-            hover:from-[#0d3380] hover:to-[#2260c4] text-white rounded-xl transition-all
-            shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+          className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-all font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-5 h-5" />
           <span>إضافة عميل جديد</span>
@@ -231,8 +230,8 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
             >
               <div className="flex items-center gap-6">
                 <div className="flex-shrink-0">
-                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#0A2A66] to-[#1B4FA9]
-                    flex items-center justify-center shadow-lg overflow-hidden">
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden"
+                    style={{ backgroundColor: 'var(--color-primary)' }}>
                     {client.client_image ? (
                       <img
                         src={client.client_image}

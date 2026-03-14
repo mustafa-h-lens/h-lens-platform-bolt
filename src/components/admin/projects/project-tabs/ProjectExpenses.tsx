@@ -138,8 +138,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         vendor_name: item.vendors?.full_name || '',
         category: item.category || null,
         amount: item.amount_total,
-        amount_paid: item.amount_paid || 0,
-        amount_remaining: item.amount_remaining || item.amount_total,
+        amount_paid: item.amount_paid ?? 0,
+        amount_remaining: item.amount_remaining ?? item.amount_total,
         due_date: item.due_date,
         status: item.status,
         notes: item.notes || null,
@@ -479,10 +479,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          تكاليف فريق العمل
-        </h2>
+      <div className="flex items-center justify-end">
         <button
           onClick={openAddModal}
           className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
@@ -595,7 +592,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
               >
                 <tr>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}></th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الفريلانسر</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الدور</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المبلغ</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدفوع</th>
@@ -747,7 +744,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           </div>
 
           {/* Table footer total */}
-          <div className="bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] p-4">
+          <div className="p-4" style={{ backgroundColor: 'var(--color-primary)' }}>
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-white">إجمالي تكاليف الفريق</span>
               <span className="text-xl font-bold text-white" dir="ltr">
@@ -781,7 +778,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             {/* Vendor select */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                الفريلانسر <span className="text-red-500">*</span>
+                المورد <span className="text-red-500">*</span>
               </label>
               <select
                 value={expenseForm.vendor_id}
@@ -795,7 +792,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                 required
                 disabled={!!editingExpense}
               >
-                <option value="">اختر الفريلانسر</option>
+                <option value="">اختر المورد</option>
                 {vendors.map((vendor) => (
                   <option key={vendor.id} value={vendor.id}>
                     {vendor.full_name}
@@ -973,7 +970,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--color-background-hover)' }}>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <span style={{ color: 'var(--color-text-secondary)' }}>الفريلانسر: </span>
+                  <span style={{ color: 'var(--color-text-secondary)' }}>المورد: </span>
                   <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{paymentExpense.vendor_name}</span>
                 </div>
                 <div dir="ltr" className="text-right">

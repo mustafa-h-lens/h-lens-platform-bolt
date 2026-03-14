@@ -318,8 +318,8 @@ export const ActivityLogPage = () => {
       ) : (
         <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-6">
           <div className="relative">
-            <div className="absolute right-[15px] top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#0A2A66]/20
-              via-[#1B4FA9]/20 to-transparent dark:from-[#47A1FF]/20 dark:via-[#6BB6FF]/20"></div>
+            <div className="absolute right-[15px] top-0 bottom-0 w-0.5"
+              style={{ background: `linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent)` }}></div>
 
             <div className="space-y-6">
               {activities.map((activity) => {
@@ -329,8 +329,8 @@ export const ActivityLogPage = () => {
 
                 return (
                   <div key={activity.id} className="relative flex gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0A2A66] to-[#1B4FA9]
-                      border-4 border-white dark:border-dark-card flex items-center justify-center z-10 shadow-lg">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full border-4 border-white dark:border-dark-card flex items-center justify-center z-10 shadow-lg"
+                      style={{ backgroundColor: 'var(--color-primary)' }}>
                       <User className="w-4 h-4 text-white" strokeWidth={2.5} />
                     </div>
 

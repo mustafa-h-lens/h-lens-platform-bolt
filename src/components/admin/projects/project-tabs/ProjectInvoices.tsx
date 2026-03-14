@@ -27,12 +27,12 @@ interface ProjectInvoicesProps {
   projectId: string;
 }
 
-const INVOICE_STATUSES: Record<string, { label: string; gradient: string }> = {
-  draft: { label: 'مسودة', gradient: 'from-slate-400 to-slate-500' },
-  sent: { label: 'مرسلة', gradient: 'from-[#0A2A66] to-[#143D8D]' },
-  paid: { label: 'مدفوعة', gradient: 'from-[#1B4FA9] to-[#47A1FF]' },
-  overdue: { label: 'متأخرة', gradient: 'from-slate-500 to-slate-600' },
-  cancelled: { label: 'ملغاة', gradient: 'from-slate-400 to-slate-500' },
+const INVOICE_STATUSES: Record<string, { label: string; color: string }> = {
+  draft: { label: 'مسودة', color: '#94a3b8' },
+  sent: { label: 'مرسلة', color: 'var(--color-primary)' },
+  paid: { label: 'مدفوعة', color: 'var(--color-primary)' },
+  overdue: { label: 'متأخرة', color: '#64748b' },
+  cancelled: { label: 'ملغاة', color: '#94a3b8' },
 };
 
 export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
@@ -101,20 +101,12 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-            border border-[#0A2A66]/20">
-            <CreditCard className="w-5 h-5 text-[#0A2A66]" />
-          </div>
-          فواتير المشروع
-        </h2>
-
+      <div className="flex items-center justify-end">
         <button
           onClick={() => setShowCreateModal(true)}
           disabled={!projectData}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-            text-white rounded-xl hover:shadow-lg transition-all font-medium disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all font-medium disabled:opacity-50"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-4 h-4" />
           <span>إصدار فاتورة</span>
@@ -146,8 +138,8 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
                       <span className="text-lg font-bold text-slate-800 dark:text-slate-100" dir="ltr">
                         #{invoice.invoice_number}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium text-white
-                        bg-gradient-to-l ${statusInfo.gradient}`}>
+                      <span className="px-3 py-1 rounded-full text-xs font-medium text-white"
+                        style={{ backgroundColor: statusInfo.color }}>
                         {statusInfo.label}
                       </span>
                     </div>

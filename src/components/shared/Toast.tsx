@@ -38,13 +38,13 @@ export const Toast = ({ id, type, message, duration = 5000, onClose }: ToastProp
   const getBackgroundClass = () => {
     switch (type) {
       case 'success':
-        return 'bg-gradient-to-r from-green-500 to-emerald-600';
+        return 'bg-green-600';
       case 'error':
-        return 'bg-gradient-to-r from-red-500 to-red-600';
+        return 'bg-red-600';
       case 'warning':
-        return 'bg-gradient-to-r from-yellow-500 to-orange-500';
+        return 'bg-orange-500';
       case 'info':
-        return 'bg-gradient-to-r from-blue-500 to-blue-600';
+        return 'bg-blue-600';
     }
   };
 

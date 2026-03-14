@@ -441,7 +441,8 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
         <h2 className="text-xl font-bold text-slate-900">المعدات</h2>
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/30"
+          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-4 h-4" />
           إضافة معدة
@@ -484,7 +485,8 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
                 {/* شارة التصنيف */}
                 {item.type && (
                   <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 bg-gradient-to-r from-blue-500/90 to-blue-600/90 backdrop-blur-sm text-white text-xs rounded-full font-medium">
+                    <span className="px-3 py-1 backdrop-blur-sm text-white text-xs rounded-full font-medium"
+                      style={{ backgroundColor: 'var(--color-primary)' }}>
                       {item.type}
                     </span>
                   </div>
@@ -653,7 +655,8 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
 
           {/* معاينة العنصر المختار */}
           {selectedCatalogItem && (
-            <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+            <div className="rounded-lg p-4 border"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 8%, white)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
               <p className="text-sm font-medium text-blue-900 mb-2">تم الاختيار من الكتالوج:</p>
               <div className="flex items-center gap-3">
                 {selectedCatalogItem.image_url && (
@@ -807,7 +810,8 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
           <div className="flex gap-3 pt-4 border-t border-slate-200">
             <button
               onClick={handleSave}
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/30"
+              className="flex-1 px-4 py-2 text-white rounded-lg transition-all"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {editingId ? 'حفظ التغييرات' : 'إضافة المعدة'}
             </button>

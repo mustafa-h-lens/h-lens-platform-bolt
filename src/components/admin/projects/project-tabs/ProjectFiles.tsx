@@ -168,15 +168,7 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-            border border-[#0A2A66]/20">
-            <Folder className="w-5 h-5 text-[#0A2A66]" />
-          </div>
-          ملفات المشروع
-        </h2>
-
+      <div className="flex items-center justify-end">
         <input
           ref={fileInputRef}
           type="file"
@@ -187,8 +179,8 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-            text-white rounded-xl hover:shadow-lg transition-all font-medium disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all font-medium disabled:opacity-50"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Plus className="w-4 h-4" />
           <span>{uploading ? 'جاري الرفع...' : 'رفع ملف'}</span>
@@ -215,11 +207,10 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
                   hover:shadow-lg transition-all group"
               >
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 mb-4 rounded-2xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-                    dark:from-[#0A2A66]/20 dark:to-[#1B4FA9]/20
-                    border border-[#0A2A66]/20 dark:border-[#0A2A66]/30 flex items-center justify-center
-                    group-hover:scale-110 transition-transform">
-                    <FileIcon className="w-10 h-10 text-[#0A2A66] dark:text-[#47A1FF]" strokeWidth={1.5} />
+                  <div className="w-20 h-20 mb-4 rounded-2xl border flex items-center justify-center
+                    group-hover:scale-110 transition-transform"
+                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
+                    <FileIcon className="w-10 h-10" style={{ color: 'var(--color-primary)' }} strokeWidth={1.5} />
                   </div>
 
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 text-center mb-1 line-clamp-2

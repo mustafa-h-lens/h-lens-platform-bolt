@@ -438,7 +438,8 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
         {!isEditing ? (
           <button
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 bg-gradient-to-r from-[#0A2A66] to-[#1B4FA9] hover:from-[#0d3380] hover:to-[#2260c4] text-white rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+            className="px-4 py-2 text-white rounded-lg transition-all font-medium"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             تعديل
           </button>
@@ -476,7 +477,8 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
                   className="w-40 h-40 rounded-full object-cover border-2 border-slate-200"
                 />
               ) : (
-                <div className="w-40 h-40 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-slate-200">
+                <div className="w-40 h-40 rounded-full flex items-center justify-center border-2 border-slate-200"
+                  style={{ backgroundColor: 'var(--color-primary)' }}>
                   <span className="text-white text-5xl font-bold">
                     {formData.full_name.charAt(0)}
                   </span>

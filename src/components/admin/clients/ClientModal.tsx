@@ -179,10 +179,9 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="w-[120px] h-[120px] rounded-[20px] cursor-pointer group
-                  backdrop-blur-lg bg-gradient-to-br from-[#0A2A66]/20 to-[#1B4FA9]/10
-                  border-2 border-[#0A2A66]/20 hover:border-[#0A2A66]/40
-                  transition-all duration-300 overflow-hidden
+                  backdrop-blur-lg border-2 transition-all duration-300 overflow-hidden
                   flex items-center justify-center relative"
+                style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}
               >
                 {imagePreview ? (
                   <>
@@ -300,9 +299,8 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                hover:shadow-lg text-white rounded-lg
-                transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="flex-1 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {loading ? 'جاري الحفظ...' : client ? 'تحديث' : 'حفظ'}
             </button>
@@ -341,9 +339,8 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
                 <button
                   onClick={handleCropConfirm}
                   disabled={uploadingImage}
-                  className="flex-1 px-4 py-2 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                    hover:shadow-lg text-white rounded-lg transition-all
-                    disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="flex-1 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
                 >
                   {uploadingImage ? 'جاري الرفع...' : 'تأكيد'}
                 </button>

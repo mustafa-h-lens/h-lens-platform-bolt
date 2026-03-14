@@ -132,9 +132,8 @@ export const SettingsPage = () => {
       <div className="bg-white dark:bg-dark-card rounded-[32px] shadow-xl border border-slate-200 dark:border-dark-border overflow-hidden">
         <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-dark-border p-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#0A2A66]/10 to-[#1B4FA9]/10
-              dark:from-[#0A2A66]/20 dark:to-[#1B4FA9]/20
-              border border-[#0A2A66]/20 dark:border-[#0A2A66]/30">
+            <div className="p-2 rounded-xl border"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
               <SettingsIcon className="w-5 h-5 text-[#0A2A66] dark:text-[#47A1FF]" />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">الإعدادات</h1>

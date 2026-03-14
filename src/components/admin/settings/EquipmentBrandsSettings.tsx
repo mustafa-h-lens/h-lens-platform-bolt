@@ -275,7 +275,7 @@ export const EquipmentBrandsSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+      <div className="rounded-xl p-6 text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
         <h2 className="text-2xl font-bold mb-2">العلامات التجارية للمعدات</h2>
         <p className="text-blue-50">إدارة العلامات التجارية المتاحة في النظام</p>
       </div>
@@ -356,7 +356,8 @@ export const EquipmentBrandsSettings = () => {
               <button
                 onClick={handleUpdate}
                 disabled={isSaving}
-                className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${successAnimation === editingId ? 'animate-success-flash' : ''}`}
+                className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${successAnimation === editingId ? 'animate-success-flash' : ''}`}
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {isSaving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
@@ -376,7 +377,8 @@ export const EquipmentBrandsSettings = () => {
             <button
               onClick={handleAdd}
               disabled={isSaving}
-              className={`flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${successAnimation === 'add' ? 'animate-success-flash' : ''}`}
+              className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${successAnimation === 'add' ? 'animate-success-flash' : ''}`}
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               {isSaving ? 'جاري الإضافة...' : 'إضافة علامة تجارية'}

@@ -54,7 +54,8 @@ export const ConfirmationModal = ({
           </button>
 
           <div className="flex flex-col items-center text-center">
-            <div className={`p-3 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 mb-4`}>
+            <div className="p-3 rounded-full mb-4"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, white)' }}>
               <AlertTriangle className={`w-8 h-8 ${getIconColor()}`} />
             </div>
 
@@ -75,7 +76,8 @@ export const ConfirmationModal = ({
               </button>
               <button
                 onClick={onConfirm}
-                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-colors font-medium shadow-lg shadow-blue-500/30"
+                className="flex-1 px-4 py-2.5 text-white rounded-lg transition-colors font-medium"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 {confirmText}
               </button>

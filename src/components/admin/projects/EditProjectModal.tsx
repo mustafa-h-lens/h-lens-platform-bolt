@@ -399,9 +399,8 @@ export const EditProjectModal = ({ projectId, currentData, onClose, onSuccess }:
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9]
-                text-white rounded-xl hover:shadow-lg transition-all font-medium
-                disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 text-white rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
             </button>

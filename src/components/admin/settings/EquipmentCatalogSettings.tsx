@@ -389,7 +389,7 @@ export const EquipmentCatalogSettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+      <div className="rounded-xl p-6 text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
         <h2 className="text-2xl font-bold mb-2">كتالوج المعدات</h2>
         <p className="text-blue-50">إدارة المعدات المتاحة في النظام ({catalogItems.length} معدة)</p>
       </div>
@@ -651,7 +651,8 @@ export const EquipmentCatalogSettings = () => {
             <>
               <button
                 onClick={handleUpdate}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all"
+                className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 <Save className="w-4 h-4" />
                 حفظ التغييرات
@@ -670,7 +671,8 @@ export const EquipmentCatalogSettings = () => {
           ) : (
             <button
               onClick={handleAdd}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               <Plus className="w-4 h-4" />
               إضافة معدة

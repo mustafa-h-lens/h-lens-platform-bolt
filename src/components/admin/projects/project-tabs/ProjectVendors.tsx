@@ -86,10 +86,6 @@ export const ProjectVendors = ({ projectId, onViewVendor }: ProjectVendorsProps)
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-        الموردين المرتبطين بالمشروع
-      </h2>
-
       {vendors.length === 0 ? (
         <div
           className="text-center py-16 rounded-lg border"
