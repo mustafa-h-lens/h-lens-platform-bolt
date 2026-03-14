@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Phone, MapPin, Download, Trash2, Filter, X, ChevronDown } from 'lucide-react';
+import { Plus, Search, Phone, MapPin, Download, Trash2, Filter, X, ChevronDown, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { Modal } from '../../shared/Modal';
 import { VendorDetails } from './VendorDetails';
@@ -8,6 +8,9 @@ import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { VendorExportModal } from './VendorExportModal';
 import { ConfirmationModal } from '../../shared/ConfirmationModal';
+import { PendingVendorRequests } from './PendingVendorRequests';
+import { VendorRequestReview } from './VendorRequestReview';
+import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
 
 interface Vendor {
   id: string;
@@ -21,7 +24,7 @@ interface Vendor {
   primary_city?: string;
   nationality?: string;
   estimated_cost?: number;
-  status: 'active' | 'inactive' | 'blocked';
+  status: string;
   created_at: string;
 }
 
@@ -43,6 +46,14 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Sub-tab: 'all' or 'pending'
+  const [activeSubTab, setActiveSubTab] = useState<'all' | 'pending'>('all');
+  const [pendingCount, setPendingCount] = useState(0);
+  const [pendingRefreshTrigger, setPendingRefreshTrigger] = useState(0);
+  // Review mode for pending vendors
+  const [reviewVendorId, setReviewVendorId] = useState<string | null>(null);
+
   const [filters, setFilters] = useState({
     nationality: '',
     primary_city: '',
@@ -54,6 +65,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
   useEffect(() => {
     fetchVendors();
+    fetchPendingCount();
   }, []);
 
   const fetchVendors = async () => {
@@ -61,6 +73,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       const { data, error } = await supabase
         .from('vendors')
         .select('*')
+        .in('status', ['active', 'inactive', 'blocked'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -69,6 +82,19 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       console.error('Error fetching vendors:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('vendors')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending_approval', 'revision_requested']);
+
+      if (!error) setPendingCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching pending count:', error);
     }
   };
 
@@ -123,12 +149,33 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
     setDeleting(true);
     try {
+      // Check for linked records before deleting
+      const vendorIds = Array.from(selectedVendors);
+      const { count: invoiceCount } = await supabase
+        .from('vendor_invoices')
+        .select('*', { count: 'exact', head: true })
+        .in('vendor_id', vendorIds);
+
+      if (invoiceCount && invoiceCount > 0) {
+        showError(`لا يمكن حذف الموردين المحددين لوجود ${invoiceCount} فاتورة مرتبطة بهم. يمكنك تعطيل أو حظر المورد بدلاً من الحذف.`);
+        setShowDeleteConfirm(false);
+        setDeleting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('vendors')
         .delete()
-        .in('id', Array.from(selectedVendors));
+        .in('id', vendorIds);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23503') {
+          showError('لا يمكن حذف الموردين المحددين لوجود سجلات مرتبطة بهم. يمكنك تعطيل أو حظر المورد بدلاً من الحذف.');
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       showSuccess(`تم حذف ${selectedVendors.size} مورد بنجاح`);
       setSelectedVendors(new Set());
@@ -147,6 +194,9 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       active: { label: 'نشط', color: '#ffffff', bgColor: 'var(--color-success)' },
       inactive: { label: 'غير نشط', color: 'var(--color-text-primary)', bgColor: 'var(--color-background-hover)' },
       blocked: { label: 'محظور', color: '#ffffff', bgColor: 'var(--color-danger)' },
+      pending_approval: { label: 'بانتظار الموافقة', color: '#ffffff', bgColor: '#f59e0b' },
+      revision_requested: { label: 'مطلوب تعديلات', color: '#ffffff', bgColor: '#8b5cf6' },
+      rejected: { label: 'مرفوض', color: '#ffffff', bgColor: '#ef4444' },
     };
     return statusMap[status] || statusMap.active;
   };
@@ -195,6 +245,22 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     );
   }
 
+  // Pending vendor review mode
+  if (reviewVendorId) {
+    return (
+      <VendorRequestReview
+        vendorId={reviewVendorId}
+        onBack={() => setReviewVendorId(null)}
+        onActionComplete={() => {
+          setReviewVendorId(null);
+          fetchPendingCount();
+          fetchVendors();
+          setPendingRefreshTrigger(prev => prev + 1);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -234,8 +300,49 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         </div>
       </div>
 
+      {/* Sub-tabs */}
+      <div className="flex gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+        <button
+          onClick={() => setActiveSubTab('all')}
+          className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all"
+          style={{
+            backgroundColor: activeSubTab === 'all' ? 'var(--color-surface)' : 'transparent',
+            color: activeSubTab === 'all' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+            boxShadow: activeSubTab === 'all' ? 'var(--shadow-sm)' : 'none',
+          }}
+        >
+          جميع الموردين
+        </button>
+        <button
+          onClick={() => setActiveSubTab('pending')}
+          className="flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: activeSubTab === 'pending' ? 'var(--color-surface)' : 'transparent',
+            color: activeSubTab === 'pending' ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+            boxShadow: activeSubTab === 'pending' ? 'var(--shadow-sm)' : 'none',
+          }}
+        >
+          <Clock size={14} />
+          طلبات التسجيل
+          {pendingCount > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#f59e0b' }}>
+              {toEnglishNumbers(pendingCount.toString())}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Pending Requests Tab */}
+      {activeSubTab === 'pending' ? (
+        <PendingVendorRequests
+          onSelectVendor={setReviewVendorId}
+          refreshTrigger={pendingRefreshTrigger}
+        />
+      ) : (
+      <>
+
       {/* Insight Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="p-4 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي الموردين</div>
           <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
@@ -258,6 +365,16 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
           <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>محظور</div>
           <div className="text-2xl font-bold" style={{ color: 'var(--color-danger)' }}>
             {toEnglishNumbers(blockedCount.toString())}
+          </div>
+        </div>
+        <div
+          className="p-4 rounded-lg border cursor-pointer transition-all hover:opacity-80"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: pendingCount > 0 ? '#f59e0b' : 'var(--color-border)' }}
+          onClick={() => setActiveSubTab('pending')}
+        >
+          <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>طلبات معلقة</div>
+          <div className="text-2xl font-bold" style={{ color: '#f59e0b' }}>
+            {toEnglishNumbers(pendingCount.toString())}
           </div>
         </div>
       </div>
@@ -491,6 +608,8 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
           isDestructive={true}
           isLoading={deleting}
         />
+      )}
+      </>
       )}
     </div>
   );

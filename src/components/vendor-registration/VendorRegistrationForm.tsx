@@ -243,16 +243,45 @@ export const VendorRegistrationForm = () => {
         id_number: formData.id_number,
         id_image: idImageUrl,
         profile_image: profileImageUrl,
-        status: 'active',
+        status: 'pending_approval',
       };
 
-      const { data: vendor, error: vendorError } = await supabase
+      // Check if this email is a re-registration for a rejected vendor
+      const vendorEmail = formData.phone; // phone is used as identifier
+      const { data: existingVendor } = await supabase
         .from('vendors')
-        .insert([vendorData])
-        .select()
-        .single();
+        .select('id, status, email')
+        .eq('phone', `${formData.country_code}${formData.phone}`)
+        .maybeSingle();
 
-      if (vendorError) throw vendorError;
+      let vendor: any;
+
+      if (existingVendor && existingVendor.status === 'rejected') {
+        // Reset rejected vendor — reuse existing record
+        const { data: updatedVendor, error: updateError } = await supabase
+          .from('vendors')
+          .update(vendorData)
+          .eq('id', existingVendor.id)
+          .select()
+          .single();
+
+        if (updateError) throw updateError;
+        vendor = updatedVendor;
+
+        // Clean up old related data before re-inserting
+        await supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id);
+        await supabase.from('vendor_financial_data').delete().eq('vendor_id', vendor.id);
+        await supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor.id);
+      } else {
+        const { data: newVendor, error: vendorError } = await supabase
+          .from('vendors')
+          .insert([vendorData])
+          .select()
+          .single();
+
+        if (vendorError) throw vendorError;
+        vendor = newVendor;
+      }
 
       if (formData.passport_number || visaFileUrl) {
         await supabase.from('vendor_travel_documents').insert([{
@@ -285,10 +314,30 @@ export const VendorRegistrationForm = () => {
         await supabase.from('vendor_selected_fields').insert(selectedFieldsData);
       }
 
+      // Delete registration draft
       await supabase
         .from('vendor_registration_drafts')
         .delete()
         .eq('session_id', sessionId);
+
+      // Log submission in approval log
+      await supabase.from('vendor_approval_log').insert([{
+        vendor_id: vendor.id,
+        action: existingVendor?.status === 'rejected' ? 'resubmitted' : 'submitted',
+        performed_by: null,
+      }]);
+
+      // Send notification emails (fire-and-forget, don't block submission)
+      try {
+        await supabase.functions.invoke('send-vendor-status-email', {
+          body: { vendor_id: vendor.id, email_type: 'registration_received' },
+        });
+        await supabase.functions.invoke('send-vendor-status-email', {
+          body: { vendor_id: vendor.id, email_type: 'admin_new_registration' },
+        });
+      } catch (emailError) {
+        console.error('Email notification failed:', emailError);
+      }
 
       setIsSubmitted(true);
       showSuccess('تم إرسال طلبك بنجاح');

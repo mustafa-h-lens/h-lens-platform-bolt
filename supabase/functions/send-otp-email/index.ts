@@ -218,7 +218,7 @@ Deno.serve(async (req: Request) => {
     // Check if vendor exists
     const { data: vendor, error: vendorError } = await supabase
       .from("vendors")
-      .select("id, email, full_name")
+      .select("id, email, full_name, status")
       .eq("email", normalizedEmail)
       .maybeSingle();
 
@@ -234,6 +234,23 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({ error: "المورد غير موجود في النظام" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Gate login by vendor status
+    const statusGateMessages: Record<string, string> = {
+      pending_approval: "طلب التسجيل الخاص بك لا يزال قيد المراجعة. سيتم إشعارك عبر البريد الإلكتروني عند اكتمال المراجعة.",
+      rejected: "لم تتم الموافقة على طلب التسجيل الخاص بك. يرجى مراجعة بريدك الإلكتروني للتفاصيل.",
+      inactive: "حسابك غير نشط حالياً. يرجى التواصل مع الدعم.",
+      blocked: "تم حظر حسابك. يرجى التواصل مع الدعم.",
+    };
+
+    // Allow: active, revision_requested. Block everything else.
+    if (vendor.status && vendor.status !== "active" && vendor.status !== "revision_requested") {
+      const message = statusGateMessages[vendor.status] || "لا يمكنك تسجيل الدخول حالياً. يرجى التواصل مع الدعم.";
+      return new Response(
+        JSON.stringify({ error: message }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 

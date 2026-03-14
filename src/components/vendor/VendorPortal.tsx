@@ -123,12 +123,83 @@ const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }
 // MAIN PORTAL
 // ─────────────────────────────────────────────────────────────
 export const VendorPortal = () => {
-  const { vendor, signOut } = useVendor();
+  const { vendor, signOut, refreshVendor } = useVendor();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { showSuccess, showError } = useNotification();
   const theme = getTheme(isDarkMode);
 
+  const isRevisionMode = vendor?.status === 'revision_requested';
   const [page, setPage]         = useState('profile');
   const [drawerOpen, setDrawer] = useState(false);
+  const [revisionNotes, setRevisionNotes] = useState<string | null>(null);
+  const [resubmitting, setResubmitting] = useState(false);
+
+  // Fetch revision notes if in revision mode
+  useEffect(() => {
+    if (isRevisionMode && vendor?.id) {
+      fetchRevisionNotes();
+    }
+  }, [isRevisionMode, vendor?.id]);
+
+  const fetchRevisionNotes = async () => {
+    if (!vendor?.id) return;
+    try {
+      const { data } = await supabase
+        .from('vendor_approval_log')
+        .select('reason')
+        .eq('vendor_id', vendor.id)
+        .eq('action', 'revision_requested')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.reason) setRevisionNotes(data.reason);
+    } catch (error) {
+      console.error('Error fetching revision notes:', error);
+    }
+  };
+
+  const handleResubmit = async () => {
+    if (!vendor?.id) return;
+    setResubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({ status: 'pending_approval', updated_at: new Date().toISOString() })
+        .eq('id', vendor.id);
+
+      if (error) throw error;
+
+      await supabase.from('vendor_approval_log').insert([{
+        vendor_id: vendor.id,
+        action: 'resubmitted',
+        performed_by: null,
+      }]);
+
+      // Send emails
+      try {
+        await supabase.functions.invoke('send-vendor-status-email', {
+          body: { vendor_id: vendor.id, email_type: 'resubmitted' },
+        });
+        await supabase.functions.invoke('send-vendor-status-email', {
+          body: { vendor_id: vendor.id, email_type: 'admin_new_registration' },
+        });
+      } catch {}
+
+      showSuccess('تم إعادة تقديم طلبك بنجاح. سيتم مراجعته من قبل فريقنا.');
+      // Sign out since they can't access portal with pending_approval status
+      setTimeout(() => signOut(), 2000);
+    } catch (error) {
+      console.error('Error resubmitting:', error);
+      showError('حدث خطأ أثناء إعادة تقديم الطلب');
+    } finally {
+      setResubmitting(false);
+    }
+  };
+
+  // In revision mode, only show profile page
+  const activeNavItems = isRevisionMode
+    ? NAV_ITEMS.filter(item => item.id === 'profile')
+    : NAV_ITEMS;
 
   const pageTitles: Record<string, string> = {
     profile:   'الملف الشخصي',
@@ -138,7 +209,11 @@ export const VendorPortal = () => {
     documents: 'المستندات',
   };
 
-  const navigate = (id: string) => { setPage(id); setDrawer(false); };
+  const navigate = (id: string) => {
+    if (isRevisionMode && id !== 'profile') return; // Block navigation in revision mode
+    setPage(id);
+    setDrawer(false);
+  };
 
   // Avatar initials
   const initials = vendor?.full_name
@@ -172,7 +247,7 @@ export const VendorPortal = () => {
           borderLeft: '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        <SidebarContent page={page} navigate={navigate} initials={initials} vendor={vendor} signOut={signOut} isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+        <SidebarContent page={page} navigate={navigate} initials={initials} vendor={vendor} signOut={signOut} isDarkMode={isDarkMode} toggleTheme={toggleTheme} navItems={activeNavItems} isRevisionMode={isRevisionMode} />
       </aside>
 
       {/* ── MOBILE DRAWER ── */}
@@ -193,7 +268,7 @@ export const VendorPortal = () => {
               animation: 'slideIn 0.25s ease',
             }}
           >
-            <SidebarContent page={page} navigate={navigate} initials={initials} vendor={vendor} signOut={signOut} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onClose={() => setDrawer(false)} />
+            <SidebarContent page={page} navigate={navigate} initials={initials} vendor={vendor} signOut={signOut} isDarkMode={isDarkMode} toggleTheme={toggleTheme} onClose={() => setDrawer(false)} navItems={activeNavItems} isRevisionMode={isRevisionMode} />
           </aside>
         </>
       )}
@@ -246,11 +321,64 @@ export const VendorPortal = () => {
 
         {/* Page content */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem' }}>
+          {/* Revision Banner */}
+          {isRevisionMode && (
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #f59e0b',
+              borderRadius: 12,
+              padding: '1rem 1.25rem',
+              marginBottom: '1.25rem',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 4, fontSize: '0.95rem' }}>
+                    مطلوب تعديلات على طلب التسجيل
+                  </p>
+                  <p style={{ color: '#a16207', fontSize: '0.85rem', lineHeight: 1.7 }}>
+                    يرجى مراجعة الملاحظات أدناه وتعديل بياناتك ثم إعادة تقديم الطلب.
+                  </p>
+                  {revisionNotes && (
+                    <div style={{
+                      backgroundColor: 'rgba(255,255,255,0.7)',
+                      borderRadius: 8,
+                      padding: '0.75rem 1rem',
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(245,158,11,0.3)',
+                    }}>
+                      <p style={{ fontWeight: 600, color: '#92400e', fontSize: '0.8rem', marginBottom: 4 }}>ملاحظات المراجع:</p>
+                      <p style={{ color: '#78350f', fontSize: '0.85rem', lineHeight: 1.8 }}>{revisionNotes}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleResubmit}
+                    disabled={resubmitting}
+                    style={{
+                      marginTop: '0.75rem',
+                      backgroundColor: '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '0.5rem 1.25rem',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      cursor: resubmitting ? 'not-allowed' : 'pointer',
+                      opacity: resubmitting ? 0.6 : 1,
+                    }}
+                  >
+                    {resubmitting ? 'جاري إعادة التقديم...' : 'إعادة تقديم الطلب'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {page === 'profile'   && <PageProfile   />}
-          {page === 'projects'  && <PageProjects  />}
-          {page === 'invoices'  && <PageInvoices  />}
-          {page === 'equipment' && <PageEquipment />}
-          {page === 'documents' && <PageDocuments />}
+          {!isRevisionMode && page === 'projects'  && <PageProjects  />}
+          {!isRevisionMode && page === 'invoices'  && <PageInvoices  />}
+          {!isRevisionMode && page === 'equipment' && <PageEquipment />}
+          {!isRevisionMode && page === 'documents' && <PageDocuments />}
         </div>
       </div>
     </div>
@@ -294,14 +422,23 @@ function SidebarContent({ page, navigate, initials, vendor, signOut, isDarkMode,
           </div>
         </div>
         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
-          <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 600 }}>حساب نشط</span>
+          {isRevisionMode ? (
+            <>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b' }} />
+              <span style={{ fontSize: '0.65rem', color: '#f59e0b', fontWeight: 600 }}>مطلوب تعديلات</span>
+            </>
+          ) : (
+            <>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
+              <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 600 }}>حساب نشط</span>
+            </>
+          )}
         </div>
       </div>
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '0.625rem 0.5rem', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
-        {NAV_ITEMS.map(item => {
+        {(navItems || NAV_ITEMS).map((item: any) => {
           const Icon = item.icon;
           const isActive = page === item.id;
           return (

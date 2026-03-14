@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabaseClient';
 
 interface SidebarProps {
   currentPage: string;
@@ -33,17 +35,37 @@ interface MenuItem {
   icon: typeof LayoutDashboard;
   adminOnly?: boolean;
   comingSoon?: boolean;
+  badge?: number;
 }
 
 export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) => {
   const { profile, signOut } = useAuth();
   const { theme: themeMode, toggleTheme } = useTheme();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const [pendingVendorCount, setPendingVendorCount] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPendingVendorCount();
+      const interval = setInterval(fetchPendingVendorCount, 60000); // refresh every minute
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin]);
+
+  const fetchPendingVendorCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('vendors')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending_approval', 'revision_requested']);
+      setPendingVendorCount(count || 0);
+    } catch {}
+  };
 
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
     { id: 'clients', label: 'العملاء', icon: Users, adminOnly: false },
-    { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false },
+    { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false, badge: pendingVendorCount },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'expenses', label: 'المصروفات', icon: DollarSign },
   ];
@@ -116,6 +138,16 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
             <Lock className="w-4 h-4 text-white/50" />
           </div>
         )}
+        {!collapsed && !isLocked && item.badge && item.badge > 0 ? (
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white min-w-[20px] text-center">
+            {item.badge}
+          </span>
+        ) : null}
+        {collapsed && item.badge && item.badge > 0 ? (
+          <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full text-[9px] font-bold bg-amber-500 text-white flex items-center justify-center">
+            {item.badge}
+          </span>
+        ) : null}
       </button>
     );
   };
