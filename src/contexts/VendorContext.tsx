@@ -84,6 +84,24 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
 
+  // Fetch full vendor data from DB on mount (localStorage may have partial data)
+  useEffect(() => {
+    if (initialVendor?.id) {
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('vendors')
+            .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at, id_image')
+            .eq('id', initialVendor.id)
+            .single();
+          if (!error && data) setVendorState(data as VendorProfile);
+        } catch (err) {
+          console.error('Error fetching full vendor data:', err);
+        }
+      })();
+    }
+  }, [initialVendor?.id]);
+
   const navigateTo = (page: VendorPage) => {
     setCurrentPage(page);
     window.location.hash = page;

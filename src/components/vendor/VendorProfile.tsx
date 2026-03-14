@@ -168,6 +168,20 @@ export function VendorProfile() {
   const [savingInfo, setSavingInfo] = useState(false);
   const [savedInfo, setSavedInfo] = useState(false);
   const [editingInfo, setEditingInfo] = useState(false);
+
+  // Sync infoForm when vendor data changes (after refreshVendor)
+  useEffect(() => {
+    if (!editingInfo && vendor) {
+      setInfoForm({
+        full_name: vendor.full_name || '', phone: vendor.phone || '', email: vendor.email || '',
+        nationality: vendor.nationality || '', primary_city: vendor.primary_city || '',
+        id_number: vendor.id_number || '',
+        vendor_type: vendor.vendor_type || 'individual',
+        available_other_cities: vendor.available_other_cities || false,
+        other_cities: vendor.other_cities || [],
+      });
+    }
+  }, [vendor?.full_name, vendor?.phone, vendor?.nationality, vendor?.primary_city, vendor?.id_number, vendor?.vendor_type, vendor?.available_other_cities, vendor?.profile_image]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingIdImage, setUploadingIdImage] = useState(false);
   const imageRef = useRef<HTMLInputElement>(null);
@@ -329,18 +343,16 @@ export function VendorProfile() {
   const saveInfo = async () => {
     setSavingInfo(true);
     try {
-      // Only send fields that exist in the vendors table
-      const payload: Record<string, any> = {
-        full_name: infoForm.full_name,
-        phone: infoForm.phone,
-        nationality: infoForm.nationality,
-        primary_city: infoForm.primary_city,
-        id_number: infoForm.id_number,
-        vendor_type: infoForm.vendor_type,
-        available_other_cities: infoForm.available_other_cities,
-        other_cities: infoForm.other_cities,
-        updated_at: new Date().toISOString(),
-      };
+      // Only send fields that have values — don't overwrite with empty strings
+      const payload: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (infoForm.full_name) payload.full_name = infoForm.full_name;
+      if (infoForm.phone) payload.phone = infoForm.phone;
+      if (infoForm.nationality) payload.nationality = infoForm.nationality;
+      if (infoForm.primary_city) payload.primary_city = infoForm.primary_city;
+      if (infoForm.id_number) payload.id_number = infoForm.id_number;
+      if (infoForm.vendor_type) payload.vendor_type = infoForm.vendor_type;
+      payload.available_other_cities = infoForm.available_other_cities;
+      payload.other_cities = infoForm.other_cities;
 
       const { error } = await supabase.from('vendors').update(payload).eq('id', vendor!.id);
       if (error) throw error;
@@ -350,25 +362,7 @@ export function VendorProfile() {
       await refreshVendor();
     } catch (err: any) {
       console.error('Save error:', err);
-      // If error is about unknown column, retry without optional fields
-      if (err?.message?.includes('column') || err?.code === '42703') {
-        try {
-          await supabase.from('vendors').update({
-            full_name: infoForm.full_name, phone: infoForm.phone,
-            nationality: infoForm.nationality, primary_city: infoForm.primary_city,
-            id_number: infoForm.id_number, vendor_type: infoForm.vendor_type,
-            available_other_cities: infoForm.available_other_cities,
-            other_cities: infoForm.other_cities,
-            updated_at: new Date().toISOString(),
-          }).eq('id', vendor!.id);
-          showSuccess('تم حفظ البيانات');
-          setSavedInfo(true); setEditingInfo(false);
-          setTimeout(() => setSavedInfo(false), 2500);
-          await refreshVendor();
-        } catch { showError('حدث خطأ أثناء الحفظ'); }
-      } else {
-        showError('حدث خطأ أثناء الحفظ');
-      }
+      showError('حدث خطأ أثناء الحفظ');
     } finally { setSavingInfo(false); }
   };
   const toggleField = (fieldId: string) => {
