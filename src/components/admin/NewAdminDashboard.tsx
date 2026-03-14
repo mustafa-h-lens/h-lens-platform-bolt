@@ -1,21 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
-import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles } from 'lucide-react';
+import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
-import { Header } from '../shared/Header';
-import { ProjectsList } from './ProjectsList';
-import { ProjectDetails } from './ProjectDetails';
+import { ProjectsList } from './projects/ProjectsList';
 import { UserManagement } from './UserManagement';
-import { ClientsPage } from './ClientsPage';
-import { VendorsPage } from './VendorsPage';
-import { SettingsPage } from './SettingsPage';
-import { ClientDetails } from './ClientDetails';
-import { ImprovedProjectDetails } from './ImprovedProjectDetails';
-import { EnhancedProjectsPage } from './EnhancedProjectsPage';
-import { CreateProjectModal } from './CreateProjectModal';
+import { ClientsPage } from './clients/ClientsPage';
+import { VendorsPage } from './vendors/VendorsPage';
+import { SettingsPage } from './settings/SettingsPage';
+import { ClientDetails } from './clients/ClientDetails';
+import { ImprovedProjectDetails } from './projects/ImprovedProjectDetails';
+import { EnhancedProjectsPage } from './projects/EnhancedProjectsPage';
+import { CreateProjectModal } from './projects/CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
-import { ExpensesPage } from './ExpensesPage';
+import { ExpensesPage } from './expenses/ExpensesPage';
+import { ActivityLogPage } from './ActivityLogPage';
 
 interface Stats {
   totalProjects: number;
@@ -33,6 +32,7 @@ export const NewAdminDashboard = () => {
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(null);
   const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [reloadProjectsCallback, setReloadProjectsCallback] = useState<(() => void) | null>(null);
   const [stats, setStats] = useState<Stats>({
@@ -87,22 +87,16 @@ export const NewAdminDashboard = () => {
     }
   };
 
-  const getPageTitle = () => {
-    switch (currentPage) {
-      case 'dashboard': return 'الرئيسية';
-      case 'clients': return 'العملاء';
-      case 'vendors': return 'الموردين';
-      case 'projects': return 'المشاريع';
-      case 'invoices': return 'الفواتير';
-      case 'expenses': return 'المصروفات';
-      case 'reports': return 'التقارير';
-      case 'files': return 'الملفات';
-      case 'activity': return 'سجل النشاط';
-      case 'settings': return 'الإعدادات';
-      case 'users': return 'إدارة المستخدمين';
-      default: return 'لوحة التحكم';
-    }
-  };
+  const sidebarMargin = sidebarCollapsed ? 'md:mr-20' : 'md:mr-64';
+
+  const mobileMenuButton = (
+    <button
+      onClick={() => setSidebarOpen(true)}
+      className="fixed top-4 right-4 z-30 md:hidden p-2 rounded-xl bg-white dark:bg-dark-card shadow-lg border border-slate-200 dark:border-dark-border"
+    >
+      <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+    </button>
+  );
 
   if (selectedProjectId) {
     return (
@@ -112,12 +106,11 @@ export const NewAdminDashboard = () => {
           onNavigate={handleNavigation}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className="flex-1 flex flex-col md:mr-64">
-          <Header
-            currentPageTitle="تفاصيل المشروع"
-            onMenuClick={() => setSidebarOpen(true)}
-          />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <ImprovedProjectDetails
               projectId={selectedProjectId}
@@ -138,12 +131,11 @@ export const NewAdminDashboard = () => {
           onNavigate={handleNavigation}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className="flex-1 flex flex-col md:mr-64">
-          <Header
-            currentPageTitle={getPageTitle()}
-            onMenuClick={() => setSidebarOpen(true)}
-          />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <UserManagement onBack={() => setCurrentPage('dashboard')} />
           </main>
@@ -160,12 +152,11 @@ export const NewAdminDashboard = () => {
           onNavigate={handleNavigation}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className="flex-1 flex flex-col md:mr-64">
-          <Header
-            currentPageTitle={getPageTitle()}
-            onMenuClick={() => setSidebarOpen(true)}
-          />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
             <VendorsPage initialVendorId={selectedVendorId} />
           </main>
@@ -182,14 +173,34 @@ export const NewAdminDashboard = () => {
           onNavigate={handleNavigation}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className="flex-1 flex flex-col md:mr-64">
-          <Header
-            currentPageTitle={getPageTitle()}
-            onMenuClick={() => setSidebarOpen(true)}
-          />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
           <main className="flex-1 overflow-auto bg-slate-50 dark:bg-dark-bg">
             <SettingsPage />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'activity') {
+    return (
+      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
+          <main className="flex-1 overflow-auto">
+            <ActivityLogPage />
           </main>
         </div>
       </div>
@@ -205,12 +216,11 @@ export const NewAdminDashboard = () => {
             onNavigate={handleNavigation}
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           />
-          <div className="flex-1 flex flex-col md:mr-64">
-            <Header
-              currentPageTitle="تفاصيل العميل"
-              onMenuClick={() => setSidebarOpen(true)}
-            />
+          <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+            {mobileMenuButton}
             <main className="flex-1 overflow-auto">
               <ClientDetails
                 clientId={selectedClientId}
@@ -235,12 +245,11 @@ export const NewAdminDashboard = () => {
           onNavigate={handleNavigation}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className="flex-1 flex flex-col md:mr-64">
-          <Header
-            currentPageTitle={getPageTitle()}
-            onMenuClick={() => setSidebarOpen(true)}
-          />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <ClientsPage
               onViewClient={(clientId) => {
@@ -260,13 +269,12 @@ export const NewAdminDashboard = () => {
         onNavigate={handleNavigation}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
 
-      <div className="flex-1 flex flex-col md:mr-64">
-        <Header
-          currentPageTitle={getPageTitle()}
-          onMenuClick={() => setSidebarOpen(true)}
-        />
+      <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        {mobileMenuButton}
 
         <main className="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-dark-bg" dir="rtl">
           {currentPage === 'dashboard' && (
