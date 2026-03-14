@@ -9,8 +9,8 @@ import { useVendor } from '../../contexts/VendorContext';
 import { useProfileCompletion } from './hooks/useProfileCompletion';
 
 interface DashboardStats {
-  activeProjects: number;
-  pendingInvoicesAmount: number;
+  totalProjects: number;
+  totalInvoices: number;
   equipmentCount: number;
   documentsCount: number;
 }
@@ -27,7 +27,7 @@ export function VendorDashboard() {
   const { vendor, navigateTo } = useVendor();
   const completion = useProfileCompletion();
 
-  const [stats, setStats] = useState<DashboardStats>({ activeProjects: 0, pendingInvoicesAmount: 0, equipmentCount: 0, documentsCount: 0 });
+  const [stats, setStats] = useState<DashboardStats>({ totalProjects: 0, totalInvoices: 0, equipmentCount: 0, documentsCount: 0 });
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,9 +50,7 @@ export function VendorDashboard() {
         }
       });
       const uniqueProjects = Array.from(projectMap.values());
-      const activeCount = uniqueProjects.filter((p: any) => ['in_progress', 'active', 'pending', 'request', 'quoted', 'invoiced', 'po_issued'].includes(p.status)).length;
-      const pendingAmount = invoices.filter((i: any) => i.status !== 'paid').reduce((a: number, i: any) => a + (i.amount_total || 0), 0);
-      setStats({ activeProjects: activeCount, pendingInvoicesAmount: pendingAmount, equipmentCount: eqRes.count ?? 0, documentsCount: docRes.count ?? 0 });
+      setStats({ totalProjects: uniqueProjects.length, totalInvoices: invoices.length, equipmentCount: eqRes.count ?? 0, documentsCount: docRes.count ?? 0 });
 
       const items: ActivityItem[] = [];
       // Project activity from invoices (first invoice per project = assignment)
@@ -60,10 +58,10 @@ export function VendorDashboard() {
       invoices.forEach((inv: any) => {
         if (inv.projects && inv.project_id && !seenProjects.has(inv.project_id)) {
           seenProjects.add(inv.project_id);
-          items.push({ id: `proj-${inv.project_id}`, type: 'project', title: `تم إسنادك لمشروع: ${inv.projects.name}`, description: `${inv.amount_total?.toLocaleString('en-US')} SAR`, created_at: inv.created_at });
+          items.push({ id: `proj-${inv.project_id}`, type: 'project', title: `تم إسنادك لمشروع: ${inv.projects.name}`, description: 'مشروع جديد', created_at: inv.created_at });
         }
       });
-      invoices.slice(0, 5).forEach((i: any) => { items.push({ id: `inv-${i.id}`, type: 'invoice', title: i.status === 'paid' ? 'فاتورة مدفوعة' : 'فاتورة جديدة', description: `${i.amount_total?.toLocaleString('en-US')} SAR — ${i.projects?.name || ''}`, created_at: i.created_at }); });
+      invoices.slice(0, 5).forEach((i: any) => { items.push({ id: `inv-${i.id}`, type: 'invoice', title: i.status === 'paid' ? 'فاتورة مدفوعة' : 'فاتورة جديدة', description: i.projects?.name || 'فاتورة', created_at: i.created_at }); });
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setActivity(items.slice(0, 8));
     } catch (err) { console.error(err); }
@@ -71,10 +69,10 @@ export function VendorDashboard() {
   };
 
   const STATS = [
-    { icon: FolderOpen, label: 'المشاريع الجارية', value: stats.activeProjects, color: '#3b82f6', sub: 'مشروع نشط حالياً', page: 'projects' as const },
-    { icon: Receipt, label: 'فواتير معلقة', value: `${stats.pendingInvoicesAmount.toLocaleString('en-US')} SAR`, color: '#f59e0b', sub: 'قيد الانتظار', page: 'invoices' as const },
-    { icon: Camera, label: 'المعدات', value: stats.equipmentCount, color: '#a78bfa', sub: 'معدة مسجلة', page: 'equipment' as const },
-    { icon: FileStack, label: 'المستندات', value: stats.documentsCount, color: '#06b6d4', sub: 'مستند مرفوع', page: 'documents' as const },
+    { icon: FolderOpen, label: 'المشاريع', value: stats.totalProjects, color: '#3b82f6', sub: stats.totalProjects === 0 ? 'بانتظار مشروع جديد' : 'مشروع', page: 'projects' as const },
+    { icon: Receipt, label: 'الفواتير', value: stats.totalInvoices, color: '#10b981', sub: stats.totalInvoices === 0 ? 'لا توجد فواتير' : 'فاتورة', page: 'invoices' as const },
+    { icon: Camera, label: 'المعدات', value: stats.equipmentCount, color: '#a78bfa', sub: stats.equipmentCount === 0 ? 'أضف معداتك' : 'معدة مسجلة', page: 'equipment' as const },
+    { icon: FileStack, label: 'المستندات', value: stats.documentsCount, color: '#06b6d4', sub: stats.documentsCount === 0 ? 'ارفع مستنداتك' : 'مستند مرفوع', page: 'documents' as const },
   ];
 
   const quickActions = [
@@ -169,28 +167,6 @@ export function VendorDashboard() {
           );
         })}
       </div>
-
-      {/* Pending amount */}
-      {stats.pendingInvoicesAmount > 0 && (
-        <div className="vp-card sc" style={{
-          borderRadius: 16, padding: '16px 18px',
-          background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ position: 'absolute', bottom: -10, left: -10, width: 50, height: 50, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', filter: 'blur(18px)', pointerEvents: 'none' }} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(251,191,36,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Receipt size={19} style={{ color: '#fbbf24' }} />
-            </div>
-            <div>
-              <div style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)' }}>لديك مبلغ معلّق قيد الصرف</div>
-              <div style={{ fontSize: '.73rem', color: 'var(--textMut)' }}>سيُحوَّل عند اعتماد العميل للتسليم</div>
-            </div>
-          </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 900, color: '#fbbf24', direction: 'ltr', position: 'relative', zIndex: 1 }}>{stats.pendingInvoicesAmount.toLocaleString('en-US')} SAR</div>
-        </div>
-      )}
 
       {/* Quick actions */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
