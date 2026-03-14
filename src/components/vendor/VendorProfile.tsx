@@ -134,6 +134,7 @@ export function VendorProfile() {
   const [savingFields, setSavingFields] = useState(false);
   const [savedFields, setSavedFields] = useState(false);
   const [editingServices, setEditingServices] = useState(false);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
 
   // Financial
   const [financial, setFinancial] = useState<FinancialData>({ payment_method: 'bank_transfer', price_includes_tax: false, bank_name: '', beneficiary_name: '', iban: '', account_number: '' });
@@ -153,7 +154,25 @@ export function VendorProfile() {
   const [docType, setDocType] = useState('contract');
   const docRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); } }, [vendor?.id]);
+  useEffect(() => {
+    if (vendor?.id) {
+      // Sync infoForm with latest vendor data
+      setInfoForm({
+        full_name: vendor?.full_name || '',
+        phone: vendor?.phone || '',
+        email: vendor?.email || '',
+        nationality: vendor?.nationality || '',
+        primary_city: vendor?.primary_city || '',
+        id_number: vendor?.id_number || '',
+        portfolio_url: (vendor as any)?.portfolio_url || ''
+      });
+      fetchFields();
+      fetchFinancial();
+      fetchBanks();
+      fetchTravelDocs();
+      fetchOtherDocs();
+    }
+  }, [vendor?.id, vendor?.nationality, vendor?.primary_city, vendor?.full_name, vendor?.phone]);
 
   const fetchBanks = async () => { const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar'); if (data) setBanks(data); };
   const fetchFields = async () => {
@@ -199,17 +218,30 @@ export function VendorProfile() {
     isTravelDoc ? setUploadingTravel(true) : setUploadingDoc(true);
     try {
       const ext = file.name.split('.').pop();
-      const path = `vendor-docs/${vendor.id}/${Date.now()}.${ext}`;
+      const path = `vendor-docs/${vendor.id}/${type}-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('vendor-images').upload(path, file);
-      if (upErr) throw upErr;
+      if (upErr) {
+        console.error('Storage upload error:', upErr);
+        throw upErr;
+      }
       const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
       const { error: dbErr } = await supabase.from('vendor_documents').insert({
-        vendor_id: vendor.id, document_type: type, file_url: publicUrl, file_name: file.name, uploaded_by: vendor.id,
+        vendor_id: vendor.id,
+        document_type: type,
+        file_url: publicUrl,
+        file_name: file.name,
+        uploaded_by: vendor.id,
       });
-      if (dbErr) throw dbErr;
+      if (dbErr) {
+        console.error('Database insert error:', dbErr);
+        throw dbErr;
+      }
       showSuccess('تم رفع المستند بنجاح');
       isTravelDoc ? await fetchTravelDocs() : await fetchOtherDocs();
-    } catch { showError('حدث خطأ أثناء رفع المستند'); }
+    } catch (error) {
+      console.error('Upload error:', error);
+      showError('حدث خطأ أثناء رفع المستند');
+    }
     finally { isTravelDoc ? setUploadingTravel(false) : setUploadingDoc(false); }
   };
 
@@ -234,8 +266,37 @@ export function VendorProfile() {
   };
   const saveInfo = async () => {
     setSavingInfo(true);
-    try { await supabase.from('vendors').update({ ...infoForm, updated_at: new Date().toISOString() }).eq('id', vendor!.id); showSuccess('تم حفظ البيانات'); setSavedInfo(true); setEditingInfo(false); setTimeout(() => setSavedInfo(false), 2500); await refreshVendor(); }
-    catch { showError('حدث خطأ'); } finally { setSavingInfo(false); }
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          full_name: infoForm.full_name,
+          phone: infoForm.phone,
+          nationality: infoForm.nationality,
+          primary_city: infoForm.primary_city,
+          id_number: infoForm.id_number,
+          portfolio_url: infoForm.portfolio_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', vendor!.id);
+
+      if (error) {
+        console.error('Save error:', error);
+        throw error;
+      }
+
+      showSuccess('تم حفظ البيانات');
+      setSavedInfo(true);
+      setEditingInfo(false);
+      setTimeout(() => setSavedInfo(false), 2500);
+      await refreshVendor();
+    }
+    catch (err) {
+      console.error('Error saving info:', err);
+      showError('حدث خطأ في حفظ البيانات');
+    } finally {
+      setSavingInfo(false);
+    }
   };
   const toggleField = (fieldId: string) => {
     if (!editingServices) return;
@@ -325,11 +386,11 @@ export function VendorProfile() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div><FieldLabel icon={User}>الاسم الكامل</FieldLabel><TextInput value={infoForm.full_name} onChange={(e: any) => setInfoForm(f => ({ ...f, full_name: e.target.value }))} placeholder="الاسم كما في الهوية" disabled={!editingInfo} /></div>
-              <div><FieldLabel icon={Phone}>رقم الجوال</FieldLabel><TextInput value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="05XXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.phone.length}/10</div></div>
+              <div><FieldLabel icon={Phone}>رقم الجوال</FieldLabel><TextInput value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="05XXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: \'left' }}>{infoForm.phone.length}/10</div></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div><FieldLabel icon={Mail}>البريد الإلكتروني</FieldLabel><TextInput value={infoForm.email} disabled placeholder="name@email.com" dir="ltr" /></div>
-              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
+              <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1XXXXXXXXX\" dir="ltr\" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
@@ -457,7 +518,7 @@ export function VendorProfile() {
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
               <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
                 <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519" dir="ltr" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519\" dir="ltr\" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>
