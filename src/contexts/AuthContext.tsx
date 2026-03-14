@@ -104,6 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    localStorage.removeItem('vendor_session');
+    localStorage.removeItem('vendor_data');
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

@@ -82,3 +82,13 @@ export function useRouteTracking() {
     saveLastVisitedPage(pathname, search);
   }, [pathname]);
 }
+
+// ── Cross-Portal Navigation ───────────────────────────────────
+// Helper function to navigate between admin and vendor portals
+export function navigateToPortal(portalType: 'admin' | 'vendor') {
+  if (portalType === 'admin') {
+    navigate('/portal-admin-hl', true);
+  } else {
+    navigate('/vendor-login', true);
+  }
+}

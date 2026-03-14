@@ -126,9 +126,12 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
 
   const setVendor = (v: VendorProfile) => setVendorState(v);
 
-  const signOut = () => {
+  const signOut = async () => {
     localStorage.removeItem('vendor_session');
     localStorage.removeItem('vendor_data');
+
+    await supabase.auth.signOut();
+
     window.history.pushState({}, '', '/vendor-login');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };

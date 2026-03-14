@@ -176,7 +176,13 @@ function AppContent() {
   // /vendor → has session? show portal : redirect to login
   if (currentPath === ROUTES.VENDOR_PORTAL) {
     const stored = getStoredVendorSession();
-    if (stored) return renderVendorPortal(stored);
+    if (stored) {
+      // Clear admin session if switching from admin to vendor
+      if (user) {
+        supabase.auth.signOut().catch(() => {});
+      }
+      return renderVendorPortal(stored);
+    }
     navigate(ROUTES.VENDOR_LOGIN);
     return null;
   }
@@ -188,6 +194,9 @@ function AppContent() {
       navigate(ROUTES.VENDOR_PORTAL);
       return null;
     }
+    // Clear vendor session if accessing vendor login
+    localStorage.removeItem('vendor_session');
+    localStorage.removeItem('vendor_data');
     return (
       <SupplierAuth
         onSuccess={() => navigate(ROUTES.VENDOR_PORTAL)}
@@ -220,6 +229,9 @@ function AppContent() {
   }
 
   if (!user || !profile) {
+    // Clear vendor session if accessing admin portal
+    localStorage.removeItem('vendor_session');
+    localStorage.removeItem('vendor_data');
     return <Login />;
   }
 
