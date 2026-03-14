@@ -32,7 +32,7 @@ export type VendorPage =
   | 'projects'
   | 'invoices'
   | 'equipment'
-  | 'documents';
+  | 'notifications';
 
 interface VendorContextType {
   vendor: VendorProfile | null;
@@ -75,7 +75,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
   useEffect(() => {
     const syncFromHash = () => {
       const hash = window.location.hash.replace('#', '') as VendorPage;
-      const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','documents'];
+      const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','notifications'];
       if (valid.includes(hash)) setCurrentPage(hash);
       else setCurrentPage('dashboard');
     };
@@ -83,6 +83,24 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
+
+  // Fetch full vendor data from DB on mount (localStorage may have partial data)
+  useEffect(() => {
+    if (initialVendor?.id) {
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('vendors')
+            .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at, id_image')
+            .eq('id', initialVendor.id)
+            .single();
+          if (!error && data) setVendorState(data as VendorProfile);
+        } catch (err) {
+          console.error('Error fetching full vendor data:', err);
+        }
+      })();
+    }
+  }, [initialVendor?.id]);
 
   const navigateTo = (page: VendorPage) => {
     setCurrentPage(page);
@@ -95,7 +113,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at')
+        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, created_at, id_image')
         .eq('id', vendor.id)
         .single();
       if (!error && data) setVendorState(data as VendorProfile);

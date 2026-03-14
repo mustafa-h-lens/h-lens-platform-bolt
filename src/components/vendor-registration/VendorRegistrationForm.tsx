@@ -53,6 +53,7 @@ export const VendorRegistrationForm = () => {
   const { showSuccess, showError } = useNotification();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [formData, setFormData] = useState<VendorFormData>({
     full_name: '',
@@ -133,6 +134,7 @@ export const VendorRegistrationForm = () => {
           .from('vendor_registration_drafts')
           .insert([draftData]);
       }
+      setLastSavedAt(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
     } catch (error) {
       console.error('Error saving draft:', error);
     }
@@ -215,6 +217,14 @@ export const VendorRegistrationForm = () => {
     }
 
     try {
+      // Duplicate detection — check email, phone, ID number
+      const phone = `${formData.country_code}${formData.phone}`;
+      const checks = await Promise.all([
+        formData.phone ? supabase.from('vendors').select('id').eq('phone', phone).maybeSingle() : { data: null },
+        formData.id_number ? supabase.from('vendors').select('id').eq('id_number', formData.id_number).maybeSingle() : { data: null },
+      ]);
+      if (checks[0].data) { showError('رقم الجوال مسجل مسبقاً — تواصل مع الدعم إذا كنت تواجه مشكلة'); return; }
+      if (checks[1].data) { showError('رقم الهوية مسجل مسبقاً — تواصل مع الدعم إذا كنت تواجه مشكلة'); return; }
       let idImageUrl = formData.id_image_url;
       let profileImageUrl = formData.profile_image_url;
       let visaFileUrl = formData.visa_file_url;
@@ -293,11 +303,20 @@ export const VendorRegistrationForm = () => {
         }]);
       }
 
+      // Map registration field names to DB column names
+      // Registration uses bank_id (UUID) but DB expects bank_name (string)
+      // Registration uses account_name but DB expects beneficiary_name
+      let bankName = formData.bank_id;
+      // If bank_id is a UUID, look up the bank name
+      if (formData.bank_id && formData.bank_id.includes('-')) {
+        const { data: bankData } = await supabase.from('banks').select('name_ar').eq('id', formData.bank_id).single();
+        if (bankData) bankName = bankData.name_ar;
+      }
       await supabase.from('vendor_financial_data').insert([{
         vendor_id: vendor.id,
         payment_method: 'bank_transfer',
-        bank_id: formData.bank_id,
-        account_name: formData.account_name,
+        bank_name: bankName,
+        beneficiary_name: formData.account_name,
         iban: formData.iban,
         price_includes_tax: formData.price_includes_tax,
       }]);
@@ -416,6 +435,11 @@ export const VendorRegistrationForm = () => {
               animate={{ width: `${progress}%` }}
             />
           </div>
+          {lastSavedAt && (
+            <div style={{ fontSize: '.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 6, textAlign: 'center' }}>
+              تم الحفظ التلقائي في {lastSavedAt}
+            </div>
+          )}
         </motion.div>
 
         <div className="max-w-3xl mx-auto">
