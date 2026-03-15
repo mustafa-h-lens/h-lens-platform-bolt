@@ -385,8 +385,8 @@ export const VendorRegistrationForm = () => {
       <button
         onClick={toggleTheme}
         style={{
-          position: 'fixed', top: 16, left: 16, zIndex: 50,
-          width: 40, height: 40, borderRadius: 10,
+          position: 'fixed', top: 20, left: 24, zIndex: 50,
+          width: 42, height: 42, borderRadius: 12,
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', color: 'var(--vr-text-secondary)',
@@ -401,7 +401,7 @@ export const VendorRegistrationForm = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <img src="/assets/logo-white.png" alt="Half Lens" style={{ height: 56, objectFit: 'contain', margin: '0 auto 20px' }} />
+          <img src="/assets/logo-white.png" alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
           <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
             انضم إلى فريق Half Lens
           </h1>
