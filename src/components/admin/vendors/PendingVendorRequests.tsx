@@ -57,11 +57,12 @@ export const PendingVendorRequests = ({ onSelectVendor, refreshTrigger }: Pendin
   );
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    const formatted = new Date(dateStr).toLocaleDateString('ar-SA', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
+    return toEnglishNumbers(formatted);
   };
 
   const getStatusBadge = (status: VendorStatus) => {

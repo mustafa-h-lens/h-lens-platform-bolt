@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle, XCircle, Edit3, Clock, User, Phone, MapPin, Briefcase, CreditCard, FileText, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, XCircle, CreditCard as Edit3, Clock, User, Phone, MapPin, Briefcase, CreditCard, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
@@ -186,13 +186,14 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    const formatted = new Date(dateStr).toLocaleDateString('ar-SA', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     });
+    return toEnglishNumbers(formatted);
   };
 
   const getLogActionLabel = (action: string) => {

@@ -1,17 +1,18 @@
 import React from 'react';
+import { toEnglishNumbers } from '../../../lib/numberUtils';
 
 const EmailPreview: React.FC = () => {
   // Sample data for preview
   const otp = '1234';
   const email = 'vendor@example.com';
   const deviceInfo = 'Chrome على Windows';
-  const requestTime = new Date().toLocaleString('ar-SA', {
+  const requestTime = toEnglishNumbers(new Date().toLocaleString('ar-SA', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  });
+  }));
 
   const digits = otp.split('');
 

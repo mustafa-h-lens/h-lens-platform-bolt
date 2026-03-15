@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ExternalLink } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency } from '../../../../lib/formatters';
+import { toEnglishNumbers } from '../../../../lib/numberUtils';
 
 interface Invoice {
   id: string;
@@ -145,7 +146,7 @@ export const VendorInvoices = ({ vendorId }: VendorInvoicesProps) => {
                     </td>
                     <td className="px-6 py-4">
                       <p className="text-slate-700" dir="ltr">
-                        {invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('ar-SA') : '-'}
+                        {invoice.due_date ? toEnglishNumbers(new Date(invoice.due_date).toLocaleDateString('ar-SA')) : '-'}
                       </p>
                     </td>
                     <td className="px-6 py-4">

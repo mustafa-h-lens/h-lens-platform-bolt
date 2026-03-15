@@ -4,6 +4,7 @@ import { supabase } from '../../../../lib/supabaseClient';
 import { Modal } from '../../../shared/Modal';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
+import { toEnglishNumbers } from '../../../../lib/numberUtils';
 
 interface Document {
   id: string;
@@ -168,7 +169,7 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-slate-700" dir="ltr">
-                        {new Date(doc.created_at).toLocaleDateString('ar-SA')}
+                        {toEnglishNumbers(new Date(doc.created_at).toLocaleDateString('ar-SA'))}
                       </span>
                     </td>
                     <td className="px-6 py-4">

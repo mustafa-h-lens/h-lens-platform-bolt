@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { FileText, Plus, Trash2, Save, ExternalLink } from 'lucide-react';
+import { toEnglishNumbers } from '../../../lib/numberUtils';
 
 interface Section {
   id: string;
@@ -23,11 +24,11 @@ export const TermsSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState<TermsContent>({
-    lastUpdated: new Date().toLocaleDateString('ar-EG', {
+    lastUpdated: toEnglishNumbers(new Date().toLocaleDateString('ar-EG', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }),
+    })),
     sections: []
   });
   const [currentVersion, setCurrentVersion] = useState(1);
@@ -78,11 +79,11 @@ export const TermsSettings = () => {
           last_updated: new Date().toISOString().split('T')[0],
           content: {
             ...content,
-            lastUpdated: new Date().toLocaleDateString('ar-EG', {
+            lastUpdated: toEnglishNumbers(new Date().toLocaleDateString('ar-EG', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
-            })
+            }))
           },
           is_active: true,
           created_by: user.id,
