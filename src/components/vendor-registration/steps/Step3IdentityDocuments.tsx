@@ -86,12 +86,15 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
         <input
           type="text"
           value={formData.id_number}
-          onChange={(e) => updateFormData({ id_number: e.target.value })}
-          placeholder=" "
+          onChange={(e) => updateFormData({ id_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+          placeholder="1234567890"
           className="vr-input"
           dir="ltr"
           style={{ textAlign: 'left' }}
         />
+        <div style={{ fontSize: '11px', color: 'var(--vr-text-muted)', marginTop: 4, textAlign: 'left', direction: 'ltr' }}>
+          {formData.id_number.length}/10
+        </div>
       </motion.div>
 
       <motion.div
