@@ -59,6 +59,91 @@
   --color-primary: #2563eb;
 }
 
+/* ═══ LIGHT MODE ═══ */
+.vr-light {
+  --vr-bg-base:        #f4f6fb;
+  --vr-bg-surface:     #ffffff;
+  --vr-bg-elevated:    #ffffff;
+  --vr-bg-card:        rgba(255,255,255,0.9);
+  --vr-bg-card-hover:  rgba(255,255,255,1);
+  --vr-bg-input:       #ffffff;
+  --vr-bg-input-hover: #f8faff;
+  --vr-bg-input-focus: rgba(37,99,235,0.03);
+
+  --vr-border-subtle:  rgba(0,0,0,0.06);
+  --vr-border-soft:    rgba(0,0,0,0.1);
+  --vr-border-medium:  rgba(0,0,0,0.15);
+  --vr-border-accent:  rgba(37,99,235,0.35);
+
+  --vr-text-primary:   #0f172a;
+  --vr-text-secondary: #475569;
+  --vr-text-muted:     #94a3b8;
+  --vr-text-disabled:  #cbd5e1;
+
+  --vr-accent:         #2563eb;
+  --vr-accent-light:   #3b82f6;
+  --vr-accent-lighter: #1d4ed8;
+  --vr-accent-glow:    rgba(37,99,235,0.15);
+  --vr-accent-glow-md: rgba(37,99,235,0.1);
+
+  --vr-success:        #059669;
+  --vr-success-bg:     rgba(5,150,105,0.07);
+  --vr-success-border: rgba(5,150,105,0.2);
+  --vr-success-text:   #047857;
+  --vr-warning:        #d97706;
+  --vr-warning-bg:     rgba(217,119,6,0.07);
+  --vr-warning-border: rgba(217,119,6,0.2);
+  --vr-warning-text:   #b45309;
+  --vr-error:          #dc2626;
+  --vr-error-bg:       rgba(220,38,38,0.07);
+  --vr-error-text:     #b91c1c;
+
+  --vr-shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+  --vr-shadow-md:   0 4px 16px rgba(0,0,0,0.1);
+  --vr-shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
+  --vr-shadow-glow: 0 0 20px rgba(37,99,235,0.12), 0 0 60px rgba(37,99,235,0.05);
+  --vr-shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+}
+
+/* Light mode overrides for specific components */
+.vr-light .vr-background {
+  background: #f4f6fb;
+}
+.vr-light .vr-background::before {
+  background: radial-gradient(ellipse, rgba(37,99,235,0.05) 0%, transparent 70%);
+}
+.vr-light .vr-background::after {
+  background: radial-gradient(ellipse, rgba(139,92,246,0.04) 0%, transparent 70%);
+}
+.vr-light .vr-glass-card {
+  background: rgba(255,255,255,0.85);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.5);
+}
+.vr-light .vr-input {
+  background: #ffffff;
+  border-color: rgba(0,0,0,0.12);
+  color: #0f172a;
+}
+.vr-light .vr-input::placeholder { color: #94a3b8; }
+.vr-light .vr-input:hover { border-color: rgba(0,0,0,0.2); background: #f8faff; }
+.vr-light .vr-input:focus { border-color: rgba(37,99,235,0.5); background: rgba(37,99,235,0.02); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+.vr-light .vr-upload-zone { border-color: rgba(0,0,0,0.15); background: rgba(0,0,0,0.02); }
+.vr-light .vr-upload-zone:hover { border-color: var(--vr-accent); background: rgba(37,99,235,0.03); }
+.vr-light .vr-dropdown { background: #ffffff; border-color: rgba(0,0,0,0.1); box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.vr-light .vr-dropdown-item { color: #0f172a; border-bottom-color: rgba(0,0,0,0.06); }
+.vr-light .vr-dropdown-item:hover { background: #f1f5f9; color: var(--vr-accent); }
+.vr-light .vr-selection-card { border-color: rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); }
+.vr-light .vr-selection-card:hover { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.18); }
+.vr-light .vr-selection-card.selected { border-color: var(--vr-border-accent); background: rgba(37,99,235,0.06); }
+.vr-light .vr-step-dot { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.12); color: #94a3b8; }
+.vr-light .vr-step-lbl { color: #94a3b8; }
+.vr-light .vr-step + .vr-step::before { background: rgba(0,0,0,0.1); }
+.vr-light .vr-toggle { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.15); }
+.vr-light .vr-toggle::after { background: #94a3b8; }
+.vr-light .vr-toggle.on { background: rgba(37,99,235,0.12); }
+.vr-light .vr-toggle.on::after { background: var(--vr-accent); }
+
 /* ═══ Animated Background ═══ */
 .vr-background {
   position: fixed;

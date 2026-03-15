@@ -380,7 +380,7 @@ export const VendorRegistrationForm = () => {
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
   return (
-    <div style={{ fontFamily: "'Cairo', sans-serif", minHeight: '100vh', position: 'relative', background: 'var(--vr-bg-base)' }}>
+    <div className={isDarkMode ? '' : 'vr-light'} style={{ fontFamily: "'Cairo', sans-serif", minHeight: '100vh', position: 'relative', background: 'var(--vr-bg-base)' }}>
       {/* Fixed animated background */}
       <div className="vr-background" />
       {/* Theme toggle */}
@@ -389,9 +389,10 @@ export const VendorRegistrationForm = () => {
         style={{
           position: 'fixed', top: 28, left: 36, zIndex: 50,
           width: 48, height: 48, borderRadius: 14,
-          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          background: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
+          border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: 'var(--vr-text-secondary)',
+          cursor: 'pointer', color: isDarkMode ? 'rgba(200,215,255,0.65)' : '#475569',
           transition: 'all 0.2s',
         }}
       >
@@ -403,7 +404,7 @@ export const VendorRegistrationForm = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <img src="/assets/logo-white.png" alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
+          <img src={isDarkMode ? '/assets/logo-white.png' : '/assets/logo-black.png'} alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
           <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
             انضم إلى فريق Half Lens
           </h1>
