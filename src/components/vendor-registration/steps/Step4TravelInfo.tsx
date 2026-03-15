@@ -32,7 +32,12 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
     return [];
   });
 
+  const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(
+    formData.passport_file_url ? { url: formData.passport_file_url, name: 'passport', size: '' } : null
+  );
+
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const passportFileRef = useRef<HTMLInputElement | null>(null);
 
   const toggleVisa = (vc: typeof VISA_COUNTRIES[0]) => {
     const idx = visas.findIndex(v => v.countryCode === vc.code);
@@ -43,7 +48,6 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       updated = [...visas, { country: vc.name, countryCode: vc.code, flag: vc.flag, doc: null }];
     }
     setVisas(updated);
-    // Store first visa country for backward compat
     updateFormData({ visa_country: updated[0]?.country || '' });
   };
 
@@ -62,7 +66,6 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         v.countryCode === code ? { ...v, doc: { url: 'document', name: file.name, size: sizeStr } } : v
       ));
     }
-    // Store first visa file for backward compat
     updateFormData({ visa_file: file });
   };
 
@@ -72,6 +75,25 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       copy[index] = { ...copy[index], doc: null };
       return copy;
     });
+  };
+
+  const handlePassportUpload = (file: File) => {
+    const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPassportPreview({ url: reader.result as string, name: file.name, size: sizeStr });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setPassportPreview({ url: 'document', name: file.name, size: sizeStr });
+    }
+    updateFormData({ passport_file: file });
+  };
+
+  const removePassportDoc = () => {
+    setPassportPreview(null);
+    updateFormData({ passport_file: null, passport_file_url: '' });
   };
 
   return (
@@ -97,6 +119,41 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
             dir="ltr"
             style={{ fontFamily: 'var(--font-mono)' }}
           />
+        </div>
+
+        {/* Passport Upload */}
+        <div className="input-group">
+          <label className="input-label">صورة جواز السفر</label>
+          {passportPreview ? (
+            <div className="upload-preview">
+              {passportPreview.url !== 'document' ? (
+                <img src={passportPreview.url} alt="Passport" />
+              ) : (
+                <div style={{ width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>📄</div>
+              )}
+              <div className="up-info">
+                <span className="up-name">{passportPreview.name}</span>
+                <span className="up-size">{passportPreview.size}</span>
+              </div>
+              <button className="up-remove" onClick={removePassportDoc} type="button">✕</button>
+            </div>
+          ) : (
+            <div className="upload-zone" onClick={() => passportFileRef.current?.click()}>
+              <span className="uz-emoji">📄</span>
+              <div className="uz-text">اسحب صورة الجواز هنا أو انقر للرفع</div>
+              <div className="uz-hint">PNG, JPG, PDF — حد أقصى 5MB</div>
+              <input
+                ref={passportFileRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePassportUpload(file);
+                  e.target.value = '';
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Visa chips */}

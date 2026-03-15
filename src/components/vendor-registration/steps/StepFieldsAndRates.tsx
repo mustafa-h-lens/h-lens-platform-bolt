@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 
 interface VendorField {
@@ -15,6 +15,7 @@ interface SelectedField {
   field_name_en: string;
   rate_from: string;
   rate_to: string;
+  is_main?: boolean;
 }
 
 interface Props {
@@ -26,9 +27,24 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
   const [categories, setCategories] = useState<VendorField[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const pricingSectionRef = useRef<HTMLDivElement>(null);
+  const pricingCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => { fetchVendorFields(); }, []);
+
+  // Auto-scroll to the newly added pricing card
+  useEffect(() => {
+    if (lastAddedId && pricingCardRefs.current[lastAddedId]) {
+      pricingCardRefs.current[lastAddedId]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const el = pricingCardRefs.current[lastAddedId];
+      if (el) {
+        el.classList.add('pricing-card-highlight');
+        setTimeout(() => el.classList.remove('pricing-card-highlight'), 1500);
+      }
+      setLastAddedId(null);
+    }
+  }, [lastAddedId, selectedFields]);
 
   const fetchVendorFields = async () => {
     try {
@@ -58,35 +74,52 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
     });
   };
 
-  const toggleFieldSelection = (sub: VendorField) => {
+  const toggleField = (sub: VendorField) => {
     const existing = selectedFields.find(f => f.field_id === sub.id);
     if (existing) {
-      // Already selected, remove it
-      updateSelectedFields(selectedFields.filter(f => f.field_id !== sub.id));
-      if (editingFieldId === sub.id) setEditingFieldId(null);
+      const updated = selectedFields.filter(f => f.field_id !== sub.id);
+      if (existing.is_main && updated.length > 0) {
+        updated[0] = { ...updated[0], is_main: true };
+      }
+      updateSelectedFields(updated);
     } else {
-      // Add new with default empty prices and set as editing
+      const isMain = selectedFields.length === 0;
       updateSelectedFields([...selectedFields, {
         field_id: sub.id,
         field_name_ar: sub.name_ar,
         field_name_en: sub.name_en,
         rate_from: '',
         rate_to: '',
+        is_main: isMain,
       }]);
-      setEditingFieldId(sub.id);
+      setLastAddedId(sub.id);
     }
   };
 
-  const updateFieldPrice = (fieldId: string, rateFrom: string, rateTo: string) => {
+  const setAsMain = (fieldId: string) => {
+    updateSelectedFields(selectedFields.map(f => ({
+      ...f,
+      is_main: f.field_id === fieldId,
+    })));
+  };
+
+  const updateRate = (fieldId: string, key: 'rate_from' | 'rate_to', value: string) => {
     updateSelectedFields(selectedFields.map(f =>
-      f.field_id === fieldId ? { ...f, rate_from: rateFrom, rate_to: rateTo } : f
+      f.field_id === fieldId ? { ...f, [key]: value } : f
     ));
   };
 
   const removeField = (id: string) => {
-    updateSelectedFields(selectedFields.filter(f => f.field_id !== id));
-    if (editingFieldId === id) setEditingFieldId(null);
+    const removed = selectedFields.find(f => f.field_id === id);
+    const updated = selectedFields.filter(f => f.field_id !== id);
+    if (removed?.is_main && updated.length > 0) {
+      updated[0] = { ...updated[0], is_main: true };
+    }
+    updateSelectedFields(updated);
   };
+
+  const mainField = selectedFields.find(f => f.is_main);
+  const secondaryFields = selectedFields.filter(f => !f.is_main);
 
   if (loading) {
     return (
@@ -102,15 +135,156 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
       <h2 className="step-title">💼 المجالات والتسعير</h2>
       <p className="step-subtitle">اختر مجالات خبرتك وحدد نطاق أسعارك</p>
       <div className="form-section">
-        {/* Accordion */}
+        {/* Info */}
+        <div className="info-box blue">
+          <span className="info-icon">💡</span>
+          <span>اختر <strong>خدمة رئيسية</strong> واحدة على الأقل، ويمكنك إضافة خدمات ثانوية. حدد نطاق السعر اليومي لكل خدمة.</span>
+        </div>
+
+        {/* ── Pricing Section (TOP) ── */}
+        {selectedFields.length > 0 && (
+          <div className="fields-pricing-section" ref={pricingSectionRef}>
+            <div className="pricing-section-title">
+              <span>💰</span> تحديد الأسعار ({selectedFields.length})
+            </div>
+
+            {/* Main service */}
+            {mainField && (
+              <div
+                className="pricing-card main"
+                ref={el => { pricingCardRefs.current[mainField.field_id] = el; }}
+              >
+                <div className="pricing-card-header">
+                  <div className="pricing-card-title">
+                    <span className="pricing-badge main">رئيسي</span>
+                    {mainField.field_name_ar}
+                  </div>
+                  <button
+                    className="sf-remove"
+                    onClick={() => removeField(mainField.field_id)}
+                    type="button"
+                    style={{ opacity: 1 }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="pricing-inputs">
+                  <div className="pricing-input-group">
+                    <label>من (ر.س/يوم)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={mainField.rate_from}
+                      onChange={(e) => updateRate(mainField.field_id, 'rate_from', e.target.value)}
+                      placeholder="500"
+                      min="0"
+                      dir="ltr"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="pricing-input-group">
+                    <label>إلى (ر.س/يوم)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={mainField.rate_to}
+                      onChange={(e) => updateRate(mainField.field_id, 'rate_to', e.target.value)}
+                      placeholder="2000"
+                      min="0"
+                      dir="ltr"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Secondary services */}
+            {secondaryFields.map(field => (
+              <div
+                key={field.field_id}
+                className="pricing-card secondary"
+                ref={el => { pricingCardRefs.current[field.field_id] = el; }}
+              >
+                <div className="pricing-card-header">
+                  <div className="pricing-card-title">
+                    <span className="pricing-badge secondary">ثانوي</span>
+                    {field.field_name_ar}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      className="make-main-btn"
+                      onClick={() => setAsMain(field.field_id)}
+                      type="button"
+                      title="تعيين كرئيسي"
+                    >
+                      ★
+                    </button>
+                    <button
+                      className="sf-remove"
+                      onClick={() => removeField(field.field_id)}
+                      type="button"
+                      style={{ opacity: 1 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <div className="pricing-inputs">
+                  <div className="pricing-input-group">
+                    <label>من (ر.س/يوم)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={field.rate_from}
+                      onChange={(e) => updateRate(field.field_id, 'rate_from', e.target.value)}
+                      placeholder="500"
+                      min="0"
+                      dir="ltr"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="pricing-input-group">
+                    <label>إلى (ر.س/يوم)</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={field.rate_to}
+                      onChange={(e) => updateRate(field.field_id, 'rate_to', e.target.value)}
+                      placeholder="2000"
+                      min="0"
+                      dir="ltr"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Accordion (BELOW pricing) ── */}
         <div className="accordion">
           {categories.map((cat) => {
             const isOpen = expandedCategories.has(cat.id);
+            const selectedInCat = cat.subcategories?.filter(sub => selectedFields.some(f => f.field_id === sub.id)).length || 0;
             return (
               <div key={cat.id} className={`accordion-item ${isOpen ? 'open' : ''}`}>
                 <button className="accordion-header" onClick={() => toggleAccordion(cat.id)} type="button">
                   <span className="acc-left">
                     <span className="acc-emoji">📁</span> {cat.name_ar}
+                    {selectedInCat > 0 && (
+                      <span style={{
+                        fontSize: 11, padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                        background: 'var(--success-bg)', color: 'var(--success-text)', fontWeight: 700,
+                      }}>
+                        {selectedInCat}
+                      </span>
+                    )}
                   </span>
                   <span className="acc-chevron">&#9662;</span>
                 </button>
@@ -118,69 +292,29 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   <div className="accordion-body-inner">
                     {cat.subcategories?.map(sub => {
                       const sel = selectedFields.find(f => f.field_id === sub.id);
-                      const isEditing = editingFieldId === sub.id;
                       return (
-                        <div key={sub.id}>
-                          <div
-                            className={`subfield-chip ${sel ? 'selected' : ''}`}
-                            onClick={() => toggleFieldSelection(sub)}
-                          >
-                            <span>{sub.name_ar}</span>
+                        <div
+                          key={sub.id}
+                          className={`subfield-chip ${sel ? 'selected' : ''}`}
+                          onClick={() => toggleField(sub)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {sel ? '✓' : '+'} {sub.name_ar}
+                            {sel?.is_main && (
+                              <span style={{
+                                fontSize: 10, padding: '1px 6px', borderRadius: 'var(--radius-full)',
+                                background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontWeight: 700,
+                              }}>
+                                رئيسي
+                              </span>
+                            )}
+                          </span>
+                          {sel && (
                             <div className="sf-right">
-                              {sel && !isEditing && (
-                                <>
-                                  <span className="sf-price">{sel.rate_from} - {sel.rate_to} ر.س/يوم</span>
-                                  <button
-                                    className="sf-remove"
-                                    onClick={(e) => { e.stopPropagation(); removeField(sub.id); }}
-                                    type="button"
-                                  >
-                                    ✕
-                                  </button>
-                                </>
-                              )}
-                              {sel && isEditing && (
-                                <span className="sf-price" style={{ color: 'var(--accent-lighter)' }}>✏️ جاري التحرير</span>
-                              )}
-                            </div>
-                          </div>
-                          {sel && isEditing && (
-                            <div className="inline-price-inputs">
-                              <div className="input-group">
-                                <label className="input-label">من (ر.س/يوم)</label>
-                                <input
-                                  className="input"
-                                  type="number"
-                                  value={sel.rate_from}
-                                  onChange={(e) => updateFieldPrice(sub.id, e.target.value, sel.rate_to)}
-                                  placeholder="500"
-                                  min="0"
-                                  dir="ltr"
-                                  style={{ fontFamily: 'var(--font-mono)' }}
-                                />
-                              </div>
-                              <div className="input-group">
-                                <label className="input-label">إلى (ر.س/يوم)</label>
-                                <input
-                                  className="input"
-                                  type="number"
-                                  value={sel.rate_to}
-                                  onChange={(e) => updateFieldPrice(sub.id, sel.rate_from, e.target.value)}
-                                  placeholder="2000"
-                                  min="0"
-                                  dir="ltr"
-                                  style={{ fontFamily: 'var(--font-mono)' }}
-                                />
-                              </div>
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => setEditingFieldId(null)}
-                                type="button"
-                                disabled={!sel.rate_from || !sel.rate_to}
-                                style={{ marginTop: 8 }}
-                              >
-                                ✓ تأكيد السعر
-                              </button>
+                              <span className="sf-price">
+                                {sel.rate_from && sel.rate_to ? `${sel.rate_from} - ${sel.rate_to} ر.س` : 'حدد السعر ↑'}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -192,22 +326,6 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
             );
           })}
         </div>
-
-        {/* Selected fields summary */}
-        {selectedFields.length > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <label className="input-label" style={{ marginBottom: 8 }}>
-              المجالات المختارة ({selectedFields.length})
-            </label>
-            <div className="review-fields">
-              {selectedFields.filter(f => f.rate_from && f.rate_to).map(f => (
-                <span key={f.field_id} className="review-field-tag">
-                  {f.field_name_ar} · {f.rate_from}-{f.rate_to} ر.س
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </>
   );

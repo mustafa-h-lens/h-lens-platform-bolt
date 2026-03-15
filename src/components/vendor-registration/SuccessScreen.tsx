@@ -1,98 +1,116 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
+const SPARKLE_COLORS = [
+  '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
+  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1',
+  '#a78bfa', '#34d399', '#60a5fa', '#fbbf24', '#fb7185',
+];
 
 export const SuccessScreen = () => {
+  const [show, setShow] = useState(false);
+
   useEffect(() => {
-    createConfetti();
+    const t = setTimeout(() => setShow(true), 50);
+    return () => clearTimeout(t);
   }, []);
 
-  const createConfetti = () => {
-    const container = document.querySelector('.confetti-container');
-    if (!container) return;
-
-    const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4'];
-    const confettiCount = 80;
-
-    for (let i = 0; i < confettiCount; i++) {
-      const confetti = document.createElement('div');
-      confetti.className = 'confetti-piece';
-
-      const size = Math.random() * 8 + 4;
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const startX = Math.random() * 100 - 50;
-      const endX = startX + (Math.random() * 200 - 100);
-      const endY = Math.random() * -600 - 200;
-      const rotation = Math.random() * 1080;
-      const delay = Math.random() * 0.5;
-      const duration = Math.random() * 2 + 2;
-      const borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-
-      confetti.style.setProperty('--size', `${size}px`);
-      confetti.style.setProperty('--color', color);
-      confetti.style.setProperty('--tx', `${endX}px`);
-      confetti.style.setProperty('--ty', `${endY}px`);
-      confetti.style.setProperty('--rot', `${rotation}deg`);
-      confetti.style.setProperty('--delay', `${delay}s`);
-      confetti.style.setProperty('--duration', `${duration}s`);
-      confetti.style.setProperty('--br', borderRadius);
-      confetti.style.left = `calc(50% + ${startX}px)`;
-
-      container.appendChild(confetti);
-    }
-  };
+  // Generate particles spread across the full viewport
+  const particles = Array.from({ length: 120 }, (_, i) => {
+    const color = SPARKLE_COLORS[i % SPARKLE_COLORS.length];
+    const left = Math.random() * 100;
+    const duration = 3 + Math.random() * 5;
+    const delay = Math.random() * 6;
+    const size = 3 + Math.random() * 7;
+    const drift = (Math.random() - 0.5) * 120;
+    const rotate = Math.random() * 720 - 360;
+    const isCircle = Math.random() > 0.5;
+    const opacity = 0.5 + Math.random() * 0.5;
+    return { id: i, color, left, duration, delay, size, drift, rotate, isCircle, opacity };
+  });
 
   return (
-    <div data-theme="dark" dir="rtl" lang="ar" className="reg-bg" style={{ minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <div className="page-wrap" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-        <div className="success-screen show">
-          <div className="confetti-container"></div>
-          <div className="success-glow"></div>
-          <div className="success-glow-ring"></div>
+    <div className="success-fullscreen" style={{ display: show ? 'flex' : 'none' }}>
+      {/* Animated gradient background */}
+      <div className="success-bg-gradient" />
 
-          <div className="success-card">
-            <div className="success-circle">✓</div>
-            <h2 className="success-title">تم استلام طلبك بنجاح!</h2>
-            <p className="success-sub">
-              <span className="sparkle">✨</span>
-              مرحباً بك في عائلة Half Lens
-              <span className="sparkle">✨</span>
-            </p>
+      {/* Floating particles — full page, infinite */}
+      <div className="sparkle-field">
+        {particles.map(p => (
+          <div
+            key={p.id}
+            className="sparkle-particle"
+            style={{
+              '--sp-color': p.color,
+              '--sp-left': `${p.left}%`,
+              '--sp-size': `${p.size}px`,
+              '--sp-duration': `${p.duration}s`,
+              '--sp-delay': `${p.delay}s`,
+              '--sp-drift': `${p.drift}px`,
+              '--sp-rotate': `${p.rotate}deg`,
+              '--sp-br': p.isCircle ? '50%' : '2px',
+              '--sp-opacity': p.opacity,
+            } as React.CSSProperties}
+          />
+        ))}
+      </div>
 
-            <div className="success-info-card">
-              <div className="success-info-header">
-                <span className="success-info-icon">📋</span>
-                <span>الخطوات القادمة</span>
-              </div>
-              <ul className="success-steps">
-                <li>
-                  <span className="success-check">✓</span>
-                  <span>سيتم مراجعة طلبك خلال 24-48 ساعة عمل</span>
-                </li>
-                <li>
-                  <span className="success-check">✓</span>
-                  <span>ستصلك رسالة على جوالك عند قبول الطلب</span>
-                </li>
-                <li>
-                  <span className="success-check">✓</span>
-                  <span>بعد القبول يمكنك البدء في استقبال المشاريع</span>
-                </li>
-              </ul>
-            </div>
+      {/* Glow orbs */}
+      <div className="success-orb orb-1" />
+      <div className="success-orb orb-2" />
+      <div className="success-orb orb-3" />
 
-            <div className="success-note-card">
-              <span className="success-note-icon">💡</span>
-              <span>تأكد من الاحتفاظ بجوالك قريباً للتواصل السريع</span>
-            </div>
-
-            <button
-              className="success-btn"
-              onClick={() => window.location.href = 'https://h-lens.co'}
-              type="button"
-            >
-              العودة إلى الصفحة الرئيسية
-              <span>→</span>
-            </button>
-          </div>
+      {/* Glass card */}
+      <div className="success-glass-card">
+        {/* Green circle */}
+        <div className="success-circle">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
         </div>
+
+        <h2 className="success-title">تم استلام طلبك بنجاح!</h2>
+        <p className="success-sub">
+          <span className="sparkle">✨</span>
+          مرحباً بك في عائلة Half Lens
+          <span className="sparkle">✨</span>
+        </p>
+
+        {/* Info card */}
+        <div className="success-info-card">
+          <div className="success-info-header">
+            <span className="success-info-icon">📋</span>
+            الخطوات القادمة
+          </div>
+          <ul className="success-steps">
+            <li>
+              <span className="success-check">✓</span>
+              <span>سيتم مراجعة طلبك خلال 24-48 ساعة عمل</span>
+            </li>
+            <li>
+              <span className="success-check">✓</span>
+              <span>ستصلك رسالة على جوالك عند قبول الطلب</span>
+            </li>
+            <li>
+              <span className="success-check">✓</span>
+              <span>بعد القبول يمكنك البدء في استقبال المشاريع</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Note card */}
+        <div className="success-note-card">
+          <span className="success-note-icon">💡</span>
+          <span>يمكنك تسجيل الدخول لاحقاً عبر رقم جوالك لمتابعة حالة طلبك وتحديث بياناتك.</span>
+        </div>
+
+        {/* CTA */}
+        <button
+          className="success-btn"
+          onClick={() => window.location.href = '/'}
+          type="button"
+        >
+          العودة إلى الصفحة الرئيسية
+        </button>
       </div>
     </div>
   );
