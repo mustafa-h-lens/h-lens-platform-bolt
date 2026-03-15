@@ -134,14 +134,14 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '48px', color: 'var(--vr-text-secondary)' }}>
+      <div style={{ textAlign: 'center', padding: '48px', color: 'var(--vr-text-secondary)', fontFamily: "'Cairo', sans-serif" }}>
         جاري التحميل...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -184,6 +184,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="vr-input-group">
+                      <label className="vr-input-label">السعر من (ريال)</label>
                       <input
                         type="number"
                         value={field.rate_from}
@@ -193,9 +194,9 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                         min="0"
                         step="100"
                       />
-                      <label className="vr-input-label">السعر من (ريال)</label>
                     </div>
                     <div className="vr-input-group">
+                      <label className="vr-input-label">السعر إلى (ريال)</label>
                       <input
                         type="number"
                         value={field.rate_to}
@@ -205,14 +206,13 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                         min="0"
                         step="100"
                       />
-                      <label className="vr-input-label">السعر إلى (ريال)</label>
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleRemoveField(field.field_id)}
-                  className="p-2 rounded-lg transition-all hover:bg-red-500/10"
-                  style={{ color: 'var(--vr-error)' }}
+                  className="vr-button-ghost p-2"
+                  style={{ color: 'var(--vr-error)', borderRadius: 'var(--vr-radius-md)' }}
                 >
                   <X size={20} />
                 </button>
@@ -234,7 +234,8 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
           {categories.map((category) => (
             <div key={category.id} className="vr-glass-card overflow-hidden">
               <div
-                className="p-4 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-all"
+                className="p-4 flex items-center gap-3 cursor-pointer transition-all"
+                style={{ borderRadius: 'var(--vr-radius-md)' }}
                 onClick={() => toggleCategory(category.id)}
               >
                 {expandedCategories.has(category.id) ? (
@@ -270,16 +271,14 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                             whileHover={{ scale: isSelected ? 1 : 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => !isSelected && handleAddField(subcat)}
-                            className={`p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                              isSelected
-                                ? 'border-green-500 bg-green-500/10'
-                                : 'border-transparent bg-white/5 hover:border-blue-500/50'
-                            }`}
+                            className={`vr-selection-card ${isSelected ? 'selected' : ''}`}
                             style={{
                               marginRight: '24px',
+                              borderColor: isSelected ? 'var(--vr-success-border)' : undefined,
+                              background: isSelected ? 'var(--vr-success-bg)' : undefined,
                             }}
                           >
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between w-full">
                               <div>
                                 <div style={{ color: 'var(--vr-text-primary)', fontSize: '14px' }}>
                                   {subcat.name_ar}
@@ -292,14 +291,14 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                                 <div
                                   className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                                   style={{
-                                    background: 'linear-gradient(135deg, #10b981, #34d399)',
-                                    boxShadow: '0 2px 8px rgba(16, 185, 129, 0.4)',
+                                    background: `linear-gradient(135deg, var(--vr-success), var(--vr-success-text))`,
+                                    boxShadow: `0 2px 8px rgba(16, 185, 129, 0.4)`,
                                   }}
                                 >
                                   <Check size={16} className="text-white" strokeWidth={3} />
                                 </div>
                               ) : (
-                                <Plus size={20} style={{ color: 'var(--vr-primary)' }} />
+                                <Plus size={20} style={{ color: 'var(--vr-accent-lighter)' }} />
                               )}
                             </div>
                           </motion.div>
@@ -336,6 +335,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
 
             <div className="space-y-4">
               <div className="vr-input-group">
+                <label className="vr-input-label">السعر من (ريال) <span className="req">*</span></label>
                 <input
                   type="number"
                   value={tempRates.from}
@@ -345,10 +345,10 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   min="0"
                   step="100"
                 />
-                <label className="vr-input-label">السعر من (ريال) *</label>
               </div>
 
               <div className="vr-input-group">
+                <label className="vr-input-label">السعر إلى (ريال) <span className="req">*</span></label>
                 <input
                   type="number"
                   value={tempRates.to}
@@ -358,7 +358,6 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   min="0"
                   step="100"
                 />
-                <label className="vr-input-label">السعر إلى (ريال) *</label>
               </div>
 
               <div className="flex gap-3 mt-6">
@@ -367,11 +366,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   whileTap={{ scale: 0.98 }}
                   onClick={handleSaveField}
                   disabled={!tempRates.from || !tempRates.to}
-                  className="vr-button vr-glow flex-1 py-3 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--vr-primary), var(--vr-accent))',
-                    color: 'var(--vr-text-primary)',
-                  }}
+                  className="vr-button vr-glow flex-1"
                 >
                   <DollarSign size={20} className="inline mr-2" />
                   حفظ
@@ -380,12 +375,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setShowAddModal(false)}
-                  className="flex-1 py-3 rounded-xl font-semibold transition-all border-2"
-                  style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    color: 'var(--vr-text-primary)',
-                  }}
+                  className="vr-button vr-button-secondary flex-1"
                 >
                   إلغاء
                 </motion.button>

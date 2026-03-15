@@ -4,6 +4,7 @@ import { supabase } from '../../../../lib/supabaseClient';
 import { SearchableDropdown } from '../../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { getNationalityNames } from '../../../../lib/shared-data';
 
 interface Vendor {
   id: string;
@@ -34,18 +35,7 @@ interface VendorPersonalInfoProps {
   onUpdate: () => void;
 }
 
-const COUNTRIES = [
-  'سعودي', 'يمني', 'سوري', 'مصري',
-  'إماراتي', 'كويتي', 'قطري', 'بحريني', 'عماني',
-  'أردني', 'لبناني', 'عراقي', 'فلسطيني',
-  'ليبي', 'تونسي', 'جزائري', 'مغربي', 'سوداني', 'صومالي', 'جيبوتي', 'موريتاني',
-  'هندي', 'باكستاني', 'بنغلاديشي', 'فلبيني', 'إندونيسي',
-  'تركي', 'إيراني', 'أفغاني',
-  'إثيوبي', 'إريتري', 'كيني', 'نيجيري',
-  'أمريكي', 'بريطاني', 'كندي', 'أسترالي',
-  'فرنسي', 'ألماني', 'إيطالي', 'إسباني', 'روسي',
-  'صيني', 'ياباني', 'كوري'
-];
+const COUNTRIES = getNationalityNames();
 
 interface VendorField {
   id: string;

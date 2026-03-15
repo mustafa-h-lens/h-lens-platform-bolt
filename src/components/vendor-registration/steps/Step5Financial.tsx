@@ -40,7 +40,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
     }
   };
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -58,16 +58,22 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="p-6 rounded-xl"
-        style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+        className="vr-banner info"
+        style={{
+          background: 'var(--vr-success-bg)',
+          borderColor: 'var(--vr-success-border)',
+          color: 'var(--vr-success-text)',
+        }}
       >
-        <Banknote className="w-8 h-8 mb-3" style={{ color: 'var(--vr-success)' }} />
-        <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          طريقة الدفع: تحويل بنكي
-        </h3>
-        <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-          سيتم تحويل مستحقاتك مباشرة إلى حسابك البنكي بعد كل مشروع
-        </p>
+        <Banknote className="w-8 h-8 flex-shrink-0" style={{ color: 'var(--vr-success)' }} />
+        <div>
+          <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+            طريقة الدفع: تحويل بنكي
+          </h3>
+          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
+            سيتم تحويل مستحقاتك مباشرة إلى حسابك البنكي بعد كل مشروع
+          </p>
+        </div>
       </motion.div>
 
       <motion.div
@@ -76,11 +82,11 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.25 }}
         className="vr-input-group relative"
       >
+        <label className="vr-input-label">اسم البنك <span className="req">*</span></label>
         <select
           value={formData.bank_id || ''}
           onChange={(e) => updateFormData({ bank_id: e.target.value })}
-          className="vr-input"
-          style={{ appearance: 'none' }}
+          className="vr-input select"
           disabled={loading}
         >
           <option value=""></option>
@@ -90,19 +96,6 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
             </option>
           ))}
         </select>
-        <label
-          className="vr-input-label"
-          style={{
-            top: formData.bank_id ? 0 : '50%',
-            fontSize: formData.bank_id ? '12px' : '16px',
-            color: formData.bank_id ? 'var(--vr-primary)' : 'var(--vr-text-muted)',
-            background: formData.bank_id
-              ? 'linear-gradient(to bottom, transparent 0%, transparent 40%, var(--vr-bg-dark) 40%, var(--vr-bg-dark) 60%, transparent 60%)'
-              : 'transparent',
-          }}
-        >
-          اسم البنك *
-        </label>
       </motion.div>
 
       <motion.div
@@ -111,6 +104,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.3 }}
         className="vr-input-group"
       >
+        <label className="vr-input-label">اسم صاحب الحساب <span className="req">*</span></label>
         <input
           type="text"
           value={formData.account_name}
@@ -118,7 +112,6 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
           placeholder=" "
           className="vr-input"
         />
-        <label className="vr-input-label">اسم صاحب الحساب *</label>
       </motion.div>
 
       <motion.div
@@ -127,6 +120,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.35 }}
         className="vr-input-group"
       >
+        <label className="vr-input-label">رقم الآيبان (IBAN) <span className="req">*</span></label>
         <input
           type="text"
           value={formData.iban}
@@ -146,9 +140,8 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
           style={{ textAlign: 'left', letterSpacing: '0.05em' }}
           maxLength={24}
         />
-        <label className="vr-input-label">رقم الآيبان (IBAN) *</label>
         {formData.iban && formData.iban.length > 0 && (
-          <div className="mt-2 text-xs" style={{ color: 'var(--vr-text-muted)' }}>
+          <div className="vr-input-hint">
             {formData.iban.length} / 24 حرف
             {formData.iban.length === 24 && (
               <span className="mr-2" style={{ color: 'var(--vr-success)' }}>
@@ -163,8 +156,11 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="flex items-center justify-between p-4 rounded-xl"
-        style={{ background: 'rgba(255, 255, 255, 0.03)' }}
+        className="flex items-center justify-between p-4"
+        style={{
+          background: 'var(--vr-bg-card)',
+          borderRadius: 'var(--vr-radius-lg)',
+        }}
       >
         <div>
           <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--vr-text-primary)' }}>
@@ -178,23 +174,22 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         <motion.div
           whileTap={{ scale: 0.9 }}
           onClick={() => updateFormData({ price_includes_tax: !formData.price_includes_tax })}
-          className={`vr-toggle ${formData.price_includes_tax ? 'active' : ''}`}
-        >
-          <div className="vr-toggle-knob" />
-        </motion.div>
+          className={`vr-toggle ${formData.price_includes_tax ? 'on' : ''}`}
+        />
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.45 }}
-        className="p-4 rounded-xl"
-        style={{ background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+        className="vr-banner info"
       >
-        <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-          <strong style={{ color: 'var(--vr-text-primary)' }}>ملاحظة:</strong> جميع معلوماتك المالية محمية
-          ومشفرة. لن يتم مشاركتها مع أي طرف ثالث وستستخدم فقط لتحويل مستحقاتك.
-        </p>
+        <div>
+          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
+            <strong style={{ color: 'var(--vr-text-primary)' }}>ملاحظة:</strong> جميع معلوماتك المالية محمية
+            ومشفرة. لن يتم مشاركتها مع أي طرف ثالث وستستخدم فقط لتحويل مستحقاتك.
+          </p>
+        </div>
       </motion.div>
     </div>
   );

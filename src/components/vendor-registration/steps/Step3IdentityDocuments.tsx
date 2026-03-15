@@ -62,7 +62,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -82,6 +82,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.2 }}
         className="vr-input-group"
       >
+        <label className="vr-input-label">رقم الهوية الوطنية <span className="req">*</span></label>
         <input
           type="text"
           value={formData.id_number}
@@ -91,7 +92,6 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
           dir="ltr"
           style={{ textAlign: 'left' }}
         />
-        <label className="vr-input-label">رقم الهوية الوطنية *</label>
       </motion.div>
 
       <motion.div
@@ -99,8 +99,8 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
       >
-        <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
-          صورة الهوية الوطنية *
+        <label className="vr-input-label block mb-3">
+          صورة الهوية الوطنية <span className="req">*</span>
         </label>
         <div
           onDragOver={(e) => e.preventDefault()}
@@ -108,7 +108,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
           onDragLeave={() => setIdDragging(false)}
           onDrop={handleIdDrop}
           onClick={() => idInputRef.current?.click()}
-          className={`vr-upload-zone p-8 text-center ${idDragging ? 'dragover' : ''}`}
+          className={`vr-upload-zone ${idDragging ? 'dragover' : ''}`}
         >
           <input
             ref={idInputRef}
@@ -123,12 +123,14 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
               <img
                 src={idImagePreview}
                 alt="ID Preview"
-                className="max-h-48 mx-auto rounded-lg"
+                className="max-h-48 mx-auto"
+                style={{ borderRadius: 'var(--vr-radius-md)' }}
               />
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-2 right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"
+                className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--vr-success)' }}
               >
                 <Check className="w-5 h-5 text-white" />
               </motion.div>
@@ -138,11 +140,11 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
             </div>
           ) : (
             <>
-              <CreditCard className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--vr-primary)' }} />
-              <p className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+              <CreditCard className="upload-icon w-12 h-12 mx-auto mb-4" />
+              <p className="upload-text font-semibold mb-2">
                 اسحب الصورة هنا أو انقر للاختيار
               </p>
-              <p className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>
+              <p className="upload-hint">
                 JPG, PNG أو JPEG (حد أقصى 5MB)
               </p>
             </>
@@ -155,8 +157,8 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
-          الصورة الشخصية *
+        <label className="vr-input-label block mb-3">
+          الصورة الشخصية <span className="req">*</span>
         </label>
         <div
           onDragOver={(e) => e.preventDefault()}
@@ -164,7 +166,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
           onDragLeave={() => setProfileDragging(false)}
           onDrop={handleProfileDrop}
           onClick={() => profileInputRef.current?.click()}
-          className={`vr-upload-zone p-8 text-center ${profileDragging ? 'dragover' : ''}`}
+          className={`vr-upload-zone ${profileDragging ? 'dragover' : ''}`}
         >
           <input
             ref={profileInputRef}
@@ -179,13 +181,14 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
               <img
                 src={profileImagePreview}
                 alt="Profile Preview"
-                className="w-32 h-32 mx-auto rounded-full object-cover border-4"
-                style={{ borderColor: 'var(--vr-primary)' }}
+                className="w-32 h-32 mx-auto rounded-full object-cover"
+                style={{ border: `4px solid var(--vr-accent)` }}
               />
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute top-0 right-1/2 translate-x-1/2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"
+                className="absolute top-0 right-1/2 translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--vr-success)' }}
               >
                 <Check className="w-5 h-5 text-white" />
               </motion.div>
@@ -195,11 +198,11 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
             </div>
           ) : (
             <>
-              <User className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--vr-primary)' }} />
-              <p className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+              <User className="upload-icon w-12 h-12 mx-auto mb-4" />
+              <p className="upload-text font-semibold mb-2">
                 اسحب صورتك الشخصية هنا أو انقر للاختيار
               </p>
-              <p className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>
+              <p className="upload-hint">
                 JPG, PNG أو JPEG (حد أقصى 5MB)
               </p>
             </>

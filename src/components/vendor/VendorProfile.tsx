@@ -13,78 +13,7 @@ import { toEnglishNumbers } from '../../lib/numberUtils';
 import { PageCard, TabButton, FieldLabel, TextInput, SelectInput, SaveButton, LoadingSpinner } from './shared';
 import type { VendorField, SelectedField, FinancialData, Bank } from './shared/types';
 import { ConfirmationModal } from '../shared/ConfirmationModal';
-
-// Countries — Saudi → Gulf → Arab → Islamic/Asian → Western → African (no Israel)
-const COUNTRIES = [
-  { flag: '🇸🇦', name: 'السعودية' },
-  { flag: '🇦🇪', name: 'الإمارات' }, { flag: '🇰🇼', name: 'الكويت' }, { flag: '🇶🇦', name: 'قطر' },
-  { flag: '🇧🇭', name: 'البحرين' }, { flag: '🇴🇲', name: 'عُمان' },
-  { flag: '🇪🇬', name: 'مصر' }, { flag: '🇯🇴', name: 'الأردن' }, { flag: '🇱🇧', name: 'لبنان' },
-  { flag: '🇮🇶', name: 'العراق' }, { flag: '🇸🇾', name: 'سوريا' }, { flag: '🇵🇸', name: 'فلسطين' },
-  { flag: '🇾🇪', name: 'اليمن' }, { flag: '🇸🇩', name: 'السودان' }, { flag: '🇱🇾', name: 'ليبيا' },
-  { flag: '🇹🇳', name: 'تونس' }, { flag: '🇩🇿', name: 'الجزائر' }, { flag: '🇲🇦', name: 'المغرب' },
-  { flag: '🇲🇷', name: 'موريتانيا' }, { flag: '🇸🇴', name: 'الصومال' }, { flag: '🇩🇯', name: 'جيبوتي' },
-  { flag: '🇰🇲', name: 'جزر القمر' },
-  { flag: '🇹🇷', name: 'تركيا' }, { flag: '🇮🇷', name: 'إيران' }, { flag: '🇵🇰', name: 'باكستان' },
-  { flag: '🇦🇫', name: 'أفغانستان' }, { flag: '🇮🇳', name: 'الهند' }, { flag: '🇧🇩', name: 'بنغلاديش' },
-  { flag: '🇱🇰', name: 'سريلانكا' }, { flag: '🇳🇵', name: 'نيبال' }, { flag: '🇲🇲', name: 'ميانمار' },
-  { flag: '🇹🇭', name: 'تايلاند' }, { flag: '🇻🇳', name: 'فيتنام' }, { flag: '🇵🇭', name: 'الفلبين' },
-  { flag: '🇮🇩', name: 'إندونيسيا' }, { flag: '🇲🇾', name: 'ماليزيا' }, { flag: '🇸🇬', name: 'سنغافورة' },
-  { flag: '🇨🇳', name: 'الصين' }, { flag: '🇯🇵', name: 'اليابان' }, { flag: '🇰🇷', name: 'كوريا الجنوبية' },
-  { flag: '🇬🇧', name: 'بريطانيا' }, { flag: '🇺🇸', name: 'أمريكا' }, { flag: '🇨🇦', name: 'كندا' },
-  { flag: '🇫🇷', name: 'فرنسا' }, { flag: '🇩🇪', name: 'ألمانيا' }, { flag: '🇮🇹', name: 'إيطاليا' },
-  { flag: '🇪🇸', name: 'إسبانيا' }, { flag: '🇵🇹', name: 'البرتغال' }, { flag: '🇳🇱', name: 'هولندا' },
-  { flag: '🇧🇪', name: 'بلجيكا' }, { flag: '🇨🇭', name: 'سويسرا' }, { flag: '🇦🇹', name: 'النمسا' },
-  { flag: '🇸🇪', name: 'السويد' }, { flag: '🇳🇴', name: 'النرويج' }, { flag: '🇩🇰', name: 'الدنمارك' },
-  { flag: '🇫🇮', name: 'فنلندا' }, { flag: '🇵🇱', name: 'بولندا' }, { flag: '🇬🇷', name: 'اليونان' },
-  { flag: '🇷🇺', name: 'روسيا' }, { flag: '🇺🇦', name: 'أوكرانيا' }, { flag: '🇷🇴', name: 'رومانيا' },
-  { flag: '🇦🇺', name: 'أستراليا' }, { flag: '🇳🇿', name: 'نيوزيلندا' },
-  { flag: '🇧🇷', name: 'البرازيل' }, { flag: '🇦🇷', name: 'الأرجنتين' }, { flag: '🇲🇽', name: 'المكسيك' },
-  { flag: '🇨🇴', name: 'كولومبيا' }, { flag: '🇨🇱', name: 'تشيلي' },
-  { flag: '🇿🇦', name: 'جنوب أفريقيا' }, { flag: '🇳🇬', name: 'نيجيريا' }, { flag: '🇰🇪', name: 'كينيا' },
-  { flag: '🇪🇹', name: 'إثيوبيا' }, { flag: '🇬🇭', name: 'غانا' }, { flag: '🇹🇿', name: 'تنزانيا' },
-  { flag: '🇺🇬', name: 'أوغندا' }, { flag: '🇷🇼', name: 'رواندا' }, { flag: '🇲🇬', name: 'مدغشقر' },
-];
-
-// All KSA cities
-const KSA_CITIES = [
-  'الرياض', 'جدة', 'مكة المكرمة', 'المدينة المنورة', 'الدمام', 'الخبر', 'الظهران',
-  'الطائف', 'تبوك', 'بريدة', 'عنيزة', 'حائل', 'خميس مشيط', 'أبها', 'نجران', 'جازان',
-  'ينبع', 'الجبيل', 'القطيف', 'الأحساء', 'الهفوف', 'حفر الباطن', 'الخرج', 'أملج',
-  'سكاكا', 'عرعر', 'الباحة', 'بيشة', 'رابغ', 'الدوادمي', 'المجمعة', 'شقراء',
-  'وادي الدواسر', 'الزلفي', 'رفحاء', 'طريف', 'القريات', 'تيماء', 'العلا', 'ضباء',
-  'الوجه', 'ليلى', 'الرس', 'البكيرية', 'المذنب', 'عفيف', 'الدرعية', 'رماح',
-  'ثادق', 'حوطة بني تميم', 'الحريق', 'المزاحمية', 'ضرماء', 'القويعية', 'ساجر',
-  'الطوال', 'صبيا', 'أحد المسارحة', 'العيدابي', 'بيش', 'الريث', 'ضمد', 'أحد رفيدة',
-  'محايل عسير', 'سراة عبيدة', 'رجال ألمع', 'النماص', 'تنومة', 'البلسمر', 'المندق',
-  'القنفذة', 'الليث', 'أضم', 'العرضيات', 'المخواة',
-];
-
-// Country codes with flags — Saudi first, then Gulf, Arab, rest
-const COUNTRY_CODES = [
-  { code: '+966', flag: '🇸🇦', name: 'السعودية' },
-  { code: '+971', flag: '🇦🇪', name: 'الإمارات' }, { code: '+965', flag: '🇰🇼', name: 'الكويت' },
-  { code: '+974', flag: '🇶🇦', name: 'قطر' }, { code: '+973', flag: '🇧🇭', name: 'البحرين' },
-  { code: '+968', flag: '🇴🇲', name: 'عُمان' },
-  { code: '+20', flag: '🇪🇬', name: 'مصر' }, { code: '+962', flag: '🇯🇴', name: 'الأردن' },
-  { code: '+961', flag: '🇱🇧', name: 'لبنان' }, { code: '+964', flag: '🇮🇶', name: 'العراق' },
-  { code: '+963', flag: '🇸🇾', name: 'سوريا' }, { code: '+970', flag: '🇵🇸', name: 'فلسطين' },
-  { code: '+967', flag: '🇾🇪', name: 'اليمن' }, { code: '+249', flag: '🇸🇩', name: 'السودان' },
-  { code: '+218', flag: '🇱🇾', name: 'ليبيا' }, { code: '+216', flag: '🇹🇳', name: 'تونس' },
-  { code: '+213', flag: '🇩🇿', name: 'الجزائر' }, { code: '+212', flag: '🇲🇦', name: 'المغرب' },
-  { code: '+222', flag: '🇲🇷', name: 'موريتانيا' }, { code: '+252', flag: '🇸🇴', name: 'الصومال' },
-  { code: '+90', flag: '🇹🇷', name: 'تركيا' }, { code: '+98', flag: '🇮🇷', name: 'إيران' },
-  { code: '+92', flag: '🇵🇰', name: 'باكستان' }, { code: '+91', flag: '🇮🇳', name: 'الهند' },
-  { code: '+880', flag: '🇧🇩', name: 'بنغلاديش' }, { code: '+94', flag: '🇱🇰', name: 'سريلانكا' },
-  { code: '+63', flag: '🇵🇭', name: 'الفلبين' }, { code: '+62', flag: '🇮🇩', name: 'إندونيسيا' },
-  { code: '+60', flag: '🇲🇾', name: 'ماليزيا' }, { code: '+86', flag: '🇨🇳', name: 'الصين' },
-  { code: '+44', flag: '🇬🇧', name: 'بريطانيا' }, { code: '+1', flag: '🇺🇸', name: 'أمريكا' },
-  { code: '+33', flag: '🇫🇷', name: 'فرنسا' }, { code: '+49', flag: '🇩🇪', name: 'ألمانيا' },
-  { code: '+39', flag: '🇮🇹', name: 'إيطاليا' }, { code: '+34', flag: '🇪🇸', name: 'إسبانيا' },
-  { code: '+61', flag: '🇦🇺', name: 'أستراليا' }, { code: '+81', flag: '🇯🇵', name: 'اليابان' },
-  { code: '+82', flag: '🇰🇷', name: 'كوريا' }, { code: '+55', flag: '🇧🇷', name: 'البرازيل' },
-  { code: '+7', flag: '🇷🇺', name: 'روسيا' }, { code: '+27', flag: '🇿🇦', name: 'جنوب أفريقيا' },
-];
+import { getNationalityItems, getCountryCodeItems } from '../../lib/shared-data';
 
 interface City { id: string; name_ar: string; }
 
@@ -224,8 +153,12 @@ export function VendorProfile() {
     isTravelDoc: false,
   });
 
-  useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); fetchPassport(); } }, [vendor?.id]);
+  // Cities from Supabase
+  const [citiesList, setCitiesList] = useState<string[]>([]);
 
+  useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); fetchPassport(); fetchCities(); } }, [vendor?.id]);
+
+  const fetchCities = async () => { const { data } = await supabase.from('cities').select('name').eq('is_active', true).order('name'); if (data) setCitiesList(data.map(c => c.name)); };
   const fetchBanks = async () => { const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar'); if (data) setBanks(data); };
   const fetchFields = async () => {
     setLoadingFields(true);
@@ -406,8 +339,8 @@ export function VendorProfile() {
 
   const initials = vendor?.full_name?.split(' ').slice(0, 2).map(w => w[0]).join('') || '?';
   const ibanDigits = (financial.iban.startsWith('SA') ? financial.iban.slice(2) : financial.iban).replace(/\D/g, '');
-  const nationalityItems = COUNTRIES.map(c => ({ value: c.name, label: c.name, prefix: c.flag }));
-  const cityItems = KSA_CITIES.map(c => ({ value: c, label: c }));
+  const nationalityItems = getNationalityItems();
+  const cityItems = citiesList.map(c => ({ value: c, label: c }));
 
   const EditBtn = ({ editing, onEdit, onCancel }: { editing: boolean; onEdit: () => void; onCancel: () => void }) => (
     !editing
@@ -493,7 +426,7 @@ export function VendorProfile() {
               <div>
                 <FieldLabel icon={Phone}>رقم الجوال</FieldLabel>
                 <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
-                  <SearchableSelect value={infoForm.country_code || '+966'} onChange={v => setInfoForm(f => ({ ...f, country_code: v }))} items={COUNTRY_CODES.map(c => ({ value: c.code, label: `${c.code} ${c.name}`, prefix: c.flag }))} placeholder="+966" disabled={!editingInfo} compact />
+                  <SearchableSelect value={infoForm.country_code || '+966'} onChange={v => setInfoForm(f => ({ ...f, country_code: v }))} items={getCountryCodeItems()} placeholder="+966" disabled={!editingInfo} compact />
                   <div style={{ flex: 1 }}>
                     <input value={infoForm.phone} onChange={(e: any) => setInfoForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 9) }))} placeholder="512345678" dir="ltr" disabled={!editingInfo} className="vp-inp" style={{ borderRadius: '0 9px 9px 0', borderLeft: 'none' }} />
                   </div>
@@ -552,7 +485,7 @@ export function VendorProfile() {
                 <div style={{ animation: 'fadeUp .2s ease' }}>
                   {editingInfo ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 160, overflowY: 'auto', padding: '8px 0' }}>
-                      {KSA_CITIES.filter(c => c !== infoForm.primary_city).map(city => {
+                      {citiesList.filter(c => c !== infoForm.primary_city).map(city => {
                         const isSel = infoForm.other_cities.includes(city);
                         return (
                           <button key={city} onClick={() => setInfoForm(f => ({ ...f, other_cities: isSel ? f.other_cities.filter(c => c !== city) : [...f.other_cities, city] }))}

@@ -73,7 +73,7 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,16 +91,22 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="p-6 rounded-xl"
-        style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+        className="vr-banner info"
+        style={{
+          background: 'var(--vr-success-bg)',
+          borderColor: 'var(--vr-success-border)',
+          color: 'var(--vr-success-text)',
+        }}
       >
-        <CheckCircle className="w-8 h-8 mb-3" style={{ color: 'var(--vr-success)' }} />
-        <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          أنت على وشك الانتهاء!
-        </h3>
-        <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-          راجع معلوماتك بعناية. يمكنك التعديل على أي قسم بالنقر على زر "تعديل"
-        </p>
+        <CheckCircle className="w-8 h-8 flex-shrink-0" style={{ color: 'var(--vr-success)' }} />
+        <div>
+          <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+            أنت على وشك الانتهاء!
+          </h3>
+          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
+            راجع معلوماتك بعناية. يمكنك التعديل على أي قسم بالنقر على زر "تعديل"
+          </p>
+        </div>
       </motion.div>
 
       <div className="space-y-4">
@@ -120,10 +126,11 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => goToStep(section.step)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+                className="vr-button-ghost flex items-center gap-2 px-4 py-2"
                 style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  color: 'var(--vr-primary)',
+                  background: 'var(--vr-accent-glow)',
+                  color: 'var(--vr-accent-lighter)',
+                  borderRadius: 'var(--vr-radius-md)',
                 }}
               >
                 <Edit2 className="w-4 h-4" />
@@ -164,10 +171,11 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => goToStep(6)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+                className="vr-button-ghost flex items-center gap-2 px-4 py-2"
                 style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  color: 'var(--vr-primary)',
+                  background: 'var(--vr-accent-glow)',
+                  color: 'var(--vr-accent-lighter)',
+                  borderRadius: 'var(--vr-radius-md)',
                 }}
               >
                 <Edit2 className="w-4 h-4" />
@@ -179,11 +187,14 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
               {formData.selected_fields.map((field: SelectedField) => (
                 <div
                   key={field.field_id}
-                  className="flex items-center justify-between p-3 rounded-lg"
-                  style={{ background: 'rgba(255, 255, 255, 0.03)' }}
+                  className="flex items-center justify-between p-3"
+                  style={{
+                    background: 'var(--vr-bg-card)',
+                    borderRadius: 'var(--vr-radius-md)',
+                  }}
                 >
                   <div className="flex items-center gap-3">
-                    <Briefcase className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--vr-primary)' }} />
+                    <Briefcase className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--vr-accent-lighter)' }} />
                     <div>
                       <div className="text-sm font-medium" style={{ color: 'var(--vr-text-primary)' }}>
                         {field.field_name_ar}
@@ -207,36 +218,34 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="p-6 rounded-xl"
-        style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+        className="p-6"
+        style={{
+          background: 'var(--vr-bg-card)',
+          border: '1px solid var(--vr-border-soft)',
+          borderRadius: 'var(--vr-radius-lg)',
+        }}
       >
         <div className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            id="terms"
-            className="mt-1 w-5 h-5 rounded"
-            style={{ accentColor: 'var(--vr-primary)' }}
-          />
+          <div
+            className="vr-checkbox mt-1"
+            style={{ accentColor: 'var(--vr-accent)' }}
+          >
+            <input
+              type="checkbox"
+              id="terms"
+              className="w-5 h-5 opacity-0 absolute"
+            />
+          </div>
           <label htmlFor="terms" className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
             أوافق على{' '}
             <a
               href="/terms-and-conditions"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-all duration-200"
               style={{
-                color: 'var(--vr-primary)',
+                color: 'var(--vr-accent-lighter)',
                 textDecoration: 'underline',
                 textUnderlineOffset: '2px',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = 'var(--vr-accent)';
-                e.currentTarget.style.textDecorationThickness = '2px';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'var(--vr-primary)';
-                e.currentTarget.style.textDecorationThickness = '1px';
               }}
             >
               الشروط والأحكام

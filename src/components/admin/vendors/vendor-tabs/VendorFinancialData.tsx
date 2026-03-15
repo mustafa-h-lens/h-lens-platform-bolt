@@ -21,27 +21,12 @@ interface VendorFinancialDataProps {
   vendorId: string;
 }
 
-const SAUDI_BANKS = [
-  'البنك الأهلي السعودي',
-  'بنك الرياض',
-  'بنك الراجحي',
-  'بنك ساب',
-  'البنك السعودي للاستثمار',
-  'البنك السعودي الفرنسي',
-  'البنك السعودي البريطاني (ساب)',
-  'بنك البلاد',
-  'بنك الجزيرة',
-  'بنك الإنماء',
-  'بنك سامبا',
-  'البنك العربي الوطني',
-  'مصرف الإنماء',
-];
-
 export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
   const { showSuccess, showError } = useNotification();
   const [financialData, setFinancialData] = useState<FinancialData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [banksList, setBanksList] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     payment_method: 'bank_transfer' as 'bank_transfer' | 'cash' | 'other',
@@ -54,7 +39,21 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
 
   useEffect(() => {
     fetchFinancialData();
+    fetchBanks();
   }, [vendorId]);
+
+  const fetchBanks = async () => {
+    try {
+      const { data } = await supabase
+        .from('banks')
+        .select('name_ar')
+        .eq('is_active', true)
+        .order('name_ar');
+      if (data) setBanksList(data.map(b => b.name_ar));
+    } catch (error) {
+      console.error('Error fetching banks:', error);
+    }
+  };
 
   const fetchFinancialData = async () => {
     try {
@@ -211,7 +210,7 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
                   dir="rtl"
                 >
                   <option value="">اختر بنك</option>
-                  {SAUDI_BANKS.map((bank) => (
+                  {banksList.map((bank) => (
                     <option key={bank} value={bank}>{bank}</option>
                   ))}
                 </select>

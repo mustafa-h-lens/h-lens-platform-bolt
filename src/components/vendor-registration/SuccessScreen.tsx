@@ -6,7 +6,7 @@ export const SuccessScreen = () => {
   const [confetti, setConfetti] = useState<{ id: number; left: string; delay: number; color: string }[]>([]);
 
   useEffect(() => {
-    const colors = ['#2563eb', '#3b82f6', '#60a5fa', '#10b981', '#93c5fd'];
+    const colors = ['var(--vr-accent)', 'var(--vr-accent-light)', 'var(--vr-accent-lighter)', 'var(--vr-success)', '#93c5fd'];
     const pieces = Array.from({ length: 50 }, (_, i) => ({
       id: i,
       left: `${Math.random() * 100}%`,
@@ -17,7 +17,7 @@ export const SuccessScreen = () => {
   }, []);
 
   return (
-    <div className="vr-background min-h-screen relative flex items-center justify-center overflow-hidden">
+    <div className="vr-background min-h-screen relative flex items-center justify-center overflow-hidden" style={{ fontFamily: "'Cairo', sans-serif" }}>
       {confetti.map((piece) => (
         <motion.div
           key={piece.id}
@@ -70,7 +70,7 @@ export const SuccessScreen = () => {
               }}
               className="vr-success-icon mb-6 mx-auto w-24 h-24 rounded-full flex items-center justify-center"
               style={{
-                background: 'linear-gradient(135deg, var(--vr-success), #34d399)',
+                background: `linear-gradient(135deg, var(--vr-success), var(--vr-success-text))`,
                 boxShadow: '0 0 60px rgba(16, 185, 129, 0.4)',
               }}
             >
@@ -96,38 +96,40 @@ export const SuccessScreen = () => {
 
               <div className="space-y-4 mb-8">
                 <div
-                  className="p-6 rounded-xl text-right"
-                  style={{ background: 'rgba(59, 130, 246, 0.1)' }}
+                  className="vr-banner info p-6 text-right"
                 >
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-primary)' }}>
-                    ماذا بعد؟
-                  </h3>
-                  <ul className="space-y-2 text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
-                      <span>سيقوم فريقنا بمراجعة طلبك خلال 24-48 ساعة</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
-                      <span>ستصلك رسالة نصية وبريد إلكتروني عند الموافقة</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
-                      <span>يمكنك بعدها البدء بتلقي طلبات العمل من خلال منصتنا</span>
-                    </li>
-                  </ul>
+                  <div>
+                    <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-accent-lighter)' }}>
+                      ماذا بعد؟
+                    </h3>
+                    <ul className="space-y-2 text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
+                        <span>سيقوم فريقنا بمراجعة طلبك خلال 24-48 ساعة</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
+                        <span>ستصلك رسالة نصية وبريد إلكتروني عند الموافقة</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: 'var(--vr-success)' }} />
+                        <span>يمكنك بعدها البدء بتلقي طلبات العمل من خلال منصتنا</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
                 <div
-                  className="p-6 rounded-xl text-right"
-                  style={{ background: 'rgba(59, 130, 246, 0.1)' }}
+                  className="vr-banner info p-6 text-right"
                 >
-                  <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-accent)' }}>
-                    للتنويه
-                  </h3>
-                  <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-                    تأكد من أن هاتفك مفعّل وجاهز لاستقبال الإشعارات. سنتواصل معك قريباً!
-                  </p>
+                  <div>
+                    <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-accent-lighter)' }}>
+                      للتنويه
+                    </h3>
+                    <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
+                      تأكد من أن هاتفك مفعّل وجاهز لاستقبال الإشعارات. سنتواصل معك قريباً!
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -135,11 +137,7 @@ export const SuccessScreen = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => window.location.href = 'https://h-lens.co'}
-                className="vr-button vr-glow px-8 py-4 rounded-xl font-semibold"
-                style={{
-                  background: 'linear-gradient(135deg, var(--vr-primary), var(--vr-accent))',
-                  color: 'var(--vr-text-primary)',
-                }}
+                className="vr-button vr-glow px-8 py-4"
               >
                 العودة إلى الصفحة الرئيسية
               </motion.button>

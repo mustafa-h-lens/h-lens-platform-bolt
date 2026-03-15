@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { User, Building2, ChevronDown, Loader2 } from 'lucide-react';
+import { getNationalityNames } from '../../../lib/shared-data';
 
 interface Props {
   formData: VendorFormData;
@@ -20,11 +21,7 @@ interface FieldCategory {
   children: FieldChild[];
 }
 
-const nationalities = [
-  'سعودي', 'مصري', 'سوري', 'أردني', 'لبناني', 'فلسطيني', 'عراقي', 'يمني',
-  'إماراتي', 'كويتي', 'بحريني', 'عماني', 'قطري', 'باكستاني', 'هندي', 'بنغلاديشي',
-  'فلبيني', 'إندونيسي', 'سوداني', 'تونسي', 'جزائري', 'مغربي', 'ليبي'
-];
+const nationalities = getNationalityNames();
 
 export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
   const [fieldCategories, setFieldCategories] = useState<FieldCategory[]>([]);
@@ -122,7 +119,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -142,14 +139,14 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.2 }}
         className="vr-input-group"
       >
+        <label className="vr-input-label">الاسم الثلاثي <span className="req">*</span></label>
         <input
           type="text"
           value={formData.full_name}
           onChange={(e) => updateFormData({ full_name: e.target.value })}
-          placeholder=" "
+          placeholder="الاسم الكامل كما في الهوية"
           className="vr-input"
         />
-        <label className="vr-input-label">الاسم الثلاثي *</label>
       </motion.div>
 
       <motion.div
@@ -159,6 +156,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
         className="relative"
       >
         <div className="vr-input-group">
+          <label className="vr-input-label">الجنسية <span className="req">*</span></label>
           <input
             type="text"
             value={formData.nationality ? formData.nationality : nationalitySearch}
@@ -174,12 +172,11 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
             onBlur={() => {
               setTimeout(() => setShowNationalityDropdown(false), 200);
             }}
-            placeholder=" "
+            placeholder="ابحث عن الجنسية..."
             className="vr-input"
           />
-          <label className="vr-input-label">الجنسية *</label>
           <ChevronDown
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none"
+            className="absolute left-4 top-9 w-5 h-5 pointer-events-none"
             style={{ color: 'var(--vr-text-muted)' }}
           />
         </div>
@@ -223,17 +220,17 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
       >
-        <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
-          نوع المورد *
+        <label className="vr-input-label block mb-3">
+          نوع المورد <span className="req">*</span>
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => updateFormData({ vendor_type: 'individual' })}
-            className={`vr-selection-card ${formData.vendor_type === 'individual' ? 'selected' : ''}`}
+            className={`vr-selection-card flex-col ${formData.vendor_type === 'individual' ? 'selected' : ''}`}
           >
-            <User className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-primary)' }} />
+            <User className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-accent-lighter)' }} />
             <h3 className="text-xl font-semibold text-center" style={{ color: 'var(--vr-text-primary)' }}>
               فرد
             </h3>
@@ -246,9 +243,9 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => updateFormData({ vendor_type: 'company' })}
-            className={`vr-selection-card ${formData.vendor_type === 'company' ? 'selected' : ''}`}
+            className={`vr-selection-card flex-col ${formData.vendor_type === 'company' ? 'selected' : ''}`}
           >
-            <Building2 className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-primary)' }} />
+            <Building2 className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-accent-lighter)' }} />
             <h3 className="text-xl font-semibold text-center" style={{ color: 'var(--vr-text-primary)' }}>
               شركة
             </h3>

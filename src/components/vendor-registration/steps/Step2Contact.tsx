@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
-import { Phone, MapPin } from 'lucide-react';
+import { Phone, MapPin, Check } from 'lucide-react';
+import { COUNTRY_CODES } from '../../../lib/shared-data';
 
 interface Props {
   formData: VendorFormData;
@@ -24,18 +25,13 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
       .select('name')
       .eq('is_active', true)
       .order('name');
-
-    if (data) {
-      setCities(data.map(c => c.name));
-    }
+    if (data) setCities(data.map(c => c.name));
   };
 
-  const filteredCities = cities.filter(c =>
-    c.includes(citySearch)
-  );
+  const filteredCities = cities.filter(c => c.includes(citySearch));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -49,54 +45,59 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
         </p>
       </motion.div>
 
+      {/* Phone with country code on LEFT (LTR layout) */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
-          رقم الجوال *
+        <label className="vr-input-label block mb-2">
+          رقم الجوال <span className="req">*</span>
         </label>
-        <div className="flex gap-3">
-          <div className="w-32">
-            <div className="vr-input-group">
-              <select
-                value={formData.country_code}
-                onChange={(e) => updateFormData({ country_code: e.target.value })}
-                className="vr-input"
-                style={{ paddingRight: '12px' }}
-              >
-                <option value="+966">🇸🇦 +966</option>
-                <option value="+20">🇪🇬 +20</option>
-                <option value="+971">🇦🇪 +971</option>
-                <option value="+965">🇰🇼 +965</option>
-                <option value="+962">🇯🇴 +962</option>
-                <option value="+961">🇱🇧 +961</option>
-              </select>
-            </div>
-          </div>
-          <div className="flex-1 vr-input-group">
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => updateFormData({ phone: e.target.value.replace(/\D/g, '') })}
-              placeholder=" "
-              className="vr-input"
-              dir="ltr"
-              style={{ textAlign: 'left' }}
-            />
-            <label className="vr-input-label">رقم الجوال</label>
-          </div>
+        <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
+          {/* Country code LEFT */}
+          <select
+            value={formData.country_code}
+            onChange={(e) => updateFormData({ country_code: e.target.value })}
+            className="vr-input"
+            style={{
+              width: 120, flexShrink: 0,
+              borderRadius: '10px 0 0 10px',
+              borderLeft: 'none',
+              textAlign: 'center',
+              fontSize: '14px',
+              cursor: 'pointer',
+              paddingLeft: 8, paddingRight: 8,
+            }}
+          >
+            {COUNTRY_CODES.map(c => (
+              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            ))}
+          </select>
+          {/* Phone number RIGHT */}
+          <input
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => updateFormData({ phone: e.target.value.replace(/\D/g, '').slice(0, 9) })}
+            placeholder="512345678"
+            className="vr-input"
+            dir="ltr"
+            style={{ flex: 1, borderRadius: '0 10px 10px 0', textAlign: 'left' }}
+          />
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--vr-text-muted)', marginTop: 4, textAlign: 'left', direction: 'ltr' }}>
+          {formData.phone.length}/9
         </div>
       </motion.div>
 
+      {/* Primary City — searchable dropdown */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="relative"
       >
-        <div className="vr-input-group">
+        <label className="vr-input-label" style={{ marginBottom: 6 }}>مدينة العمل الأساسية <span className="req">*</span></label>
+        <div style={{ position: 'relative' }}>
           <input
             type="text"
             value={formData.primary_city || citySearch}
@@ -106,43 +107,48 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
               updateFormData({ primary_city: '' });
             }}
             onFocus={() => setShowCityDropdown(true)}
-            placeholder=" "
+            onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
+            placeholder="ابحث عن المدينة..."
             className="vr-input"
           />
-          <label className="vr-input-label">مدينة العمل الأساسية *</label>
+          {showCityDropdown && filteredCities.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="vr-dropdown"
+              style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 50 }}
+            >
+              {filteredCities.map((city) => (
+                <div
+                  key={city}
+                  className="vr-dropdown-item"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    updateFormData({ primary_city: city });
+                    setCitySearch('');
+                    setShowCityDropdown(false);
+                  }}
+                >
+                  <MapPin className="w-4 h-4 inline-block ml-2" style={{ color: 'var(--vr-accent-lighter)' }} />
+                  {city}
+                </div>
+              ))}
+            </motion.div>
+          )}
         </div>
-
-        {showCityDropdown && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="vr-dropdown absolute top-full left-0 right-0 mt-2 z-10"
-          >
-            {filteredCities.map((city) => (
-              <div
-                key={city}
-                className="vr-dropdown-item"
-                onClick={() => {
-                  updateFormData({ primary_city: city });
-                  setCitySearch('');
-                  setShowCityDropdown(false);
-                }}
-              >
-                <MapPin className="w-4 h-4 inline-block ml-2" />
-                {city}
-              </div>
-            ))}
-          </motion.div>
-        )}
       </motion.div>
 
+      {/* Available in other cities toggle */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="flex items-center justify-between p-4 rounded-xl"
-        style={{ background: 'rgba(255, 255, 255, 0.03)' }}
+        className="flex items-center justify-between p-4"
+        style={{
+          background: 'var(--vr-bg-card)',
+          borderRadius: 'var(--vr-radius-lg)',
+          border: '1px solid var(--vr-border-subtle)',
+        }}
       >
         <div>
           <h3 className="font-semibold mb-1" style={{ color: 'var(--vr-text-primary)' }}>
@@ -155,12 +161,11 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
         <motion.div
           whileTap={{ scale: 0.9 }}
           onClick={() => updateFormData({ available_other_cities: !formData.available_other_cities })}
-          className={`vr-toggle ${formData.available_other_cities ? 'active' : ''}`}
-        >
-          <div className="vr-toggle-knob" />
-        </motion.div>
+          className={`vr-toggle ${formData.available_other_cities ? 'on' : ''}`}
+        />
       </motion.div>
 
+      {/* Other cities — all cities, scrollable, chip style like vendor dashboard */}
       {formData.available_other_cities && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -168,46 +173,39 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
           exit={{ opacity: 0, height: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
+          <label className="vr-input-label block mb-3">
             اختر المدن الأخرى
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {cities.filter(c => c !== formData.primary_city).slice(0, 12).map((city) => (
-              <motion.div
-                key={city}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  const otherCities = formData.other_cities || [];
-                  if (otherCities.includes(city)) {
-                    updateFormData({
-                      other_cities: otherCities.filter(c => c !== city)
-                    });
-                  } else {
-                    updateFormData({
-                      other_cities: [...otherCities, city]
-                    });
-                  }
-                }}
-                className={`p-3 rounded-lg text-center cursor-pointer transition-all ${
-                  formData.other_cities?.includes(city)
-                    ? 'border-2'
-                    : 'border'
-                }`}
-                style={{
-                  background: formData.other_cities?.includes(city)
-                    ? 'rgba(59, 130, 246, 0.1)'
-                    : 'rgba(255, 255, 255, 0.03)',
-                  borderColor: formData.other_cities?.includes(city)
-                    ? 'var(--vr-primary)'
-                    : 'rgba(255, 255, 255, 0.1)',
-                  color: 'var(--vr-text-primary)',
-                }}
-              >
-                <MapPin className="w-4 h-4 mx-auto mb-1" />
-                <span className="text-sm">{city}</span>
-              </motion.div>
-            ))}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
+            {cities.filter(c => c !== formData.primary_city).map((city) => {
+              const isSel = formData.other_cities?.includes(city);
+              return (
+                <motion.button
+                  key={city}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const otherCities = formData.other_cities || [];
+                    if (isSel) {
+                      updateFormData({ other_cities: otherCities.filter(c => c !== city) });
+                    } else {
+                      updateFormData({ other_cities: [...otherCities, city] });
+                    }
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '6px 14px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
+                    fontFamily: "'Cairo', sans-serif", cursor: 'pointer',
+                    transition: 'all 0.15s',
+                    background: isSel ? 'var(--vr-accent-glow-md)' : 'transparent',
+                    border: `1.5px solid ${isSel ? 'var(--vr-border-accent)' : 'var(--vr-border-soft)'}`,
+                    color: isSel ? 'var(--vr-accent-lighter)' : 'var(--vr-text-secondary)',
+                  }}
+                >
+                  {isSel && <Check size={13} />}
+                  {city}
+                </motion.button>
+              );
+            })}
           </div>
         </motion.div>
       )}

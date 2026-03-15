@@ -58,7 +58,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -76,16 +76,17 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="p-6 rounded-xl"
-        style={{ background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)' }}
+        className="vr-banner info"
       >
-        <Plane className="w-8 h-8 mb-3" style={{ color: 'var(--vr-accent)' }} />
-        <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          هل لديك تأشيرة سفر سارية؟
-        </h3>
-        <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-          إذا كانت لديك تأشيرة سارية لأي دولة، يمكنك إضافة معلوماتها هنا لزيادة فرص عملك معنا
-        </p>
+        <Plane className="w-8 h-8 flex-shrink-0" />
+        <div>
+          <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+            هل لديك تأشيرة سفر سارية؟
+          </h3>
+          <p className="text-sm">
+            إذا كانت لديك تأشيرة سارية لأي دولة، يمكنك إضافة معلوماتها هنا لزيادة فرص عملك معنا
+          </p>
+        </div>
       </motion.div>
 
       <motion.div
@@ -94,6 +95,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         transition={{ delay: 0.25 }}
         className="vr-input-group"
       >
+        <label className="vr-input-label">رقم جواز السفر</label>
         <input
           type="text"
           value={formData.passport_number}
@@ -103,7 +105,6 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
           dir="ltr"
           style={{ textAlign: 'left' }}
         />
-        <label className="vr-input-label">رقم جواز السفر</label>
       </motion.div>
 
       <motion.div
@@ -113,6 +114,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         className="relative"
       >
         <div className="vr-input-group">
+          <label className="vr-input-label">دولة التأشيرة</label>
           <input
             type="text"
             value={formData.visa_country || countrySearch}
@@ -125,7 +127,6 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
             placeholder=" "
             className="vr-input"
           />
-          <label className="vr-input-label">دولة التأشيرة</label>
         </div>
 
         {showCountryDropdown && (
@@ -158,7 +159,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
       >
-        <label className="block mb-3" style={{ color: 'var(--vr-text-secondary)' }}>
+        <label className="vr-input-label block mb-3">
           رفع مستند التأشيرة
         </label>
         <div
@@ -167,7 +168,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
           onDragLeave={() => setVisaDragging(false)}
           onDrop={handleVisaDrop}
           onClick={() => visaInputRef.current?.click()}
-          className={`vr-upload-zone p-8 text-center ${visaDragging ? 'dragover' : ''}`}
+          className={`vr-upload-zone ${visaDragging ? 'dragover' : ''}`}
         >
           <input
             ref={visaInputRef}
@@ -181,11 +182,12 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
             <div className="relative">
               {visaFilePreview === 'document' ? (
                 <div className="flex flex-col items-center">
-                  <FileText className="w-16 h-16 mb-3" style={{ color: 'var(--vr-primary)' }} />
+                  <FileText className="w-16 h-16 mb-3" style={{ color: 'var(--vr-accent-lighter)' }} />
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mb-2"
+                    className="w-8 h-8 rounded-full flex items-center justify-center mb-2"
+                    style={{ background: 'var(--vr-success)' }}
                   >
                     <Check className="w-5 h-5 text-white" />
                   </motion.div>
@@ -198,12 +200,14 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
                   <img
                     src={visaFilePreview}
                     alt="Visa Preview"
-                    className="max-h-48 mx-auto rounded-lg"
+                    className="max-h-48 mx-auto"
+                    style={{ borderRadius: 'var(--vr-radius-md)' }}
                   />
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute top-2 right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center"
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: 'var(--vr-success)' }}
                   >
                     <Check className="w-5 h-5 text-white" />
                   </motion.div>
@@ -215,11 +219,11 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
             </div>
           ) : (
             <>
-              <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--vr-primary)' }} />
-              <p className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
+              <FileText className="upload-icon w-12 h-12 mx-auto mb-4" />
+              <p className="upload-text font-semibold mb-2">
                 اسحب المستند هنا أو انقر للاختيار
               </p>
-              <p className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>
+              <p className="upload-hint">
                 JPG, PNG, PDF (حد أقصى 10MB)
               </p>
             </>

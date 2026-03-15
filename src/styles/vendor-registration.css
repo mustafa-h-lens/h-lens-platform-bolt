@@ -1,374 +1,642 @@
-/* Vendor Registration Form Theme Variables */
+/* ═══════════════════════════════════════════════════════════════
+   VENDOR REGISTRATION — Half Lens Design System v3
+   Based on half-lens-ds-v3.html design tokens
+═══════════════════════════════════════════════════════════════ */
+
+/* Design Tokens */
 :root {
-  --vr-primary: #2563eb;
-  --vr-accent: #3b82f6;
-  --vr-bg-dark: #0f172a;
-  --vr-bg-darker: #020617;
-  --vr-glass: rgba(255, 255, 255, 0.05);
-  --vr-glass-border: rgba(255, 255, 255, 0.1);
-  --vr-success: #10b981;
-  --vr-error: #ef4444;
-  --vr-warning: #f59e0b;
-  --vr-text-primary: #f8fafc;
-  --vr-text-secondary: #cbd5e1;
-  --vr-text-muted: #94a3b8;
+  --vr-bg-base:        #050d1e;
+  --vr-bg-surface:     #071428;
+  --vr-bg-elevated:    #0a1a35;
+  --vr-bg-card:        rgba(255,255,255,0.03);
+  --vr-bg-card-hover:  rgba(255,255,255,0.06);
+  --vr-bg-input:       rgba(255,255,255,0.03);
+  --vr-bg-input-hover: rgba(255,255,255,0.05);
+  --vr-bg-input-focus: rgba(37,99,235,0.05);
+
+  --vr-border-subtle:  rgba(255,255,255,0.05);
+  --vr-border-soft:    rgba(255,255,255,0.09);
+  --vr-border-medium:  rgba(255,255,255,0.14);
+  --vr-border-accent:  rgba(37,99,235,0.4);
+
+  --vr-text-primary:   #f0f4ff;
+  --vr-text-secondary: rgba(200,215,255,0.65);
+  --vr-text-muted:     rgba(150,175,230,0.4);
+  --vr-text-disabled:  rgba(100,130,200,0.25);
+
+  --vr-accent:         #2563eb;
+  --vr-accent-light:   #3b82f6;
+  --vr-accent-lighter: #60a5fa;
+  --vr-accent-glow:    rgba(37,99,235,0.25);
+  --vr-accent-glow-md: rgba(37,99,235,0.15);
+
+  --vr-success:        #10b981;
+  --vr-success-bg:     rgba(16,185,129,0.1);
+  --vr-success-border: rgba(16,185,129,0.25);
+  --vr-success-text:   #34d399;
+  --vr-warning:        #f59e0b;
+  --vr-warning-bg:     rgba(245,158,11,0.1);
+  --vr-warning-text:   #fbbf24;
+  --vr-error:          #ef4444;
+  --vr-error-bg:       rgba(239,68,68,0.1);
+  --vr-error-text:     #f87171;
+
+  --vr-radius-sm:   6px;
+  --vr-radius-md:   10px;
+  --vr-radius-lg:   14px;
+  --vr-radius-xl:   20px;
+  --vr-radius-full: 9999px;
+
+  --vr-shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+  --vr-shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+  --vr-shadow-lg:   0 8px 32px rgba(0,0,0,0.6);
+  --vr-shadow-glow: 0 0 20px rgba(37,99,235,0.2), 0 0 60px rgba(37,99,235,0.07);
+  --vr-shadow-card: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03);
+
+  --vr-transition-fast:   0.15s cubic-bezier(0.4,0,0.2,1);
+  --vr-transition-normal: 0.25s cubic-bezier(0.4,0,0.2,1);
+
+  --color-primary: #2563eb;
 }
 
-/* Animated Background */
+/* ═══ Animated Background ═══ */
 .vr-background {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, var(--vr-bg-darker) 0%, #1e293b 50%, var(--vr-bg-dark) 100%);
+  background: var(--vr-bg-base);
   overflow: hidden;
   z-index: 0;
 }
-
 .vr-background::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
-  animation: vr-float 20s ease-in-out infinite;
+  top: -40%;
+  left: -30%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(37,99,235,0.08) 0%, transparent 70%);
+  animation: vr-float 25s ease-in-out infinite;
 }
-
 .vr-background::after {
   content: '';
   position: absolute;
-  bottom: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-  animation: vr-float 25s ease-in-out infinite reverse;
+  bottom: -40%;
+  right: -30%;
+  width: 80%;
+  height: 80%;
+  background: radial-gradient(ellipse, rgba(139,92,246,0.06) 0%, transparent 70%);
+  animation: vr-float 20s ease-in-out infinite reverse;
 }
 
 @keyframes vr-float {
-  0%, 100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  33% {
-    transform: translate(30px, -30px) rotate(5deg);
-  }
-  66% {
-    transform: translate(-20px, 20px) rotate(-5deg);
-  }
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(30px, -30px) rotate(5deg); }
+  66% { transform: translate(-20px, 20px) rotate(-3deg); }
 }
 
-/* Glass Morphism Card */
+/* ═══ Glass Card ═══ */
 .vr-glass-card {
-  background: var(--vr-glass);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--vr-glass-border);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
-              0 0 60px rgba(37, 99, 235, 0.1);
-}
-
-/* Glow Effect */
-.vr-glow {
   position: relative;
-}
-
-.vr-glow::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(45deg, var(--vr-primary), var(--vr-accent));
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: -1;
-  filter: blur(10px);
-}
-
-.vr-glow:hover::before {
-  opacity: 0.5;
-}
-
-/* Animated Button */
-.vr-button {
-  position: relative;
+  background: rgba(7,20,45,0.65);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--vr-radius-xl);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
   overflow: hidden;
-  transition: all 0.3s ease;
 }
 
-.vr-button::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s ease, height 0.6s ease;
-}
-
-.vr-button:active::before {
-  width: 300px;
-  height: 300px;
-}
-
-/* Floating Label Input */
-.vr-input-group {
-  position: relative;
-}
-
-.vr-input {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 16px 16px 16px 16px;
-  width: 100%;
-  color: var(--vr-text-primary);
-  font-size: 16px;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.vr-input:focus {
-  border-color: var(--vr-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.vr-input-label {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--vr-text-muted);
-  font-size: 16px;
-  pointer-events: none;
-  transition: all 0.3s ease;
-  background: transparent;
-  padding: 0 4px;
-}
-
-.vr-input:focus + .vr-input-label,
-.vr-input:not(:placeholder-shown) + .vr-input-label {
-  top: 0;
-  font-size: 12px;
-  color: var(--vr-primary);
-  background: linear-gradient(to bottom, transparent 0%, transparent 40%, var(--vr-bg-dark) 40%, var(--vr-bg-dark) 60%, transparent 60%);
-}
-
-/* Toggle Switch */
-.vr-toggle {
-  position: relative;
-  width: 56px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.vr-toggle.active {
-  background: var(--vr-primary);
-}
-
-.vr-toggle-knob {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 22px;
-  height: 22px;
-  background: white;
-  border-radius: 50%;
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.vr-toggle.active .vr-toggle-knob {
-  right: 31px;
-}
-
-/* Progress Bar */
+/* ═══ Progress Bar ═══ */
 .vr-progress-bar {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  height: 6px;
+  background: var(--vr-border-subtle);
+  border-radius: var(--vr-radius-full);
   overflow: hidden;
   position: relative;
 }
-
 .vr-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--vr-primary), var(--vr-accent));
-  border-radius: 2px;
-  transition: width 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border-radius: var(--vr-radius-full);
+  background: linear-gradient(90deg, var(--vr-accent), var(--vr-accent-light));
   position: relative;
   overflow: hidden;
 }
-
 .vr-progress-fill::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: vr-shimmer 2s infinite;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 2s infinite;
 }
 
-@keyframes vr-shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 
-/* Upload Zone */
-.vr-upload-zone {
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 0.3s ease;
+/* ═══ Inputs ═══ */
+.vr-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-radius: var(--vr-radius-md);
+  color: var(--vr-text-primary);
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  transition: var(--vr-transition-fast);
+  outline: none;
+}
+.vr-input::placeholder {
+  color: var(--vr-text-muted);
+}
+.vr-input:hover {
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.06);
+}
+.vr-input:focus {
+  border-color: rgba(37,99,235,0.6);
+  background: rgba(37,99,235,0.06);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+.vr-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Input with floating label effect */
+.vr-input-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vr-text-secondary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.vr-input-label .req {
+  color: var(--vr-error-text);
+}
+
+/* Input hint/error */
+.vr-input-hint {
+  font-size: 12px;
+  color: var(--vr-text-muted);
+  margin-top: 4px;
+}
+.vr-input-hint.error {
+  color: var(--vr-error-text);
+}
+.vr-input-hint.ok {
+  color: var(--vr-success-text);
+}
+
+/* Input error/success states */
+.vr-input-error {
+  border-color: rgba(239,68,68,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.08) !important;
+}
+.vr-input-ok {
+  border-color: var(--vr-success-border) !important;
+}
+
+/* Select */
+.vr-input.select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(150,175,230,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 16px center;
+  padding-left: 40px;
   cursor: pointer;
 }
 
-.vr-upload-zone:hover {
-  border-color: var(--vr-primary);
-  background: rgba(59, 130, 246, 0.05);
+/* Textarea */
+textarea.vr-input {
+  height: auto;
+  min-height: 90px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.6;
 }
 
-.vr-upload-zone.dragover {
-  border-color: var(--vr-accent);
-  background: rgba(37, 99, 235, 0.1);
-  transform: scale(1.02);
-}
-
-/* Selection Cards */
-.vr-selection-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 24px;
+/* ═══ Buttons ═══ */
+.vr-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: var(--vr-radius-md);
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  transition: var(--vr-transition-fast);
+  white-space: nowrap;
+  text-decoration: none;
   position: relative;
   overflow: hidden;
 }
-
-.vr-selection-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--vr-primary), var(--vr-accent));
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.vr-button:active {
+  transform: scale(0.97);
+}
+.vr-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.vr-selection-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+/* Primary button with glow */
+.vr-glow {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+}
+.vr-glow:hover:not(:disabled) {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.5);
+  transform: translateY(-1px);
 }
 
-.vr-selection-card.selected {
-  border-color: var(--vr-primary);
-  background: rgba(59, 130, 246, 0.1);
+/* Secondary button */
+.vr-button-secondary {
+  background: var(--vr-bg-card);
+  color: var(--vr-text-primary);
+  border-color: var(--vr-border-medium);
+}
+.vr-button-secondary:hover:not(:disabled) {
+  background: var(--vr-bg-card-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--vr-shadow-sm);
 }
 
-.vr-selection-card.selected::before {
-  opacity: 0.05;
-}
-
-/* Dropdown */
-.vr-dropdown {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(37, 99, 235, 0.2);
-}
-
-.vr-dropdown-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--vr-text-secondary);
+/* Ghost button */
+.vr-button-ghost {
   background: transparent;
+  color: var(--vr-text-secondary);
+  border-color: transparent;
 }
-
-.vr-dropdown-item:hover,
-.vr-dropdown-item--active {
-  background: rgba(37, 99, 235, 0.2);
+.vr-button-ghost:hover:not(:disabled) {
+  background: var(--vr-bg-card);
   color: var(--vr-text-primary);
 }
 
-.vr-nested-parent {
+/* ═══ Upload Zone ═══ */
+.vr-upload-zone {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: var(--vr-radius-lg);
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--vr-transition-normal);
+  background: rgba(255,255,255,0.02);
+}
+.vr-upload-zone:hover,
+.vr-upload-zone.dragover {
+  border-color: var(--vr-accent);
+  background: var(--vr-bg-input-focus);
+  box-shadow: 0 0 20px var(--vr-accent-glow);
+}
+.vr-upload-zone .upload-icon {
+  color: var(--vr-text-muted);
+  margin-bottom: 10px;
+}
+.vr-upload-zone .upload-text {
+  font-size: 14px;
+  color: var(--vr-text-secondary);
+  margin-bottom: 4px;
+}
+.vr-upload-zone .upload-hint {
+  font-size: 12px;
+  color: var(--vr-text-muted);
+}
+
+/* ═══ Toggle Switch ═══ */
+.vr-toggle {
+  width: 42px;
+  height: 24px;
+  background: var(--vr-bg-card);
+  border-radius: var(--vr-radius-full);
+  border: 1px solid var(--vr-border-medium);
+  position: relative;
+  transition: var(--vr-transition-normal);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.vr-toggle::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--vr-text-muted);
+  border-radius: 50%;
+  top: 2px;
+  right: 2px;
+  transition: var(--vr-transition-normal);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.vr-toggle.on {
+  background: rgba(37,99,235,0.2);
+  border-color: var(--vr-accent-glow-md);
+}
+.vr-toggle.on::after {
+  background: var(--vr-accent-lighter);
+  transform: translateX(-18px);
+  box-shadow: 0 0 6px rgba(37,99,235,0.4);
+}
+
+/* ═══ Selection Card ═══ */
+.vr-selection-card {
+  padding: 14px 16px;
+  border-radius: var(--vr-radius-lg);
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  transition: var(--vr-transition-normal);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.vr-selection-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.18);
+  transform: translateY(-2px);
+  box-shadow: var(--vr-shadow-md);
+}
+.vr-selection-card.selected {
+  border-color: var(--vr-border-accent);
+  background: rgba(37,99,235,0.1);
+  box-shadow: 0 0 0 1px var(--vr-border-accent), 0 0 20px rgba(37,99,235,0.15);
+}
+.vr-selection-card.flex-col {
+  flex-direction: column;
+  text-align: center;
+  padding: 28px 16px;
+}
+
+/* ═══ Checkbox ═══ */
+.vr-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: var(--vr-radius-sm);
+  border: 2px solid var(--vr-border-medium);
+  background: var(--vr-bg-input);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--vr-transition-fast);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.vr-checkbox.checked {
+  background: var(--vr-accent);
+  border-color: var(--vr-accent);
+}
+
+/* ═══ Input Group ═══ */
+.vr-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   position: relative;
 }
 
-.vr-submenu {
-  max-height: 280px;
+/* ═══ Dropdown ═══ */
+.vr-dropdown {
+  max-height: 200px;
   overflow-y: auto;
+  background: var(--vr-bg-elevated);
+  border: 1px solid var(--vr-border-soft);
+  border-radius: var(--vr-radius-md);
+  box-shadow: var(--vr-shadow-lg);
+  z-index: 50;
 }
-
-/* Custom Scrollbar */
 .vr-dropdown::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
-
-.vr-dropdown::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 3px;
-}
-
 .vr-dropdown::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+.vr-dropdown-item {
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--vr-text-primary);
+  cursor: pointer;
+  transition: var(--vr-transition-fast);
+  border-bottom: 1px solid var(--vr-border-subtle);
+  font-family: 'Cairo', sans-serif;
+}
+.vr-dropdown-item:last-child {
+  border-bottom: none;
+}
+.vr-dropdown-item:hover {
+  background: var(--vr-bg-card-hover);
+  color: var(--vr-accent-lighter);
 }
 
-.vr-dropdown::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Success Animation */
-@keyframes vr-success-scale {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
+/* ═══ Success Screen ═══ */
 .vr-success-icon {
-  animation: vr-success-scale 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  animation: vr-success-pop 0.5s cubic-bezier(0.34,1.56,0.64,1);
 }
 
-/* Confetti */
-@keyframes vr-confetti-fall {
-  0% {
-    transform: translateY(-100vh) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
+@keyframes vr-success-pop {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
+/* ═══ Confetti ═══ */
 .vr-confetti-piece {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  animation: vr-confetti-fall 3s linear;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  animation: vr-confetti-fall 3s ease-out forwards;
+}
+
+@keyframes vr-confetti-fall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(400px) rotate(720deg); }
+}
+
+/* ═══ Stepper (from DS v2) ═══ */
+.vr-stepper {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+.vr-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+}
+
+/* Connector line between steps — RTL aware */
+.vr-step + .vr-step::before {
+  content: '';
+  position: absolute;
+  top: 17px;
+  height: 2px;
+  background: var(--vr-border-subtle);
+  z-index: 0;
+  left: 50%;
+  right: -50%;
+  margin-left: 18px;
+  margin-right: 18px;
+}
+.vr-step.done + .vr-step::before { background: var(--vr-success); }
+
+/* Animated green fill on connector */
+.vr-step.done + .vr-step.done::after,
+.vr-step.done + .vr-step.active::after {
+  content: '';
+  position: absolute;
+  top: 16px;
+  height: 4px;
+  left: 50%;
+  right: -50%;
+  margin-left: 18px;
+  margin-right: 18px;
+  background: linear-gradient(270deg, var(--vr-success), rgba(16,185,129,0.3));
+  border-radius: 2px;
+  animation: connectorFill 0.6s cubic-bezier(0.4,0,0.2,1) forwards;
+  z-index: 0;
+}
+@keyframes connectorFill {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Step dot */
+.vr-step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--vr-border-soft);
+  background: var(--vr-bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--vr-text-muted);
+  position: relative;
+  z-index: 1;
+  transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.vr-step:hover .vr-step-dot {
+  border-color: var(--vr-border-medium);
+  background: rgba(255,255,255,0.04);
+  transform: scale(1.08);
+}
+.vr-step.done .vr-step-dot {
+  background: var(--vr-success-bg);
+  border-color: var(--vr-success-border);
+  color: var(--vr-success-text);
+  animation: dotPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.vr-step.active .vr-step-dot {
+  background: var(--vr-accent-glow);
+  border-color: var(--vr-accent);
+  color: var(--vr-accent-lighter);
+  box-shadow: 0 0 0 4px var(--vr-accent-glow-md), 0 0 18px rgba(37,99,235,0.3);
+  animation: dotPulse 2.5s ease-in-out infinite;
+}
+.vr-step-dot svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.vr-step.done .vr-step-dot svg {
+  animation: checkBounce 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Step labels */
+.vr-step-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--vr-text-muted);
+  white-space: nowrap;
+  transition: color 0.25s ease;
+  text-align: center;
+}
+.vr-step-desc {
+  font-size: 10px;
+  color: var(--vr-text-disabled);
+  white-space: nowrap;
+  text-align: center;
+}
+.vr-step.active .vr-step-lbl { color: var(--vr-accent-lighter); }
+.vr-step.done .vr-step-lbl { color: var(--vr-success-text); }
+.vr-step.active .vr-step-desc { color: var(--vr-accent-lighter); opacity: 0.6; }
+.vr-step.done .vr-step-desc { color: var(--vr-success-text); opacity: 0.6; }
+
+@keyframes dotPop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--vr-accent-glow-md), 0 0 18px rgba(37,99,235,0.25); }
+  50% { box-shadow: 0 0 0 8px var(--vr-accent-glow-md), 0 0 24px rgba(37,99,235,0.4); }
+}
+@keyframes checkBounce {
+  from { transform: scale(0) rotate(-30deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* ═══ Tag/Chip ═══ */
+.vr-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--vr-accent-glow);
+  border: 1px solid var(--vr-accent-glow-md);
+  border-radius: var(--vr-radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vr-accent-lighter);
+  cursor: pointer;
+  transition: var(--vr-transition-fast);
+}
+.vr-tag:hover {
+  background: rgba(37,99,235,0.3);
+}
+
+/* ═══ Info/Warning Banner ═══ */
+.vr-banner {
+  padding: 12px 14px;
+  border-radius: var(--vr-radius-md);
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.vr-banner.info {
+  background: rgba(6,182,212,0.08);
+  border: 1px solid rgba(6,182,212,0.2);
+  color: #22d3ee;
+}
+.vr-banner.warning {
+  background: var(--vr-warning-bg);
+  border: 1px solid rgba(245,158,11,0.2);
+  color: var(--vr-warning-text);
+}
+.vr-banner.error {
+  background: var(--vr-error-bg);
+  border: 1px solid rgba(239,68,68,0.2);
+  color: var(--vr-error-text);
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 640px) {
+  .vr-glass-card {
+    margin: 8px;
+    border-radius: var(--vr-radius-lg);
+  }
 }

@@ -377,7 +377,7 @@ export const VendorRegistrationForm = () => {
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
   return (
-    <div className="vr-background min-h-screen relative">
+    <div className="vr-background min-h-screen relative" style={{ fontFamily: "'Cairo', sans-serif" }}>
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -398,49 +398,35 @@ export const VendorRegistrationForm = () => {
           transition={{ delay: 0.1 }}
           className="max-w-3xl mx-auto mb-8"
         >
-          <div className="flex items-center justify-between mb-4 px-4">
-            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
-              <div key={step} className="flex flex-col items-center">
-                <motion.div
-                  onClick={() => goToStep(step)}
-                  whileHover={{ scale: step <= currentStep ? 1.1 : 1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all duration-300 ${
-                    step === currentStep
-                      ? 'shadow-lg'
-                      : step < currentStep
-                      ? ''
-                      : 'bg-gray-700'
-                  }`}
-                  style={{
-                    color: 'var(--vr-text-primary)',
-                    ...(step <= currentStep ? { backgroundColor: 'var(--color-primary)' } : {})
-                  }}
-                >
-                  {step < currentStep ? '✓' : step}
-                </motion.div>
-                <span className="text-xs mt-2 hidden md:block" style={{ color: 'var(--vr-text-muted)' }}>
-                  {step === 1 && 'الهوية'}
-                  {step === 2 && 'التواصل'}
-                  {step === 3 && 'المستندات'}
-                  {step === 4 && 'السفر'}
-                  {step === 5 && 'المالية'}
-                  {step === 6 && 'المجالات'}
-                  {step === 7 && 'المراجعة'}
-                </span>
+          {/* DS Stepper with connecting lines */}
+          <div className="vr-stepper" style={{ marginBottom: 16 }}>
+            {[
+              { n: 1, l: 'الهوية' },
+              { n: 2, l: 'التواصل' },
+              { n: 3, l: 'المستندات' },
+              { n: 4, l: 'السفر' },
+              { n: 5, l: 'المالية' },
+              { n: 6, l: 'المجالات' },
+              { n: 7, l: 'المراجعة' },
+            ].map(({ n, l }) => (
+              <div
+                key={n}
+                className={`vr-step ${n === currentStep ? 'active' : n < currentStep ? 'done' : ''}`}
+                onClick={() => goToStep(n)}
+              >
+                <div className="vr-step-dot">
+                  {n < currentStep ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  ) : n}
+                </div>
+                <span className="vr-step-lbl hidden md:block">{l}</span>
+                {n < currentStep && <span className="vr-step-desc hidden md:block">مكتمل</span>}
+                {n === currentStep && <span className="vr-step-desc hidden md:block">قيد التنفيذ</span>}
               </div>
             ))}
           </div>
-
-          <div className="vr-progress-bar">
-            <motion.div
-              className="vr-progress-fill"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-            />
-          </div>
           {lastSavedAt && (
-            <div style={{ fontSize: '.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 6, textAlign: 'center' }}>
+            <div style={{ fontSize: '.68rem', color: 'var(--vr-text-muted)', marginTop: 6, textAlign: 'center' }}>
               تم الحفظ التلقائي في {lastSavedAt}
             </div>
           )}
@@ -470,12 +456,7 @@ export const VendorRegistrationForm = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={prevStep}
-                    className="flex-1 py-4 rounded-xl font-semibold transition-all border-2"
-                    style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderColor: 'rgba(255, 255, 255, 0.2)',
-                      color: 'var(--vr-text-primary)',
-                    }}
+                    className="vr-button vr-button-secondary flex-1"
                   >
                     السابق
                   </motion.button>
@@ -486,11 +467,7 @@ export const VendorRegistrationForm = () => {
                   whileTap={{ scale: 0.98 }}
                   onClick={currentStep === TOTAL_STEPS ? handleSubmit : nextStep}
                   disabled={!validateStep(currentStep) || (currentStep === TOTAL_STEPS && isSubmitting)}
-                  className="vr-button vr-glow flex-1 py-4 rounded-xl font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: 'var(--color-primary)',
-                    color: 'var(--vr-text-primary)',
-                  }}
+                  className="vr-button vr-glow flex-1"
                 >
                   {currentStep === TOTAL_STEPS ? (isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب') : 'التالي'}
                 </motion.button>
