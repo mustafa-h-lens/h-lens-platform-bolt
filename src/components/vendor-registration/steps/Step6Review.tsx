@@ -1,13 +1,13 @@
-import { useState } from 'react';
 import { VendorFormData, SelectedField } from '../VendorRegistrationForm';
 
 interface Props {
   formData: VendorFormData;
   goToStep: (step: number) => void;
+  termsAccepted: boolean;
+  setTermsAccepted: (v: boolean) => void;
 }
 
-export const Step6Review = ({ formData, goToStep }: Props) => {
-  const [termsAccepted, setTermsAccepted] = useState(false);
+export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepted }: Props) => {
 
   const vendorTypeLabel = formData.vendor_type === 'individual' ? 'فرد' : formData.vendor_type === 'company' ? 'شركة' : '—';
 
@@ -162,7 +162,11 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
         >
           <div className="terms-checkbox" />
           <div className="terms-text">
-            أوافق على <strong>الشروط والأحكام</strong> وسياسة الخصوصية الخاصة بمنصة Half Lens، وأقر بأن جميع البيانات المدخلة صحيحة ودقيقة.
+            أوافق على{' '}
+            <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>الشروط والأحكام</a>
+            {' '}و{' '}
+            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>سياسة الخصوصية</a>
+            {' '}الخاصة بمنصة Half Lens، وأقر بأن جميع البيانات المدخلة صحيحة ودقيقة.
           </div>
         </div>
       </div>

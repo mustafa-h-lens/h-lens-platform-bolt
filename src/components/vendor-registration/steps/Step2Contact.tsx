@@ -6,9 +6,14 @@ import { COUNTRY_CODES } from '../../../lib/shared-data';
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
+  errors?: Record<string, string>;
 }
 
-export const Step2Contact = ({ formData, updateFormData }: Props) => {
+const FieldError = ({ msg }: { msg?: string }) => msg ? (
+  <div className="field-error">✕ {msg}</div>
+) : null;
+
+export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) => {
   const [cities, setCities] = useState<string[]>([]);
   const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
@@ -109,12 +114,13 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
               style={{ fontFamily: 'var(--font-mono)' }}
             />
           </div>
+          <FieldError msg={errors.phone} />
         </div>
 
         {/* Primary City — custom select */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> مدينة العمل الأساسية</label>
-          <div className={`custom-select ${cityOpen ? 'open' : ''}`} ref={cityRef}>
+          <div className={`custom-select ${cityOpen ? 'open' : ''} ${errors.primary_city ? 'has-error' : ''}`} ref={cityRef}>
             <div className="cs-trigger" onClick={() => setCityOpen(!cityOpen)}>
               <span className={formData.primary_city ? '' : 'cs-placeholder'}>
                 {formData.primary_city || 'اختر المدينة'}
@@ -150,6 +156,7 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
               </div>
             )}
           </div>
+          <FieldError msg={errors.primary_city} />
         </div>
 
         {/* Other cities toggle */}

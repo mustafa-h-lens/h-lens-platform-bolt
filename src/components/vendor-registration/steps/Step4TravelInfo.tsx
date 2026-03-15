@@ -138,7 +138,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
               <button className="up-remove" onClick={removePassportDoc} type="button">✕</button>
             </div>
           ) : (
-            <div className="upload-zone" onClick={() => passportFileRef.current?.click()}>
+            <div className="upload-zone">
               <span className="uz-emoji">📄</span>
               <div className="uz-text">اسحب صورة الجواز هنا أو انقر للرفع</div>
               <div className="uz-hint">PNG, JPG, PDF — حد أقصى 5MB</div>

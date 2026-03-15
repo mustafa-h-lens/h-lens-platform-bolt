@@ -5,7 +5,12 @@ import { supabase } from '../../../lib/supabaseClient';
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
+  errors?: Record<string, string>;
 }
+
+const FieldError = ({ msg }: { msg?: string }) => msg ? (
+  <div className="field-error">✕ {msg}</div>
+) : null;
 
 interface Bank {
   id: string;
@@ -13,7 +18,7 @@ interface Bank {
   name_en: string;
 }
 
-export const Step5Financial = ({ formData, updateFormData }: Props) => {
+export const Step5Financial = ({ formData, updateFormData, errors = {} }: Props) => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
   const [bankOpen, setBankOpen] = useState(false);
@@ -129,6 +134,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
               </div>
             )}
           </div>
+          <FieldError msg={errors.bank_id} />
         </div>
 
         {/* Account Holder Name */}
@@ -141,6 +147,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
             onChange={(e) => updateFormData({ account_name: e.target.value })}
             placeholder="الاسم كما يظهر في الحساب البنكي"
           />
+          <FieldError msg={errors.account_name} />
         </div>
 
         {/* IBAN with SA prefix */}
@@ -164,6 +171,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
             />
           </div>
           <div className="iban-counter" style={{ direction: 'ltr', textAlign: 'left' }}>{ibanRaw.length} / 22 {ibanRaw.length === 22 && <span style={{ color: 'var(--success-text)' }}>✓</span>}</div>
+          <FieldError msg={errors.iban} />
         </div>
 
         {/* VAT toggle */}

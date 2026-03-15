@@ -70,6 +70,7 @@ export const VendorRegistrationForm = () => {
   const { isDarkMode, toggleTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -161,48 +162,75 @@ export const VendorRegistrationForm = () => {
     }
   };
 
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
   const updateFormData = (data: Partial<VendorFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
+    // Clear validation errors for updated fields
+    if (Object.keys(validationErrors).length > 0) {
+      const cleared = { ...validationErrors };
+      Object.keys(data).forEach(key => delete cleared[key]);
+      setValidationErrors(cleared);
+    }
+  };
+
+  const getStepErrors = (step: number): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    switch (step) {
+      case 1:
+        if (!formData.full_name) errors.full_name = 'الاسم الثلاثي مطلوب';
+        if (!formData.nationality) errors.nationality = 'الجنسية مطلوبة';
+        if (!formData.vendor_type) errors.vendor_type = 'نوع المورد مطلوب';
+        break;
+      case 2:
+        if (!formData.phone) errors.phone = 'رقم الجوال مطلوب';
+        if (!formData.primary_city) errors.primary_city = 'مدينة العمل الأساسية مطلوبة';
+        break;
+      case 3:
+        if (!formData.id_number) errors.id_number = 'رقم الهوية مطلوب';
+        if (!formData.id_image && !formData.id_image_url) errors.id_image = 'صورة الهوية مطلوبة';
+        if (!formData.profile_image && !formData.profile_image_url) errors.profile_image = 'الصورة الشخصية مطلوبة';
+        break;
+      case 4:
+        break;
+      case 5:
+        if (!formData.bank_id) errors.bank_id = 'اسم البنك مطلوب';
+        if (!formData.account_name) errors.account_name = 'اسم صاحب الحساب مطلوب';
+        if (!formData.iban) errors.iban = 'رقم الآيبان مطلوب';
+        break;
+      case 6:
+        if (formData.selected_fields.length === 0) errors.selected_fields = 'اختر مجال واحد على الأقل';
+        else if (!formData.selected_fields.every(f => f.rate_from && f.rate_to)) errors.selected_fields = 'حدد نطاق السعر لجميع المجالات المختارة';
+        break;
+      case 7:
+        break;
+    }
+    return errors;
   };
 
   const validateStep = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        return !!(formData.full_name && formData.nationality && formData.vendor_type);
-      case 2:
-        return !!(formData.phone && formData.primary_city);
-      case 3:
-        return !!(formData.id_number && (formData.id_image || formData.id_image_url) && (formData.profile_image || formData.profile_image_url));
-      case 4:
-        return true;
-      case 5:
-        return !!(formData.bank_id && formData.account_name && formData.iban);
-      case 6:
-        return formData.selected_fields.length > 0 && formData.selected_fields.every(f => f.rate_from && f.rate_to);
-      case 7:
-        return true;
-      default:
-        return false;
-    }
+    return Object.keys(getStepErrors(step)).length === 0;
   };
 
   const goToStep = (step: number) => {
     if (step < currentStep || validateStep(currentStep)) {
+      setValidationErrors({});
       setCurrentStep(step);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      showError('يرجى إكمال جميع الحقول المطلوبة');
+      setValidationErrors(getStepErrors(currentStep));
     }
   };
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
+      setValidationErrors({});
       if (currentStep < TOTAL_STEPS) {
         setCurrentStep(prev => prev + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      showError('يرجى إكمال جميع الحقول المطلوبة');
+      setValidationErrors(getStepErrors(currentStep));
     }
   };
 
@@ -233,6 +261,10 @@ export const VendorRegistrationForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+    if (!termsAccepted) {
+      showError('يرجى الموافقة على الشروط والأحكام وسياسة الخصوصية');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -449,13 +481,13 @@ export const VendorRegistrationForm = () => {
             transition={{ duration: 0.35 }}
           >
             <div className="form-card">
-              {currentStep === 1 && <Step1BasicIdentity formData={formData} updateFormData={updateFormData} />}
-              {currentStep === 2 && <Step2Contact formData={formData} updateFormData={updateFormData} />}
-              {currentStep === 3 && <Step3IdentityDocuments formData={formData} updateFormData={updateFormData} />}
+              {currentStep === 1 && <Step1BasicIdentity formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
+              {currentStep === 2 && <Step2Contact formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
+              {currentStep === 3 && <Step3IdentityDocuments formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
               {currentStep === 4 && <Step4TravelInfo formData={formData} updateFormData={updateFormData} />}
-              {currentStep === 5 && <Step5Financial formData={formData} updateFormData={updateFormData} />}
-              {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} />}
-              {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} />}
+              {currentStep === 5 && <Step5Financial formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
+              {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} errors={validationErrors} />}
+              {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} />}
 
               {/* Nav Buttons */}
               <div className="nav-buttons">
@@ -469,7 +501,7 @@ export const VendorRegistrationForm = () => {
                   <button
                     className="btn-submit"
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !termsAccepted}
                     type="button"
                   >
                     {isSubmitting ? 'جاري الإرسال...' : '✓ إرسال الطلب'}
@@ -478,7 +510,6 @@ export const VendorRegistrationForm = () => {
                   <button
                     className="btn btn-primary"
                     onClick={nextStep}
-                    disabled={!validateStep(currentStep)}
                     type="button"
                   >
                     التالي

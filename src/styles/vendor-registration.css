@@ -84,7 +84,9 @@ body::after{display:none;
   right:calc(50% + 18px);left:calc(-50% + 18px);
   background:var(--border-subtle);z-index:0;border-radius:2px;
 }
-.step:last-child::after{display:none}
+.step:nth-child(7)::after,
+.step:nth-child(7).done::after,
+.step.done + .step:nth-child(7)::after{display:none!important;content:none!important}
 .step.done::after{background:var(--success)}
 .step.active::after{background:linear-gradient(90deg, var(--success), var(--accent));}
 .step-dot{
@@ -277,6 +279,15 @@ body::after{display:none;
 .price-modal-close:hover{background:var(--bg-card-hover);color:var(--text-primary)}
 .price-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 .price-modal-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:16px;border-top:1px solid var(--border-subtle)}
+
+/* ── Validation Errors ── */
+.field-error{
+  font-size:12px;color:var(--danger-text,#ef4444);margin-top:6px;
+  display:flex;align-items:center;gap:4px;font-weight:600;
+  animation:fadeSlideUp .2s ease;
+}
+.input-error{border-color:var(--danger,#ef4444)!important;box-shadow:0 0 0 2px rgba(239,68,68,0.15)!important}
+.custom-select.has-error .cs-trigger{border-color:var(--danger,#ef4444)!important;box-shadow:0 0 0 2px rgba(239,68,68,0.15)!important}
 
 /* ── Inline Pricing Cards ── */
 .fields-pricing-section{margin-bottom:16px;display:flex;flex-direction:column;gap:10px}
@@ -626,82 +637,114 @@ body::after{display:none;
 .form-content.hidden{display:none}
 
 
-/* ═══════════ LIGHT MODE ═══════════ */
-[data-theme="light"] body{
-  background:#f0f4ff;
-  color:var(--text-primary);
+/* ═══════════ LIGHT MODE ═══════════
+   data-theme is ON the .reg-bg element, so use .reg-bg[data-theme="light"]
+═══════════ */
+.reg-bg[data-theme="light"]{
+  background:#f8f9fc;
+  color:#0f172a;
 }
-[data-theme="light"] body::before{
+.reg-bg[data-theme="light"]::before{
   background:
-    radial-gradient(ellipse 600px 400px at 20% 20%, rgba(37,99,235,0.05) 0%, transparent 70%),
-    radial-gradient(ellipse 500px 350px at 80% 70%, rgba(99,102,241,0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 450px 350px at 10% 20%, rgba(37,99,235,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at 85% 60%, rgba(99,102,241,0.06) 0%, transparent 70%);
 }
-[data-theme="light"] body::after{
-  background-image:
-    linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+.reg-bg[data-theme="light"] .reg-topbar{background:rgba(255,255,255,0.85);border-color:rgba(0,0,0,0.08)}
+.reg-bg[data-theme="light"] .reg-badge{background:rgba(37,99,235,0.08);color:#2563eb;border-color:rgba(37,99,235,0.15)}
+.reg-bg[data-theme="light"] .reg-title{color:#0f172a}
+.reg-bg[data-theme="light"] .reg-subtitle{color:#475569}
+.reg-bg[data-theme="light"] .form-card{
+  background:rgba(255,255,255,0.92);
+  border-color:rgba(0,0,0,0.1);
+  box-shadow:0 1px 3px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.06);
 }
-[data-theme="light"] .form-card{
-  background:rgba(255,255,255,0.85);
-  border-color:var(--border-soft);
-  box-shadow:0 4px 24px rgba(0,0,0,0.06);
+.reg-bg[data-theme="light"] .form-card::before{
+  background:linear-gradient(90deg,transparent,rgba(0,0,0,0.03),transparent);
 }
-[data-theme="light"] .form-card::before{
-  background:linear-gradient(90deg,transparent,rgba(0,0,0,0.04),transparent);
+.reg-bg[data-theme="light"] .step-title{color:#0f172a}
+.reg-bg[data-theme="light"] .step-subtitle{color:#475569}
+.reg-bg[data-theme="light"] .step-dot{
+  background:#fff;
+  border-color:rgba(0,0,0,0.15);
+  color:#475569;
 }
-[data-theme="light"] .step-dot{
-  background:var(--bg-surface);
-  border-color:var(--border-medium);
+.reg-bg[data-theme="light"] .step.done .step-dot{
+  background:rgba(5,150,105,0.1);
+  border-color:#059669;
+  color:#059669;
 }
-[data-theme="light"] .step.done .step-dot{
-  background:var(--success-bg);
-  border-color:var(--success);
-  color:var(--success);
-}
-[data-theme="light"] .step.active .step-dot{
+.reg-bg[data-theme="light"] .step.active .step-dot{
   background:rgba(37,99,235,0.08);
-  border-color:var(--accent);
-  color:var(--accent);
+  border-color:#2563eb;
+  color:#2563eb;
   box-shadow:0 0 0 4px rgba(37,99,235,0.1),0 0 14px rgba(37,99,235,0.15);
 }
-[data-theme="light"] .step.active .step-lbl{color:var(--accent)}
-[data-theme="light"] .step.done .step-lbl{color:var(--success)}
-[data-theme="light"] .step.done::after{background:var(--success)}
-[data-theme="light"] .progress-fill{background:linear-gradient(90deg,var(--success),var(--accent))}
-[data-theme="light"] .vendor-type-card.selected{
-  border-color:var(--accent);
+.reg-bg[data-theme="light"] .step-lbl{color:#94a3b8}
+.reg-bg[data-theme="light"] .step.active .step-lbl{color:#2563eb}
+.reg-bg[data-theme="light"] .step.done .step-lbl{color:#059669}
+.reg-bg[data-theme="light"] .step.done::after{background:#059669}
+.reg-bg[data-theme="light"] .progress-row{color:#475569}
+.reg-bg[data-theme="light"] .progress{background:rgba(0,0,0,0.06)}
+.reg-bg[data-theme="light"] .progress-fill{background:linear-gradient(90deg,#059669,#2563eb)}
+.reg-bg[data-theme="light"] .input-label{color:#0f172a}
+.reg-bg[data-theme="light"] .input{background:#f8fafc;border-color:rgba(0,0,0,0.12);color:#0f172a}
+.reg-bg[data-theme="light"] .input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+.reg-bg[data-theme="light"] .input::placeholder{color:#94a3b8}
+.reg-bg[data-theme="light"] .vendor-type-card{background:#fff;border-color:rgba(0,0,0,0.1);color:#0f172a}
+.reg-bg[data-theme="light"] .vendor-type-card:hover{border-color:rgba(0,0,0,0.15)}
+.reg-bg[data-theme="light"] .vendor-type-card.selected{
+  border-color:#2563eb;
   background:rgba(37,99,235,0.06);
   box-shadow:0 0 16px rgba(37,99,235,0.1);
 }
-[data-theme="light"] .city-chip.checked{color:var(--accent)}
-[data-theme="light"] .visa-chip.selected{color:var(--accent)}
-[data-theme="light"] .info-box.blue{color:var(--accent)}
-[data-theme="light"] .info-box.green{color:var(--success)}
-[data-theme="light"] .info-box.amber{color:var(--warning)}
-[data-theme="light"] .iban-prefix{color:var(--accent)}
-[data-theme="light"] .toggle-wrap.on .toggle-sw::after{background:var(--accent)}
-[data-theme="light"] .cs-trigger{background:var(--bg-surface);border-color:var(--border-medium)}
-[data-theme="light"] .cs-dropdown{background:var(--bg-surface);border-color:var(--border-medium);box-shadow:0 8px 32px rgba(0,0,0,0.1)}
-[data-theme="light"] .cs-option:hover,.cs-option.selected{background:rgba(37,99,235,0.06)}
-[data-theme="light"] .cs-option.selected{color:var(--accent)}
-[data-theme="light"] .acc-header:hover{background:rgba(0,0,0,0.03)}
-[data-theme="light"] .acc-item{border-color:var(--border-medium)}
-[data-theme="light"] .sub-field{border-color:var(--border-soft)}
-[data-theme="light"] .sub-field:hover{background:rgba(37,99,235,0.04)}
-[data-theme="light"] .sub-field.added{background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.3)}
-[data-theme="light"] .review-section{background:var(--bg-surface);border-color:var(--border-medium)}
-[data-theme="light"] .review-section .rv-header{border-color:var(--border-soft)}
-[data-theme="light"] .rv-edit{color:var(--accent);background:rgba(37,99,235,0.06)}
-[data-theme="light"] .terms-box{background:rgba(0,0,0,0.02);border-color:var(--border-medium)}
-[data-theme="light"] .terms-check.checked{background:var(--accent);border-color:var(--accent)}
-[data-theme="light"] .btn-submit{box-shadow:0 4px 16px rgba(16,185,129,0.2)}
-[data-theme="light"] .nav-buttons .btn-secondary{background:var(--bg-surface);border-color:var(--border-medium)}
-[data-theme="light"] .price-modal-bg{background:rgba(0,0,0,0.4)}
-[data-theme="light"] .price-modal{background:var(--bg-surface);border-color:var(--border-medium);box-shadow:0 20px 60px rgba(0,0,0,0.15)}
-[data-theme="light"] .success-card{background:var(--bg-surface);border-color:var(--border-medium);box-shadow:0 8px 32px rgba(0,0,0,0.08)}
-[data-theme="light"] .upload-zone{background:var(--bg-surface);border-color:var(--border-medium)}
-[data-theme="light"] .upload-preview{background:var(--bg-surface);border-color:var(--border-soft)}
-[data-theme="light"] .visa-upload-item{background:var(--bg-surface);border-color:var(--border-soft)}
+.reg-bg[data-theme="light"] .city-chip{background:#fff;border-color:rgba(0,0,0,0.1);color:#475569}
+.reg-bg[data-theme="light"] .city-chip.checked{border-color:#2563eb;color:#2563eb;background:rgba(37,99,235,0.06)}
+.reg-bg[data-theme="light"] .visa-chip{background:#fff;border-color:rgba(0,0,0,0.1);color:#475569}
+.reg-bg[data-theme="light"] .visa-chip.selected{border-color:#2563eb;color:#2563eb;background:rgba(37,99,235,0.06)}
+.reg-bg[data-theme="light"] .info-box{background:rgba(0,0,0,0.02);border-color:rgba(0,0,0,0.08)}
+.reg-bg[data-theme="light"] .info-box.blue{color:#2563eb}
+.reg-bg[data-theme="light"] .info-box.green{color:#059669}
+.reg-bg[data-theme="light"] .info-box.amber{color:#d97706}
+.reg-bg[data-theme="light"] .iban-prefix{color:#2563eb}
+.reg-bg[data-theme="light"] .toggle-wrap{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .toggle-wrap.on .toggle-sw::after{background:#2563eb}
+.reg-bg[data-theme="light"] .toggle-label{color:#0f172a}
+.reg-bg[data-theme="light"] .cs-trigger{background:#f8fafc;border-color:rgba(0,0,0,0.12);color:#0f172a}
+.reg-bg[data-theme="light"] .custom-select.open .cs-trigger{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+.reg-bg[data-theme="light"] .cs-dropdown{background:#fff;border-color:rgba(0,0,0,0.1);box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.reg-bg[data-theme="light"] .cs-search input{background:#f8fafc;border-color:rgba(0,0,0,0.08);color:#0f172a}
+.reg-bg[data-theme="light"] .cs-option{color:#475569}
+.reg-bg[data-theme="light"] .cs-option:hover{background:rgba(37,99,235,0.06);color:#0f172a}
+.reg-bg[data-theme="light"] .cs-option.selected{background:rgba(37,99,235,0.08);color:#2563eb}
+.reg-bg[data-theme="light"] .accordion-item{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .accordion-header{color:#0f172a}
+.reg-bg[data-theme="light"] .accordion-header:hover{color:#2563eb}
+.reg-bg[data-theme="light"] .subfield-chip{background:#fff;border-color:rgba(0,0,0,0.1);color:#475569}
+.reg-bg[data-theme="light"] .subfield-chip:hover{background:rgba(37,99,235,0.04)}
+.reg-bg[data-theme="light"] .subfield-chip.selected{background:rgba(5,150,105,0.06);border-color:rgba(5,150,105,0.25);color:#047857}
+.reg-bg[data-theme="light"] .pricing-card{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .pricing-card.main{background:rgba(37,99,235,0.04);border-color:rgba(37,99,235,0.15)}
+.reg-bg[data-theme="light"] .pricing-badge.main{background:rgba(37,99,235,0.1);color:#2563eb;border-color:rgba(37,99,235,0.2)}
+.reg-bg[data-theme="light"] .pricing-badge.secondary{background:rgba(0,0,0,0.04);color:#475569}
+.reg-bg[data-theme="light"] .pricing-section-title{color:#0f172a}
+.reg-bg[data-theme="light"] .pricing-input-group label{color:#475569}
+.reg-bg[data-theme="light"] .review-card{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .review-card-title{color:#0f172a}
+.reg-bg[data-theme="light"] .review-card-edit{color:#2563eb}
+.reg-bg[data-theme="light"] .rv-label{color:#94a3b8}
+.reg-bg[data-theme="light"] .rv-value{color:#0f172a}
+.reg-bg[data-theme="light"] .review-field-tag{background:rgba(5,150,105,0.08);border-color:rgba(5,150,105,0.2);color:#047857}
+.reg-bg[data-theme="light"] .terms-wrap{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .terms-wrap.checked .terms-checkbox{background:#2563eb;border-color:#2563eb}
+.reg-bg[data-theme="light"] .terms-text{color:#475569}
+.reg-bg[data-theme="light"] .btn-submit{box-shadow:0 4px 16px rgba(16,185,129,0.2)}
+.reg-bg[data-theme="light"] .btn-secondary{background:#fff;border-color:rgba(0,0,0,0.12);color:#0f172a}
+.reg-bg[data-theme="light"] .btn-primary{background:#2563eb}
+.reg-bg[data-theme="light"] .upload-zone{background:#f8fafc;border-color:rgba(0,0,0,0.12)}
+.reg-bg[data-theme="light"] .upload-preview{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .visa-upload-item{background:#fff;border-color:rgba(0,0,0,0.1)}
+.reg-bg[data-theme="light"] .iban-wrap{background:rgba(0,0,0,0.02)}
+.reg-bg[data-theme="light"] .req{color:#dc2626}
 
 /* Responsive */
 @media(max-width:500px){

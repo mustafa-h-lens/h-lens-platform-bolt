@@ -21,9 +21,14 @@ interface SelectedField {
 interface Props {
   selectedFields: SelectedField[];
   updateSelectedFields: (fields: SelectedField[]) => void;
+  errors?: Record<string, string>;
 }
 
-export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Props) => {
+const FieldError = ({ msg }: { msg?: string }) => msg ? (
+  <div className="field-error">✕ {msg}</div>
+) : null;
+
+export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, errors = {} }: Props) => {
   const [categories, setCategories] = useState<VendorField[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -140,6 +145,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
           <span className="info-icon">💡</span>
           <span>اختر <strong>خدمة رئيسية</strong> واحدة على الأقل، ويمكنك إضافة خدمات ثانوية. حدد نطاق السعر اليومي لكل خدمة.</span>
         </div>
+        <FieldError msg={errors.selected_fields} />
 
         {/* ── Pricing Section (TOP) ── */}
         {selectedFields.length > 0 && (

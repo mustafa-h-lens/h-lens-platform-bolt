@@ -187,20 +187,20 @@
    DESIGN TOKENS — LIGHT MODE
 ═══════════════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-base:        #f4f6fb;
+  --bg-base:        #f8f9fc;
   --bg-surface:     #ffffff;
-  --bg-elevated:    #ffffff;
+  --bg-elevated:    #f9fafb;
   --bg-overlay:     #eef1f8;
   --bg-card:        rgba(255,255,255,0.9);
   --bg-card-hover:  rgba(255,255,255,1);
-  --bg-glass:       rgba(255,255,255,0.8);
+  --bg-glass:       rgba(248,250,255,0.78);
   --bg-sidebar:     linear-gradient(160deg, #e8edf8 0%, #dde3f4 100%);
-  --bg-input:       #ffffff;
-  --bg-input-hover: #f8faff;
+  --bg-input:       #f8fafc;
+  --bg-input-hover: #f0f4ff;
   --bg-input-focus: rgba(37,99,235,0.03);
 
-  --border-subtle:  rgba(0,0,0,0.06);
-  --border-soft:    rgba(0,0,0,0.1);
+  --border-subtle:  rgba(0,0,0,0.08);
+  --border-soft:    rgba(0,0,0,0.12);
   --border-medium:  rgba(0,0,0,0.15);
   --border-strong:  rgba(0,0,0,0.22);
   --border-accent:  rgba(37,99,235,0.35);
@@ -213,64 +213,64 @@
 
   --accent:         #2563eb;
   --accent-light:   #3b82f6;
-  --accent-lighter: #1d4ed8;
+  --accent-lighter: #93c5fd;
   --accent-glow:    rgba(37,99,235,0.15);
-  --accent-glow-md: rgba(37,99,235,0.1);
+  --accent-glow-md: rgba(37,99,235,0.12);
 
   --success:        #059669;
-  --success-bg:     rgba(5,150,105,0.07);
+  --success-bg:     rgba(5,150,105,0.10);
   --success-border: rgba(5,150,105,0.2);
   --success-text:   #047857;
   --warning:        #d97706;
-  --warning-bg:     rgba(217,119,6,0.07);
+  --warning-bg:     rgba(217,119,6,0.10);
   --warning-border: rgba(217,119,6,0.2);
   --warning-text:   #b45309;
   --danger:         #dc2626;
-  --danger-bg:      rgba(220,38,38,0.07);
+  --danger-bg:      rgba(220,38,38,0.10);
   --danger-border:  rgba(220,38,38,0.2);
   --danger-text:    #b91c1c;
   --info:           #0891b2;
-  --info-bg:        rgba(8,145,178,0.07);
+  --info-bg:        rgba(8,145,178,0.10);
   --info-border:    rgba(8,145,178,0.2);
   --info-text:      #0e7490;
   --purple:         #7c3aed;
-  --purple-bg:      rgba(124,58,237,0.07);
+  --purple-bg:      rgba(124,58,237,0.10);
   --purple-border:  rgba(124,58,237,0.2);
   --purple-text:    #6d28d9;
 
   --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
   --shadow-md:   0 4px 16px rgba(0,0,0,0.1);
   --shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
-  --shadow-glow: 0 0 20px rgba(37,99,235,0.12), 0 0 60px rgba(37,99,235,0.05);
-  --shadow-card: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-glow: 0 0 20px rgba(37,99,235,0.18), 0 0 60px rgba(37,99,235,0.08);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08), 0 6px 20px rgba(0,0,0,0.06);
 
   --mode-badge-bg:   rgba(0,0,0,0.04);
   --mode-badge-border: rgba(0,0,0,0.1);
   --mode-badge-text: #475569;
 
   /* stat card gradients — light */
-  --sc-blue-grad:   linear-gradient(135deg, #dbeafe 0%, #eff6ff 60%, #f8faff 100%);
+  --sc-blue-grad:   linear-gradient(135deg, #dbeafe 0%, #eef4ff 70%, #f8faff 100%);
   --sc-blue-border: rgba(37,99,235,0.2);
   --sc-blue-glow:   #93c5fd;
   --sc-blue-val:    #1d4ed8;
   --sc-blue-label:  #3b82f6;
   --sc-blue-icon-bg: rgba(37,99,235,0.1); --sc-blue-icon-b: rgba(37,99,235,0.2); --sc-blue-icon-c: #2563eb;
 
-  --sc-green-grad:   linear-gradient(135deg, #d1fae5 0%, #f0fdf4 60%, #f8faff 100%);
+  --sc-green-grad:   linear-gradient(135deg, #d1fae5 0%, #ecfdf5 70%, #f8faff 100%);
   --sc-green-border: rgba(5,150,105,0.2);
   --sc-green-glow:   #6ee7b7;
   --sc-green-val:    #065f46;
   --sc-green-label:  #059669;
   --sc-green-icon-bg: rgba(5,150,105,0.1); --sc-green-icon-b: rgba(5,150,105,0.2); --sc-green-icon-c: #059669;
 
-  --sc-amber-grad:   linear-gradient(135deg, #fef3c7 0%, #fffbeb 60%, #fafaf8 100%);
+  --sc-amber-grad:   linear-gradient(135deg, #fef3c7 0%, #fef9e7 70%, #fafaf8 100%);
   --sc-amber-border: rgba(217,119,6,0.2);
   --sc-amber-glow:   #fcd34d;
   --sc-amber-val:    #92400e;
   --sc-amber-label:  #d97706;
   --sc-amber-icon-bg: rgba(217,119,6,0.1); --sc-amber-icon-b: rgba(217,119,6,0.2); --sc-amber-icon-c: #d97706;
 
-  --sc-purple-grad:   linear-gradient(135deg, #ede9fe 0%, #f5f3ff 60%, #faf9ff 100%);
+  --sc-purple-grad:   linear-gradient(135deg, #ede9fe 0%, #f1effe 70%, #faf9ff 100%);
   --sc-purple-border: rgba(124,58,237,0.2);
   --sc-purple-glow:   #c4b5fd;
   --sc-purple-val:    #4c1d95;

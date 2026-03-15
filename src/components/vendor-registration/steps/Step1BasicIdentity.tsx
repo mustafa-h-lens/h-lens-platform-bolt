@@ -6,7 +6,12 @@ import { getNationalityNames } from '../../../lib/shared-data';
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
+  errors?: Record<string, string>;
 }
+
+const FieldError = ({ msg }: { msg?: string }) => msg ? (
+  <div className="field-error">✕ {msg}</div>
+) : null;
 
 interface FieldChild {
   id: string;
@@ -21,7 +26,7 @@ interface FieldCategory {
 
 const nationalities = getNationalityNames();
 
-export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
+export const Step1BasicIdentity = ({ formData, updateFormData, errors = {} }: Props) => {
   const [fieldCategories, setFieldCategories] = useState<FieldCategory[]>([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [fieldsError, setFieldsError] = useState<string>('');
@@ -106,18 +111,19 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> الاسم الثلاثي</label>
           <input
-            className="input"
+            className={`input ${errors.full_name ? 'input-error' : ''}`}
             type="text"
             value={formData.full_name}
             onChange={(e) => updateFormData({ full_name: e.target.value })}
             placeholder="أدخل اسمك الثلاثي"
           />
+          <FieldError msg={errors.full_name} />
         </div>
 
         {/* Nationality — custom select */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> الجنسية</label>
-          <div className={`custom-select ${natOpen ? 'open' : ''}`} ref={natRef}>
+          <div className={`custom-select ${natOpen ? 'open' : ''} ${errors.nationality ? 'has-error' : ''}`} ref={natRef}>
             <div className="cs-trigger" onClick={() => setNatOpen(!natOpen)}>
               <span className={formData.nationality ? '' : 'cs-placeholder'}>
                 {formData.nationality || 'اختر الجنسية'}
@@ -158,6 +164,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
               </div>
             )}
           </div>
+          <FieldError msg={errors.nationality} />
         </div>
 
         {/* Vendor Type */}
@@ -181,6 +188,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
               <span className="vt-desc">شركة أو مؤسسة</span>
             </div>
           </div>
+          <FieldError msg={errors.vendor_type} />
         </div>
       </div>
     </>
