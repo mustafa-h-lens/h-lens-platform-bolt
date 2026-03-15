@@ -404,10 +404,7 @@ export const VendorRegistrationForm = () => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <img src={isDarkMode ? '/assets/logo-white.png' : '/assets/logo-black.png'} alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
-          <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-            انضم إلى فريق Half Lens
-          </h1>
+          <img src={isDarkMode ? '/assets/logo-blue.png' : '/assets/logo-blue.png'} alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
           <p className="text-lg" style={{ color: 'var(--vr-text-secondary)' }}>
             املأ النموذج التالي للانضمام إلى شبكة الموردين لدينا
           </p>
