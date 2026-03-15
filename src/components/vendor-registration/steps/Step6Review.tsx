@@ -250,7 +250,17 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
             >
               الشروط والأحكام
             </a>{' '}
-            وسياسة الخصوصية الخاصة بـ Half Lens. أؤكد أن جميع المعلومات المقدمة صحيحة ودقيقة.
+            و<a
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: 'var(--vr-accent-lighter)',
+                textDecoration: 'underline',
+                textUnderlineOffset: '2px',
+              }}
+            >سياسة الخصوصية</a>{' '}
+            الخاصة بـ Half Lens. أؤكد أن جميع المعلومات المقدمة صحيحة ودقيقة.
           </label>
         </div>
       </motion.div>

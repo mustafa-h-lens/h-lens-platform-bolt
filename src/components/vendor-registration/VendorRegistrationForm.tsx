@@ -377,8 +377,8 @@ export const VendorRegistrationForm = () => {
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
   return (
-    <div className="vr-background min-h-screen relative" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12">
+    <div className="vr-background min-h-screen relative" style={{ fontFamily: "'Cairo', sans-serif", overflowY: 'auto' }}>
+      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12" style={{ paddingBottom: 40 }}>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
