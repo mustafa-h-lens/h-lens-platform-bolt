@@ -26,12 +26,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
   const [categories, setCategories] = useState<VendorField[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-
-  // Price modal state
-  const [priceModalOpen, setPriceModalOpen] = useState(false);
-  const [priceModalField, setPriceModalField] = useState<{ id: string; name_ar: string; name_en: string; category: string } | null>(null);
-  const [priceFrom, setPriceFrom] = useState('');
-  const [priceTo, setPriceTo] = useState('');
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
 
   useEffect(() => { fetchVendorFields(); }, []);
 
@@ -63,38 +58,34 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
     });
   };
 
-  const openPriceModal = (sub: VendorField, categoryName: string) => {
+  const toggleFieldSelection = (sub: VendorField) => {
     const existing = selectedFields.find(f => f.field_id === sub.id);
-    setPriceModalField({ id: sub.id, name_ar: sub.name_ar, name_en: sub.name_en, category: categoryName });
-    setPriceFrom(existing?.rate_from || '');
-    setPriceTo(existing?.rate_to || '');
-    setPriceModalOpen(true);
+    if (existing) {
+      // Already selected, remove it
+      updateSelectedFields(selectedFields.filter(f => f.field_id !== sub.id));
+      if (editingFieldId === sub.id) setEditingFieldId(null);
+    } else {
+      // Add new with default empty prices and set as editing
+      updateSelectedFields([...selectedFields, {
+        field_id: sub.id,
+        field_name_ar: sub.name_ar,
+        field_name_en: sub.name_en,
+        rate_from: '',
+        rate_to: '',
+      }]);
+      setEditingFieldId(sub.id);
+    }
   };
 
-  const savePriceModal = () => {
-    if (!priceModalField || !priceFrom || !priceTo) return;
-    const existing = selectedFields.find(f => f.field_id === priceModalField.id);
-    if (existing) {
-      // Update existing
-      updateSelectedFields(selectedFields.map(f =>
-        f.field_id === priceModalField.id ? { ...f, rate_from: priceFrom, rate_to: priceTo } : f
-      ));
-    } else {
-      // Add new
-      updateSelectedFields([...selectedFields, {
-        field_id: priceModalField.id,
-        field_name_ar: priceModalField.name_ar,
-        field_name_en: priceModalField.name_en,
-        rate_from: priceFrom,
-        rate_to: priceTo,
-      }]);
-    }
-    setPriceModalOpen(false);
-    setPriceModalField(null);
+  const updateFieldPrice = (fieldId: string, rateFrom: string, rateTo: string) => {
+    updateSelectedFields(selectedFields.map(f =>
+      f.field_id === fieldId ? { ...f, rate_from: rateFrom, rate_to: rateTo } : f
+    ));
   };
 
   const removeField = (id: string) => {
     updateSelectedFields(selectedFields.filter(f => f.field_id !== id));
+    if (editingFieldId === id) setEditingFieldId(null);
   };
 
   if (loading) {
@@ -127,28 +118,71 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
                   <div className="accordion-body-inner">
                     {cat.subcategories?.map(sub => {
                       const sel = selectedFields.find(f => f.field_id === sub.id);
-                      const priceText = sel ? `${sel.rate_from} - ${sel.rate_to} ر.س/يوم` : '';
+                      const isEditing = editingFieldId === sub.id;
                       return (
-                        <div
-                          key={sub.id}
-                          className={`subfield-chip ${sel ? 'selected' : ''}`}
-                          onClick={() => openPriceModal(sub, cat.name_ar)}
-                        >
-                          <span>{sub.name_ar}</span>
-                          <div className="sf-right">
-                            {sel && (
-                              <>
-                                <span className="sf-price">{priceText}</span>
-                                <button
-                                  className="sf-remove"
-                                  onClick={(e) => { e.stopPropagation(); removeField(sub.id); }}
-                                  type="button"
-                                >
-                                  ✕
-                                </button>
-                              </>
-                            )}
+                        <div key={sub.id}>
+                          <div
+                            className={`subfield-chip ${sel ? 'selected' : ''}`}
+                            onClick={() => toggleFieldSelection(sub)}
+                          >
+                            <span>{sub.name_ar}</span>
+                            <div className="sf-right">
+                              {sel && !isEditing && (
+                                <>
+                                  <span className="sf-price">{sel.rate_from} - {sel.rate_to} ر.س/يوم</span>
+                                  <button
+                                    className="sf-remove"
+                                    onClick={(e) => { e.stopPropagation(); removeField(sub.id); }}
+                                    type="button"
+                                  >
+                                    ✕
+                                  </button>
+                                </>
+                              )}
+                              {sel && isEditing && (
+                                <span className="sf-price" style={{ color: 'var(--accent-lighter)' }}>✏️ جاري التحرير</span>
+                              )}
+                            </div>
                           </div>
+                          {sel && isEditing && (
+                            <div className="inline-price-inputs">
+                              <div className="input-group">
+                                <label className="input-label">من (ر.س/يوم)</label>
+                                <input
+                                  className="input"
+                                  type="number"
+                                  value={sel.rate_from}
+                                  onChange={(e) => updateFieldPrice(sub.id, e.target.value, sel.rate_to)}
+                                  placeholder="500"
+                                  min="0"
+                                  dir="ltr"
+                                  style={{ fontFamily: 'var(--font-mono)' }}
+                                />
+                              </div>
+                              <div className="input-group">
+                                <label className="input-label">إلى (ر.س/يوم)</label>
+                                <input
+                                  className="input"
+                                  type="number"
+                                  value={sel.rate_to}
+                                  onChange={(e) => updateFieldPrice(sub.id, sel.rate_from, e.target.value)}
+                                  placeholder="2000"
+                                  min="0"
+                                  dir="ltr"
+                                  style={{ fontFamily: 'var(--font-mono)' }}
+                                />
+                              </div>
+                              <button
+                                className="btn btn-primary"
+                                onClick={() => setEditingFieldId(null)}
+                                type="button"
+                                disabled={!sel.rate_from || !sel.rate_to}
+                                style={{ marginTop: 8 }}
+                              >
+                                ✓ تأكيد السعر
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -161,12 +195,12 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
 
         {/* Selected fields summary */}
         {selectedFields.length > 0 && (
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 16 }}>
             <label className="input-label" style={{ marginBottom: 8 }}>
               المجالات المختارة ({selectedFields.length})
             </label>
             <div className="review-fields">
-              {selectedFields.map(f => (
+              {selectedFields.filter(f => f.rate_from && f.rate_to).map(f => (
                 <span key={f.field_id} className="review-field-tag">
                   {f.field_name_ar} · {f.rate_from}-{f.rate_to} ر.س
                 </span>
@@ -175,53 +209,6 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
           </div>
         )}
       </div>
-
-      {/* Price Modal */}
-      {priceModalOpen && (
-        <div className="price-modal-overlay" onClick={() => setPriceModalOpen(false)}>
-          <div className="price-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="price-modal-hdr">
-              <div>
-                <div className="price-modal-ttl">{priceModalField?.name_ar || 'تحديد السعر'}</div>
-                <div className="price-modal-sub">حدد نطاق السعر اليومي بالريال السعودي</div>
-              </div>
-              <button className="price-modal-close" onClick={() => setPriceModalOpen(false)} type="button">✕</button>
-            </div>
-            <div className="price-inputs">
-              <div className="input-group">
-                <label className="input-label">من (ر.س/يوم)</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={priceFrom}
-                  onChange={(e) => setPriceFrom(e.target.value)}
-                  placeholder="500"
-                  min="0"
-                  dir="ltr"
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                />
-              </div>
-              <div className="input-group">
-                <label className="input-label">إلى (ر.س/يوم)</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={priceTo}
-                  onChange={(e) => setPriceTo(e.target.value)}
-                  placeholder="2000"
-                  min="0"
-                  dir="ltr"
-                  style={{ fontFamily: 'var(--font-mono)' }}
-                />
-              </div>
-            </div>
-            <div className="price-modal-foot">
-              <button className="btn btn-ghost" onClick={() => setPriceModalOpen(false)} type="button">إلغاء</button>
-              <button className="btn btn-primary" onClick={savePriceModal} type="button" disabled={!priceFrom || !priceTo}>حفظ السعر</button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

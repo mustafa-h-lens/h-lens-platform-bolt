@@ -13,6 +13,7 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
   const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
   const [cityOpen, setCityOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+  const [countryCodeSearch, setCountryCodeSearch] = useState('');
   const phoneCodeRef = useRef<HTMLDivElement>(null);
   const cityRef = useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,11 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
 
   const currentCode = COUNTRY_CODES.find(c => c.code === formData.country_code);
   const filteredCities = cities.filter(c => c.includes(citySearch));
+  const filteredCountryCodes = COUNTRY_CODES.filter(c =>
+    c.code.includes(countryCodeSearch) ||
+    c.name.includes(countryCodeSearch) ||
+    c.nameAr.includes(countryCodeSearch)
+  );
   const otherCities = cities.filter(c => c !== formData.primary_city);
 
   return (
@@ -65,17 +71,27 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
               </div>
               {phoneCodeOpen && (
                 <div className="cs-dropdown" style={{ display: 'flex' }}>
+                  <div className="cs-search">
+                    <input
+                      type="text"
+                      placeholder="ابحث..."
+                      value={countryCodeSearch}
+                      onChange={(e) => setCountryCodeSearch(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
                   <div className="cs-options">
-                    {COUNTRY_CODES.map(c => (
+                    {filteredCountryCodes.map(c => (
                       <div
                         key={c.code}
                         className={`cs-option ${formData.country_code === c.code ? 'selected' : ''}`}
                         onClick={() => {
                           updateFormData({ country_code: c.code });
                           setPhoneCodeOpen(false);
+                          setCountryCodeSearch('');
                         }}
                       >
-                        {c.flag} {c.code}
+                        {c.flag} {c.code} {c.nameAr}
                       </div>
                     ))}
                   </div>

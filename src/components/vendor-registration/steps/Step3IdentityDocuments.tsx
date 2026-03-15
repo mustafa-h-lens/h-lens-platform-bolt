@@ -9,19 +9,24 @@ interface Props {
 export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
   const [idDragging, setIdDragging] = useState(false);
   const [profileDragging, setProfileDragging] = useState(false);
+  const [passportDragging, setPassportDragging] = useState(false);
   const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(
     formData.id_image_url ? { url: formData.id_image_url, name: 'صورة الهوية', size: '' } : null
   );
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(
     formData.profile_image_url ? { url: formData.profile_image_url, name: 'الصورة الشخصية', size: '' } : null
   );
+  const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(
+    formData.passport_image_url ? { url: formData.passport_image_url, name: 'صورة الجواز', size: '' } : null
+  );
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
+  const passportInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (
     file: File,
-    type: 'id' | 'profile',
+    type: 'id' | 'profile' | 'passport',
   ) => {
     if (!file.type.startsWith('image/')) return;
     const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
@@ -31,28 +36,36 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
       if (type === 'id') {
         setIdPreview(preview);
         updateFormData({ id_image: file });
-      } else {
+      } else if (type === 'profile') {
         setProfilePreview(preview);
         updateFormData({ profile_image: file });
+      } else {
+        setPassportPreview(preview);
+        updateFormData({ passport_image: file });
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleDrop = (e: React.DragEvent, type: 'id' | 'profile') => {
+  const handleDrop = (e: React.DragEvent, type: 'id' | 'profile' | 'passport') => {
     e.preventDefault();
-    type === 'id' ? setIdDragging(false) : setProfileDragging(false);
+    if (type === 'id') setIdDragging(false);
+    else if (type === 'profile') setProfileDragging(false);
+    else setPassportDragging(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file, type);
   };
 
-  const removeUpload = (type: 'id' | 'profile') => {
+  const removeUpload = (type: 'id' | 'profile' | 'passport') => {
     if (type === 'id') {
       setIdPreview(null);
       updateFormData({ id_image: null, id_image_url: '' });
-    } else {
+    } else if (type === 'profile') {
       setProfilePreview(null);
       updateFormData({ profile_image: null, profile_image_url: '' });
+    } else {
+      setPassportPreview(null);
+      updateFormData({ passport_image: null, passport_image_url: '' });
     }
   };
 
@@ -144,6 +157,42 @@ export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
                 <span className="up-size">{profilePreview.size}</span>
               </div>
               <button className="up-remove" onClick={() => removeUpload('profile')} type="button">✕</button>
+            </div>
+          )}
+        </div>
+
+        {/* Passport Upload */}
+        <div className="input-group">
+          <label className="input-label"><span className="opt">(اختياري)</span> صورة الجواز</label>
+          <div
+            className={`upload-zone ${passportDragging ? 'dragover' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setPassportDragging(true)}
+            onDragLeave={() => setPassportDragging(false)}
+            onDrop={(e) => handleDrop(e, 'passport')}
+          >
+            <span className="uz-emoji">🛂</span>
+            <div className="uz-text">اسحب الملف هنا أو اضغط للتحميل</div>
+            <div className="uz-hint">PNG, JPG — حد أقصى 5MB</div>
+            <input
+              ref={passportInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file, 'passport');
+                e.target.value = '';
+              }}
+            />
+          </div>
+          {passportPreview && (
+            <div className="upload-preview">
+              <img src={passportPreview.url} alt="Passport" />
+              <div className="up-info">
+                <span className="up-name">{passportPreview.name}</span>
+                <span className="up-size">{passportPreview.size}</span>
+              </div>
+              <button className="up-remove" onClick={() => removeUpload('passport')} type="button">✕</button>
             </div>
           )}
         </div>
