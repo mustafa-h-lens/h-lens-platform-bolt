@@ -1,7 +1,5 @@
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { VendorFormData } from '../VendorRegistrationForm';
-import { Upload, Check, User, CreditCard } from 'lucide-react';
 
 interface Props {
   formData: VendorFormData;
@@ -11,207 +9,151 @@ interface Props {
 export const Step3IdentityDocuments = ({ formData, updateFormData }: Props) => {
   const [idDragging, setIdDragging] = useState(false);
   const [profileDragging, setProfileDragging] = useState(false);
-  const [idImagePreview, setIdImagePreview] = useState<string>(formData.id_image_url || '');
-  const [profileImagePreview, setProfileImagePreview] = useState<string>(formData.profile_image_url || '');
+  const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(
+    formData.id_image_url ? { url: formData.id_image_url, name: 'صورة الهوية', size: '' } : null
+  );
+  const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(
+    formData.profile_image_url ? { url: formData.profile_image_url, name: 'الصورة الشخصية', size: '' } : null
+  );
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleIdDrop = (e: React.DragEvent) => {
+  const handleFile = (
+    file: File,
+    type: 'id' | 'profile',
+  ) => {
+    if (!file.type.startsWith('image/')) return;
+    const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
+    const reader = new FileReader();
+    reader.onload = () => {
+      const preview = { url: reader.result as string, name: file.name, size: sizeStr };
+      if (type === 'id') {
+        setIdPreview(preview);
+        updateFormData({ id_image: file });
+      } else {
+        setProfilePreview(preview);
+        updateFormData({ profile_image: file });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent, type: 'id' | 'profile') => {
     e.preventDefault();
-    setIdDragging(false);
+    type === 'id' ? setIdDragging(false) : setProfileDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      updateFormData({ id_image: file });
-      const reader = new FileReader();
-      reader.onload = () => setIdImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    if (file) handleFile(file, type);
   };
 
-  const handleProfileDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setProfileDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      updateFormData({ profile_image: file });
-      const reader = new FileReader();
-      reader.onload = () => setProfileImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleIdFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      updateFormData({ id_image: file });
-      const reader = new FileReader();
-      reader.onload = () => setIdImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleProfileFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      updateFormData({ profile_image: file });
-      const reader = new FileReader();
-      reader.onload = () => setProfileImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+  const removeUpload = (type: 'id' | 'profile') => {
+    if (type === 'id') {
+      setIdPreview(null);
+      updateFormData({ id_image: null, id_image_url: '' });
+    } else {
+      setProfilePreview(null);
+      updateFormData({ profile_image: null, profile_image_url: '' });
     }
   };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          المستندات الثبوتية
-        </h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>
-          نحتاج إلى بعض المستندات للتحقق من هويتك
-        </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="vr-input-group"
-      >
-        <label className="vr-input-label">رقم الهوية الوطنية <span className="req">*</span></label>
-        <input
-          type="text"
-          value={formData.id_number}
-          onChange={(e) => updateFormData({ id_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-          placeholder="1234567890"
-          className="vr-input"
-          dir="ltr"
-          style={{ textAlign: 'left' }}
-        />
-        <div style={{ fontSize: '11px', color: 'var(--vr-text-muted)', marginTop: 4, textAlign: 'left', direction: 'ltr' }}>
-          {formData.id_number.length}/10
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-      >
-        <label className="vr-input-label block mb-3">
-          صورة الهوية الوطنية <span className="req">*</span>
-        </label>
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDragEnter={() => setIdDragging(true)}
-          onDragLeave={() => setIdDragging(false)}
-          onDrop={handleIdDrop}
-          onClick={() => idInputRef.current?.click()}
-          className={`vr-upload-zone ${idDragging ? 'dragover' : ''}`}
-        >
+    <>
+      <h2 className="step-title">🪪 المستندات</h2>
+      <p className="step-subtitle">المستندات المطلوبة للتحقق من هويتك</p>
+      <div className="form-section">
+        {/* ID Number */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> رقم الهوية الوطنية / الإقامة</label>
           <input
-            ref={idInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleIdFileSelect}
-            className="hidden"
+            className="input"
+            type="text"
+            value={formData.id_number}
+            onChange={(e) => updateFormData({ id_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+            placeholder="1XXXXXXXXX"
+            dir="ltr"
+            style={{ fontFamily: 'var(--font-mono)' }}
+            maxLength={10}
           />
+        </div>
 
-          {idImagePreview ? (
-            <div className="relative">
-              <img
-                src={idImagePreview}
-                alt="ID Preview"
-                className="max-h-48 mx-auto"
-                style={{ borderRadius: 'var(--vr-radius-md)' }}
-              />
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--vr-success)' }}
-              >
-                <Check className="w-5 h-5 text-white" />
-              </motion.div>
-              <p className="mt-3 text-sm" style={{ color: 'var(--vr-text-muted)' }}>
-                انقر لتغيير الصورة
-              </p>
+        {/* ID Image Upload */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> صورة الهوية</label>
+          <div
+            className={`upload-zone ${idDragging ? 'dragover' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setIdDragging(true)}
+            onDragLeave={() => setIdDragging(false)}
+            onDrop={(e) => handleDrop(e, 'id')}
+          >
+            <span className="uz-emoji">🪪</span>
+            <div className="uz-text">اسحب الملف هنا أو اضغط للتحميل</div>
+            <div className="uz-hint">PNG, JPG — حد أقصى 5MB</div>
+            <input
+              ref={idInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file, 'id');
+                e.target.value = '';
+              }}
+            />
+          </div>
+          {idPreview && (
+            <div className="upload-preview">
+              <img src={idPreview.url} alt="ID" />
+              <div className="up-info">
+                <span className="up-name">{idPreview.name}</span>
+                <span className="up-size">{idPreview.size}</span>
+              </div>
+              <button className="up-remove" onClick={() => removeUpload('id')} type="button">✕</button>
             </div>
-          ) : (
-            <>
-              <CreditCard className="upload-icon w-12 h-12 mx-auto mb-4" />
-              <p className="upload-text font-semibold mb-2">
-                اسحب الصورة هنا أو انقر للاختيار
-              </p>
-              <p className="upload-hint">
-                JPG, PNG أو JPEG (حد أقصى 5MB)
-              </p>
-            </>
           )}
         </div>
-      </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <label className="vr-input-label block mb-3">
-          الصورة الشخصية <span className="req">*</span>
-        </label>
-        <div
-          onDragOver={(e) => e.preventDefault()}
-          onDragEnter={() => setProfileDragging(true)}
-          onDragLeave={() => setProfileDragging(false)}
-          onDrop={handleProfileDrop}
-          onClick={() => profileInputRef.current?.click()}
-          className={`vr-upload-zone ${profileDragging ? 'dragover' : ''}`}
-        >
-          <input
-            ref={profileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleProfileFileSelect}
-            className="hidden"
-          />
-
-          {profileImagePreview ? (
-            <div className="relative">
-              <img
-                src={profileImagePreview}
-                alt="Profile Preview"
-                className="w-32 h-32 mx-auto rounded-full object-cover"
-                style={{ border: `4px solid var(--vr-accent)` }}
-              />
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute top-0 right-1/2 translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'var(--vr-success)' }}
-              >
-                <Check className="w-5 h-5 text-white" />
-              </motion.div>
-              <p className="mt-3 text-sm" style={{ color: 'var(--vr-text-muted)' }}>
-                انقر لتغيير الصورة
-              </p>
+        {/* Profile Image Upload */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> الصورة الشخصية</label>
+          <div
+            className={`upload-zone ${profileDragging ? 'dragover' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setProfileDragging(true)}
+            onDragLeave={() => setProfileDragging(false)}
+            onDrop={(e) => handleDrop(e, 'profile')}
+          >
+            <span className="uz-emoji">🤳</span>
+            <div className="uz-text">اسحب الملف هنا أو اضغط للتحميل</div>
+            <div className="uz-hint">PNG, JPG — حد أقصى 5MB</div>
+            <input
+              ref={profileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file, 'profile');
+                e.target.value = '';
+              }}
+            />
+          </div>
+          {profilePreview && (
+            <div className="upload-preview">
+              <img src={profilePreview.url} alt="Profile" />
+              <div className="up-info">
+                <span className="up-name">{profilePreview.name}</span>
+                <span className="up-size">{profilePreview.size}</span>
+              </div>
+              <button className="up-remove" onClick={() => removeUpload('profile')} type="button">✕</button>
             </div>
-          ) : (
-            <>
-              <User className="upload-icon w-12 h-12 mx-auto mb-4" />
-              <p className="upload-text font-semibold mb-2">
-                اسحب صورتك الشخصية هنا أو انقر للاختيار
-              </p>
-              <p className="upload-hint">
-                JPG, PNG أو JPEG (حد أقصى 5MB)
-              </p>
-            </>
           )}
         </div>
-      </motion.div>
-    </div>
+
+        {/* Security info */}
+        <div className="info-box blue">
+          <span className="info-icon">🔒</span>
+          <span>بياناتك في أمان — نستخدم تشفير متقدم لحماية جميع بياناتك ومستنداتك الشخصية</span>
+        </div>
+      </div>
+    </>
   );
 };

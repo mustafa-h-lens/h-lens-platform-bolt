@@ -4,6 +4,7 @@ import { Sun, Moon } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import '../../styles/half-lens-ds.css';
 import '../../styles/vendor-registration.css';
 
 import { Step1BasicIdentity } from './steps/Step1BasicIdentity';
@@ -50,6 +51,16 @@ export interface VendorFormData {
 }
 
 const TOTAL_STEPS = 7;
+
+const STEPS = [
+  { n: 1, emoji: '👤', label: 'الهوية' },
+  { n: 2, emoji: '📞', label: 'التواصل' },
+  { n: 3, emoji: '🪪', label: 'المستندات' },
+  { n: 4, emoji: '✈️', label: 'السفر' },
+  { n: 5, emoji: '🏦', label: 'المالية' },
+  { n: 6, emoji: '💼', label: 'المجالات' },
+  { n: 7, emoji: '✅', label: 'المراجعة' },
+];
 
 export const VendorRegistrationForm = () => {
   const { showSuccess, showError } = useNotification();
@@ -377,89 +388,69 @@ export const VendorRegistrationForm = () => {
     return <SuccessScreen />;
   }
 
-  const progress = (currentStep / TOTAL_STEPS) * 100;
+  const progress = Math.round((currentStep / TOTAL_STEPS) * 100);
 
   return (
-    <div className={isDarkMode ? '' : 'vr-light'} style={{ fontFamily: "'Cairo', sans-serif", minHeight: '100vh', position: 'relative', background: 'var(--vr-bg-base)' }}>
-      {/* Fixed animated background */}
-      <div className="vr-background" />
-      {/* Theme toggle */}
-      <button
-        onClick={toggleTheme}
-        style={{
-          position: 'fixed', top: 28, left: 36, zIndex: 50,
-          width: 48, height: 48, borderRadius: 14,
-          background: isDarkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-          border: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', color: isDarkMode ? 'rgba(200,215,255,0.65)' : '#475569',
-          transition: 'all 0.2s',
-        }}
-      >
-        {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
-      </button>
-      <div className="relative z-10 container mx-auto px-4 py-8 md:py-12" style={{ paddingBottom: 40 }}>
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <img src={isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png'} alt="Half Lens" style={{ height: 100, objectFit: 'contain', marginBottom: 24, marginRight: 0, marginLeft: 'auto', display: 'block' }} />
-          <p className="text-lg" style={{ color: 'var(--vr-text-secondary)' }}>
-            املأ النموذج التالي للانضمام إلى شبكة الموردين لدينا
-          </p>
-        </motion.div>
+    <div className="reg-bg" data-theme={isDarkMode ? 'dark' : 'light'} dir="rtl" lang="ar">
+      {/* ── Top Bar ── */}
+      <div className="reg-topbar">
+        <a className="reg-topbar-logo" href="/">
+          <img
+            src={isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png'}
+            alt="Half Lens"
+          />
+        </a>
+        <button className="theme-toggle-btn" onClick={toggleTheme} type="button">
+          {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+      </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="max-w-3xl mx-auto mb-8"
-        >
-          {/* DS Stepper with connecting lines */}
-          <div className="vr-stepper" style={{ marginBottom: 16 }}>
-            {[
-              { n: 1, l: 'الهوية' },
-              { n: 2, l: 'التواصل' },
-              { n: 3, l: 'المستندات' },
-              { n: 4, l: 'السفر' },
-              { n: 5, l: 'المالية' },
-              { n: 6, l: 'المجالات' },
-              { n: 7, l: 'المراجعة' },
-            ].map(({ n, l }) => (
-              <div
-                key={n}
-                className={`vr-step ${n === currentStep ? 'active' : n < currentStep ? 'done' : ''}`}
-                onClick={() => goToStep(n)}
-              >
-                <div className="vr-step-dot">
-                  {n < currentStep ? (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                  ) : n}
+      {/* ── Page Content ── */}
+      <div className="page-wrap">
+        {/* Header */}
+        <div className="reg-header">
+          <div className="reg-badge">📋 تسجيل مورد جديد</div>
+          <h1 className="reg-title">انضم إلى شبكة موردي Half Lens</h1>
+          <p className="reg-subtitle">املأ النموذج التالي للانضمام إلى شبكة الموردين لدينا</p>
+        </div>
+
+        {/* Step Indicator */}
+        <div className="step-indicator">
+          <div className="stepper-row">
+            {STEPS.map(({ n, emoji, label }) => {
+              let cls = '';
+              if (n < currentStep) cls = 'done';
+              else if (n === currentStep) cls = 'active';
+              if (n === currentStep - 1) cls += ' before-active';
+              return (
+                <div key={n} className={`step ${cls}`} onClick={() => goToStep(n)}>
+                  <div className="step-dot">
+                    <span className="step-emoji">{emoji}</span>
+                  </div>
+                  <span className="step-lbl">{label}</span>
                 </div>
-                <span className="vr-step-lbl hidden md:block">{l}</span>
-                {n < currentStep && <span className="vr-step-desc hidden md:block">مكتمل</span>}
-                {n === currentStep && <span className="vr-step-desc hidden md:block">قيد التنفيذ</span>}
-              </div>
-            ))}
+              );
+            })}
           </div>
-          {lastSavedAt && (
-            <div style={{ fontSize: '.68rem', color: 'var(--vr-text-muted)', marginTop: 6, textAlign: 'center' }}>
-              تم الحفظ التلقائي في {lastSavedAt}
-            </div>
-          )}
-        </motion.div>
+          <div className="progress-row">
+            <span>الخطوة {currentStep} من {TOTAL_STEPS}</span>
+            <span>{progress}% مكتمل</span>
+          </div>
+          <div className="progress">
+            <div className="progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
 
-        <div className="max-w-3xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-              className="vr-glass-card p-8 md:p-12"
-            >
+        {/* Form Card */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.35 }}
+          >
+            <div className="form-card">
               {currentStep === 1 && <Step1BasicIdentity formData={formData} updateFormData={updateFormData} />}
               {currentStep === 2 && <Step2Contact formData={formData} updateFormData={updateFormData} />}
               {currentStep === 3 && <Step3IdentityDocuments formData={formData} updateFormData={updateFormData} />}
@@ -468,31 +459,43 @@ export const VendorRegistrationForm = () => {
               {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} />}
               {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} />}
 
-              <div className="flex gap-4 mt-8">
-                {currentStep > 1 && (
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={prevStep}
-                    className="vr-button vr-button-secondary flex-1"
-                  >
+              {/* Nav Buttons */}
+              <div className="nav-buttons">
+                {currentStep > 1 ? (
+                  <button className="btn btn-secondary" onClick={prevStep} type="button">
                     السابق
-                  </motion.button>
-                )}
+                  </button>
+                ) : <div />}
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={currentStep === TOTAL_STEPS ? handleSubmit : nextStep}
-                  disabled={!validateStep(currentStep) || (currentStep === TOTAL_STEPS && isSubmitting)}
-                  className="vr-button vr-glow flex-1"
-                >
-                  {currentStep === TOTAL_STEPS ? (isSubmitting ? 'جاري الإرسال...' : 'إرسال الطلب') : 'التالي'}
-                </motion.button>
+                {currentStep === TOTAL_STEPS ? (
+                  <button
+                    className="btn-submit"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    type="button"
+                  >
+                    {isSubmitting ? 'جاري الإرسال...' : '✓ إرسال الطلب'}
+                  </button>
+                ) : (
+                  <button
+                    className="btn btn-primary"
+                    onClick={nextStep}
+                    disabled={!validateStep(currentStep)}
+                    type="button"
+                  >
+                    التالي
+                  </button>
+                )}
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Autosave Bar */}
+      <div className="autosave-bar">
+        <span className="autosave-dot" />
+        <span>{lastSavedAt ? `تم الحفظ في ${lastSavedAt}` : 'الحفظ التلقائي مفعّل'}</span>
       </div>
     </div>
   );

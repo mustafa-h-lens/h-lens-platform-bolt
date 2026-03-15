@@ -1,35 +1,33 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
-import { Phone, MapPin, Check } from 'lucide-react';
-import { getPhoneCodeOptions } from '../../../lib/countries';
+import { COUNTRY_CODES } from '../../../lib/shared-data';
 
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
 }
 
-interface PhoneCodeOption {
-  value: string;
-  label: string;
-}
-
 export const Step2Contact = ({ formData, updateFormData }: Props) => {
   const [cities, setCities] = useState<string[]>([]);
+  const [phoneCodeOpen, setPhoneCodeOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
   const [citySearch, setCitySearch] = useState('');
-  const [showCityDropdown, setShowCityDropdown] = useState(false);
-  const [phoneCodes, setPhoneCodes] = useState<PhoneCodeOption[]>([]);
+  const phoneCodeRef = useRef<HTMLDivElement>(null);
+  const cityRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCities();
-    loadPhoneCodes();
   }, []);
 
-  const loadPhoneCodes = async () => {
-    const options = await getPhoneCodeOptions();
-    setPhoneCodes(options);
-  };
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (phoneCodeRef.current && !phoneCodeRef.current.contains(e.target as Node)) setPhoneCodeOpen(false);
+      if (cityRef.current && !cityRef.current.contains(e.target as Node)) setCityOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchCities = async () => {
     const { data } = await supabase
@@ -40,187 +38,133 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
     if (data) setCities(data.map(c => c.name));
   };
 
+  const currentCode = COUNTRY_CODES.find(c => c.code === formData.country_code);
   const filteredCities = cities.filter(c => c.includes(citySearch));
+  const otherCities = cities.filter(c => c !== formData.primary_city);
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          معلومات التواصل
-        </h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>
-          كيف يمكننا الوصول إليك؟
-        </p>
-      </motion.div>
-
-      {/* Phone with country code on LEFT (LTR layout) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <label className="vr-input-label block mb-2">
-          رقم الجوال <span className="req">*</span>
-        </label>
-        <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
-          {/* Country code LEFT */}
-          <select
-            value={formData.country_code}
-            onChange={(e) => updateFormData({ country_code: e.target.value })}
-            className="vr-input"
-            style={{
-              width: 120, flexShrink: 0,
-              borderRadius: '10px 0 0 10px',
-              borderLeft: 'none',
-              textAlign: 'center',
-              fontSize: '14px',
-              cursor: 'pointer',
-              paddingLeft: 8, paddingRight: 8,
-            }}
-          >
-            {phoneCodes.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-          {/* Phone number RIGHT */}
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => updateFormData({ phone: e.target.value.replace(/\D/g, '').slice(0, 9) })}
-            placeholder="512345678"
-            className="vr-input"
-            dir="ltr"
-            style={{ flex: 1, borderRadius: '0 10px 10px 0', textAlign: 'left' }}
-          />
+    <>
+      <h2 className="step-title">📞 التواصل</h2>
+      <p className="step-subtitle">معلومات التواصل والموقع</p>
+      <div className="form-section">
+        {/* Phone */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> رقم الجوال</label>
+          <div className="phone-group">
+            {/* Country code — custom select */}
+            <div className={`custom-select phone-code ${phoneCodeOpen ? 'open' : ''}`} ref={phoneCodeRef}>
+              <div className="cs-trigger" onClick={() => setPhoneCodeOpen(!phoneCodeOpen)}>
+                <span>{currentCode ? `${currentCode.flag} ${currentCode.code}` : '+966 🇸🇦'}</span>
+                <span className="cs-chevron">&#9662;</span>
+              </div>
+              {phoneCodeOpen && (
+                <div className="cs-dropdown" style={{ display: 'flex' }}>
+                  <div className="cs-options">
+                    {COUNTRY_CODES.map(c => (
+                      <div
+                        key={c.code}
+                        className={`cs-option ${formData.country_code === c.code ? 'selected' : ''}`}
+                        onClick={() => {
+                          updateFormData({ country_code: c.code });
+                          setPhoneCodeOpen(false);
+                        }}
+                      >
+                        {c.flag} {c.code}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Phone number */}
+            <input
+              className="input phone-number"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => updateFormData({ phone: e.target.value.replace(/\D/g, '').slice(0, 9) })}
+              placeholder="5XXXXXXXX"
+              dir="ltr"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            />
+          </div>
         </div>
-        <div style={{ fontSize: '11px', color: 'var(--vr-text-muted)', marginTop: 4, textAlign: 'left', direction: 'ltr' }}>
-          {formData.phone.length}/9
-        </div>
-      </motion.div>
 
-      {/* Primary City — searchable dropdown */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-      >
-        <label className="vr-input-label" style={{ marginBottom: 6 }}>مدينة العمل الأساسية <span className="req">*</span></label>
-        <div style={{ position: 'relative' }}>
-          <input
-            type="text"
-            value={formData.primary_city || citySearch}
-            onChange={(e) => {
-              setCitySearch(e.target.value);
-              setShowCityDropdown(true);
-              updateFormData({ primary_city: '' });
-            }}
-            onFocus={() => setShowCityDropdown(true)}
-            onBlur={() => setTimeout(() => setShowCityDropdown(false), 200)}
-            placeholder="ابحث عن المدينة..."
-            className="vr-input"
-          />
-          {showCityDropdown && filteredCities.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="vr-dropdown"
-              style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 50 }}
-            >
-              {filteredCities.map((city) => (
+        {/* Primary City — custom select */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> مدينة العمل الأساسية</label>
+          <div className={`custom-select ${cityOpen ? 'open' : ''}`} ref={cityRef}>
+            <div className="cs-trigger" onClick={() => setCityOpen(!cityOpen)}>
+              <span className={formData.primary_city ? '' : 'cs-placeholder'}>
+                {formData.primary_city || 'اختر المدينة'}
+              </span>
+              <span className="cs-chevron">&#9662;</span>
+            </div>
+            {cityOpen && (
+              <div className="cs-dropdown" style={{ display: 'flex' }}>
+                <div className="cs-search">
+                  <input
+                    type="text"
+                    placeholder="ابحث..."
+                    value={citySearch}
+                    onChange={(e) => setCitySearch(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="cs-options">
+                  {filteredCities.map(city => (
+                    <div
+                      key={city}
+                      className={`cs-option ${formData.primary_city === city ? 'selected' : ''}`}
+                      onClick={() => {
+                        updateFormData({ primary_city: city });
+                        setCityOpen(false);
+                        setCitySearch('');
+                      }}
+                    >
+                      {city}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Other cities toggle */}
+        <div
+          className={`toggle-wrap ${formData.available_other_cities ? 'on' : ''}`}
+          onClick={() => updateFormData({ available_other_cities: !formData.available_other_cities })}
+        >
+          <span className="toggle-label">متاح للعمل في مدن أخرى؟</span>
+          <div className="toggle-sw" />
+        </div>
+
+        {/* Other cities grid */}
+        {formData.available_other_cities && (
+          <div className="city-grid">
+            {otherCities.map(city => {
+              const checked = formData.other_cities?.includes(city);
+              return (
                 <div
                   key={city}
-                  className="vr-dropdown-item"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    updateFormData({ primary_city: city });
-                    setCitySearch('');
-                    setShowCityDropdown(false);
-                  }}
-                >
-                  <MapPin className="w-4 h-4 inline-block ml-2" style={{ color: 'var(--vr-accent-lighter)' }} />
-                  {city}
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Available in other cities toggle */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="flex items-center justify-between p-4"
-        style={{
-          background: 'var(--vr-bg-card)',
-          borderRadius: 'var(--vr-radius-lg)',
-          border: '1px solid var(--vr-border-subtle)',
-        }}
-      >
-        <div>
-          <h3 className="font-semibold mb-1" style={{ color: 'var(--vr-text-primary)' }}>
-            متاح للعمل في مدن أخرى؟
-          </h3>
-          <p className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>
-            هل تستطيع العمل في مدن أخرى غير مدينتك الأساسية؟
-          </p>
-        </div>
-        <motion.div
-          whileTap={{ scale: 0.9 }}
-          onClick={() => updateFormData({ available_other_cities: !formData.available_other_cities })}
-          className={`vr-toggle ${formData.available_other_cities ? 'on' : ''}`}
-        />
-      </motion.div>
-
-      {/* Other cities — all cities, scrollable, chip style like vendor dashboard */}
-      {formData.available_other_cities && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ delay: 0.35 }}
-        >
-          <label className="vr-input-label block mb-3">
-            اختر المدن الأخرى
-          </label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto', padding: '4px 0' }}>
-            {cities.filter(c => c !== formData.primary_city).map((city) => {
-              const isSel = formData.other_cities?.includes(city);
-              return (
-                <motion.button
-                  key={city}
-                  whileTap={{ scale: 0.95 }}
+                  className={`city-chip ${checked ? 'checked' : ''}`}
                   onClick={() => {
-                    const otherCities = formData.other_cities || [];
-                    if (isSel) {
-                      updateFormData({ other_cities: otherCities.filter(c => c !== city) });
+                    const current = formData.other_cities || [];
+                    if (checked) {
+                      updateFormData({ other_cities: current.filter(c => c !== city) });
                     } else {
-                      updateFormData({ other_cities: [...otherCities, city] });
+                      updateFormData({ other_cities: [...current, city] });
                     }
                   }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 5,
-                    padding: '6px 14px', borderRadius: 8, fontSize: '13px', fontWeight: 600,
-                    fontFamily: "'Cairo', sans-serif", cursor: 'pointer',
-                    transition: 'all 0.15s',
-                    background: isSel ? 'var(--vr-accent-glow-md)' : 'transparent',
-                    border: `1.5px solid ${isSel ? 'var(--vr-border-accent)' : 'var(--vr-border-soft)'}`,
-                    color: isSel ? 'var(--vr-accent-lighter)' : 'var(--vr-text-secondary)',
-                  }}
                 >
-                  {isSel && <Check size={13} />}
+                  <span className="chip-check">{checked ? '✓' : ''}</span>
                   {city}
-                </motion.button>
+                </div>
               );
             })}
           </div>
-        </motion.div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 };

@@ -1,7 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
-import { ChevronDown, ChevronRight, Plus, X, Check, Star, Briefcase } from 'lucide-react';
 
 interface VendorField {
   id: string;
@@ -28,7 +26,12 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
   const [categories, setCategories] = useState<VendorField[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const selectedFieldsRef = useRef<HTMLDivElement>(null);
+
+  // Price modal state
+  const [priceModalOpen, setPriceModalOpen] = useState(false);
+  const [priceModalField, setPriceModalField] = useState<{ id: string; name_ar: string; name_en: string; category: string } | null>(null);
+  const [priceFrom, setPriceFrom] = useState('');
+  const [priceTo, setPriceTo] = useState('');
 
   useEffect(() => { fetchVendorFields(); }, []);
 
@@ -52,7 +55,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
     finally { setLoading(false); }
   };
 
-  const toggleCategory = (id: string) => {
+  const toggleAccordion = (id: string) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -60,217 +63,165 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields }: Pro
     });
   };
 
-  const addField = (field: VendorField) => {
-    if (selectedFields.some(f => f.field_id === field.id)) return;
-    updateSelectedFields([...selectedFields, {
-      field_id: field.id, field_name_ar: field.name_ar, field_name_en: field.name_en,
-      rate_from: '', rate_to: '',
-    }]);
+  const openPriceModal = (sub: VendorField, categoryName: string) => {
+    const existing = selectedFields.find(f => f.field_id === sub.id);
+    setPriceModalField({ id: sub.id, name_ar: sub.name_ar, name_en: sub.name_en, category: categoryName });
+    setPriceFrom(existing?.rate_from || '');
+    setPriceTo(existing?.rate_to || '');
+    setPriceModalOpen(true);
+  };
+
+  const savePriceModal = () => {
+    if (!priceModalField || !priceFrom || !priceTo) return;
+    const existing = selectedFields.find(f => f.field_id === priceModalField.id);
+    if (existing) {
+      // Update existing
+      updateSelectedFields(selectedFields.map(f =>
+        f.field_id === priceModalField.id ? { ...f, rate_from: priceFrom, rate_to: priceTo } : f
+      ));
+    } else {
+      // Add new
+      updateSelectedFields([...selectedFields, {
+        field_id: priceModalField.id,
+        field_name_ar: priceModalField.name_ar,
+        field_name_en: priceModalField.name_en,
+        rate_from: priceFrom,
+        rate_to: priceTo,
+      }]);
+    }
+    setPriceModalOpen(false);
+    setPriceModalField(null);
   };
 
   const removeField = (id: string) => {
     updateSelectedFields(selectedFields.filter(f => f.field_id !== id));
   };
 
-  const updateRate = (id: string, key: 'rate_from' | 'rate_to', val: string) => {
-    updateSelectedFields(selectedFields.map(f => f.field_id === id ? { ...f, [key]: val.replace(/\D/g, '') } : f));
-  };
-
-  const mainField = selectedFields[0];
-  const secondaryFields = selectedFields.slice(1);
-
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: 48, color: 'var(--vr-text-secondary)', fontFamily: "'Cairo', sans-serif" }}>جاري التحميل...</div>;
+    return (
+      <>
+        <h2 className="step-title">💼 المجالات والتسعير</h2>
+        <p className="step-subtitle">جاري التحميل...</p>
+      </>
+    );
   }
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>مجالات العمل والأسعار</h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>اختر مجالك الأساسي ثم أضف مجالات فرعية أخرى مع تحديد نطاق الأسعار</p>
-      </motion.div>
-
-      {/* ── SELECTED FIELDS ── */}
-      {selectedFields.length > 0 && (
-        <motion.div ref={selectedFieldsRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          {/* Main service */}
-          {mainField && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <Star size={16} style={{ color: 'var(--vr-warning-text)' }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--vr-warning-text)' }}>الخدمة الأساسية</span>
-              </div>
-              <FieldCard field={mainField} isMain onRemove={() => removeField(mainField.field_id)} onUpdateRate={updateRate} />
-            </div>
-          )}
-
-          {/* Secondary services */}
-          {secondaryFields.length > 0 && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <Briefcase size={16} style={{ color: 'var(--vr-accent-lighter)' }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--vr-accent-lighter)' }}>خدمات إضافية</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {secondaryFields.map((field, i) => (
-                  <FieldCard key={field.field_id} field={field} onRemove={() => removeField(field.field_id)} onUpdateRate={updateRate} />
-                ))}
-              </div>
-            </div>
-          )}
-        </motion.div>
-      )}
-
-      {/* ── AVAILABLE CATEGORIES ── */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--vr-text-primary)', marginBottom: 12 }}>
-          {selectedFields.length === 0 ? 'اختر خدمتك الأساسية' : 'إضافة خدمات أخرى'}
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {categories.map(cat => {
-            const selectedCount = (cat.subcategories || []).filter(s => selectedFields.some(f => f.field_id === s.id)).length;
-            const isExpanded = expandedCategories.has(cat.id);
+    <>
+      <h2 className="step-title">💼 المجالات والتسعير</h2>
+      <p className="step-subtitle">اختر مجالات خبرتك وحدد نطاق أسعارك</p>
+      <div className="form-section">
+        {/* Accordion */}
+        <div className="accordion">
+          {categories.map((cat) => {
+            const isOpen = expandedCategories.has(cat.id);
             return (
-              <div key={cat.id} style={{
-                borderRadius: 14, overflow: 'hidden',
-                border: '1px solid var(--vr-border-soft)',
-                background: 'var(--vr-bg-card)',
-              }}>
-                {/* Category header */}
-                <div
-                  onClick={() => toggleCategory(cat.id)}
-                  style={{
-                    padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
-                    cursor: 'pointer', transition: 'background 0.15s',
-                  }}
-                >
-                  {isExpanded ? <ChevronDown size={18} style={{ color: 'var(--vr-text-secondary)' }} /> : <ChevronRight size={18} style={{ color: 'var(--vr-text-secondary)' }} />}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--vr-text-primary)' }}>{cat.name_ar}</div>
-                    {cat.name_en && <div style={{ fontSize: 12, color: 'var(--vr-text-muted)' }}>{cat.name_en}</div>}
+              <div key={cat.id} className={`accordion-item ${isOpen ? 'open' : ''}`}>
+                <button className="accordion-header" onClick={() => toggleAccordion(cat.id)} type="button">
+                  <span className="acc-left">
+                    <span className="acc-emoji">📁</span> {cat.name_ar}
+                  </span>
+                  <span className="acc-chevron">&#9662;</span>
+                </button>
+                <div className="accordion-body">
+                  <div className="accordion-body-inner">
+                    {cat.subcategories?.map(sub => {
+                      const sel = selectedFields.find(f => f.field_id === sub.id);
+                      const priceText = sel ? `${sel.rate_from} - ${sel.rate_to} ر.س/يوم` : '';
+                      return (
+                        <div
+                          key={sub.id}
+                          className={`subfield-chip ${sel ? 'selected' : ''}`}
+                          onClick={() => openPriceModal(sub, cat.name_ar)}
+                        >
+                          <span>{sub.name_ar}</span>
+                          <div className="sf-right">
+                            {sel && (
+                              <>
+                                <span className="sf-price">{priceText}</span>
+                                <button
+                                  className="sf-remove"
+                                  onClick={(e) => { e.stopPropagation(); removeField(sub.id); }}
+                                  type="button"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {selectedCount > 0 && (
-                    <span style={{ padding: '2px 8px', borderRadius: 6, background: 'var(--vr-accent-glow-md)', color: 'var(--vr-accent-lighter)', fontSize: 11, fontWeight: 700 }}>
-                      {selectedCount}
-                    </span>
-                  )}
                 </div>
-
-                {/* Subcategories */}
-                <AnimatePresence>
-                  {isExpanded && cat.subcategories && (
-                    <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
-                      <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {cat.subcategories.map(sub => {
-                          const isSel = selectedFields.some(f => f.field_id === sub.id);
-                          return (
-                            <motion.div
-                              key={sub.id}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => !isSel && addField(sub)}
-                              style={{
-                                padding: '10px 14px', borderRadius: 10,
-                                border: `1.5px solid ${isSel ? 'var(--vr-success-border)' : 'var(--vr-border-subtle)'}`,
-                                background: isSel ? 'var(--vr-success-bg)' : 'transparent',
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                cursor: isSel ? 'default' : 'pointer',
-                                transition: 'all 0.15s',
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? 'var(--vr-success-text)' : 'var(--vr-text-primary)' }}>{sub.name_ar}</div>
-                                {sub.name_en && <div style={{ fontSize: 11, color: 'var(--vr-text-muted)' }}>{sub.name_en}</div>}
-                              </div>
-                              {isSel ? (
-                                <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--vr-success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <Check size={14} style={{ color: 'white' }} strokeWidth={3} />
-                                </div>
-                              ) : (
-                                <Plus size={18} style={{ color: 'var(--vr-accent-lighter)' }} />
-                              )}
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             );
           })}
         </div>
-      </motion.div>
-    </div>
-  );
-};
 
-// ── Field Card Component ──
-function FieldCard({ field, isMain, onRemove, onUpdateRate }: {
-  field: SelectedField; isMain?: boolean;
-  onRemove: () => void;
-  onUpdateRate: (id: string, key: 'rate_from' | 'rate_to', val: string) => void;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      style={{
-        padding: 16, borderRadius: 14,
-        border: `1.5px solid ${isMain ? 'var(--vr-warning-border)' : 'var(--vr-border-soft)'}`,
-        background: isMain ? 'var(--vr-warning-bg)' : 'var(--vr-bg-card)',
-        position: 'relative',
-      }}
-    >
-      {/* Remove button */}
-      <button onClick={onRemove} style={{
-        position: 'absolute', top: 10, left: 10,
-        background: 'none', border: 'none', cursor: 'pointer',
-        color: 'var(--vr-error-text)', padding: 4, borderRadius: 6,
-        display: 'flex', transition: 'background 0.15s',
-      }}>
-        <X size={16} />
-      </button>
-
-      {/* Field info */}
-      <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: isMain ? 'var(--vr-warning-text)' : 'var(--vr-text-primary)' }}>
-          {field.field_name_ar}
-        </div>
-        {field.field_name_en && (
-          <div style={{ fontSize: 12, color: 'var(--vr-text-muted)', marginTop: 2 }}>{field.field_name_en}</div>
+        {/* Selected fields summary */}
+        {selectedFields.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <label className="input-label" style={{ marginBottom: 8 }}>
+              المجالات المختارة ({selectedFields.length})
+            </label>
+            <div className="review-fields">
+              {selectedFields.map(f => (
+                <span key={f.field_id} className="review-field-tag">
+                  {f.field_name_ar} · {f.rate_from}-{f.rate_to} ر.س
+                </span>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Price range */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--vr-text-muted)', marginBottom: 4, display: 'block' }}>من (SAR)</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={field.rate_from}
-            onChange={(e) => onUpdateRate(field.field_id, 'rate_from', e.target.value)}
-            placeholder="0"
-            className="vr-input"
-            dir="ltr"
-            style={{ textAlign: 'center', height: 40, fontSize: 15, fontWeight: 700 }}
-          />
+      {/* Price Modal */}
+      {priceModalOpen && (
+        <div className="price-modal-overlay" onClick={() => setPriceModalOpen(false)}>
+          <div className="price-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="price-modal-hdr">
+              <div>
+                <div className="price-modal-ttl">{priceModalField?.name_ar || 'تحديد السعر'}</div>
+                <div className="price-modal-sub">حدد نطاق السعر اليومي بالريال السعودي</div>
+              </div>
+              <button className="price-modal-close" onClick={() => setPriceModalOpen(false)} type="button">✕</button>
+            </div>
+            <div className="price-inputs">
+              <div className="input-group">
+                <label className="input-label">من (ر.س/يوم)</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={priceFrom}
+                  onChange={(e) => setPriceFrom(e.target.value)}
+                  placeholder="500"
+                  min="0"
+                  dir="ltr"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">إلى (ر.س/يوم)</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={priceTo}
+                  onChange={(e) => setPriceTo(e.target.value)}
+                  placeholder="2000"
+                  min="0"
+                  dir="ltr"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                />
+              </div>
+            </div>
+            <div className="price-modal-foot">
+              <button className="btn btn-ghost" onClick={() => setPriceModalOpen(false)} type="button">إلغاء</button>
+              <button className="btn btn-primary" onClick={savePriceModal} type="button" disabled={!priceFrom || !priceTo}>حفظ السعر</button>
+            </div>
+          </div>
         </div>
-        <div style={{ color: 'var(--vr-text-muted)', fontSize: 16, fontWeight: 700, paddingBottom: 10 }}>—</div>
-        <div style={{ flex: 1 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--vr-text-muted)', marginBottom: 4, display: 'block' }}>إلى (SAR)</label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={field.rate_to}
-            onChange={(e) => onUpdateRate(field.field_id, 'rate_to', e.target.value)}
-            placeholder="0"
-            className="vr-input"
-            dir="ltr"
-            style={{ textAlign: 'center', height: 40, fontSize: 15, fontWeight: 700 }}
-          />
-        </div>
-      </div>
-    </motion.div>
+      )}
+    </>
   );
-}
+};

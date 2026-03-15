@@ -1,6 +1,5 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { VendorFormData, SelectedField } from '../VendorRegistrationForm';
-import { Edit2, CheckCircle, Briefcase } from 'lucide-react';
 
 interface Props {
   formData: VendorFormData;
@@ -8,260 +7,165 @@ interface Props {
 }
 
 export const Step6Review = ({ formData, goToStep }: Props) => {
-  const sections = [
-    {
-      title: 'المعلومات الأساسية',
-      step: 1,
-      items: [
-        { label: 'الاسم الكامل', value: formData.full_name },
-        { label: 'الجنسية', value: formData.nationality },
-        { label: 'النوع', value: formData.vendor_type === 'individual' ? 'فرد' : 'شركة' },
-      ],
-    },
-    {
-      title: 'معلومات التواصل',
-      step: 2,
-      items: [
-        { label: 'رقم الجوال', value: `${formData.country_code}${formData.phone}` },
-        { label: 'المدينة الأساسية', value: formData.primary_city },
-        {
-          label: 'متاح في مدن أخرى',
-          value: formData.available_other_cities ? 'نعم' : 'لا',
-        },
-        ...(formData.available_other_cities && formData.other_cities?.length
-          ? [{ label: 'المدن الأخرى', value: formData.other_cities.join('، ') }]
-          : []),
-      ],
-    },
-    {
-      title: 'المستندات الثبوتية',
-      step: 3,
-      items: [
-        { label: 'رقم الهوية', value: formData.id_number },
-        {
-          label: 'صورة الهوية',
-          value: formData.id_image || formData.id_image_url ? '✓ تم الرفع' : 'غير موجود',
-        },
-        {
-          label: 'الصورة الشخصية',
-          value: formData.profile_image || formData.profile_image_url ? '✓ تم الرفع' : 'غير موجود',
-        },
-      ],
-    },
-    {
-      title: 'معلومات السفر',
-      step: 4,
-      items: [
-        { label: 'رقم جواز السفر', value: formData.passport_number || 'غير محدد' },
-        { label: 'دولة التأشيرة', value: formData.visa_country || 'غير محدد' },
-        {
-          label: 'مستند التأشيرة',
-          value: formData.visa_file || formData.visa_file_url ? '✓ تم الرفع' : 'غير محدد',
-        },
-      ],
-    },
-    {
-      title: 'المعلومات المالية',
-      step: 5,
-      items: [
-        { label: 'اسم البنك', value: formData.bank_name },
-        { label: 'اسم المستفيد', value: formData.beneficiary_name },
-        { label: 'رقم الآيبان', value: formData.iban },
-        { label: 'السعر يشمل الضريبة', value: formData.price_includes_tax ? 'نعم' : 'لا' },
-      ],
-    },
-  ];
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  const vendorTypeLabel = formData.vendor_type === 'individual' ? 'فرد' : formData.vendor_type === 'company' ? 'شركة' : '—';
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          مراجعة البيانات
-        </h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>
-          تأكد من صحة جميع المعلومات قبل الإرسال
-        </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="vr-banner info"
-        style={{
-          background: 'var(--vr-success-bg)',
-          borderColor: 'var(--vr-success-border)',
-          color: 'var(--vr-success-text)',
-        }}
-      >
-        <CheckCircle className="w-8 h-8 flex-shrink-0" style={{ color: 'var(--vr-success)' }} />
-        <div>
-          <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-            أنت على وشك الانتهاء!
-          </h3>
-          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-            راجع معلوماتك بعناية. يمكنك التعديل على أي قسم بالنقر على زر "تعديل"
-          </p>
+    <>
+      <h2 className="step-title">✅ المراجعة</h2>
+      <p className="step-subtitle">راجع بياناتك قبل إرسال الطلب</p>
+      <div className="form-section">
+        {/* Identity */}
+        <div className="review-section">
+          <div className="review-card">
+            <div className="review-card-hdr">
+              <span className="review-card-title">👤 الهوية</span>
+              <button className="review-card-edit" onClick={() => goToStep(1)} type="button">✏️ تعديل</button>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">الاسم</span>
+              <span className="rv-value">{formData.full_name || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">الجنسية</span>
+              <span className="rv-value">{formData.nationality || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">نوع المورد</span>
+              <span className="rv-value">{vendorTypeLabel}</span>
+            </div>
+          </div>
         </div>
-      </motion.div>
 
-      <div className="space-y-4">
-        {sections.map((section, index) => (
-          <motion.div
-            key={section.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + index * 0.05 }}
-            className="vr-glass-card p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--vr-text-primary)' }}>
-                {section.title}
-              </h3>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => goToStep(section.step)}
-                className="vr-button-ghost flex items-center gap-2 px-4 py-2"
-                style={{
-                  background: 'var(--vr-accent-glow)',
-                  color: 'var(--vr-accent-lighter)',
-                  borderRadius: 'var(--vr-radius-md)',
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-                <span className="text-sm font-medium">تعديل</span>
-              </motion.button>
+        {/* Contact */}
+        <div className="review-section">
+          <div className="review-card">
+            <div className="review-card-hdr">
+              <span className="review-card-title">📞 التواصل</span>
+              <button className="review-card-edit" onClick={() => goToStep(2)} type="button">✏️ تعديل</button>
             </div>
+            <div className="review-row">
+              <span className="rv-label">الجوال</span>
+              <span className="rv-value" dir="ltr" style={{ fontFamily: 'var(--font-mono)' }}>
+                {formData.country_code}{formData.phone || '—'}
+              </span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">المدينة</span>
+              <span className="rv-value">{formData.primary_city || '—'}</span>
+            </div>
+            {formData.other_cities && formData.other_cities.length > 0 && (
+              <div className="review-row">
+                <span className="rv-label">مدن أخرى</span>
+                <span className="rv-value">{formData.other_cities.join('، ')}</span>
+              </div>
+            )}
+          </div>
+        </div>
 
-            <div className="space-y-3">
-              {section.items.map((item) => (
-                <div key={item.label} className="flex justify-between items-start">
-                  <span className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>
-                    {item.label}
-                  </span>
-                  <span
-                    className="text-sm font-medium text-right"
-                    style={{ color: 'var(--vr-text-primary)', maxWidth: '60%' }}
-                  >
-                    {item.value || '-'}
-                  </span>
+        {/* Documents */}
+        <div className="review-section">
+          <div className="review-card">
+            <div className="review-card-hdr">
+              <span className="review-card-title">🪪 المستندات</span>
+              <button className="review-card-edit" onClick={() => goToStep(3)} type="button">✏️ تعديل</button>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">رقم الهوية</span>
+              <span className="rv-value" dir="ltr" style={{ fontFamily: 'var(--font-mono)' }}>{formData.id_number || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">صورة الهوية</span>
+              <span className="rv-value">{(formData.id_image || formData.id_image_url) ? '✓ مرفق' : '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">الصورة الشخصية</span>
+              <span className="rv-value">{(formData.profile_image || formData.profile_image_url) ? '✓ مرفق' : '—'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Travel (conditional) */}
+        {(formData.passport_number || formData.visa_country) && (
+          <div className="review-section">
+            <div className="review-card">
+              <div className="review-card-hdr">
+                <span className="review-card-title">✈️ السفر</span>
+                <button className="review-card-edit" onClick={() => goToStep(4)} type="button">✏️ تعديل</button>
+              </div>
+              {formData.passport_number && (
+                <div className="review-row">
+                  <span className="rv-label">جواز السفر</span>
+                  <span className="rv-value" dir="ltr" style={{ fontFamily: 'var(--font-mono)' }}>{formData.passport_number}</span>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-
-        {formData.selected_fields && formData.selected_fields.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 + sections.length * 0.05 }}
-            className="vr-glass-card p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--vr-text-primary)' }}>
-                مجالات العمل والأسعار
-              </h3>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => goToStep(6)}
-                className="vr-button-ghost flex items-center gap-2 px-4 py-2"
-                style={{
-                  background: 'var(--vr-accent-glow)',
-                  color: 'var(--vr-accent-lighter)',
-                  borderRadius: 'var(--vr-radius-md)',
-                }}
-              >
-                <Edit2 className="w-4 h-4" />
-                <span className="text-sm font-medium">تعديل</span>
-              </motion.button>
-            </div>
-
-            <div className="space-y-3">
-              {formData.selected_fields.map((field: SelectedField) => (
-                <div
-                  key={field.field_id}
-                  className="flex items-center justify-between p-3"
-                  style={{
-                    background: 'var(--vr-bg-card)',
-                    borderRadius: 'var(--vr-radius-md)',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <Briefcase className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--vr-accent-lighter)' }} />
-                    <div>
-                      <div className="text-sm font-medium" style={{ color: 'var(--vr-text-primary)' }}>
-                        {field.field_name_ar}
-                      </div>
-                      <div className="text-xs" style={{ color: 'var(--vr-text-muted)' }}>
-                        {field.field_name_en}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-sm font-medium" style={{ color: 'var(--vr-success)' }}>
-                    {field.rate_from} - {field.rate_to} ريال
-                  </div>
+              )}
+              {formData.visa_country && (
+                <div className="review-row">
+                  <span className="rv-label">التأشيرات</span>
+                  <span className="rv-value">{formData.visa_country}</span>
                 </div>
-              ))}
+              )}
             </div>
-          </motion.div>
+          </div>
         )}
-      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="p-6"
-        style={{
-          background: 'var(--vr-bg-card)',
-          border: '1px solid var(--vr-border-soft)',
-          borderRadius: 'var(--vr-radius-lg)',
-        }}
-      >
-        <div className="flex items-start gap-3">
-          <input
-            type="checkbox"
-            id="terms"
-            style={{
-              width: 20, height: 20, marginTop: 2, flexShrink: 0,
-              accentColor: 'var(--vr-accent)', cursor: 'pointer',
-            }}
-          />
-          <label htmlFor="terms" className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-            أوافق على{' '}
-            <a
-              href="/terms-and-conditions"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: 'var(--vr-accent-lighter)',
-                textDecoration: 'underline',
-                textUnderlineOffset: '2px',
-              }}
-            >
-              الشروط والأحكام
-            </a>{' '}
-            و<a
-              href="/privacy-policy"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: 'var(--vr-accent-lighter)',
-                textDecoration: 'underline',
-                textUnderlineOffset: '2px',
-              }}
-            >سياسة الخصوصية</a>{' '}
-            الخاصة بـ Half Lens. أؤكد أن جميع المعلومات المقدمة صحيحة ودقيقة.
-          </label>
+        {/* Financial */}
+        <div className="review-section">
+          <div className="review-card">
+            <div className="review-card-hdr">
+              <span className="review-card-title">🏦 المالية</span>
+              <button className="review-card-edit" onClick={() => goToStep(5)} type="button">✏️ تعديل</button>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">البنك</span>
+              <span className="rv-value">{formData.bank_id || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">صاحب الحساب</span>
+              <span className="rv-value">{formData.account_name || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">IBAN</span>
+              <span className="rv-value" dir="ltr" style={{ fontFamily: 'var(--font-mono)' }}>{formData.iban || '—'}</span>
+            </div>
+            <div className="review-row">
+              <span className="rv-label">شامل الضريبة</span>
+              <span className="rv-value">{formData.price_includes_tax ? 'نعم' : 'لا'}</span>
+            </div>
+          </div>
         </div>
-      </motion.div>
-    </div>
+
+        {/* Selected Fields */}
+        {formData.selected_fields && formData.selected_fields.length > 0 && (
+          <div className="review-section">
+            <div className="review-card">
+              <div className="review-card-hdr">
+                <span className="review-card-title">💼 المجالات</span>
+                <button className="review-card-edit" onClick={() => goToStep(6)} type="button">✏️ تعديل</button>
+              </div>
+              <div className="review-fields">
+                {formData.selected_fields.map((field: SelectedField) => (
+                  <span key={field.field_id} className="review-field-tag">
+                    {field.field_name_ar} · {field.rate_from}-{field.rate_to} ر.س/يوم
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Terms */}
+        <div
+          className={`terms-wrap ${termsAccepted ? 'checked' : ''}`}
+          onClick={() => setTermsAccepted(!termsAccepted)}
+        >
+          <div className="terms-checkbox" />
+          <div className="terms-text">
+            أوافق على <strong>الشروط والأحكام</strong> وسياسة الخصوصية الخاصة بمنصة Half Lens، وأقر بأن جميع البيانات المدخلة صحيحة ودقيقة.
+          </div>
+        </div>
+      </div>
+    </>
   );
 };

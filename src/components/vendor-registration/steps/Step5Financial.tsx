@@ -1,7 +1,5 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
-import { Banknote, DollarSign } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 
 interface Props {
@@ -18,8 +16,19 @@ interface Bank {
 export const Step5Financial = ({ formData, updateFormData }: Props) => {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bankOpen, setBankOpen] = useState(false);
+  const [bankSearch, setBankSearch] = useState('');
+  const bankRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchBanks(); }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bankRef.current && !bankRef.current.contains(e.target as Node)) setBankOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchBanks = async () => {
     try {
@@ -30,99 +39,122 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
     finally { setLoading(false); }
   };
 
-  // Extract IBAN digits (without SA prefix)
-  const ibanDigits = (formData.iban?.startsWith('SA') ? formData.iban.slice(2) : formData.iban || '').replace(/\D/g, '');
+  const selectedBank = banks.find(b => b.id === formData.bank_id);
+
+  // IBAN: digits only (without SA prefix)
+  const ibanRaw = (formData.iban?.startsWith('SA') ? formData.iban.slice(2) : formData.iban || '').replace(/\D/g, '');
+  // Format with spaces for display: "03 8000 0000 6080 1016 75 19"
+  const formatIbanDisplay = (digits: string) => {
+    // SA + 2 check digits + 4*5 groups => SA XX XXXX XXXX XXXX XXXX XX
+    const groups = [];
+    let i = 0;
+    const sizes = [2, 4, 4, 4, 4, 2, 2];
+    for (const size of sizes) {
+      if (i >= digits.length) break;
+      groups.push(digits.slice(i, i + size));
+      i += size;
+    }
+    return groups.join(' ');
+  };
+
+  const filteredBanks = banks.filter(b => b.name_ar.includes(bankSearch) || b.name_en.toLowerCase().includes(bankSearch.toLowerCase()));
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>المعلومات المالية</h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>معلومات حسابك البنكي لتحويل المستحقات</p>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="vr-banner info" style={{ background: 'var(--vr-success-bg)', borderColor: 'var(--vr-success-border)', color: 'var(--vr-success-text)' }}>
-        <Banknote className="w-8 h-8 flex-shrink-0" style={{ color: 'var(--vr-success)' }} />
-        <div>
-          <h3 className="font-semibold mb-2" style={{ color: 'var(--vr-text-primary)' }}>طريقة الدفع: تحويل بنكي</h3>
-          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>سيتم تحويل مستحقاتك مباشرة إلى حسابك البنكي بعد كل مشروع</p>
+    <>
+      <h2 className="step-title">🏦 المالية</h2>
+      <p className="step-subtitle">المعلومات البنكية لتحويل المستحقات</p>
+      <div className="form-section">
+        {/* Info */}
+        <div className="info-box green">
+          <span className="info-icon">🏦</span>
+          <span><strong>طريقة الدفع: تحويل بنكي</strong><br />سيتم تحويل مستحقاتك مباشرة إلى حسابك البنكي بعد اكتمال كل مشروع</span>
         </div>
-      </motion.div>
 
-      {/* Bank select */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="vr-input-group">
-        <label className="vr-input-label">اسم البنك <span className="req">*</span></label>
-        <select value={formData.bank_id || ''} onChange={(e) => updateFormData({ bank_id: e.target.value })} className="vr-input select" disabled={loading}>
-          <option value="">اختر البنك</option>
-          {banks.map(b => <option key={b.id} value={b.id}>{b.name_ar}</option>)}
-        </select>
-      </motion.div>
-
-      {/* Account holder name */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="vr-input-group">
-        <label className="vr-input-label">اسم صاحب الحساب <span className="req">*</span></label>
-        <input type="text" value={formData.account_name} onChange={(e) => updateFormData({ account_name: e.target.value })} placeholder="كما في كشف الحساب البنكي" className="vr-input" />
-      </motion.div>
-
-      {/* IBAN with SA prefix */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="vr-input-group">
-        <label className="vr-input-label">رقم الآيبان (SA + رقم 22) <span className="req">*</span></label>
-        <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.12)', direction: 'ltr' }}>
-          <div style={{
-            padding: '0 14px', background: 'var(--vr-accent-glow-md)',
-            borderLeft: '1px solid var(--vr-border-accent)',
-            display: 'flex', alignItems: 'center', flexShrink: 0,
-          }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--vr-accent-lighter)' }}>SA</span>
+        {/* Bank — custom select */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> اسم البنك</label>
+          <div className={`custom-select ${bankOpen ? 'open' : ''}`} ref={bankRef}>
+            <div className="cs-trigger" onClick={() => !loading && setBankOpen(!bankOpen)}>
+              <span className={selectedBank ? '' : 'cs-placeholder'}>
+                {selectedBank ? selectedBank.name_ar : 'اختر البنك'}
+              </span>
+              <span className="cs-chevron">&#9662;</span>
+            </div>
+            {bankOpen && (
+              <div className="cs-dropdown" style={{ display: 'flex' }}>
+                <div className="cs-search">
+                  <input
+                    type="text"
+                    placeholder="ابحث..."
+                    value={bankSearch}
+                    onChange={(e) => setBankSearch(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div className="cs-options">
+                  {filteredBanks.map(b => (
+                    <div
+                      key={b.id}
+                      className={`cs-option ${formData.bank_id === b.id ? 'selected' : ''}`}
+                      onClick={() => {
+                        updateFormData({ bank_id: b.id });
+                        setBankOpen(false);
+                        setBankSearch('');
+                      }}
+                    >
+                      {b.name_ar}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+        </div>
+
+        {/* Account Holder Name */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> اسم صاحب الحساب</label>
           <input
+            className="input"
             type="text"
-            inputMode="numeric"
-            value={ibanDigits}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '').slice(0, 22);
-              updateFormData({ iban: 'SA' + digits });
-            }}
-            placeholder="0380000000608010167519"
-            dir="ltr"
-            maxLength={22}
-            style={{
-              flex: 1, padding: '11px 14px', border: 'none', outline: 'none',
-              background: 'rgba(255,255,255,0.03)', color: 'var(--vr-text-primary)',
-              fontFamily: "'Cairo', sans-serif", fontSize: 14, letterSpacing: '0.05em',
-            }}
+            value={formData.account_name}
+            onChange={(e) => updateFormData({ account_name: e.target.value })}
+            placeholder="الاسم كما يظهر في الحساب البنكي"
           />
-          <div style={{ padding: '0 12px', display: 'flex', alignItems: 'center', fontSize: 11, color: 'var(--vr-text-muted)', flexShrink: 0 }}>
-            {ibanDigits.length}/22
+        </div>
+
+        {/* IBAN with SA prefix */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> رقم الآيبان IBAN</label>
+          <div className="iban-wrap">
+            <span className="iban-prefix">SA</span>
+            <input
+              className="input"
+              type="text"
+              value={formatIbanDisplay(ibanRaw)}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 22);
+                updateFormData({ iban: 'SA' + digits });
+              }}
+              placeholder="00 0000 0000 0000 0000 00"
+              dir="ltr"
+              inputMode="numeric"
+              style={{ fontFamily: 'var(--font-mono)', paddingLeft: 36 }}
+              maxLength={27}
+            />
           </div>
+          <div className="iban-counter">{ibanRaw.length} / 22</div>
         </div>
-        {ibanDigits.length === 22 && (
-          <div className="vr-input-hint" style={{ color: 'var(--vr-success-text)' }}>✓ رقم الآيبان مكتمل</div>
-        )}
-      </motion.div>
 
-      {/* Tax toggle */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-        className="flex items-center justify-between p-4"
-        style={{ background: 'var(--vr-bg-card)', borderRadius: 'var(--vr-radius-lg)', border: '1px solid var(--vr-border-subtle)' }}>
-        <div>
-          <h3 className="font-semibold mb-1 flex items-center gap-2" style={{ color: 'var(--vr-text-primary)' }}>
-            <DollarSign className="w-5 h-5" /> السعر يشمل الضريبة؟
-          </h3>
-          <p className="text-sm" style={{ color: 'var(--vr-text-muted)' }}>هل الأسعار التي تقدمها تشمل ضريبة القيمة المضافة؟</p>
+        {/* VAT toggle */}
+        <div
+          className={`toggle-wrap ${formData.price_includes_tax ? 'on' : ''}`}
+          onClick={() => updateFormData({ price_includes_tax: !formData.price_includes_tax })}
+        >
+          <span className="toggle-label">السعر يشمل ضريبة القيمة المضافة؟</span>
+          <div className="toggle-sw" />
         </div>
-        <motion.div whileTap={{ scale: 0.9 }} onClick={() => updateFormData({ price_includes_tax: !formData.price_includes_tax })}
-          className={`vr-toggle ${formData.price_includes_tax ? 'on' : ''}`} />
-      </motion.div>
-
-      {/* Privacy note */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="vr-banner info">
-        <div>
-          <p className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
-            <strong style={{ color: 'var(--vr-text-primary)' }}>ملاحظة:</strong> جميع معلوماتك المالية محمية ومشفرة. لن يتم مشاركتها مع أي طرف ثالث.
-          </p>
-        </div>
-      </motion.div>
-    </div>
+      </div>
+    </>
   );
 };

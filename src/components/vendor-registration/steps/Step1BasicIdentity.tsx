@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
-import { User, Building2, ChevronDown, Loader2 } from 'lucide-react';
-import { getNationalityOptions } from '../../../lib/countries';
+import { getNationalityNames } from '../../../lib/shared-data';
 
 interface Props {
   formData: VendorFormData;
@@ -21,42 +19,29 @@ interface FieldCategory {
   children: FieldChild[];
 }
 
-interface NationalityOption {
-  value: string;
-  label: string;
-}
+const nationalities = getNationalityNames();
 
 export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
   const [fieldCategories, setFieldCategories] = useState<FieldCategory[]>([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [fieldsError, setFieldsError] = useState<string>('');
-  const [nationalities, setNationalities] = useState<NationalityOption[]>([]);
-  const [nationalitySearch, setNationalitySearch] = useState('');
-  const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
-  const [showFieldDropdown, setShowFieldDropdown] = useState(false);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  const fieldDropdownRef = useRef<HTMLDivElement>(null);
+  const [natOpen, setNatOpen] = useState(false);
+  const [natSearch, setNatSearch] = useState('');
+  const natRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchFields();
-    loadNationalities();
   }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (fieldDropdownRef.current && !fieldDropdownRef.current.contains(e.target as Node)) {
-        setShowFieldDropdown(false);
-        setExpandedCategory(null);
+      if (natRef.current && !natRef.current.contains(e.target as Node)) {
+        setNatOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadNationalities = async () => {
-    const options = await getNationalityOptions('ar');
-    setNationalities(options);
-  };
 
   const fetchFields = async () => {
     try {
@@ -108,163 +93,96 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
     }
   };
 
-  const handleCategoryClick = (categoryId: string) => {
-    setExpandedCategory(prev => prev === categoryId ? null : categoryId);
-  };
-
-  const handleSelectSubField = (childName: string, parentName: string) => {
-    updateFormData({ primary_field: `${parentName} - ${childName}` });
-    setShowFieldDropdown(false);
-    setExpandedCategory(null);
-  };
-
-  const handleSelectParent = (parentName: string) => {
-    updateFormData({ primary_field: parentName });
-    setShowFieldDropdown(false);
-    setExpandedCategory(null);
-  };
-
   const filteredNationalities = nationalities.filter(n =>
-    n.label.includes(nationalitySearch) || n.value.includes(nationalitySearch)
+    n.includes(natSearch)
   );
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <h2 className="text-3xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
-          المعلومات الأساسية
-        </h2>
-        <p style={{ color: 'var(--vr-text-secondary)' }}>
-          دعنا نتعرف عليك أكثر
-        </p>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="vr-input-group"
-      >
-        <label className="vr-input-label">الاسم الثلاثي <span className="req">*</span></label>
-        <input
-          type="text"
-          value={formData.full_name}
-          onChange={(e) => updateFormData({ full_name: e.target.value })}
-          placeholder="الاسم الكامل كما في الهوية"
-          className="vr-input"
-        />
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="relative"
-      >
-        <div className="vr-input-group">
-          <label className="vr-input-label">الجنسية <span className="req">*</span></label>
+    <>
+      <h2 className="step-title">👤 الهوية</h2>
+      <p className="step-subtitle">المعلومات الشخصية الأساسية</p>
+      <div className="form-section">
+        {/* Full Name */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> الاسم الثلاثي</label>
           <input
+            className="input"
             type="text"
-            value={formData.nationality ? formData.nationality : nationalitySearch}
-            onChange={(e) => {
-              const value = e.target.value;
-              setNationalitySearch(value);
-              setShowNationalityDropdown(true);
-              if (value === '') {
-                updateFormData({ nationality: '' });
-              }
-            }}
-            onFocus={() => setShowNationalityDropdown(true)}
-            onBlur={() => {
-              setTimeout(() => setShowNationalityDropdown(false), 200);
-            }}
-            placeholder="ابحث عن الجنسية..."
-            className="vr-input"
-          />
-          <ChevronDown
-            className="absolute left-4 top-9 w-5 h-5 pointer-events-none"
-            style={{ color: 'var(--vr-text-muted)' }}
+            value={formData.full_name}
+            onChange={(e) => updateFormData({ full_name: e.target.value })}
+            placeholder="أدخل اسمك الثلاثي"
           />
         </div>
 
-        <AnimatePresence>
-          {showNationalityDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="vr-dropdown absolute top-full left-0 right-0 mt-2 z-10"
-            >
-              {filteredNationalities.length > 0 ? (
-                filteredNationalities.map((nat) => (
-                  <div
-                    key={nat.value}
-                    className="vr-dropdown-item"
-                    onClick={() => {
-                      updateFormData({ nationality: nat.value });
-                      setNationalitySearch('');
-                      setShowNationalityDropdown(false);
-                    }}
-                  >
-                    {nat.label}
-                  </div>
-                ))
-              ) : (
-                <div className="vr-dropdown-item" style={{ color: 'var(--vr-text-muted)' }}>
-                  لا توجد نتائج
+        {/* Nationality — custom select */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> الجنسية</label>
+          <div className={`custom-select ${natOpen ? 'open' : ''}`} ref={natRef}>
+            <div className="cs-trigger" onClick={() => setNatOpen(!natOpen)}>
+              <span className={formData.nationality ? '' : 'cs-placeholder'}>
+                {formData.nationality || 'اختر الجنسية'}
+              </span>
+              <span className="cs-chevron">&#9662;</span>
+            </div>
+            {natOpen && (
+              <div className="cs-dropdown" style={{ display: 'flex' }}>
+                <div className="cs-search">
+                  <input
+                    type="text"
+                    placeholder="ابحث..."
+                    value={natSearch}
+                    onChange={(e) => setNatSearch(e.target.value)}
+                    autoFocus
+                  />
                 </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-
-      {/* Field dropdown hidden - moved to dedicated StepFieldsAndRates page */}
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35 }}
-      >
-        <label className="vr-input-label block mb-3">
-          نوع المورد <span className="req">*</span>
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => updateFormData({ vendor_type: 'individual' })}
-            className={`vr-selection-card flex-col ${formData.vendor_type === 'individual' ? 'selected' : ''}`}
-          >
-            <User className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-accent-lighter)' }} />
-            <h3 className="text-xl font-semibold text-center" style={{ color: 'var(--vr-text-primary)' }}>
-              فرد
-            </h3>
-            <p className="text-sm text-center mt-2" style={{ color: 'var(--vr-text-muted)' }}>
-              مورد فردي
-            </p>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => updateFormData({ vendor_type: 'company' })}
-            className={`vr-selection-card flex-col ${formData.vendor_type === 'company' ? 'selected' : ''}`}
-          >
-            <Building2 className="w-8 h-8 mb-3 mx-auto" style={{ color: 'var(--vr-accent-lighter)' }} />
-            <h3 className="text-xl font-semibold text-center" style={{ color: 'var(--vr-text-primary)' }}>
-              شركة
-            </h3>
-            <p className="text-sm text-center mt-2" style={{ color: 'var(--vr-text-muted)' }}>
-              شركة أو مؤسسة
-            </p>
-          </motion.div>
+                <div className="cs-options">
+                  {filteredNationalities.map((nat) => (
+                    <div
+                      key={nat}
+                      className={`cs-option ${formData.nationality === nat ? 'selected' : ''}`}
+                      onClick={() => {
+                        updateFormData({ nationality: nat });
+                        setNatOpen(false);
+                        setNatSearch('');
+                      }}
+                    >
+                      {nat}
+                    </div>
+                  ))}
+                  {filteredNationalities.length === 0 && (
+                    <div className="cs-option" style={{ color: 'var(--text-muted)', cursor: 'default' }}>
+                      لا توجد نتائج
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </motion.div>
-    </div>
+
+        {/* Vendor Type */}
+        <div className="input-group">
+          <label className="input-label"><span className="req">*</span> نوع المورد</label>
+          <div className="vendor-type-grid">
+            <div
+              className={`vendor-type-card ${formData.vendor_type === 'individual' ? 'selected' : ''}`}
+              onClick={() => updateFormData({ vendor_type: 'individual' })}
+            >
+              <span className="vt-emoji">👤</span>
+              <span className="vt-label">فرد</span>
+              <span className="vt-desc">مقدم خدمة مستقل</span>
+            </div>
+            <div
+              className={`vendor-type-card ${formData.vendor_type === 'company' ? 'selected' : ''}`}
+              onClick={() => updateFormData({ vendor_type: 'company' })}
+            >
+              <span className="vt-emoji">🏢</span>
+              <span className="vt-label">شركة</span>
+              <span className="vt-desc">شركة أو مؤسسة</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 };
