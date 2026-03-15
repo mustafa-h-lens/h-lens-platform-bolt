@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { Plane, FileText, Check, X, Upload, ChevronDown } from 'lucide-react';
@@ -25,6 +25,18 @@ interface VisaEntry {
 
 export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [passportPreview, setPassportPreview] = useState<string>(formData.visa_file_url || '');
+  const passportInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
   const [visas, setVisas] = useState<VisaEntry[]>(() => {
     // Initialize from formData if visa_country exists
     if (formData.visa_country) {
@@ -91,10 +103,58 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         </div>
       </motion.div>
 
-      {/* Passport number */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="vr-input-group">
-        <label className="vr-input-label">رقم جواز السفر</label>
-        <input type="text" value={formData.passport_number} onChange={(e) => updateFormData({ passport_number: e.target.value })} placeholder="رقم جواز السفر" className="vr-input" dir="ltr" style={{ textAlign: 'left' }} />
+      {/* Passport number + upload */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        <div className="vr-input-group" style={{ marginBottom: 12 }}>
+          <label className="vr-input-label">رقم جواز السفر</label>
+          <input type="text" value={formData.passport_number} onChange={(e) => updateFormData({ passport_number: e.target.value })} placeholder="رقم جواز السفر" className="vr-input" dir="ltr" style={{ textAlign: 'left' }} />
+        </div>
+        {/* Passport image upload */}
+        <div>
+          <label className="vr-input-label" style={{ marginBottom: 6 }}>صورة جواز السفر</label>
+          <input
+            ref={passportInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                updateFormData({ visa_file: file });
+                if (file.type.startsWith('image/')) {
+                  const reader = new FileReader();
+                  reader.onload = () => setPassportPreview(reader.result as string);
+                  reader.readAsDataURL(file);
+                } else {
+                  setPassportPreview('document');
+                }
+              }
+              e.target.value = '';
+            }}
+            style={{ display: 'none' }}
+          />
+          {passportPreview ? (
+            <div style={{ textAlign: 'center', padding: 16, borderRadius: 14, border: '1px solid var(--vr-success-border)', background: 'var(--vr-success-bg)' }}>
+              {passportPreview === 'document' ? (
+                <FileText size={32} style={{ color: 'var(--vr-success-text)', margin: '0 auto 8px' }} />
+              ) : (
+                <img src={passportPreview} alt="" style={{ maxHeight: 100, borderRadius: 10, margin: '0 auto 8px' }} />
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, marginBottom: 4 }}>
+                <Check size={14} style={{ color: 'var(--vr-success)' }} />
+                <span style={{ fontSize: 12, color: 'var(--vr-success-text)', fontWeight: 600 }}>تم الرفع</span>
+              </div>
+              <button onClick={() => passportInputRef.current?.click()} style={{ background: 'none', border: 'none', color: 'var(--vr-accent-lighter)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                تغيير الملف
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => passportInputRef.current?.click()} className="vr-upload-zone" style={{ width: '100%', padding: '20px 16px' }}>
+              <Upload size={20} className="upload-icon mx-auto mb-2" />
+              <p className="upload-text" style={{ fontSize: 13 }}>ارفع صورة جواز السفر</p>
+              <p className="upload-hint" style={{ fontSize: 11 }}>JPG, PNG, PDF (حد أقصى 5MB)</p>
+            </button>
+          )}
+        </div>
       </motion.div>
 
       {/* Visa multi-select dropdown */}
@@ -123,7 +183,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
 
         {/* Dropdown to add more */}
         {availableCountries.length > 0 && (
-          <div style={{ position: 'relative' }}>
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
             <button
               type="button"
               onClick={() => setShowDropdown(!showDropdown)}
