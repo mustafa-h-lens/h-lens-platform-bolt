@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { User, Building2, ChevronDown, Loader2 } from 'lucide-react';
-import { getNationalityNames } from '../../../lib/shared-data';
+import { getNationalityOptions } from '../../../lib/countries';
 
 interface Props {
   formData: VendorFormData;
@@ -21,12 +21,16 @@ interface FieldCategory {
   children: FieldChild[];
 }
 
-const nationalities = getNationalityNames();
+interface NationalityOption {
+  value: string;
+  label: string;
+}
 
 export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
   const [fieldCategories, setFieldCategories] = useState<FieldCategory[]>([]);
   const [isLoadingFields, setIsLoadingFields] = useState(true);
   const [fieldsError, setFieldsError] = useState<string>('');
+  const [nationalities, setNationalities] = useState<NationalityOption[]>([]);
   const [nationalitySearch, setNationalitySearch] = useState('');
   const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
   const [showFieldDropdown, setShowFieldDropdown] = useState(false);
@@ -35,6 +39,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
 
   useEffect(() => {
     fetchFields();
+    loadNationalities();
   }, []);
 
   useEffect(() => {
@@ -47,6 +52,11 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const loadNationalities = async () => {
+    const options = await getNationalityOptions('ar');
+    setNationalities(options);
+  };
 
   const fetchFields = async () => {
     try {
@@ -115,7 +125,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
   };
 
   const filteredNationalities = nationalities.filter(n =>
-    n.includes(nationalitySearch)
+    n.label.includes(nationalitySearch) || n.value.includes(nationalitySearch)
   );
 
   return (
@@ -192,15 +202,15 @@ export const Step1BasicIdentity = ({ formData, updateFormData }: Props) => {
               {filteredNationalities.length > 0 ? (
                 filteredNationalities.map((nat) => (
                   <div
-                    key={nat}
+                    key={nat.value}
                     className="vr-dropdown-item"
                     onClick={() => {
-                      updateFormData({ nationality: nat });
+                      updateFormData({ nationality: nat.value });
                       setNationalitySearch('');
                       setShowNationalityDropdown(false);
                     }}
                   >
-                    {nat}
+                    {nat.label}
                   </div>
                 ))
               ) : (

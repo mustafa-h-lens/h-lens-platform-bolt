@@ -4,7 +4,7 @@ import { supabase } from '../../../../lib/supabaseClient';
 import { SearchableDropdown } from '../../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
-import { getNationalityNames } from '../../../../lib/shared-data';
+import { getNationalityOptions } from '../../../../lib/countries';
 
 interface Vendor {
   id: string;
@@ -34,8 +34,6 @@ interface VendorPersonalInfoProps {
   vendor: Vendor;
   onUpdate: () => void;
 }
-
-const COUNTRIES = getNationalityNames();
 
 interface VendorField {
   id: string;
@@ -78,6 +76,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
 
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [countries, setCountries] = useState<Array<{ value: string; label: string }>>([]);
   const [newCity, setNewCity] = useState('');
   const [nationalitySearch, setNationalitySearch] = useState('');
   const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
@@ -87,6 +86,15 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idImageInputRef = useRef<HTMLInputElement>(null);
   const vehicleRegImageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    loadCountries();
+  }, []);
+
+  const loadCountries = async () => {
+    const options = await getNationalityOptions('ar');
+    setCountries(options);
+  };
 
   useEffect(() => {
     fetchVendorFields();
@@ -227,8 +235,8 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
     });
   };
 
-  const filteredCountries = COUNTRIES.filter(country =>
-    country.includes(nationalitySearch)
+  const filteredCountries = countries.filter(country =>
+    country.label.includes(nationalitySearch) || country.value.includes(nationalitySearch)
   );
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -734,16 +742,16 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
                 <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                   {filteredCountries.map((country) => (
                     <button
-                      key={country}
+                      key={country.value}
                       type="button"
                       onClick={() => {
-                        setFormData({ ...formData, nationality: country });
+                        setFormData({ ...formData, nationality: country.value });
                         setNationalitySearch('');
                         setShowNationalityDropdown(false);
                       }}
                       className="w-full text-right px-4 py-2 hover:bg-slate-100 transition-colors"
                     >
-                      {country}
+                      {country.label}
                     </button>
                   ))}
                 </div>

@@ -3,21 +3,33 @@ import { motion } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { Phone, MapPin, Check } from 'lucide-react';
-import { COUNTRY_CODES } from '../../../lib/shared-data';
+import { getPhoneCodeOptions } from '../../../lib/countries';
 
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
 }
 
+interface PhoneCodeOption {
+  value: string;
+  label: string;
+}
+
 export const Step2Contact = ({ formData, updateFormData }: Props) => {
   const [cities, setCities] = useState<string[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [phoneCodes, setPhoneCodes] = useState<PhoneCodeOption[]>([]);
 
   useEffect(() => {
     fetchCities();
+    loadPhoneCodes();
   }, []);
+
+  const loadPhoneCodes = async () => {
+    const options = await getPhoneCodeOptions();
+    setPhoneCodes(options);
+  };
 
   const fetchCities = async () => {
     const { data } = await supabase
@@ -70,8 +82,8 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
               paddingLeft: 8, paddingRight: 8,
             }}
           >
-            {COUNTRY_CODES.map(c => (
-              <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+            {phoneCodes.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
           {/* Phone number RIGHT */}

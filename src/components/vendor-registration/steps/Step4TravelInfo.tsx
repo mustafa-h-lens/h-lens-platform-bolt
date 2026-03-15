@@ -2,18 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { Plane, FileText, Check, X, Upload, ChevronDown } from 'lucide-react';
+import { getCountryOptions } from '../../../lib/countries';
 
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
 }
-
-const VISA_COUNTRIES = [
-  { code: 'US', name: 'الولايات المتحدة', flag: '🇺🇸' },
-  { code: 'GB', name: 'المملكة المتحدة', flag: '🇬🇧' },
-  { code: 'EU', name: 'شنغن (أوروبا)', flag: '🇪🇺' },
-  { code: 'JP', name: 'اليابان', flag: '🇯🇵' },
-];
 
 interface VisaEntry {
   country: string;
@@ -23,11 +17,26 @@ interface VisaEntry {
   preview?: string;
 }
 
+interface CountryOption {
+  value: string;
+  label: string;
+}
+
 export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [passportPreview, setPassportPreview] = useState<string>(formData.visa_file_url || '');
   const passportInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+
+  useEffect(() => {
+    loadCountries();
+  }, []);
+
+  const loadCountries = async () => {
+    const options = await getCountryOptions('ar');
+    setCountries(options);
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -38,26 +47,27 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
   const [visas, setVisas] = useState<VisaEntry[]>(() => {
-    // Initialize from formData if visa_country exists
     if (formData.visa_country) {
-      const country = VISA_COUNTRIES.find(c => c.name === formData.visa_country);
-      if (country) {
-        return [{ country: country.name, countryCode: country.code, flag: country.flag, preview: formData.visa_file_url || undefined }];
-      }
+      return [{
+        country: formData.visa_country,
+        countryCode: formData.visa_country,
+        flag: '',
+        preview: formData.visa_file_url || undefined
+      }];
     }
     return [];
   });
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const addVisa = (country: typeof VISA_COUNTRIES[0]) => {
-    if (visas.find(v => v.countryCode === country.code)) return;
-    const updated = [...visas, { country: country.name, countryCode: country.code, flag: country.flag }];
+  const addVisa = (country: CountryOption) => {
+    if (visas.find(v => v.country === country.value)) return;
+    const flag = country.label.split(' ')[0];
+    const updated = [...visas, { country: country.value, countryCode: country.value, flag }];
     setVisas(updated);
     setShowDropdown(false);
-    // Store first visa country for backward compat
     if (updated.length === 1) {
-      updateFormData({ visa_country: country.name });
+      updateFormData({ visa_country: country.value });
     }
   };
 
@@ -86,7 +96,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
     if (first?.file) updateFormData({ visa_file: first.file });
   };
 
-  const availableCountries = VISA_COUNTRIES.filter(c => !visas.find(v => v.countryCode === c.code));
+  const availableCountries = countries.filter(c => !visas.find(v => v.country === c.value));
 
   return (
     <div className="space-y-6" style={{ fontFamily: "'Cairo', sans-serif" }}>
@@ -206,9 +216,8 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
                   style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 50 }}
                 >
                   {availableCountries.map(c => (
-                    <div key={c.code} className="vr-dropdown-item" onMouseDown={(e) => { e.preventDefault(); addVisa(c); }}>
-                      <span style={{ fontSize: 18, marginLeft: 8 }}>{c.flag}</span>
-                      {c.name}
+                    <div key={c.value} className="vr-dropdown-item" onMouseDown={(e) => { e.preventDefault(); addVisa(c); }}>
+                      {c.label}
                     </div>
                   ))}
                 </motion.div>
