@@ -90,6 +90,7 @@ export function VendorProfile() {
     full_name: vendor?.full_name || '', phone: vendor?.phone || '', email: vendor?.email || '',
     nationality: vendor?.nationality || '', primary_city: vendor?.primary_city || '',
     id_number: vendor?.id_number || '',
+    portfolio_url: (vendor as any)?.portfolio_url || '',
     vendor_type: vendor?.vendor_type || 'individual',
     available_other_cities: vendor?.available_other_cities || false,
     other_cities: vendor?.other_cities || [] as string[],
@@ -105,6 +106,7 @@ export function VendorProfile() {
         full_name: vendor.full_name || '', phone: vendor.phone || '', email: vendor.email || '',
         nationality: vendor.nationality || '', primary_city: vendor.primary_city || '',
         id_number: vendor.id_number || '',
+        portfolio_url: (vendor as any)?.portfolio_url || '',
         vendor_type: vendor.vendor_type || 'individual',
         available_other_cities: vendor.available_other_cities || false,
         other_cities: vendor.other_cities || [],
@@ -113,6 +115,8 @@ export function VendorProfile() {
   }, [vendor?.full_name, vendor?.phone, vendor?.nationality, vendor?.primary_city, vendor?.id_number, vendor?.vendor_type, vendor?.available_other_cities, vendor?.profile_image]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingIdImage, setUploadingIdImage] = useState(false);
+  const [uploadingVehicleImage, setUploadingVehicleImage] = useState(false);
+  const vehicleImageRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const idImageRef = useRef<HTMLInputElement>(null);
 
@@ -158,8 +162,27 @@ export function VendorProfile() {
 
   useEffect(() => { if (vendor?.id) { fetchFields(); fetchFinancial(); fetchBanks(); fetchTravelDocs(); fetchOtherDocs(); fetchPassport(); fetchCities(); } }, [vendor?.id]);
 
-  const fetchCities = async () => { const { data } = await supabase.from('cities').select('name').eq('is_active', true).order('name'); if (data) setCitiesList(data.map(c => c.name)); };
-  const fetchBanks = async () => { const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar'); if (data) setBanks(data); };
+  const FALLBACK_CITIES = ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','الظهران','الطائف','تبوك','بريدة','عنيزة','حائل','خميس مشيط','أبها','نجران','جازان','ينبع','الجبيل','القطيف','الأحساء','حفر الباطن','الخرج','سكاكا','عرعر','الباحة','العلا','رابغ','بيشة'];
+  const fetchCities = async () => {
+    const { data } = await supabase.from('cities').select('name').eq('is_active', true).order('name');
+    setCitiesList(data && data.length > 0 ? data.map(c => c.name) : FALLBACK_CITIES);
+  };
+  const FALLBACK_BANKS: Bank[] = [
+    { id: 'fb1', name_ar: 'البنك الأهلي السعودي', name_en: 'SNB' },
+    { id: 'fb2', name_ar: 'بنك الراجحي', name_en: 'Al Rajhi Bank' },
+    { id: 'fb3', name_ar: 'بنك الرياض', name_en: 'Riyad Bank' },
+    { id: 'fb4', name_ar: 'بنك ساب', name_en: 'SABB' },
+    { id: 'fb5', name_ar: 'البنك السعودي الفرنسي', name_en: 'BSF' },
+    { id: 'fb6', name_ar: 'بنك البلاد', name_en: 'Bank AlBilad' },
+    { id: 'fb7', name_ar: 'بنك الجزيرة', name_en: 'Bank AlJazira' },
+    { id: 'fb8', name_ar: 'بنك الإنماء', name_en: 'Alinma Bank' },
+    { id: 'fb9', name_ar: 'البنك العربي الوطني', name_en: 'ANB' },
+    { id: 'fb10', name_ar: 'بنك السعودي للاستثمار', name_en: 'SAIB' },
+  ];
+  const fetchBanks = async () => {
+    const { data } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar');
+    setBanks(data && data.length > 0 ? data : FALLBACK_BANKS);
+  };
   const fetchFields = async () => {
     setLoadingFields(true);
     try {
@@ -196,6 +219,24 @@ export function VendorProfile() {
       await refreshVendor();
     } catch (e) { console.error('uploadIdImage error:', e); showError('حدث خطأ أثناء رفع الصورة'); }
     finally { setUploadingIdImage(false); }
+  };
+
+  const uploadVehicleImage = async (file: File) => {
+    if (!vendor?.id) return;
+    const err = validateFile(file);
+    if (err) { showError(err); return; }
+    setUploadingVehicleImage(true);
+    try {
+      const path = `vehicle_images/${vendor.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: upErr } = await supabase.storage.from('vendor-images').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
+      const { error: dbErr } = await supabase.from('vendors').update({ vehicle_registration_image: publicUrl, updated_at: new Date().toISOString() }).eq('id', vendor.id);
+      if (dbErr) throw dbErr;
+      showSuccess('تم رفع صورة استمارة المركبة');
+      await refreshVendor();
+    } catch (e) { console.error('uploadVehicleImage error:', e); showError('حدث خطأ أثناء رفع الصورة'); }
+    finally { setUploadingVehicleImage(false); }
   };
 
   const TRAVEL_TYPES = ['passport', 'visa', 'travel', 'visa_usa', 'visa_uk', 'visa_schengen', 'visa_japan'];
@@ -285,6 +326,8 @@ export function VendorProfile() {
       if (infoForm.primary_city) payload.primary_city = infoForm.primary_city;
       if (infoForm.id_number) payload.id_number = infoForm.id_number;
       if (infoForm.vendor_type) payload.vendor_type = infoForm.vendor_type;
+      if (infoForm.email) payload.email = infoForm.email;
+      payload.portfolio_url = infoForm.portfolio_url || null;
       payload.available_other_cities = infoForm.available_other_cities;
       payload.other_cities = infoForm.other_cities;
 
@@ -302,8 +345,17 @@ export function VendorProfile() {
   const toggleField = (fieldId: string) => {
     if (!editingServices) return;
     const exists = selectedFields.find(sf => sf.field_id === fieldId);
-    if (exists) setSelectedFields(prev => prev.filter(sf => sf.field_id !== fieldId));
-    else setSelectedFields(prev => [...prev, { id: '', field_id: fieldId, rate_from: null, rate_to: null, currency: 'SAR', vendor_fields: { name_ar: '', name_en: '' } }]);
+    if (exists) {
+      setSelectedFields(prev => prev.filter(sf => sf.field_id !== fieldId));
+    } else {
+      // Find the field name from allFields
+      let name_ar = '', name_en = '';
+      for (const cat of allFields) {
+        const sub = (cat.subcategories || []).find(s => s.id === fieldId);
+        if (sub) { name_ar = sub.name_ar; name_en = sub.name_en || ''; break; }
+      }
+      setSelectedFields(prev => [...prev, { id: '', field_id: fieldId, rate_from: null, rate_to: null, currency: 'SAR', vendor_fields: { name_ar, name_en } }]);
+    }
   };
   const updateRate = (fieldId: string, key: 'rate_from' | 'rate_to', val: string) => {
     setSelectedFields(prev => prev.map(sf => sf.field_id === fieldId ? { ...sf, [key]: val ? Number(toEnglishNumbers(val)) : null } : sf));
@@ -311,10 +363,45 @@ export function VendorProfile() {
   const saveServices = async () => {
     setSavingFields(true);
     try {
-      await supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor!.id);
-      if (selectedFields.length > 0) { const { error } = await supabase.from('vendor_selected_fields').insert(selectedFields.map(sf => ({ vendor_id: vendor!.id, field_id: sf.field_id, rate_from: sf.rate_from, rate_to: sf.rate_to, currency: 'SAR' }))); if (error) throw error; }
-      showSuccess('تم حفظ الخدمات'); setSavedFields(true); setEditingServices(false); setTimeout(() => setSavedFields(false), 2500); await fetchFields();
-    } catch { showError('حدث خطأ'); } finally { setSavingFields(false); }
+      // Delete old entries then insert new ones
+      try {
+        await supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor!.id);
+      } catch (delErr) {
+        console.warn('Delete error (non-blocking):', delErr);
+      }
+
+      if (selectedFields.length > 0) {
+        const rows = selectedFields.map(sf => ({
+          vendor_id: vendor!.id,
+          field_id: sf.field_id,
+          rate_from: sf.rate_from || 0,
+          rate_to: sf.rate_to || 0,
+          currency: 'SAR',
+        }));
+        const { error, data } = await supabase.from('vendor_selected_fields').insert(rows).select();
+        if (error) {
+          console.error('Insert error details:', JSON.stringify(error));
+          throw error;
+        }
+        console.log('Inserted services:', data);
+      }
+
+      // Update primary_field on vendors table (first selected = main)
+      const mainField = selectedFields[0];
+      const fieldName = mainField?.vendor_fields?.name_ar || '';
+      if (fieldName) {
+        await supabase.from('vendors').update({ primary_field: fieldName, updated_at: new Date().toISOString() }).eq('id', vendor!.id).catch(() => {});
+      }
+
+      showSuccess('تم حفظ الخدمات');
+      setSavedFields(true); setEditingServices(false);
+      setTimeout(() => setSavedFields(false), 2500);
+      await fetchFields();
+      await refreshVendor();
+    } catch (err: any) {
+      console.error('Save services error:', err);
+      showError(`خطأ: ${err?.message || err?.code || 'حدث خطأ أثناء حفظ الخدمات'}`);
+    } finally { setSavingFields(false); }
   };
   const validateIBAN = (iban: string): string | null => {
     if (!iban) return null; // optional
@@ -507,7 +594,61 @@ export function VendorProfile() {
                 </div>
               )}
             </div>
+            {/* Row 6: Portfolio URL */}
+            <div>
+              <FieldLabel icon={Globe}>رابط البورتفوليو</FieldLabel>
+              {editingInfo ? (
+                <TextInput value={infoForm.portfolio_url} onChange={(e: any) => setInfoForm(f => ({ ...f, portfolio_url: e.target.value }))} placeholder="https://behance.net/yourname" dir="ltr" style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }} />
+              ) : (
+                infoForm.portfolio_url ? (
+                  <a href={infoForm.portfolio_url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ fontSize: '.82rem', color: 'var(--accent, #3b82f6)', textDecoration: 'none', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
+                    {infoForm.portfolio_url}
+                  </a>
+                ) : (
+                  <span style={{ fontSize: '.82rem', color: 'var(--textMut)' }}>—</span>
+                )
+              )}
+            </div>
             {editingInfo && <SaveButton loading={savingInfo} saved={savedInfo} onClick={saveInfo} />}
+          </div>
+        </PageCard>
+      )}
+
+      {/* ── VEHICLE DATA (within info tab) ── */}
+      {tab === 'info' && (
+        <PageCard>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <span style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)' }}>🚗 صورة استمارة المركبة <span style={{ fontSize: '.68rem', color: 'var(--textMut)', fontWeight: 400 }}>(اختياري)</span></span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {(vendor as any)?.vehicle_registration_image ? (
+              <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border, rgba(255,255,255,0.08))' }}>
+                <img
+                  src={(vendor as any).vehicle_registration_image}
+                  alt="استمارة المركبة"
+                  style={{ width: '100%', maxHeight: 220, objectFit: 'cover', display: 'block' }}
+                />
+                <div style={{ position: 'absolute', bottom: 8, left: 8, display: 'flex', gap: 6 }}>
+                  <a href={(vendor as any).vehicle_registration_image} target="_blank" rel="noopener noreferrer"
+                    className="vp-btn-ghost" style={{ padding: '4px 10px', fontSize: '.7rem', backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.5)' }}>
+                    <Eye size={12} /> عرض
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '24px 16px', borderRadius: 12, border: '2px dashed var(--border, rgba(255,255,255,0.1))', color: 'var(--textMut)' }}>
+                <div style={{ fontSize: 28, marginBottom: 6 }}>🚗</div>
+                <div style={{ fontSize: '.78rem' }}>لم يتم رفع صورة الاستمارة بعد</div>
+              </div>
+            )}
+            <div>
+              <input ref={vehicleImageRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadVehicleImage(f); e.target.value = ''; }} />
+              <button onClick={() => vehicleImageRef.current?.click()} disabled={uploadingVehicleImage} className="vp-btn-primary" style={{ padding: '8px 16px', fontSize: '.78rem', width: '100%' }}>
+                {uploadingVehicleImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                {(vendor as any)?.vehicle_registration_image ? 'تحديث الصورة' : 'رفع صورة الاستمارة'}
+              </button>
+            </div>
           </div>
         </PageCard>
       )}
@@ -515,6 +656,16 @@ export function VendorProfile() {
       {/* ── SERVICES TAB — Redesigned UX ── */}
       {tab === 'services' && (
         <PageCard>
+          {/* Portfolio link */}
+          {(vendor as any)?.portfolio_url && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', marginBottom: 14, borderRadius: 10, background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.12)' }}>
+              <span style={{ fontSize: 14 }}>🔗</span>
+              <span style={{ fontSize: '.78rem', fontWeight: 600, color: 'var(--textSec)' }}>البورتفوليو:</span>
+              <a href={(vendor as any).portfolio_url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ fontSize: '.78rem', color: 'var(--accent, #3b82f6)', textDecoration: 'none', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {(vendor as any).portfolio_url}
+              </a>
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
               <span style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)' }}>الخدمات والتسعير</span>

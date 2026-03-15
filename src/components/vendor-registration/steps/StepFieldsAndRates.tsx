@@ -21,6 +21,8 @@ interface SelectedField {
 interface Props {
   selectedFields: SelectedField[];
   updateSelectedFields: (fields: SelectedField[]) => void;
+  portfolioUrl: string;
+  updatePortfolioUrl: (url: string) => void;
   errors?: Record<string, string>;
 }
 
@@ -28,7 +30,7 @@ const FieldError = ({ msg }: { msg?: string }) => msg ? (
   <div className="field-error">✕ {msg}</div>
 ) : null;
 
-export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, errors = {} }: Props) => {
+export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portfolioUrl, updatePortfolioUrl, errors = {} }: Props) => {
   const [categories, setCategories] = useState<VendorField[]>([]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -140,6 +142,23 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, error
       <h2 className="step-title">💼 المجالات والتسعير</h2>
       <p className="step-subtitle">اختر مجالات خبرتك وحدد نطاق أسعارك</p>
       <div className="form-section">
+        {/* Portfolio URL */}
+        <div className="input-group">
+          <label className="input-label">🔗 رابط البورتفوليو / معرض الأعمال</label>
+          <input
+            className="input"
+            type="url"
+            value={portfolioUrl}
+            onChange={(e) => updatePortfolioUrl(e.target.value)}
+            placeholder="https://behance.net/yourname"
+            dir="ltr"
+            style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }}
+          />
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
+            Behance, Vimeo, Instagram, أو موقعك الشخصي
+          </div>
+        </div>
+
         {/* Info */}
         <div className="info-box blue">
           <span className="info-icon">💡</span>

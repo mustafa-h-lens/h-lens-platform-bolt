@@ -51,6 +51,12 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
                 {formData.country_code}{formData.phone || '—'}
               </span>
             </div>
+            {formData.email && (
+              <div className="review-row">
+                <span className="rv-label">البريد</span>
+                <span className="rv-value" dir="ltr" style={{ fontFamily: 'var(--font-mono)' }}>{formData.email}</span>
+              </div>
+            )}
             <div className="review-row">
               <span className="rv-label">المدينة</span>
               <span className="rv-value">{formData.primary_city || '—'}</span>
@@ -144,6 +150,14 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
                 <span className="review-card-title">💼 المجالات</span>
                 <button className="review-card-edit" onClick={() => goToStep(6)} type="button">✏️ تعديل</button>
               </div>
+              {formData.portfolio_url && (
+                <div className="review-row">
+                  <span className="rv-label">البورتفوليو</span>
+                  <a className="rv-value" href={formData.portfolio_url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontSize: 12 }}>
+                    {formData.portfolio_url}
+                  </a>
+                </div>
+              )}
               <div className="review-fields">
                 {formData.selected_fields.map((field: SelectedField) => (
                   <span key={field.field_id} className="review-field-tag">

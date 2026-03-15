@@ -30,6 +30,7 @@ export interface VendorFormData {
   nationality: string;
   primary_field: string;
   vendor_type: 'individual' | 'company';
+  email: string;
   phone: string;
   country_code: string;
   primary_city: string;
@@ -50,6 +51,7 @@ export interface VendorFormData {
   account_name: string;
   iban: string;
   price_includes_tax: boolean;
+  portfolio_url: string;
   selected_fields: SelectedField[];
 }
 
@@ -79,6 +81,7 @@ export const VendorRegistrationForm = () => {
     nationality: '',
     primary_field: '',
     vendor_type: 'individual',
+    email: '',
     phone: '',
     country_code: '+966',
     primary_city: '',
@@ -99,6 +102,7 @@ export const VendorRegistrationForm = () => {
     account_name: '',
     iban: '',
     price_includes_tax: false,
+    portfolio_url: '',
     selected_fields: [],
   });
 
@@ -294,6 +298,7 @@ export const VendorRegistrationForm = () => {
       const vendorData = {
         full_name: formData.full_name,
         phone,
+        email: formData.email || null,
         nationality: formData.nationality,
         primary_field: formData.primary_field,
         vendor_type: formData.vendor_type,
@@ -303,6 +308,7 @@ export const VendorRegistrationForm = () => {
         id_number: formData.id_number,
         id_image: idImageUrl,
         profile_image: profileImageUrl,
+        portfolio_url: formData.portfolio_url || null,
         status: 'pending_approval',
       };
 
@@ -486,7 +492,7 @@ export const VendorRegistrationForm = () => {
               {currentStep === 3 && <Step3IdentityDocuments formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
               {currentStep === 4 && <Step4TravelInfo formData={formData} updateFormData={updateFormData} />}
               {currentStep === 5 && <Step5Financial formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
-              {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} errors={validationErrors} />}
+              {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} portfolioUrl={formData.portfolio_url} updatePortfolioUrl={(url) => updateFormData({ portfolio_url: url })} errors={validationErrors} />}
               {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} />}
 
               {/* Nav Buttons */}

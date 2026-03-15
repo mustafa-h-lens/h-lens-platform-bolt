@@ -117,6 +117,20 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
           <FieldError msg={errors.phone} />
         </div>
 
+        {/* Email */}
+        <div className="input-group">
+          <label className="input-label">البريد الإلكتروني <span className="opt">(اختياري)</span></label>
+          <input
+            className="input"
+            type="email"
+            value={formData.email}
+            onChange={(e) => updateFormData({ email: e.target.value })}
+            placeholder="example@email.com"
+            dir="ltr"
+            style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }}
+          />
+        </div>
+
         {/* Primary City — custom select */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> مدينة العمل الأساسية</label>
