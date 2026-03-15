@@ -66,7 +66,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
 
       {/* IBAN with SA prefix */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="vr-input-group">
-        <label className="vr-input-label">رقم الآيبان (SA + 22 رقم) <span className="req">*</span></label>
+        <label className="vr-input-label">رقم الآيبان (SA + رقم 22) <span className="req">*</span></label>
         <div style={{ display: 'flex', borderRadius: 10, overflow: 'hidden', border: '1.5px solid rgba(255,255,255,0.12)', direction: 'ltr' }}>
           <div style={{
             padding: '0 14px', background: 'var(--vr-accent-glow-md)',
