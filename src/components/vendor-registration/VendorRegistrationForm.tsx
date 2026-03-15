@@ -385,15 +385,15 @@ export const VendorRegistrationForm = () => {
       <button
         onClick={toggleTheme}
         style={{
-          position: 'fixed', top: 20, left: 24, zIndex: 50,
-          width: 42, height: 42, borderRadius: 12,
+          position: 'fixed', top: 28, left: 36, zIndex: 50,
+          width: 48, height: 48, borderRadius: 14,
           background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', color: 'var(--vr-text-secondary)',
           transition: 'all 0.2s',
         }}
       >
-        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+        {isDarkMode ? <Sun size={22} /> : <Moon size={22} />}
       </button>
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-12" style={{ paddingBottom: 40 }}>
         <motion.div
