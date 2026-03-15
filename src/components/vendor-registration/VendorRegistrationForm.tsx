@@ -53,13 +53,13 @@ export interface VendorFormData {
 const TOTAL_STEPS = 7;
 
 const STEPS = [
-  { n: 1, emoji: '👤', label: 'الهوية' },
-  { n: 2, emoji: '📞', label: 'التواصل' },
-  { n: 3, emoji: '🪪', label: 'المستندات' },
-  { n: 4, emoji: '✈️', label: 'السفر' },
-  { n: 5, emoji: '🏦', label: 'المالية' },
-  { n: 6, emoji: '💼', label: 'المجالات' },
-  { n: 7, emoji: '✅', label: 'المراجعة' },
+  { n: 1, label: 'الهوية' },
+  { n: 2, label: 'التواصل' },
+  { n: 3, label: 'المستندات' },
+  { n: 4, label: 'السفر' },
+  { n: 5, label: 'المالية' },
+  { n: 6, label: 'المجالات' },
+  { n: 7, label: 'المراجعة' },
 ];
 
 export const VendorRegistrationForm = () => {
@@ -323,11 +323,13 @@ export const VendorRegistrationForm = () => {
       // Map registration field names to DB column names
       // Registration uses bank_id (UUID) but DB expects bank_name (string)
       // Registration uses account_name but DB expects beneficiary_name
-      let bankName = formData.bank_id;
-      // If bank_id is a UUID, look up the bank name
-      if (formData.bank_id && formData.bank_id.includes('-')) {
-        const { data: bankData } = await supabase.from('banks').select('name_ar').eq('id', formData.bank_id).single();
-        if (bankData) bankName = bankData.name_ar;
+      // Use stored display name first, then try DB lookup, then fallback to ID
+      let bankName = (formData as any).bank_name_display || formData.bank_id;
+      if (!bankName || bankName === formData.bank_id) {
+        if (formData.bank_id && formData.bank_id.includes('-')) {
+          const { data: bankData } = await supabase.from('banks').select('name_ar').eq('id', formData.bank_id).single();
+          if (bankData) bankName = bankData.name_ar;
+        }
       }
       await supabase.from('vendor_financial_data').insert([{
         vendor_id: vendor.id,
@@ -377,9 +379,10 @@ export const VendorRegistrationForm = () => {
 
       setIsSubmitted(true);
       showSuccess('تم إرسال طلبك بنجاح');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting form:', error);
-      showError('حدث خطأ أثناء إرسال الطلب');
+      const msg = error?.message || error?.code || 'خطأ غير معروف';
+      showError(`حدث خطأ: ${msg}`);
       setIsSubmitting(false);
     }
   };
@@ -417,15 +420,14 @@ export const VendorRegistrationForm = () => {
         {/* Step Indicator */}
         <div className="step-indicator">
           <div className="stepper-row">
-            {STEPS.map(({ n, emoji, label }) => {
+            {STEPS.map(({ n, label }) => {
               let cls = '';
               if (n < currentStep) cls = 'done';
               else if (n === currentStep) cls = 'active';
-              if (n === currentStep - 1) cls += ' before-active';
               return (
                 <div key={n} className={`step ${cls}`} onClick={() => goToStep(n)}>
                   <div className="step-dot">
-                    <span className="step-emoji">{emoji}</span>
+                    {n < currentStep ? '✓' : n}
                   </div>
                   <span className="step-lbl">{label}</span>
                 </div>
@@ -492,11 +494,7 @@ export const VendorRegistrationForm = () => {
         </AnimatePresence>
       </div>
 
-      {/* Autosave Bar */}
-      <div className="autosave-bar">
-        <span className="autosave-dot" />
-        <span>{lastSavedAt ? `تم الحفظ في ${lastSavedAt}` : 'الحفظ التلقائي مفعّل'}</span>
-      </div>
+      {/* Autosave Bar - hidden */}
     </div>
   );
 };

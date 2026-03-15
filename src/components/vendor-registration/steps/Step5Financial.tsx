@@ -30,12 +30,32 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const FALLBACK_BANKS: Bank[] = [
+    { id: 'fb1', name_ar: 'البنك الأهلي السعودي', name_en: 'SNB' },
+    { id: 'fb2', name_ar: 'بنك الراجحي', name_en: 'Al Rajhi Bank' },
+    { id: 'fb3', name_ar: 'بنك الرياض', name_en: 'Riyad Bank' },
+    { id: 'fb4', name_ar: 'بنك ساب', name_en: 'SABB' },
+    { id: 'fb5', name_ar: 'البنك السعودي الفرنسي', name_en: 'BSF' },
+    { id: 'fb6', name_ar: 'بنك البلاد', name_en: 'Bank AlBilad' },
+    { id: 'fb7', name_ar: 'بنك الجزيرة', name_en: 'Bank AlJazira' },
+    { id: 'fb8', name_ar: 'بنك الإنماء', name_en: 'Alinma Bank' },
+    { id: 'fb9', name_ar: 'البنك العربي الوطني', name_en: 'ANB' },
+    { id: 'fb10', name_ar: 'بنك السعودي للاستثمار', name_en: 'SAIB' },
+  ];
+
   const fetchBanks = async () => {
     try {
       const { data, error } = await supabase.from('banks').select('id, name_ar, name_en').eq('is_active', true).order('name_ar');
       if (error) throw error;
-      setBanks(data || []);
-    } catch (error) { console.error('Error fetching banks:', error); }
+      if (data && data.length > 0) {
+        setBanks(data);
+      } else {
+        setBanks(FALLBACK_BANKS);
+      }
+    } catch (error) {
+      console.error('Error fetching banks:', error);
+      setBanks(FALLBACK_BANKS);
+    }
     finally { setLoading(false); }
   };
 
@@ -97,7 +117,7 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
                       key={b.id}
                       className={`cs-option ${formData.bank_id === b.id ? 'selected' : ''}`}
                       onClick={() => {
-                        updateFormData({ bank_id: b.id });
+                        updateFormData({ bank_id: b.id, bank_name_display: b.name_ar });
                         setBankOpen(false);
                         setBankSearch('');
                       }}
@@ -126,24 +146,24 @@ export const Step5Financial = ({ formData, updateFormData }: Props) => {
         {/* IBAN with SA prefix */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> رقم الآيبان IBAN</label>
-          <div className="iban-wrap">
+          <div className="iban-wrap" style={{ direction: 'ltr' }}>
             <span className="iban-prefix">SA</span>
             <input
               className="input"
               type="text"
-              value={formatIbanDisplay(ibanRaw)}
+              value={ibanRaw}
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, '').slice(0, 22);
                 updateFormData({ iban: 'SA' + digits });
               }}
-              placeholder="00 0000 0000 0000 0000 00"
+              placeholder="0380000000608010167519"
               dir="ltr"
               inputMode="numeric"
-              style={{ fontFamily: 'var(--font-mono)', paddingLeft: 36 }}
-              maxLength={27}
+              style={{ fontFamily: 'var(--font-mono)', textAlign: 'left', letterSpacing: '0.05em' }}
+              maxLength={22}
             />
           </div>
-          <div className="iban-counter">{ibanRaw.length} / 22</div>
+          <div className="iban-counter" style={{ direction: 'ltr', textAlign: 'left' }}>{ibanRaw.length} / 22 {ibanRaw.length === 22 && <span style={{ color: 'var(--success-text)' }}>✓</span>}</div>
         </div>
 
         {/* VAT toggle */}

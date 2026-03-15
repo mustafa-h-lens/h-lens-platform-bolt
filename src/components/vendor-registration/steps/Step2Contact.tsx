@@ -29,13 +29,19 @@ export const Step2Contact = ({ formData, updateFormData }: Props) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const FALLBACK_CITIES = ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','الظهران','الطائف','تبوك','بريدة','عنيزة','حائل','خميس مشيط','أبها','نجران','جازان','ينبع','الجبيل','القطيف','الأحساء','حفر الباطن','الخرج','سكاكا','عرعر','الباحة','العلا','رابغ','بيشة'];
+
   const fetchCities = async () => {
     const { data } = await supabase
       .from('cities')
       .select('name')
       .eq('is_active', true)
       .order('name');
-    if (data) setCities(data.map(c => c.name));
+    if (data && data.length > 0) {
+      setCities(data.map(c => c.name));
+    } else {
+      setCities(FALLBACK_CITIES);
+    }
   };
 
   const currentCode = COUNTRY_CODES.find(c => c.code === formData.country_code);

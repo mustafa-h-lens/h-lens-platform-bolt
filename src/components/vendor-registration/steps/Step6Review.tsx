@@ -119,7 +119,7 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
             </div>
             <div className="review-row">
               <span className="rv-label">البنك</span>
-              <span className="rv-value">{formData.bank_id || '—'}</span>
+              <span className="rv-value">{(formData as any).bank_name_display || formData.bank_id || '—'}</span>
             </div>
             <div className="review-row">
               <span className="rv-label">صاحب الحساب</span>
