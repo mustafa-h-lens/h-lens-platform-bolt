@@ -226,16 +226,14 @@ export const Step6Review = ({ formData, goToStep }: Props) => {
         }}
       >
         <div className="flex items-start gap-3">
-          <div
-            className="vr-checkbox mt-1"
-            style={{ accentColor: 'var(--vr-accent)' }}
-          >
-            <input
-              type="checkbox"
-              id="terms"
-              className="w-5 h-5 opacity-0 absolute"
-            />
-          </div>
+          <input
+            type="checkbox"
+            id="terms"
+            style={{
+              width: 20, height: 20, marginTop: 2, flexShrink: 0,
+              accentColor: 'var(--vr-accent)', cursor: 'pointer',
+            }}
+          />
           <label htmlFor="terms" className="text-sm" style={{ color: 'var(--vr-text-secondary)' }}>
             أوافق على{' '}
             <a
