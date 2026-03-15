@@ -380,7 +380,9 @@ export const VendorRegistrationForm = () => {
   const progress = (currentStep / TOTAL_STEPS) * 100;
 
   return (
-    <div className="vr-background min-h-screen relative" style={{ fontFamily: "'Cairo', sans-serif", overflowY: 'auto' }}>
+    <div style={{ fontFamily: "'Cairo', sans-serif", minHeight: '100vh', position: 'relative', background: 'var(--vr-bg-base)' }}>
+      {/* Fixed animated background */}
+      <div className="vr-background" />
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
@@ -493,6 +495,7 @@ export const VendorRegistrationForm = () => {
             </motion.div>
           </AnimatePresence>
         </div>
+      </div>
       </div>
     </div>
   );
