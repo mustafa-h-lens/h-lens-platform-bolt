@@ -496,7 +496,6 @@ export const VendorRegistrationForm = () => {
           </AnimatePresence>
         </div>
       </div>
-      </div>
     </div>
   );
 };
