@@ -107,7 +107,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
         <div className="vr-input-group" style={{ marginBottom: 12 }}>
           <label className="vr-input-label">رقم جواز السفر</label>
-          <input type="text" value={formData.passport_number} onChange={(e) => updateFormData({ passport_number: e.target.value })} placeholder="رقم جواز السفر" className="vr-input" dir="ltr" style={{ textAlign: 'left' }} />
+          <input type="text" value={formData.passport_number} onChange={(e) => updateFormData({ passport_number: e.target.value })} placeholder="A12345678" className="vr-input" dir="ltr" style={{ textAlign: 'left' }} />
         </div>
         {/* Passport image upload */}
         <div>

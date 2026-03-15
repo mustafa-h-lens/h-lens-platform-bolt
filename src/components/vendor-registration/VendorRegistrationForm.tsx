@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Sun, Moon } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import '../../styles/vendor-registration.css';
 
 import { Step1BasicIdentity } from './steps/Step1BasicIdentity';
@@ -51,6 +53,7 @@ const TOTAL_STEPS = 7;
 
 export const VendorRegistrationForm = () => {
   const { showSuccess, showError } = useNotification();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -378,12 +381,27 @@ export const VendorRegistrationForm = () => {
 
   return (
     <div className="vr-background min-h-screen relative" style={{ fontFamily: "'Cairo', sans-serif", overflowY: 'auto' }}>
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          position: 'fixed', top: 16, left: 16, zIndex: 50,
+          width: 40, height: 40, borderRadius: 10,
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: 'var(--vr-text-secondary)',
+          transition: 'all 0.2s',
+        }}
+      >
+        {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+      </button>
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-12" style={{ paddingBottom: 40 }}>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
+          <img src="/assets/logo-white.png" alt="Half Lens" style={{ height: 56, objectFit: 'contain', margin: '0 auto 20px' }} />
           <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: 'var(--vr-text-primary)' }}>
             انضم إلى فريق Half Lens
           </h1>
