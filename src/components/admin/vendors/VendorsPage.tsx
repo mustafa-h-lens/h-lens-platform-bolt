@@ -320,7 +320,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
           <Clock size={14} />
           طلبات التسجيل
           {pendingCount > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ backgroundColor: '#f59e0b' }}>
+            <span className="flex items-center justify-center rounded-full text-[11px] font-bold text-white min-w-[22px] h-[22px] px-1.5" style={{ backgroundColor: '#f59e0b' }}>
               {toEnglishNumbers(pendingCount.toString())}
             </span>
           )}

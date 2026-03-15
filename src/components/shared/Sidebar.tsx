@@ -139,12 +139,12 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
           </span>
         )}
         {!collapsed && !isLocked && item.badge && item.badge > 0 ? (
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white min-w-[20px] text-center">
+          <span className="flex items-center justify-center rounded-full text-[11px] font-bold bg-amber-500 text-white min-w-[22px] h-[22px] px-1.5">
             {item.badge}
           </span>
         ) : null}
         {collapsed && item.badge && item.badge > 0 ? (
-          <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full text-[9px] font-bold bg-amber-500 text-white flex items-center justify-center">
+          <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex items-center justify-center">
             {item.badge}
           </span>
         ) : null}
