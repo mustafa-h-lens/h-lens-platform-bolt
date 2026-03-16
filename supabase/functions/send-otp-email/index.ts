@@ -123,6 +123,11 @@ function getEmailTemplate(
   </style>
 </head>
 <body class="email-body" bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <!-- Preheader: controls notification preview text -->
+  <div dir="ltr" style="display:none;font-size:1px;color:#030b1a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    رمز التحقق الخاص بك: ${otp} — صالح لمدة 10 دقائق
+    ${"&zwnj;&nbsp;".repeat(30)}
+  </div>
   <table class="email-wrapper" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
     <tr>
       <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
