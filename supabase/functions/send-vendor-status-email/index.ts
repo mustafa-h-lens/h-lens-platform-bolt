@@ -26,7 +26,7 @@ interface StatusEmailRequest {
 // ── Shared template parts ──────────────────────────────────
 
 const logoUrl =
-  Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
+  Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
 
 const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
@@ -46,13 +46,13 @@ function baseFooter(): string {
   return `
   <tr>
     <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
-      <div style="margin-top:12px;font-size:11px;line-height:2;">
-        <a href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-        <a href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-        <a href="${baseUrl}/terms" style="color:#2563eb;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+      <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
+      <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
+        <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+        <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+        <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
       </div>
-      <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+      <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
     </td>
   </tr>`;
 }

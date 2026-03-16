@@ -28,7 +28,7 @@ function getEmailTemplate(
   vendorName: string,
 ): string {
   const digits = otp.padStart(4, "0").slice(0, 4).split("");
-  const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
+  const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
   const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
   return `<!DOCTYPE html>
@@ -84,23 +84,9 @@ function getEmailTemplate(
       .warning-box { background-color: rgba(245,158,11,0.08) !important; border-color: rgba(245,158,11,0.35) !important; }
       .warning-text { color: #fbbf24 !important; }
       .expiry-text { color: rgba(200,215,255,0.5) !important; }
-      .expiry-text strong { color: rgba(200,215,255,0.8) !important; }
-      .footer-link { color: #60a5fa !important; }
-      .footer-copy { color: rgba(200,215,255,0.3) !important; }
+      .footer-link { color: rgba(200,215,255,0.45) !important; }
+      .footer-copy { color: rgba(200,215,255,0.22) !important; }
       .otp-badge-label { color: #60a5fa !important; }
-    }
-
-    /* Force light-safe for clients that ignore dark */
-    @media (prefers-color-scheme: light) {
-      .email-body-text { color: #1e293b !important; }
-      .email-sub-text { color: #475569 !important; }
-      .otp-digit { color: #1d4ed8 !important; background-color: #eef2ff !important; border-color: #2563eb !important; }
-      .info-cell-label { color: #64748b !important; }
-      .info-cell-value { color: #1e293b !important; }
-      .warning-box { background-color: #fef3c7 !important; border-color: #fbbf24 !important; }
-      .warning-text { color: #92400e !important; }
-      .footer-link { color: #2563eb !important; }
-      .footer-copy { color: #64748b !important; }
     }
 
     /* Mobile responsive */
@@ -126,7 +112,7 @@ function getEmailTemplate(
             <td class="email-header" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
               <img class="header-logo" src="${logoUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
-                <span class="otp-badge-label" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#2563eb;">&#128272; رمز التحقق</span>
+                <span class="otp-badge-label" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
               </div>
             </td>
           </tr>
@@ -134,8 +120,8 @@ function getEmailTemplate(
           <!-- Body -->
           <tr>
             <td class="email-padding" style="padding:32px 32px 0;color:#f0f4ff;">
-              <p class="email-body-text" style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-              <p class="email-sub-text" style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
+              <p class="email-body-text" style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
+              <p class="email-sub-text" style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
             </td>
           </tr>
 
@@ -144,13 +130,13 @@ function getEmailTemplate(
             <td style="padding:0 32px;text-align:center;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;">
                 <tr>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[0]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[1]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[2]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[2]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[3]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[3]}</td>
                 </tr>
               </table>
             </td>
@@ -159,25 +145,25 @@ function getEmailTemplate(
           <!-- Expiry -->
           <tr>
             <td style="padding:18px 32px 0;text-align:center;">
-              <p class="expiry-text" style="font-size:13px;color:#64748b;margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:#334155;">10 دقائق</strong></p>
+              <p class="expiry-text" style="font-size:13px;color:rgba(200,215,255,0.5);margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:rgba(200,215,255,0.8);">10 دقائق</strong></p>
             </td>
           </tr>
 
           <!-- Info Row -->
           <tr>
             <td class="email-padding" style="padding:20px 32px 0;">
-              <table class="info-table" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e2e8f0;border-radius:10px;">
+              <table class="info-table" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0;">&#128338; وقت الطلب</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;border-bottom:1px solid #e2e8f0;" dir="ltr">${requestTime}</td>
+                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128338; وقت الطلب</td>
+                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);" dir="rtl">${requestTime}</td>
                 </tr>
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0;">&#128231; البريد</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="ltr">${email}</td>
+                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128231; البريد</td>
+                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${email}</td>
                 </tr>
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:#64748b;">&#128187; الجهاز</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
+                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);">&#128187; الجهاز</td>
+                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
                 </tr>
               </table>
             </td>
@@ -186,9 +172,9 @@ function getEmailTemplate(
           <!-- Warning -->
           <tr>
             <td class="email-padding" style="padding:18px 32px 0;">
-              <table class="warning-box" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #fbbf24;background:#fef3c7;border-radius:10px;">
+              <table class="warning-box" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);border-radius:10px;">
                 <tr>
-                  <td class="warning-text" style="padding:14px 18px;font-size:12px;color:#92400e;line-height:1.7;">
+                  <td class="warning-text" style="padding:14px 18px;font-size:12px;color:#fbbf24;line-height:1.7;">
                     &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق Half Lens لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
                   </td>
                 </tr>
@@ -206,13 +192,13 @@ function getEmailTemplate(
           <!-- Footer -->
           <tr>
             <td class="email-footer" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
+              <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
               <div style="margin-top:12px;font-size:11px;line-height:2;">
-                <a class="footer-link" href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a class="footer-link" href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a class="footer-link" href="${baseUrl}/terms" style="color:#2563eb;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+                <a class="footer-link" href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+                <a class="footer-link" href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a class="footer-link" href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <p class="footer-copy" style="font-size:10px;color:#64748b;margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p class="footer-copy" style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 
@@ -348,16 +334,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Current time in English format
+    // Current time in Arabic format
     const now = new Date();
-    const requestTime = now.toLocaleString("en-US", {
+    const requestTime = now.toLocaleString("ar-SA", {
       timeZone: "Asia/Riyadh",
       year: "numeric",
-      month: "short",
+      month: "long",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      hour12: true,
     });
 
     const appBase = Deno.env.get("APP_BASE_URL") || "#";
