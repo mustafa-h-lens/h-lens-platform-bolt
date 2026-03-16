@@ -34,7 +34,8 @@ export type VendorPage =
   | 'projects'
   | 'invoices'
   | 'equipment'
-  | 'notifications';
+  | 'notifications'
+  | 'suggestions';
 
 interface VendorContextType {
   vendor: VendorProfile | null;
@@ -77,7 +78,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
   useEffect(() => {
     const syncFromHash = () => {
       const hash = window.location.hash.replace('#', '') as VendorPage;
-      const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','notifications'];
+      const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','notifications','suggestions'];
       if (valid.includes(hash)) setCurrentPage(hash);
       else setCurrentPage('dashboard');
     };

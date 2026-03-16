@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, LayoutDashboard, User, Plane, Package, DollarSign, FileText, FolderOpen } from 'lucide-react';
+import { ArrowRight, LayoutDashboard, User, Plane, Package, DollarSign, FileText, FolderOpen, Lightbulb } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorDashboard } from './vendor-tabs/VendorDashboard';
 import { VendorPersonalInfo } from './vendor-tabs/VendorPersonalInfo';
@@ -8,6 +8,7 @@ import { VendorEquipment } from './vendor-tabs/VendorEquipment';
 import { VendorFinancialData } from './vendor-tabs/VendorFinancialData';
 import { VendorInvoices } from './vendor-tabs/VendorInvoices';
 import { VendorDocuments } from './vendor-tabs/VendorDocuments';
+import { VendorSuggestionsTab } from './vendor-tabs/VendorSuggestionsTab';
 
 interface Vendor {
   id: string;
@@ -35,7 +36,7 @@ interface VendorDetailsProps {
   onTabChange?: (tab: string | null) => void;
 }
 
-const VALID_VENDOR_TABS = ['dashboard', 'personal', 'travel', 'equipment', 'financial', 'invoices', 'documents'];
+const VALID_VENDOR_TABS = ['dashboard', 'personal', 'travel', 'equipment', 'financial', 'invoices', 'documents', 'suggestions'];
 
 export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: VendorDetailsProps) => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -78,6 +79,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: Ven
     { id: 'financial', label: 'البيانات المالية', icon: DollarSign },
     { id: 'invoices', label: 'الفواتير', icon: FileText },
     { id: 'documents', label: 'المستندات', icon: FolderOpen },
+    { id: 'suggestions', label: 'الاقتراحات', icon: Lightbulb },
   ];
 
   if (loading) {
@@ -156,6 +158,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: Ven
         {activeTab === 'financial' && <VendorFinancialData vendorId={vendorId} />}
         {activeTab === 'invoices' && <VendorInvoices vendorId={vendorId} />}
         {activeTab === 'documents' && <VendorDocuments vendorId={vendorId} />}
+        {activeTab === 'suggestions' && <VendorSuggestionsTab vendorId={vendorId} />}
       </div>
     </div>
   );

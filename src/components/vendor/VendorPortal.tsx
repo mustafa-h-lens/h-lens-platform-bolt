@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   LayoutDashboard, User, Folder, FileText, Camera, Bell, AlertCircle,
-  LogOut, Menu, X, Sun, Moon, ChevronLeft, ChevronRight,
+  LogOut, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Lightbulb,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useVendor, VendorPage } from '../../contexts/VendorContext';
@@ -14,6 +14,7 @@ import { VendorProjects } from './VendorProjects';
 import { VendorInvoices } from './VendorInvoices';
 import { VendorEquipment } from './VendorEquipment';
 import { VendorNotifications } from './VendorNotifications';
+import { VendorSuggestions } from './VendorSuggestions';
 import '../../styles/vendor-portal.css';
 
 const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }[] = [
@@ -23,6 +24,7 @@ const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }
   { id: 'invoices',       label: 'الفواتير والمدفوعات',    icon: FileText },
   { id: 'equipment',      label: 'المعدات',                icon: Camera },
   { id: 'notifications',  label: 'الإشعارات',              icon: Bell },
+  { id: 'suggestions',    label: 'الاقتراحات',             icon: Lightbulb },
 ];
 
 const PAGE_TITLES: Record<VendorPage, string> = {
@@ -32,6 +34,7 @@ const PAGE_TITLES: Record<VendorPage, string> = {
   invoices:      'الفواتير والمدفوعات',
   equipment:     'المعدات',
   notifications: 'الإشعارات',
+  suggestions:   'الاقتراحات',
 };
 
 const LOGO = '/assets/logo-white.png';
@@ -404,6 +407,7 @@ export const VendorPortal = () => {
             {!isRevisionMode && currentPage === 'invoices'       && <VendorInvoices />}
             {!isRevisionMode && currentPage === 'equipment'      && <VendorEquipment />}
             {!isRevisionMode && currentPage === 'notifications'  && <VendorNotifications />}
+            {!isRevisionMode && currentPage === 'suggestions'    && <VendorSuggestions />}
           </div>
         </div>
       </main>

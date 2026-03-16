@@ -10,6 +10,7 @@ import {
   Briefcase,
   DollarSign,
   Activity,
+  Lightbulb,
   Lock,
   Moon,
   Sun,
@@ -69,6 +70,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
     { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false, badge: pendingVendorCount },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'expenses', label: 'المصروفات', icon: DollarSign },
+    { id: 'suggestions', label: 'الاقتراحات', icon: Lightbulb },
     { id: 'reports', label: 'التقارير', icon: BarChart3, comingSoon: true },
   ];
 

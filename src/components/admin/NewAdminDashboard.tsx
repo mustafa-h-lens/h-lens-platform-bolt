@@ -15,8 +15,9 @@ import { CreateProjectModal } from './projects/CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
 import { ExpensesPage } from './expenses/ExpensesPage';
 import { ActivityLogPage } from './ActivityLogPage';
+import { AdminSuggestions } from './suggestions/AdminSuggestions';
 
-const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity'];
+const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity', 'suggestions'];
 
 const parseHash = (): { page: string; id: string | null; tab: string | null } => {
   const hash = window.location.hash.slice(1); // remove '#'
@@ -287,6 +288,27 @@ export const NewAdminDashboard = () => {
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <ActivityLogPage />
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'suggestions') {
+    return (
+      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        />
+        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          {mobileMenuButton}
+          <main className="flex-1 overflow-auto p-6">
+            <AdminSuggestions />
           </main>
         </div>
       </div>

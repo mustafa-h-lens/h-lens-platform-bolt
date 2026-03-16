@@ -84,143 +84,63 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
   };
 
   const logo = isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png';
+  const d = isDarkMode;
 
-  const boxStyle = (digit: string): React.CSSProperties => ({
-    width: 68, height: 76, textAlign: 'center', direction: 'ltr',
-    fontSize: '2.1rem', fontWeight: 800, borderRadius: 14,
-    background: success
-      ? (isDarkMode ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.08)')
-      : error
-      ? (isDarkMode ? 'rgba(239,68,68,0.1)' : 'rgba(254,202,202,0.3)')
-      : digit
-      ? (isDarkMode ? 'rgba(37,99,235,0.08)' : 'rgba(59,130,246,0.08)')
-      : (isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.8)'),
-    border: `2px solid ${success ? 'rgba(16,185,129,0.5)' : error ? 'rgba(239,68,68,0.5)' : digit ? 'rgba(59,130,246,0.45)' : (isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)')}`,
-    color: success
-      ? (isDarkMode ? '#6ee7b7' : '#059669')
-      : error
-      ? (isDarkMode ? '#fca5a5' : '#dc2626')
-      : (isDarkMode ? 'white' : '#0f172a'),
-    outline: 'none', fontFamily: 'monospace', transition: 'all 0.2s',
-  });
+  const otpBoxClass = (digit: string) => {
+    let cls = 'otp-box';
+    if (success) cls += ' otp-success';
+    else if (error) cls += ' otp-error';
+    else if (digit) cls += ' otp-filled';
+    return cls;
+  };
 
   return (
-    <div style={{
-      minHeight:'100vh',
-      background: isDarkMode
-        ? 'linear-gradient(170deg,#060f1e 0%,#081628 55%,#0a1c36 100%)'
-        : 'linear-gradient(170deg,#f8fafc 0%,#e0e7ff 55%,#dbeafe 100%)',
-      display:'flex',
-      flexDirection:'column',
-      position:'relative',
-      overflow:'hidden',
-      fontFamily:'Tajawal,sans-serif',
-      direction:'rtl'
-    }}>
+    <div className="sl-page" data-dark={d ? '' : undefined}>
 
-      <div style={{
-        position:'absolute',
-        inset:0,
-        backgroundImage: isDarkMode
-          ? 'radial-gradient(rgba(255,255,255,0.016) 1px,transparent 1px)'
-          : 'radial-gradient(rgba(0,0,0,0.02) 1px,transparent 1px)',
-        backgroundSize:'30px 30px',
-        pointerEvents:'none'
-      }} />
+      {/* ── Animated gradient blobs ── */}
+      <div className="sl-blob sl-blob-1" />
+      <div className="sl-blob sl-blob-2" />
+      <div className="sl-blob sl-blob-3" />
+      <div className="sl-blob sl-blob-4" />
+      <div className="sl-blob sl-blob-5" />
 
-      {/* TOP BAR */}
-      <div style={{ display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'space-between', padding:'20px 28px', position:'relative', zIndex:10, direction:'ltr' }}>
-        <button onClick={toggleTheme}
-          style={{
-            width:46,
-            height:46,
-            borderRadius:13,
-            background: isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)',
-            border: isDarkMode ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.08)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            cursor:'pointer',
-            flexShrink:0,
-            boxShadow: isDarkMode ? 'none' : '0 2px 8px rgba(0,0,0,0.04)'
-          }}>
-          {isDarkMode ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="#3b82f6" />}
+      {/* ── Dot grid ── */}
+      <div className="sl-grid" />
+
+      {/* ── Top bar ── */}
+      <div className="sl-topbar">
+        <button className="sl-theme-btn" onClick={toggleTheme}>
+          {d ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="#3b82f6" />}
         </button>
-        <img src={logo} alt="Half Lens" style={{ height:54, objectFit:'contain' }} />
+        <img src={logo} alt="Half Lens" className="sl-logo" />
       </div>
 
-      <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 1rem 3rem', position:'relative', zIndex:1 }}>
-        <div style={{ width:'100%', maxWidth:440 }}>
-          <div style={{
-            background: isDarkMode ? 'rgba(8,18,48,0.65)' : 'rgba(255,255,255,0.95)',
-            border: isDarkMode ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.06)',
-            borderRadius:22,
-            padding:'2.25rem 2rem 2rem',
-            backdropFilter:'blur(24px)',
-            boxShadow: isDarkMode ? '0 30px 80px rgba(0,0,0,0.55)' : '0 20px 60px rgba(0,0,0,0.08)'
-          }}>
+      {/* ── Main ── */}
+      <div className="sl-main">
+        <div className="sl-card-wrap">
+          <div className="sl-card">
+            <div className="sl-card-shine" />
 
-            {/* email indicator */}
-            <div style={{ textAlign:'center', marginBottom:22 }}>
-              <div style={{
-                display:'inline-flex',
-                alignItems:'center',
-                gap:8,
-                padding:'7px 14px',
-                borderRadius:9,
-                background: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(59,130,246,0.08)',
-                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(59,130,246,0.15)',
-                marginBottom:14
-              }}>
-                <div style={{ width:7, height:7, borderRadius:'50%', background:'#10b981', flexShrink:0 }} />
-                <span style={{
-                  fontSize:'0.8rem',
-                  color: isDarkMode ? 'rgba(200,220,255,0.85)' : 'rgba(30,58,138,0.8)',
-                  direction:'ltr'
-                }}>{email}</span>
+            {/* Email indicator */}
+            <div className="otp-header">
+              <div className="otp-email-badge">
+                <div className="otp-email-dot" />
+                <span dir="ltr">{email}</span>
               </div>
-              <h1 style={{
-                fontSize:'1.5rem',
-                fontWeight:900,
-                color: isDarkMode ? 'white' : '#0f172a',
-                marginBottom:7
-              }}>أدخل رمز التحقق</h1>
-              <p style={{
-                fontSize:'0.86rem',
-                color: isDarkMode ? 'rgba(148,163,184,0.75)' : 'rgba(51,65,85,0.7)',
-                lineHeight:1.6
-              }}>تم إرسال رمز مكون من 4 أرقام إلى بريدك</p>
+              <h1 className="sl-title">أدخل رمز التحقق</h1>
+              <p className="sl-subtitle">تم إرسال رمز مكون من 4 أرقام إلى بريدك</p>
             </div>
 
-            {/* DEV MODE: Show OTP Code */}
+            {/* DEV OTP */}
             {devOTP && (
-              <div style={{
-                marginBottom:16,
-                padding:'12px 14px',
-                borderRadius:11,
-                background: isDarkMode ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.06)',
-                border: isDarkMode ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(16,185,129,0.2)',
-                textAlign:'center'
-              }}>
-                <p style={{
-                  fontSize:'0.75rem',
-                  color: isDarkMode ? 'rgba(16,185,129,0.6)' : 'rgba(5,150,105,0.7)',
-                  marginBottom:4,
-                  fontWeight:600
-                }}>🔧 وضع التطوير - رمز التحقق:</p>
-                <p style={{
-                  fontSize:'1.5rem',
-                  fontWeight:900,
-                  color: isDarkMode ? '#6ee7b7' : '#059669',
-                  fontFamily:'monospace',
-                  letterSpacing:'0.3em',
-                  direction:'ltr'
-                }}>{devOTP}</p>
+              <div className="otp-dev">
+                <p className="otp-dev-label">🔧 وضع التطوير - رمز التحقق:</p>
+                <p className="otp-dev-code" dir="ltr">{devOTP}</p>
               </div>
             )}
 
-            {/* OTP inputs */}
-            <div style={{ display:'flex', justifyContent:'center', gap:12, marginBottom:8, direction:'ltr' }}>
+            {/* OTP Inputs */}
+            <div className="otp-inputs" dir="ltr">
               {otp.map((digit, index) => (
                 <input key={index}
                   ref={el => inputRefs.current[index] = el}
@@ -230,153 +150,419 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
                   onKeyDown={e => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   disabled={loading || success}
-                  style={boxStyle(digit)}
+                  className={otpBoxClass(digit)}
                 />
               ))}
             </div>
 
-            {/* timer */}
-            <div style={{ textAlign:'center', margin:'12px 0 18px' }}>
-              <p style={{
-                fontSize:'0.75rem',
-                color: isDarkMode ? 'rgba(100,116,139,0.8)' : 'rgba(71,85,105,0.65)',
-                display:'inline-flex',
-                alignItems:'center',
-                gap:5
-              }}>
+            {/* Timer */}
+            <div className="otp-timer">
+              <p>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 الرمز صالح لمدة 10 دقائق
               </p>
             </div>
 
-            {/* success */}
+            {/* Success */}
             {success && (
-              <div style={{
-                marginBottom:14,
-                padding:'11px 13px',
-                borderRadius:11,
-                background: isDarkMode ? 'rgba(16,185,129,0.1)' : 'rgba(16,185,129,0.08)',
-                border: isDarkMode ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(16,185,129,0.25)',
-                display:'flex',
-                alignItems:'center',
-                gap:10
-              }}>
+              <div className="otp-status otp-status-success">
                 <CheckCircle2 size={18} color="#10b981" />
-                <p style={{
-                  fontSize:'0.82rem',
-                  color: isDarkMode ? '#6ee7b7' : '#059669',
-                  fontWeight:600
-                }}>تم التحقق بنجاح! جاري تسجيل الدخول...</p>
+                <p>تم التحقق بنجاح! جاري تسجيل الدخول...</p>
               </div>
             )}
 
-            {/* error */}
+            {/* Error */}
             {error && (
-              <div style={{
-                marginBottom:14,
-                padding:'11px 13px',
-                borderRadius:11,
-                background: isDarkMode ? 'rgba(239,68,68,0.1)' : 'rgba(254,202,202,0.3)',
-                border: isDarkMode ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(239,68,68,0.4)'
-              }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:9 }}>
-                  <AlertCircle size={16} color="#f87171" style={{ flexShrink:0, marginTop:2 }} />
-                  <div>
-                    <p style={{
-                      fontSize:'0.8rem',
-                      color: isDarkMode ? '#fca5a5' : '#dc2626'
-                    }}>{error}</p>
-                    {remainingAttempts !== null && remainingAttempts > 0 && (
-                      <p style={{
-                        fontSize:'0.72rem',
-                        color: isDarkMode ? 'rgba(252,165,165,0.7)' : 'rgba(220,38,38,0.7)',
-                        marginTop:3
-                      }}>المحاولات المتبقية: {remainingAttempts}</p>
-                    )}
-                  </div>
+              <div className="otp-status otp-status-error">
+                <AlertCircle size={16} style={{ flexShrink:0, marginTop:2 }} />
+                <div>
+                  <p>{error}</p>
+                  {remainingAttempts !== null && remainingAttempts > 0 && (
+                    <p className="otp-attempts">المحاولات المتبقية: {remainingAttempts}</p>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* loading */}
+            {/* Loading */}
             {loading && !success && (
-              <div style={{ marginBottom:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <Loader2 size={17} color={isDarkMode ? '#60a5fa' : '#3b82f6'} className="animate-spin" />
-                <span style={{
-                  fontSize:'0.82rem',
-                  color: isDarkMode ? '#93c5fd' : '#2563eb'
-                }}>جاري التحقق...</span>
+              <div className="otp-loading">
+                <Loader2 size={17} className="animate-spin" />
+                <span>جاري التحقق...</span>
               </div>
             )}
 
-            {/* resend */}
-            <div style={{ textAlign:'center', marginBottom:14 }}>
-              <p style={{
-                fontSize:'0.8rem',
-                color: isDarkMode ? 'rgba(100,116,139,0.75)' : 'rgba(71,85,105,0.65)',
-                marginBottom:7
-              }}>لم تستلم الرمز؟</p>
-              <button onClick={handleResend} disabled={loading || success}
-                style={{
-                  display:'inline-flex',
-                  alignItems:'center',
-                  gap:6,
-                  fontSize:'0.83rem',
-                  fontWeight:700,
-                  color: isDarkMode ? '#60a5fa' : '#2563eb',
-                  background:'none',
-                  border:'none',
-                  cursor: loading || success ? 'not-allowed' : 'pointer',
-                  opacity: loading || success ? 0.5 : 1,
-                  fontFamily:'Tajawal,sans-serif'
-                }}>
+            {/* Resend */}
+            <div className="otp-resend">
+              <p>لم تستلم الرمز؟</p>
+              <button onClick={handleResend} disabled={loading || success} className="otp-resend-btn">
                 <RefreshCw size={13} />
                 إعادة إرسال الرمز
               </button>
             </div>
 
-            {/* back */}
-            <button onClick={onBack} disabled={loading || success}
-              style={{
-                width:'100%',
-                display:'flex',
-                alignItems:'center',
-                justifyContent:'center',
-                gap:7,
-                padding:11,
-                borderRadius:11,
-                border: isDarkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
-                background: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                color: isDarkMode ? 'rgba(160,180,210,0.8)' : 'rgba(71,85,105,0.7)',
-                fontFamily:'Tajawal,sans-serif',
-                fontSize:'0.83rem',
-                cursor: loading || success ? 'not-allowed' : 'pointer',
-                opacity: loading || success ? 0.5 : 1
-              }}>
+            {/* Back */}
+            <button onClick={onBack} disabled={loading || success} className="otp-back">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
               العودة لتغيير البريد الإلكتروني
             </button>
           </div>
 
-          <div style={{ textAlign:'center', marginTop:20 }}>
-            <p style={{
-              fontSize:'0.84rem',
-              color: isDarkMode ? 'rgba(100,116,139,0.8)' : 'rgba(71,85,105,0.75)'
-            }}>
+          {/* Register link */}
+          <div className="sl-register">
+            <p>
               لست موّرداً بعد؟{' '}
-              <a href="/vendor-registration" style={{
-                color: isDarkMode ? '#60a5fa' : '#2563eb',
-                fontWeight:700,
-                textDecoration:'none'
-              }}>سجّل حسابك</a>
+              <a href="/vendor-registration">سجّل حسابك</a>
             </p>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* ══════════ PAGE (shared with SupplierLogin) ══════════ */
+        .sl-page {
+          --sl-bg: #f8f9fc;
+          --sl-card-bg: rgba(255,255,255,0.55);
+          --sl-card-border: rgba(255,255,255,0.6);
+          --sl-card-shadow: 0 20px 70px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.5) inset;
+          --sl-text: #0f172a;
+          --sl-text-sub: rgba(51,65,85,0.7);
+          --sl-text-muted: rgba(71,85,105,0.65);
+          --sl-input-bg: rgba(255,255,255,0.6);
+          --sl-input-border: rgba(0,0,0,0.1);
+          --sl-theme-bg: rgba(255,255,255,0.7);
+          --sl-theme-border: rgba(0,0,0,0.08);
+          --sl-link: #2563eb;
+          --sl-accent: #3b82f6;
+          --sl-shine: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          --sl-success-bg: rgba(16,185,129,0.08);
+          --sl-success-border: rgba(16,185,129,0.25);
+          --sl-success-text: #059669;
+          --sl-error-bg: rgba(254,202,202,0.3);
+          --sl-error-border: rgba(239,68,68,0.4);
+          --sl-error-text: #dc2626;
+          --sl-error-sub: rgba(220,38,38,0.7);
+
+          min-height: 100vh;
+          background: var(--sl-bg);
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          overflow: hidden;
+          font-family: 'Cairo', 'Tajawal', sans-serif;
+          direction: rtl;
+        }
+        .sl-page[data-dark] {
+          --sl-bg: #050d1e;
+          --sl-card-bg: rgba(8,18,48,0.45);
+          --sl-card-border: rgba(255,255,255,0.08);
+          --sl-card-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset;
+          --sl-text: #f0f4ff;
+          --sl-text-sub: rgba(148,163,184,0.78);
+          --sl-text-muted: rgba(148,163,184,0.7);
+          --sl-input-bg: rgba(255,255,255,0.05);
+          --sl-input-border: rgba(255,255,255,0.12);
+          --sl-theme-bg: rgba(255,255,255,0.08);
+          --sl-theme-border: rgba(255,255,255,0.12);
+          --sl-link: #60a5fa;
+          --sl-accent: #60a5fa;
+          --sl-shine: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+          --sl-success-bg: rgba(16,185,129,0.1);
+          --sl-success-border: rgba(16,185,129,0.3);
+          --sl-success-text: #6ee7b7;
+          --sl-error-bg: rgba(239,68,68,0.1);
+          --sl-error-border: rgba(239,68,68,0.25);
+          --sl-error-text: #fca5a5;
+          --sl-error-sub: rgba(252,165,165,0.7);
+        }
+
+        /* ══════════ BLOBS ══════════ */
+        .sl-blob {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          pointer-events: none;
+          opacity: 0.7;
+        }
+        .sl-blob-1 {
+          width: 500px; height: 500px;
+          top: -10%; right: -8%;
+          background: rgba(37,99,235,0.18);
+          animation: blobFloat1 14s ease-in-out infinite;
+        }
+        .sl-blob-2 {
+          width: 400px; height: 400px;
+          bottom: -5%; left: -5%;
+          background: rgba(124,58,237,0.15);
+          animation: blobFloat2 16s ease-in-out infinite;
+        }
+        .sl-blob-3 {
+          width: 350px; height: 350px;
+          top: 40%; left: 10%;
+          background: rgba(6,182,212,0.12);
+          animation: blobFloat3 18s ease-in-out infinite;
+        }
+        .sl-blob-4 {
+          width: 300px; height: 300px;
+          top: 15%; right: 30%;
+          background: rgba(16,185,129,0.10);
+          animation: blobFloat4 20s ease-in-out infinite;
+        }
+        .sl-blob-5 {
+          width: 250px; height: 250px;
+          bottom: 20%; right: 15%;
+          background: rgba(244,63,94,0.08);
+          animation: blobFloat5 15s ease-in-out infinite;
+        }
+        .sl-page[data-dark] .sl-blob-1 { background: rgba(37,99,235,0.14); opacity: 0.8; }
+        .sl-page[data-dark] .sl-blob-2 { background: rgba(124,58,237,0.12); opacity: 0.7; }
+        .sl-page[data-dark] .sl-blob-3 { background: rgba(6,182,212,0.10); opacity: 0.6; }
+        .sl-page[data-dark] .sl-blob-4 { background: rgba(16,185,129,0.08); opacity: 0.5; }
+        .sl-page[data-dark] .sl-blob-5 { background: rgba(244,63,94,0.06); opacity: 0.5; }
+
+        @keyframes blobFloat1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(-30px, 40px) scale(1.05); }
+          66% { transform: translate(20px, -20px) scale(0.95); }
+        }
+        @keyframes blobFloat2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, -30px) scale(1.08); }
+          66% { transform: translate(-20px, 25px) scale(0.96); }
+        }
+        @keyframes blobFloat3 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(35px, 30px) scale(1.04); }
+        }
+        @keyframes blobFloat4 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(-25px, -35px) scale(1.06); }
+        }
+        @keyframes blobFloat5 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(20px, -25px) scale(1.03); }
+          66% { transform: translate(-15px, 20px) scale(0.97); }
+        }
+
+        /* ══════════ GRID ══════════ */
+        .sl-grid {
+          position: absolute; inset: 0;
+          background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+          background-size: 28px 28px;
+          pointer-events: none; z-index: 1;
+        }
+        .sl-page[data-dark] .sl-grid {
+          background-image: radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+        }
+
+        /* ══════════ TOPBAR ══════════ */
+        .sl-topbar {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 20px 28px; position: relative; z-index: 10; direction: ltr;
+        }
+        .sl-theme-btn {
+          width: 46px; height: 46px; border-radius: 13px;
+          background: var(--sl-theme-bg); border: 1px solid var(--sl-theme-border);
+          backdrop-filter: blur(12px); display: flex; align-items: center;
+          justify-content: center; cursor: pointer; transition: all 0.2s;
+        }
+        .sl-theme-btn:hover { transform: scale(1.05); }
+        .sl-logo { height: 54px; object-fit: contain; }
+
+        /* ══════════ MAIN ══════════ */
+        .sl-main {
+          flex: 1; display: flex; align-items: center; justify-content: center;
+          padding: 0 1rem 3rem; position: relative; z-index: 2;
+        }
+        .sl-card-wrap { width: 100%; max-width: 440px; }
+
+        /* ══════════ GLASS CARD ══════════ */
+        .sl-card {
+          background: var(--sl-card-bg);
+          border: 1px solid var(--sl-card-border);
+          border-radius: 24px;
+          padding: 2.25rem 2rem 2rem;
+          backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+          box-shadow: var(--sl-card-shadow);
+          position: relative; overflow: hidden;
+        }
+        .sl-card-shine {
+          position: absolute; top: 0; left: 0; right: 0; height: 1px;
+          background: var(--sl-shine);
+        }
+        .sl-title {
+          font-size: 1.5rem; font-weight: 900; color: var(--sl-text);
+          margin: 0 0 7px;
+        }
+        .sl-subtitle {
+          font-size: 0.86rem; color: var(--sl-text-sub); line-height: 1.6; margin: 0;
+        }
+
+        /* ══════════ OTP SPECIFIC ══════════ */
+        .otp-header { text-align: center; margin-bottom: 22px; }
+
+        .otp-email-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          padding: 7px 14px; border-radius: 9px;
+          background: var(--sl-input-bg);
+          border: 1px solid var(--sl-input-border);
+          margin-bottom: 14px;
+          backdrop-filter: blur(8px);
+        }
+        .otp-email-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #10b981; flex-shrink: 0;
+        }
+        .otp-email-badge span {
+          font-size: 0.8rem; color: var(--sl-text-sub);
+        }
+
+        .otp-dev {
+          margin-bottom: 16px; padding: 12px 14px; border-radius: 11px;
+          background: var(--sl-success-bg);
+          border: 1px solid var(--sl-success-border);
+          text-align: center;
+          backdrop-filter: blur(8px);
+        }
+        .otp-dev-label {
+          font-size: 0.75rem; color: var(--sl-success-text);
+          opacity: 0.7; margin: 0 0 4px; font-weight: 600;
+        }
+        .otp-dev-code {
+          font-size: 1.5rem; font-weight: 900;
+          color: var(--sl-success-text);
+          font-family: monospace; letter-spacing: 0.3em; margin: 0;
+        }
+
+        /* OTP Inputs */
+        .otp-inputs {
+          display: flex; justify-content: center; gap: 12px;
+          margin-bottom: 8px;
+        }
+        .otp-box {
+          width: 68px; height: 76px; text-align: center;
+          font-size: 2.1rem; font-weight: 800; border-radius: 14px;
+          background: var(--sl-input-bg);
+          border: 2px solid var(--sl-input-border);
+          color: var(--sl-text);
+          outline: none; font-family: monospace;
+          transition: all 0.2s;
+          backdrop-filter: blur(8px);
+        }
+        .otp-box:focus {
+          border-color: rgba(59,130,246,0.55);
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+        }
+        .otp-filled {
+          background: rgba(59,130,246,0.08);
+          border-color: rgba(59,130,246,0.45);
+        }
+        .sl-page[data-dark] .otp-filled {
+          background: rgba(37,99,235,0.08);
+        }
+        .otp-success {
+          background: var(--sl-success-bg) !important;
+          border-color: rgba(16,185,129,0.5) !important;
+          color: var(--sl-success-text) !important;
+        }
+        .otp-error {
+          background: var(--sl-error-bg) !important;
+          border-color: rgba(239,68,68,0.5) !important;
+          color: var(--sl-error-text) !important;
+        }
+
+        .otp-timer {
+          text-align: center; margin: 12px 0 18px;
+        }
+        .otp-timer p {
+          font-size: 0.75rem; color: var(--sl-text-muted);
+          display: inline-flex; align-items: center; gap: 5px; margin: 0;
+        }
+
+        /* Status messages */
+        .otp-status {
+          margin-bottom: 14px; padding: 11px 13px; border-radius: 11px;
+          display: flex; align-items: flex-start; gap: 10px;
+          backdrop-filter: blur(8px);
+        }
+        .otp-status p { margin: 0; }
+        .otp-status-success {
+          background: var(--sl-success-bg);
+          border: 1px solid var(--sl-success-border);
+        }
+        .otp-status-success p {
+          font-size: 0.82rem; color: var(--sl-success-text); font-weight: 600;
+        }
+        .otp-status-error {
+          background: var(--sl-error-bg);
+          border: 1px solid var(--sl-error-border);
+          color: var(--sl-error-text);
+        }
+        .otp-status-error p { font-size: 0.8rem; }
+        .otp-attempts {
+          font-size: 0.72rem !important;
+          color: var(--sl-error-sub) !important;
+          margin-top: 3px !important;
+        }
+
+        .otp-loading {
+          margin-bottom: 14px; display: flex; align-items: center;
+          justify-content: center; gap: 8px;
+          color: var(--sl-accent); font-size: 0.82rem;
+        }
+
+        /* Resend */
+        .otp-resend { text-align: center; margin-bottom: 14px; }
+        .otp-resend > p {
+          font-size: 0.8rem; color: var(--sl-text-muted); margin: 0 0 7px;
+        }
+        .otp-resend-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-size: 0.83rem; font-weight: 700;
+          color: var(--sl-link); background: none; border: none;
+          cursor: pointer; font-family: inherit; transition: opacity 0.2s;
+        }
+        .otp-resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .otp-resend-btn:hover:not(:disabled) { opacity: 0.8; }
+
+        /* Back button */
+        .otp-back {
+          width: 100%; display: flex; align-items: center;
+          justify-content: center; gap: 7px; padding: 11px;
+          border-radius: 11px;
+          border: 1px solid var(--sl-input-border);
+          background: var(--sl-input-bg);
+          color: var(--sl-text-muted);
+          font-family: inherit; font-size: 0.83rem;
+          cursor: pointer; transition: all 0.2s;
+          backdrop-filter: blur(8px);
+        }
+        .otp-back:disabled { opacity: 0.5; cursor: not-allowed; }
+        .otp-back:hover:not(:disabled) {
+          border-color: var(--sl-accent);
+          color: var(--sl-text-sub);
+        }
+
+        /* Register */
+        .sl-register { text-align: center; margin-top: 20px; }
+        .sl-register p { font-size: 0.84rem; color: var(--sl-text-muted); margin: 0; }
+        .sl-register a {
+          color: var(--sl-link); font-weight: 700;
+          text-decoration: none; transition: opacity 0.2s;
+        }
+        .sl-register a:hover { opacity: 0.8; }
+
         .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 500px) {
+          .sl-card { padding: 1.75rem 1.25rem 1.5rem; border-radius: 20px; }
+          .sl-title { font-size: 1.3rem; }
+          .sl-topbar { padding: 16px; }
+          .sl-blob { filter: blur(60px); }
+          .otp-box { width: 58px; height: 66px; font-size: 1.8rem; }
+          .otp-inputs { gap: 8px; }
+        }
       `}</style>
     </div>
   );
