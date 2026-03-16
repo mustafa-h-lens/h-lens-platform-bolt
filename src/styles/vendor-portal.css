@@ -161,3 +161,36 @@
 }
 .vp-tbl-row{padding:11px 20px;border-bottom:1px solid var(--border);transition:background .15s}
 .vp-tbl-row:hover{background:var(--rowHover)}
+
+/* ===== RESPONSIVE GRID HELPERS ===== */
+.vp-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.vp-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.vp-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Table header/row grid for projects & invoices */
+.vp-tbl-grid{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 0.8fr 40px;gap:8px;padding:12px 18px;align-items:center}
+.vp-tbl-grid-head{padding:10px 18px;background:var(--tblHead);border-bottom:1px solid var(--border);font-size:.65rem;font-weight:700;color:var(--textMut);text-transform:uppercase;letter-spacing:.06em}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media(max-width:768px){
+  /* Stats: 2 cols on mobile */
+  .vp-grid-4{grid-template-columns:repeat(2,1fr)}
+  .vp-grid-3{grid-template-columns:repeat(2,1fr)}
+
+  /* Table: card layout on mobile */
+  .vp-tbl-grid{grid-template-columns:1fr!important;gap:6px;padding:12px 14px}
+  .vp-tbl-grid-head{display:none!important}
+
+  /* Chips: compact */
+  .vp-chip{padding:5px 10px;font-size:.72rem}
+
+  /* Cards */
+  .vp-card{border-radius:12px}
+
+  /* No hover effects on touch */
+  .sc:hover{transform:none!important}
+
+  /* Tabs: horizontal scroll */
+  .vp-tabs-scroll{flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .vp-tab{white-space:nowrap;flex-shrink:0}
+}

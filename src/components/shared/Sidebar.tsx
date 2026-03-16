@@ -45,11 +45,13 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
   const { theme: themeMode, toggleTheme } = useTheme();
   const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
   const [pendingVendorCount, setPendingVendorCount] = useState(0);
+  const [newSuggestionsCount, setNewSuggestionsCount] = useState(0);
 
   useEffect(() => {
     if (isSuperAdmin) {
       fetchPendingVendorCount();
-      const interval = setInterval(fetchPendingVendorCount, 60000); // refresh every minute
+      fetchNewSuggestionsCount();
+      const interval = setInterval(() => { fetchPendingVendorCount(); fetchNewSuggestionsCount(); }, 60000);
       return () => clearInterval(interval);
     }
   }, [isSuperAdmin]);
@@ -64,13 +66,23 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
     } catch {}
   };
 
+  const fetchNewSuggestionsCount = async () => {
+    try {
+      const { count } = await supabase
+        .from('vendor_suggestions')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['new', 'under_review']);
+      setNewSuggestionsCount(count || 0);
+    } catch {}
+  };
+
   const menuItems: MenuItem[] = [
     { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
     { id: 'clients', label: 'العملاء', icon: Users, adminOnly: false },
     { id: 'vendors', label: 'الموردين', icon: Briefcase, adminOnly: false, badge: pendingVendorCount },
     { id: 'projects', label: 'المشاريع', icon: FolderOpen },
     { id: 'expenses', label: 'المصروفات', icon: DollarSign },
-    { id: 'suggestions', label: 'الاقتراحات', icon: Lightbulb },
+    { id: 'suggestions', label: 'الاقتراحات', icon: Lightbulb, badge: newSuggestionsCount },
     { id: 'reports', label: 'التقارير', icon: BarChart3, comingSoon: true },
   ];
 

@@ -63,7 +63,7 @@ export function VendorDashboard() {
       });
       invoices.slice(0, 5).forEach((i: any) => { items.push({ id: `inv-${i.id}`, type: 'invoice', title: i.status === 'paid' ? 'فاتورة مدفوعة' : 'فاتورة جديدة', description: i.projects?.name || 'فاتورة', created_at: i.created_at }); });
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-      setActivity(items.slice(0, 8));
+      setActivity(items.slice(0, 20));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -149,7 +149,7 @@ export function VendorDashboard() {
       )}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div className="vp-grid-4">
         {STATS.map((s, i) => {
           const Icon = s.icon;
           return (

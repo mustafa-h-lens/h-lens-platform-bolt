@@ -35,12 +35,20 @@ interface Expense {
   payments: Payment[];
 }
 
+interface VendorFieldSelection {
+  field_id: string;
+  name_ar: string;
+  name_en: string;
+  rate_from: number | null;
+}
+
 interface Vendor {
   id: string;
   full_name: string;
   primary_field: string | null;
   default_category_id?: string | null;
   default_rate?: number | null;
+  selected_fields?: VendorFieldSelection[];
 }
 
 interface ProjectExpensesProps {
@@ -80,6 +88,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [vendorSearch, setVendorSearch] = useState('');
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const vendorDropdownRef = useRef<HTMLDivElement>(null);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
@@ -89,12 +100,11 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     notes: '',
   });
 
-  // Close vendor dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (vendorDropdownRef.current && !vendorDropdownRef.current.contains(e.target as Node)) {
-        setVendorDropdownOpen(false);
-      }
+      if (vendorDropdownRef.current && !vendorDropdownRef.current.contains(e.target as Node)) setVendorDropdownOpen(false);
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) setCategoryDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -103,14 +113,16 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   // Auto-fill category & amount when vendor is selected
   const handleVendorSelect = (vendorId: string) => {
     const vendor = vendors.find(v => v.id === vendorId);
+    const mainField = vendor?.selected_fields?.[0];
     setExpenseForm(prev => ({
       ...prev,
       vendor_id: vendorId,
-      category: vendor?.default_category_id || prev.category,
-      amount: vendor?.default_rate ? String(vendor.default_rate) : prev.amount,
+      category: mainField?.field_id || prev.category,
+      amount: mainField?.rate_from ? String(mainField.rate_from) : prev.amount,
     }));
     setVendorSearch(vendor?.full_name || '');
     setVendorDropdownOpen(false);
+    if (mainField) setCategorySearch(`${mainField.name_ar} — ${mainField.name_en || ''}`);
   };
 
   useEffect(() => {
@@ -196,28 +208,35 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
       if (error) throw error;
 
-      // Fetch default category & rate for each vendor from vendor_selected_fields
+      // Fetch ALL selected fields per vendor from vendor_selected_fields
       const vendorIds = (data || []).map(v => v.id);
-      let fieldsMap: Record<string, { field_id: string; rate_from: number | null }> = {};
+      let allFieldsMap: Record<string, VendorFieldSelection[]> = {};
       if (vendorIds.length > 0) {
         const { data: selectedFields } = await supabase
           .from('vendor_selected_fields')
-          .select('vendor_id, field_id, rate_from, vendor_fields(name_ar)')
+          .select('vendor_id, field_id, rate_from, vendor_fields(name_ar, name_en)')
           .in('vendor_id', vendorIds)
           .order('created_at', { ascending: true });
-        // Use the first selected field per vendor as default
-        (selectedFields || []).forEach(sf => {
-          if (!fieldsMap[sf.vendor_id]) {
-            fieldsMap[sf.vendor_id] = { field_id: sf.field_id, rate_from: sf.rate_from };
-          }
+        (selectedFields || []).forEach((sf: any) => {
+          if (!allFieldsMap[sf.vendor_id]) allFieldsMap[sf.vendor_id] = [];
+          allFieldsMap[sf.vendor_id].push({
+            field_id: sf.field_id,
+            name_ar: sf.vendor_fields?.name_ar || '',
+            name_en: sf.vendor_fields?.name_en || '',
+            rate_from: sf.rate_from,
+          });
         });
       }
 
-      setVendors((data || []).map(v => ({
-        ...v,
-        default_category_id: fieldsMap[v.id]?.field_id || null,
-        default_rate: fieldsMap[v.id]?.rate_from || null,
-      })));
+      setVendors((data || []).map(v => {
+        const fields = allFieldsMap[v.id] || [];
+        return {
+          ...v,
+          default_category_id: fields[0]?.field_id || null,
+          default_rate: fields[0]?.rate_from || null,
+          selected_fields: fields,
+        };
+      }));
     } catch (error) {
       console.error('Error loading vendors:', error);
     }
@@ -246,7 +265,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const getCategoryLabel = (category: string | null): string => {
     if (!category) return '-';
     const field = vendorFields.find(f => f.id === category);
-    if (field) return field.name_ar;
+    if (field) return `${field.name_ar}${field.name_en ? ` — ${field.name_en}` : ''}`;
     return category;
   };
 
@@ -350,6 +369,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     setSelectedFile(null);
     setVendorSearch('');
     setVendorDropdownOpen(false);
+    setCategorySearch('');
+    setCategoryDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -366,6 +387,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     setSelectedFile(null);
     setVendorSearch(vendors.find(v => v.id === expense.vendor_id)?.full_name || '');
     setVendorDropdownOpen(false);
+    setCategorySearch(getCategoryLabel(expense.category || null));
+    setCategoryDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -487,12 +510,29 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         });
 
       if (error) throw error;
+
+      // Update invoice amounts after payment
+      const newPaid = paymentExpense.amount_paid + amount;
+      const newRemaining = paymentExpense.amount - newPaid;
+      const newStatus = newRemaining <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'pending';
+
+      const { error: updateError } = await supabase
+        .from('vendor_invoices')
+        .update({
+          amount_paid: newPaid,
+          amount_remaining: Math.max(0, newRemaining),
+          status: newStatus,
+        })
+        .eq('id', paymentExpense.id);
+
+      if (updateError) console.error('Error updating invoice amounts:', updateError);
+
       showSuccess('تم تسجيل الدفعة بنجاح');
       setShowPaymentModal(false);
       loadExpenses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error recording payment:', error);
-      showError('حدث خطأ أثناء تسجيل الدفعة');
+      showError(`حدث خطأ أثناء تسجيل الدفعة: ${error?.message || error?.code || ''}`);
     } finally {
       setSaving(false);
     }
@@ -914,30 +954,117 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
               )}
             </div>
 
-            {/* Category select */}
+            {/* Category select with search */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                 الدور / التصنيف
               </label>
-              <select
-                value={expenseForm.category}
-                onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                <option value="">اختر التصنيف</option>
-                {parentFields.map((parent) => (
-                  <optgroup key={parent.id} label={parent.name_ar}>
-                    {getChildren(parent.id).map((child) => (
-                      <option key={child.id} value={child.id}>{child.name_ar}</option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+              <div ref={categoryDropdownRef} className="relative">
+                <div className="relative">
+                  <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                  <input
+                    type="text"
+                    value={categorySearch}
+                    onChange={e => { setCategorySearch(e.target.value); setCategoryDropdownOpen(true); }}
+                    onFocus={() => setCategoryDropdownOpen(true)}
+                    placeholder="ابحث بالعربي أو الإنجليزي... Search role"
+                    className="w-full pr-10 pl-8 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: expenseForm.category ? 'var(--color-primary)' : 'var(--color-border)',
+                      color: 'var(--color-text-primary)',
+                    }}
+                  />
+                  {expenseForm.category && (
+                    <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, category: '' })); setCategorySearch(''); }}
+                      className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+                {categoryDropdownOpen && (() => {
+                  const q = categorySearch.toLowerCase();
+                  const selectedVendor = vendors.find(v => v.id === expenseForm.vendor_id);
+                  const vendorFieldIds = new Set((selectedVendor?.selected_fields || []).map(f => f.field_id));
+
+                  // Build flat list of all children fields
+                  const allChildren = parentFields.flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
+
+                  // Filter by search
+                  const filtered = allChildren.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q) || c.parent_name_ar.includes(q) || (c.parent_name_en || '').toLowerCase().includes(q));
+
+                  // Split: vendor's fields first, then rest
+                  const vendorFields_ = filtered.filter(c => vendorFieldIds.has(c.id));
+                  const otherFields = filtered.filter(c => !vendorFieldIds.has(c.id));
+
+                  return (
+                    <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 280 }}>
+                      <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+                        {/* Vendor's registered fields */}
+                        {vendorFields_.length > 0 && (
+                          <>
+                            <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}>
+                              خدمات المورد المسجلة
+                            </div>
+                            {vendorFields_.map((c, i) => {
+                              const isMain = selectedVendor?.selected_fields?.[0]?.field_id === c.id;
+                              return (
+                                <button key={c.id} type="button"
+                                  onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
+                                  className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                  style={{
+                                    color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                                    backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
+                                  }}
+                                  onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                  onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                >
+                                  <span className="text-sm font-medium">
+                                    {c.name_ar} — <span className="opacity-60">{c.name_en || ''}</span>
+                                    {isMain && <span className="text-xs mr-2 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 font-bold">رئيسي</span>}
+                                  </span>
+                                  <span className="text-xs opacity-40">{c.parent_name_ar}</span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        )}
+
+                        {/* Other fields */}
+                        {otherFields.length > 0 && (
+                          <>
+                            {vendorFields_.length > 0 && (
+                              <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
+                                جميع التصنيفات
+                              </div>
+                            )}
+                            {otherFields.map(c => (
+                              <button key={c.id} type="button"
+                                onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
+                                className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                style={{
+                                  color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                                  backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
+                                }}
+                                onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                              >
+                                <span className="text-sm">{c.name_ar} — <span className="opacity-50">{c.name_en || ''}</span></span>
+                                <span className="text-xs opacity-40">{c.parent_name_ar}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+
+                        {filtered.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* Amount */}

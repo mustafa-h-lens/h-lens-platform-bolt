@@ -35,6 +35,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [fieldSearch, setFieldSearch] = useState('');
   const pricingSectionRef = useRef<HTMLDivElement>(null);
   const pricingCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -292,16 +293,36 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
           </div>
         )}
 
+        {/* ── Search ── */}
+        <div className="input-group" style={{ marginBottom: 8 }}>
+          <input
+            className="input"
+            value={fieldSearch}
+            onChange={e => { setFieldSearch(e.target.value); if (e.target.value) setExpandedCategories(new Set(categories.map(c => c.id))); }}
+            placeholder="ابحث بالعربي أو الإنجليزي... Search in Arabic or English"
+            style={{ fontSize: 13 }}
+          />
+        </div>
+
         {/* ── Accordion (BELOW pricing) ── */}
         <div className="accordion">
-          {categories.map((cat) => {
-            const isOpen = expandedCategories.has(cat.id);
-            const selectedInCat = cat.subcategories?.filter(sub => selectedFields.some(f => f.field_id === sub.id)).length || 0;
+          {categories.filter(cat => {
+            if (!fieldSearch.trim()) return true;
+            const q = fieldSearch.toLowerCase();
+            return cat.name_ar.includes(q) || cat.name_en.toLowerCase().includes(q) ||
+              cat.subcategories?.some(s => s.name_ar.includes(q) || s.name_en.toLowerCase().includes(q));
+          }).map((cat) => {
+            const q = fieldSearch.toLowerCase();
+            const filteredSubs = fieldSearch.trim()
+              ? (cat.subcategories || []).filter(s => s.name_ar.includes(q) || s.name_en.toLowerCase().includes(q))
+              : (cat.subcategories || []);
+            const isOpen = expandedCategories.has(cat.id) || !!fieldSearch.trim();
+            const selectedInCat = filteredSubs.filter(sub => selectedFields.some(f => f.field_id === sub.id)).length;
             return (
               <div key={cat.id} className={`accordion-item ${isOpen ? 'open' : ''}`}>
                 <button className="accordion-header" onClick={() => toggleAccordion(cat.id)} type="button">
                   <span className="acc-left">
-                    <span className="acc-emoji">📁</span> {cat.name_ar}
+                    <span className="acc-emoji">📁</span> {cat.name_ar} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 400 }}>{cat.name_en}</span>
                     {selectedInCat > 0 && (
                       <span style={{
                         fontSize: 11, padding: '2px 8px', borderRadius: 'var(--radius-full)',
@@ -315,7 +336,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
                 </button>
                 <div className="accordion-body">
                   <div className="accordion-body-inner">
-                    {cat.subcategories?.map(sub => {
+                    {filteredSubs.map(sub => {
                       const sel = selectedFields.find(f => f.field_id === sub.id);
                       return (
                         <div
@@ -325,7 +346,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
                           style={{ cursor: 'pointer' }}
                         >
                           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            {sel ? '✓' : '+'} {sub.name_ar}
+                            {sel ? '✓' : '+'} {sub.name_ar} <span style={{ fontSize: 11, opacity: 0.5 }}>{sub.name_en}</span>
                             {sel?.is_main && (
                               <span style={{
                                 fontSize: 10, padding: '1px 6px', borderRadius: 'var(--radius-full)',

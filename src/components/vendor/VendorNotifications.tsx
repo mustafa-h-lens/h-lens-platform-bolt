@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Bell, FolderOpen, Receipt, FileStack, Zap, Clock } from 'lucide-react';
+import { Bell, FolderOpen, Receipt, FileStack, Zap, Clock, Lightbulb } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useVendor } from '../../contexts/VendorContext';
-import { PageCard, EmptyState, LoadingSpinner } from './shared';
+import { PageCard, EmptyState, LoadingSpinner, Pagination } from './shared';
 
 interface Notification {
   id: string;
-  type: 'project' | 'invoice' | 'document' | 'system';
+  type: 'project' | 'invoice' | 'document' | 'system' | 'suggestion';
   title: string;
   description: string;
   created_at: string;
@@ -16,7 +16,8 @@ const TYPE_CONFIG: Record<string, { icon: typeof Bell; color: string; label: str
   project:  { icon: FolderOpen, color: '#3b82f6', label: 'مشروع'  },
   invoice:  { icon: Receipt,    color: '#f59e0b', label: 'فاتورة' },
   document: { icon: FileStack,  color: '#06b6d4', label: 'مستند'  },
-  system:   { icon: Zap,        color: '#8b5cf6', label: 'نظام'   },
+  system:     { icon: Zap,        color: '#8b5cf6', label: 'نظام'     },
+  suggestion: { icon: Lightbulb,  color: '#f59e0b', label: 'اقتراح'   },
 };
 
 export function VendorNotifications() {
@@ -24,6 +25,8 @@ export function VendorNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   useEffect(() => { if (vendor?.id) fetchNotifications(); }, [vendor?.id]);
 
@@ -34,22 +37,30 @@ export function VendorNotifications() {
       const items: Notification[] = [];
 
       // Derive notifications from recent data (Strategy A - no extra table needed)
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const thirtyDaysAgo = ninetyDaysAgo; // extended to 90 days
 
-      const [invRes, docRes] = await Promise.all([
+      const [invRes, docRes, sugRes] = await Promise.all([
         supabase
           .from('vendor_invoices')
           .select('id, amount_total, status, created_at, project_id, projects(name)')
           .eq('vendor_id', vendor.id)
           .gte('created_at', thirtyDaysAgo)
           .order('created_at', { ascending: false })
-          .limit(20),
+          .limit(50),
         supabase
           .from('vendor_documents')
           .select('id, file_name, document_type, created_at')
           .eq('vendor_id', vendor.id)
           .gte('created_at', thirtyDaysAgo)
           .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('vendor_suggestions')
+          .select('id, title, status, admin_response, responded_at, updated_at')
+          .eq('vendor_id', vendor.id)
+          .not('admin_response', 'is', null)
+          .order('responded_at', { ascending: false })
           .limit(10),
       ]);
 
@@ -91,6 +102,23 @@ export function VendorNotifications() {
         });
       });
 
+      // Suggestion responses
+      const STATUS_LABELS: Record<string, string> = {
+        under_review: 'قيد المراجعة',
+        accepted: 'تم قبول اقتراحك',
+        rejected: 'تم رفض الاقتراح',
+        implemented: 'تم تنفيذ اقتراحك',
+      };
+      (sugRes.data || []).forEach((s: any) => {
+        items.push({
+          id: `sug-${s.id}`,
+          type: 'suggestion',
+          title: STATUS_LABELS[s.status] || 'رد على اقتراحك',
+          description: `${s.title}${s.admin_response ? ' — ' + s.admin_response.slice(0, 60) : ''}`,
+          created_at: s.responded_at || s.updated_at,
+        });
+      });
+
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setNotifications(items);
     } catch (err) {
@@ -118,7 +146,8 @@ export function VendorNotifications() {
     { k: 'all',      l: 'الكل' },
     { k: 'project',  l: 'المشاريع' },
     { k: 'invoice',  l: 'الفواتير' },
-    { k: 'document', l: 'المستندات' },
+    { k: 'document',   l: 'المستندات' },
+    { k: 'suggestion', l: 'الاقتراحات' },
   ];
 
   return (
@@ -141,7 +170,7 @@ export function VendorNotifications() {
       {/* Filters */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         {filters.map(f => (
-          <button key={f.k} onClick={() => setFilter(f.k)}
+          <button key={f.k} onClick={() => { setFilter(f.k); setPage(1); }}
             style={{
               padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
               fontFamily: 'Tajawal, sans-serif', fontSize: '0.78rem',
@@ -160,7 +189,7 @@ export function VendorNotifications() {
         <EmptyState icon={Bell} message="لا توجد إشعارات" />
       ) : (
         <PageCard style={{ padding: 0, overflow: 'hidden' }}>
-          {filtered.map((n, idx) => {
+          {filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((n, idx) => {
             const config = TYPE_CONFIG[n.type] || TYPE_CONFIG.system;
             const Icon = config.icon;
             return (
@@ -198,6 +227,7 @@ export function VendorNotifications() {
               </div>
             );
           })}
+          <Pagination currentPage={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </PageCard>
       )}
     </div>

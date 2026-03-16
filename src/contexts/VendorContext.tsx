@@ -74,6 +74,21 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
   const [loading, setLoading]      = useState(false);
   const [currentPage, setCurrentPage] = useState<VendorPage>('dashboard');
 
+  // Check session expiry
+  useEffect(() => {
+    const checkExpiry = () => {
+      if (session?.expiresAt) {
+        const expiresAt = new Date(session.expiresAt).getTime();
+        if (Date.now() > expiresAt) {
+          signOut();
+        }
+      }
+    };
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60000); // check every minute
+    return () => clearInterval(interval);
+  }, [session?.expiresAt]);
+
   // Sync page with URL hash
   useEffect(() => {
     const syncFromHash = () => {
@@ -94,7 +109,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
         try {
           const { data, error } = await supabase
             .from('vendors')
-            .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image')
+            .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image, country_code, vehicle_registration_image')
             .eq('id', initialVendor.id)
             .single();
           if (!error && data) setVendorState(data as VendorProfile);
@@ -116,7 +131,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image')
+        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image, country_code, vehicle_registration_image')
         .eq('id', vendor.id)
         .single();
       if (!error && data) setVendorState(data as VendorProfile);

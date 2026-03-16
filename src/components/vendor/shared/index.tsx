@@ -1,6 +1,7 @@
 import React from 'react';
 import { Save, Loader2, CheckCircle } from 'lucide-react';
 import { STATUS_LABELS } from './types';
+export { Pagination } from './Pagination';
 
 export function PageCard({ children, style = {}, className = '' }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (

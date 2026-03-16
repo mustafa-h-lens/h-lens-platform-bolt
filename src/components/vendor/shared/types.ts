@@ -54,6 +54,11 @@ export interface Project {
 export interface Invoice {
   id: string;
   amount_total: number;
+  amount_paid?: number;
+  amount_remaining?: number;
+  category?: string | null;
+  due_date?: string | null;
+  notes?: string | null;
   status: string;
   created_at: string;
   projects?: { name: string };
