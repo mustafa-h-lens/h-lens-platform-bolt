@@ -334,15 +334,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Current time in Arabic format
+    // Current time in English format
     const now = new Date();
-    const requestTime = now.toLocaleString("ar-SA", {
+    const requestTime = now.toLocaleString("en-US", {
       timeZone: "Asia/Riyadh",
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      hour12: true,
     });
 
     const appBase = Deno.env.get("APP_BASE_URL") || "#";
