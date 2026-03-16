@@ -408,6 +408,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
           border: 1px solid var(--sl-input-border);
           margin-bottom: 14px;
           backdrop-filter: blur(8px);
+          direction: ltr;
         }
         .otp-email-dot {
           width: 7px; height: 7px; border-radius: 50%;

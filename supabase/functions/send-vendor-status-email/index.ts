@@ -26,7 +26,9 @@ interface StatusEmailRequest {
 // ── Shared template parts ──────────────────────────────────
 
 const logoUrl =
-  "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
+  Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
+
+const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
 function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeColor: string): string {
   return `
@@ -46,9 +48,9 @@ function baseFooter(): string {
     <td align="center" style="background:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
       <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
       <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
-        <a href="https://halflens.com" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-        <a href="https://halflens.com/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-        <a href="https://halflens.com/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+        <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+        <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+        <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
       </div>
       <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
     </td>
