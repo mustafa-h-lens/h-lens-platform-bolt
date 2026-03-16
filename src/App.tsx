@@ -13,6 +13,7 @@ import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
 import SupplierAuth from './components/auth/SupplierAuth';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
+import { supabase } from './lib/supabaseClient';
 
 // ─────────────────────────────────────────────────────────────
 // ROUTE CONSTANTS
