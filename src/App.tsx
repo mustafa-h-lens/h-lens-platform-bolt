@@ -14,6 +14,7 @@ import SupplierAuth from './components/auth/SupplierAuth';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
 import { supabase } from './lib/supabaseClient';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 // ─────────────────────────────────────────────────────────────
 // ROUTE CONSTANTS
@@ -161,7 +162,7 @@ function AppContent() {
   // ── PUBLIC ROUTES ──
 
   if (currentPath === ROUTES.VENDOR_REGISTRATION) {
-    return <VendorRegistrationForm />;
+    return <ErrorBoundary><VendorRegistrationForm /></ErrorBoundary>;
   }
 
   if (currentPath === ROUTES.TERMS || currentPath === '/terms') {
@@ -182,7 +183,7 @@ function AppContent() {
       if (user) {
         supabase.auth.signOut().catch(() => {});
       }
-      return renderVendorPortal(stored);
+      return <ErrorBoundary>{renderVendorPortal(stored)}</ErrorBoundary>;
     }
     navigate(ROUTES.VENDOR_LOGIN);
     return null;
@@ -237,10 +238,10 @@ function AppContent() {
   }
 
   if (profile.role === 'super_admin' || profile.role === 'project_manager' || profile.role === 'admin') {
-    return <NewAdminDashboard />;
+    return <ErrorBoundary><NewAdminDashboard /></ErrorBoundary>;
   }
 
-  return <ClientDashboard />;
+  return <ErrorBoundary><ClientDashboard /></ErrorBoundary>;
 }
 
 // ─────────────────────────────────────────────────────────────

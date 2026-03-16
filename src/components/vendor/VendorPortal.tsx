@@ -15,6 +15,7 @@ import { VendorInvoices } from './VendorInvoices';
 import { VendorEquipment } from './VendorEquipment';
 import { VendorNotifications } from './VendorNotifications';
 import { VendorSuggestions } from './VendorSuggestions';
+import { ErrorBoundary } from '../shared/ErrorBoundary';
 import '../../styles/vendor-portal.css';
 
 const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }[] = [
@@ -430,13 +431,15 @@ export const VendorPortal = () => {
               </div>
             )}
 
-            {currentPage === 'dashboard'      && <VendorDashboard />}
-            {currentPage === 'profile'        && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
-            {currentPage === 'projects'       && <VendorProjects />}
-            {currentPage === 'invoices'       && <VendorInvoices />}
-            {currentPage === 'equipment'      && <VendorEquipment />}
-            {currentPage === 'notifications'  && <VendorNotifications />}
-            {currentPage === 'suggestions'    && <VendorSuggestions />}
+            <ErrorBoundary key={currentPage}>
+              {currentPage === 'dashboard'      && <VendorDashboard />}
+              {currentPage === 'profile'        && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
+              {currentPage === 'projects'       && <VendorProjects />}
+              {currentPage === 'invoices'       && <VendorInvoices />}
+              {currentPage === 'equipment'      && <VendorEquipment />}
+              {currentPage === 'notifications'  && <VendorNotifications />}
+              {currentPage === 'suggestions'    && <VendorSuggestions />}
+            </ErrorBoundary>
           </div>
         </div>
       </main>
@@ -450,8 +453,8 @@ export const VendorPortal = () => {
           padding: 20,
         }} onClick={cancelNavigation}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--cardBg, #ffffff)',
-            border: '1px solid var(--border, rgba(0,0,0,0.1))',
+            background: 'var(--cardSolid, var(--card))',
+            border: '1px solid var(--border)',
             borderRadius: 16, padding: '24px 28px',
             maxWidth: 380, width: '100%',
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
@@ -466,14 +469,14 @@ export const VendorPortal = () => {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={cancelNavigation} style={{
                 padding: '8px 20px', borderRadius: 8, fontSize: '.82rem', fontWeight: 600,
-                background: 'var(--inputBg, #f1f5f9)', border: '1px solid var(--border, rgba(0,0,0,0.1))',
-                color: 'var(--textSec)', cursor: 'pointer',
+                background: 'var(--inp)', border: '1px solid var(--border)',
+                color: 'var(--textSec)', cursor: 'pointer', fontFamily: 'Cairo, sans-serif',
               }}>
                 البقاء والحفظ
               </button>
               <button onClick={confirmNavigation} style={{
                 padding: '8px 20px', borderRadius: 8, fontSize: '.82rem', fontWeight: 600,
-                background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer',
+                background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer', fontFamily: 'Cairo, sans-serif',
               }}>
                 مغادرة بدون حفظ
               </button>
