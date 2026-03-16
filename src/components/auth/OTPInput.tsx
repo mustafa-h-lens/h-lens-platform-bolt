@@ -439,6 +439,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
         .otp-inputs {
           display: flex; justify-content: center; gap: 12px;
           margin-bottom: 8px;
+          direction: ltr;
         }
         .otp-box {
           width: 68px; height: 76px; text-align: center;

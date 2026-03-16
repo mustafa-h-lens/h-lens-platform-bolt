@@ -25,6 +25,7 @@ function getEmailTemplate(
   deviceInfo: string,
   requestTime: string,
   loginUrl: string,
+  vendorName: string,
 ): string {
   const digits = otp.padStart(4, "0").slice(0, 4).split("");
   const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
@@ -37,15 +38,15 @@ function getEmailTemplate(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>رمز التحقق - Half Lens</title>
 </head>
-<body style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#030b1a;margin:0;padding:0;">
+<body bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
     <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#060d1e;border-radius:8px;overflow:hidden;">
+      <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
 
           <!-- Header -->
           <tr>
-            <td align="center" style="background:linear-gradient(180deg,#04081a 0%,#0a1628 100%);padding:32px 32px 24px;">
+            <td align="center" bgcolor="#07112a" style="background-color:#07112a;background:linear-gradient(180deg,#04081a 0%,#0a1628 100%);padding:32px 32px 24px;">
               <img src="${logoUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
                 <span style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
@@ -56,7 +57,7 @@ function getEmailTemplate(
           <!-- Body -->
           <tr>
             <td style="padding:32px 32px 0;color:#f0f4ff;">
-              <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً &#128075;</p>
+              <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
               <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
             </td>
           </tr>
@@ -127,7 +128,7 @@ function getEmailTemplate(
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="background:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
+            <td align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
               <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
               <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
                 <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
@@ -290,6 +291,7 @@ Deno.serve(async (req: Request) => {
       deviceInfo,
       requestTime,
       loginUrl,
+      vendor.full_name || "",
     );
 
     // SMTP config
