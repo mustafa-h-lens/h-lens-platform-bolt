@@ -715,11 +715,6 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
                                 {isMain ? <Star size={13} style={{ color: '#f59e0b' }} /> : <Check size={13} style={{ color: 'var(--tagC)' }} />}
                                 <span style={{ fontSize: '.8rem', fontWeight: 600, color: isMain ? '#f59e0b' : 'var(--tagC)' }}>{sub.name_ar}</span>
                                 {isMain && <span style={{ fontSize: '.62rem', padding: '1px 6px', borderRadius: 5, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontWeight: 700 }}>رئيسي</span>}
-                                {sf?.rate_from && (
-                                  <span style={{ fontSize: '.7rem', color: '#10b981', fontWeight: 600, direction: 'ltr' }}>
-                                    {sf.rate_from}{sf.rate_to ? `–${sf.rate_to}` : ''} SAR
-                                  </span>
-                                )}
                               </div>
                             );
                           })}
@@ -813,14 +808,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
                                       {sel && <Check size={12} style={{ color: 'white' }} />}
                                     </div>
                                     <span style={{ flex: 1, fontSize: '.84rem', fontWeight: sel ? 600 : 400, color: sel ? 'var(--tagC)' : 'var(--textSec)' }}>{sub.name_ar}</span>
-                                    {sel?.rate_from && <span style={{ fontSize: '.72rem', color: '#10b981', fontWeight: 600 }}>{sel.rate_from}{sel.rate_to ? `–${sel.rate_to}` : ''} SAR</span>}
                                   </div>
-                                  {sel && (
-                                    <div style={{ padding: '0 14px 10px', display: 'flex', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                                      <div style={{ flex: 1 }}><div style={{ fontSize: '.68rem', color: 'var(--textMut)', marginBottom: 3 }}>من (SAR)</div><TextInput value={sel.rate_from ?? ''} onChange={(e: any) => { e.stopPropagation(); updateRate(sub.id, 'rate_from', e.target.value); }} placeholder="0" dir="ltr" type="number" /></div>
-                                      <div style={{ flex: 1 }}><div style={{ fontSize: '.68rem', color: 'var(--textMut)', marginBottom: 3 }}>إلى (SAR)</div><TextInput value={sel.rate_to ?? ''} onChange={(e: any) => { e.stopPropagation(); updateRate(sub.id, 'rate_to', e.target.value); }} placeholder="0" dir="ltr" type="number" /></div>
-                                    </div>
-                                  )}
                                 </div>
                               );
                             })}

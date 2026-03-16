@@ -28,6 +28,8 @@ export function VendorInvoices() {
 
   const totalPaid = invoices.filter(i => i.status === 'paid').reduce((a, i) => a + i.amount_total, 0);
   const totalPending = invoices.filter(i => i.status !== 'paid').reduce((a, i) => a + i.amount_total, 0);
+  const totalAmount = totalPaid + totalPending;
+  const paidPercent = totalAmount === 0 ? 0 : Math.round((totalPaid / totalAmount) * 100);
 
   const SUMMARY = [
     { l: 'إجمالي المحصّل', v: totalPaid, c: '#10b981', icon: Banknote },

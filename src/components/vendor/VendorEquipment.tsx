@@ -149,12 +149,21 @@ export function VendorEquipment() {
   const sendSuggestion = async () => {
     if (!suggForm.name.trim()) { showError('أدخل اسم المعدة'); return; }
     try {
-      await supabase.from('equipment_suggestions').insert({
+      const { error } = await supabase.from('equipment_suggestions').insert({
         vendor_id: vendor!.id,
         suggestion_text: `${suggForm.name}${suggForm.brand ? ` | الماركة: ${suggForm.brand}` : ''}${suggForm.category ? ` | التصنيف: ${suggForm.category}` : ''}`,
         status: 'pending',
       });
-    } catch { /* table may not exist */ }
+      if (error) {
+        console.error('Error inserting equipment suggestion:', error);
+        showError('حدث خطأ أثناء إرسال الاقتراح. يرجى المحاولة لاحقاً.');
+        return;
+      }
+    } catch (err) {
+      console.error('Equipment suggestion table error:', err);
+      showError('حدث خطأ أثناء إرسال الاقتراح. يرجى المحاولة لاحقاً.');
+      return;
+    }
     setSuggSent(true);
     setSuggForm({ name: '', category: '', brand: '' });
     setTimeout(() => { setSuggSent(false); setSuggesting(false); }, 2500);
