@@ -242,7 +242,7 @@ export const Login = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@halflens.com"
+                  placeholder="you@example.com"
                   required
                   autoComplete="email"
                 />

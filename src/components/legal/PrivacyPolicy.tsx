@@ -124,7 +124,7 @@ export const PrivacyPolicy: React.FC = () => {
     <div dir="rtl" style={{minHeight:"100vh",fontFamily:"Cairo,sans-serif",background:"#03111e",color:"#e2e8f0"}}>
       <header style={{position:"sticky",top:0,zIndex:50,padding:"0 24px",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .3s",background:scrolled?"rgba(3,17,30,0.97)":"transparent",backdropFilter:scrolled?"blur(16px)":"none",borderBottom:scrolled?"1px solid rgba(255,255,255,0.06)":"none"}}>
         <img src={LOGO} alt="Half Lens" style={{height:48,objectFit:"contain"}}/>
-        <a href="https://h-lens.co" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,background:"rgba(6,182,212,0.12)",border:"1px solid rgba(6,182,212,0.2)",color:"#67e8f9",textDecoration:"none",fontSize:".78rem",fontWeight:600,transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(6,182,212,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(6,182,212,0.12)"}>
+        <a href="/" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,background:"rgba(6,182,212,0.12)",border:"1px solid rgba(6,182,212,0.2)",color:"#67e8f9",textDecoration:"none",fontSize:".78rem",fontWeight:600,transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(6,182,212,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(6,182,212,0.12)"}>
           🌐 الموقع الإلكتروني
         </a>
       </header>
