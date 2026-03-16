@@ -552,10 +552,10 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
             <div>
               <FieldLabel icon={Globe}>رابط البورتفوليو</FieldLabel>
               {editingInfo ? (
-                <TextInput value={infoForm.portfolio_url} onChange={(e: any) => setInfoForm(f => ({ ...f, portfolio_url: e.target.value }))} placeholder="https://behance.net/yourname" dir="ltr" style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }} />
+                <TextInput value={infoForm.portfolio_url} onChange={(e: any) => setInfoForm(f => ({ ...f, portfolio_url: e.target.value }))} placeholder="https://behance.net/yourname" dir="ltr" style={{ fontFamily: 'monospace, Cairo, sans-serif', textAlign: 'left' }} />
               ) : (
                 infoForm.portfolio_url ? (
-                  <a href={infoForm.portfolio_url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ fontSize: '.82rem', color: 'var(--accent, #3b82f6)', textDecoration: 'none', fontFamily: 'var(--font-mono)', wordBreak: 'break-all' }}>
+                  <a href={infoForm.portfolio_url} target="_blank" rel="noopener noreferrer" dir="ltr" style={{ display: 'block', fontSize: '.82rem', color: 'var(--accent, #3b82f6)', textDecoration: 'none', fontFamily: 'monospace, Cairo, sans-serif', wordBreak: 'break-all', textAlign: 'left' }}>
                     {infoForm.portfolio_url}
                   </a>
                 ) : (
@@ -777,9 +777,9 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
             <div><FieldLabel icon={User}>اسم المستفيد</FieldLabel><TextInput value={financial.beneficiary_name} onChange={(e: any) => setFinancial(f => ({ ...f, beneficiary_name: e.target.value }))} placeholder="كما في كشف الحساب" disabled={!editingFin} /></div>
             <div>
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
-              <div style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6 }}>
-                <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderLeft: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
-                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519" dir="ltr" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'Cairo,sans-serif', fontSize: '.82rem', outline: 'none', letterSpacing: '.04em' }} />
+              <div dir="ltr" style={{ display: 'flex', borderRadius: 9, overflow: 'hidden', border: '1px solid var(--border)', direction: 'ltr', opacity: editingFin ? 1 : 0.6, textAlign: 'left' }}>
+                <div style={{ padding: '0 11px', background: 'var(--tagBg)', borderRight: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', flexShrink: 0 }}><span style={{ fontSize: '.84rem', fontWeight: 800, color: 'var(--tagC)' }}>SA</span></div>
+                <input value={ibanDigits} maxLength={22} disabled={!editingFin} onChange={e => setFinancial(f => ({ ...f, iban: 'SA' + e.target.value.replace(/\D/g, '').slice(0, 22) }))} placeholder="0380000000608010167519" dir="ltr" style={{ flex: 1, padding: '9px 12px', background: 'var(--inp)', border: 'none', color: 'var(--textPri)', fontFamily: 'monospace, Cairo, sans-serif', fontSize: '.84rem', outline: 'none', letterSpacing: '.06em', textAlign: 'left' }} />
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>

@@ -373,7 +373,7 @@ export const VendorPortal = () => {
           <span style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--textPri)', flex: 1 }}>
             {PAGE_TITLES[currentPage]}
           </span>
-          <AvatarEl size={30} />
+          <img src={LOGO} alt="Half Lens" style={{ height: 28, objectFit: 'contain' }} />
         </header>
 
         {/* Page content */}

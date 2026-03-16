@@ -175,10 +175,7 @@ export function VendorEquipment() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontSize: '.95rem', fontWeight: 700, color: 'var(--textPri)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Camera size={18} /> المعدات
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
           <button onClick={() => { setSuggesting(v => !v); setAdding(false); resetAddForm(); }} className="vp-btn-ghost">
             <Lightbulb size={15} /> اقتراح معدة

@@ -58,26 +58,6 @@ export function TravelDocsTab({ vendor, travelDocs, uploadingTravel, travelRef, 
       <div style={{ fontSize: '.82rem', fontWeight: 700, color: 'var(--textSec)', marginBottom: 6 }}>وثائق السفر</div>
       <div style={{ fontSize: '.72rem', color: 'var(--textMut)', marginBottom: 14 }}>جواز السفر، التأشيرات، وتصاريح السفر</div>
 
-      {/* Passport number */}
-      <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--statBg)', marginBottom: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <FieldLabel icon={Hash}>رقم جواز السفر</FieldLabel>
-          {!editingPassport ? (
-            <button onClick={() => setEditingPassport(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tagC)', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><Pencil size={11} /> تعديل</button>
-          ) : (
-            <button onClick={() => setEditingPassport(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><X size={11} /> إلغاء</button>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <TextInput value={passportNumber} onChange={(e: any) => setPassportNumber(e.target.value)} placeholder="رقم جواز السفر" dir="ltr" disabled={!editingPassport} />
-          {editingPassport && (
-            <button onClick={savePassport} disabled={savingPassport} className="vp-btn-primary" style={{ padding: '8px 14px', fontSize: '.76rem', flexShrink: 0 }}>
-              {savingPassport ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} حفظ
-            </button>
-          )}
-        </div>
-      </div>
-
       <div style={{ padding: '12px 14px', borderRadius: 10, background: 'var(--statBg)', border: '1px solid var(--border)', marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <AlertTriangle size={15} style={{ color: '#f59e0b', flexShrink: 0, marginTop: 2 }} />
         <div style={{ fontSize: '.72rem', color: 'var(--textMut)', lineHeight: 1.7 }}>
@@ -113,6 +93,31 @@ export function TravelDocsTab({ vendor, travelDocs, uploadingTravel, travelRef, 
         {uploadingTravel ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
         {uploadingTravel ? 'جارٍ الرفع...' : `رفع ${travelType === 'passport' ? 'جواز السفر' : typeLabels[selectedVisa] || 'تأشيرة'}`}
       </button>
+
+      {/* Passport number — only show after passport is uploaded */}
+      {travelDocs.some((d: any) => d.document_type === 'passport') && (
+        <div style={{ padding: '14px 16px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--statBg)', marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <FieldLabel icon={Hash}>رقم جواز السفر</FieldLabel>
+            {!editingPassport ? (
+              <button onClick={() => setEditingPassport(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--tagC)', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Cairo, sans-serif' }}><Pencil size={11} /> تعديل</button>
+            ) : (
+              <button onClick={() => setEditingPassport(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '.72rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'Cairo, sans-serif' }}><X size={11} /> إلغاء</button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <TextInput value={passportNumber} onChange={(e: any) => setPassportNumber(e.target.value)} placeholder="أدخل رقم جواز السفر" dir="ltr" disabled={!editingPassport} />
+            {editingPassport && (
+              <button onClick={savePassport} disabled={savingPassport} className="vp-btn-primary" style={{ padding: '8px 14px', fontSize: '.76rem', flexShrink: 0 }}>
+                {savingPassport ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} حفظ
+              </button>
+            )}
+          </div>
+          {!passportNumber && !editingPassport && (
+            <div style={{ fontSize: '.7rem', color: '#f59e0b', marginTop: 6 }}>لم يتم إدخال رقم الجواز بعد — اضغط تعديل لإضافته</div>
+          )}
+        </div>
+      )}
 
       {travelDocs.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--textMut)', fontSize: '.82rem' }}>لا توجد وثائق سفر مرفوعة</div>

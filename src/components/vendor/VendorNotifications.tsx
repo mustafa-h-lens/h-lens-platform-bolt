@@ -152,20 +152,12 @@ export function VendorNotifications() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Bell size={18} /> الإشعارات
-          {notifications.length > 0 && (
-            <span style={{
-              fontSize: '0.65rem', padding: '2px 7px', borderRadius: 10,
-              background: 'rgba(224,74,47,0.1)', color: '#ef4444', fontWeight: 700,
-            }}>
-              {notifications.length}
-            </span>
-          )}
-        </span>
-      </div>
+      {/* Count badge */}
+      {notifications.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: '.78rem', color: 'var(--textMut)' }}>{notifications.length} إشعار</span>
+        </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
