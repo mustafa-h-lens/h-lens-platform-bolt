@@ -36,8 +36,8 @@ function getEmailTemplate(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <title>رمز التحقق - Half Lens</title>
   <!--[if mso]>
   <noscript>
@@ -45,7 +45,7 @@ function getEmailTemplate(
   </noscript>
   <![endif]-->
   <style>
-    :root { color-scheme: dark; supported-color-schemes: dark; }
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
 
     body, .email-wrapper, .email-card, .email-header, .email-footer {
       background-color: #030b1a !important;

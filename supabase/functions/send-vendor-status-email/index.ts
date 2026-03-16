@@ -63,14 +63,14 @@ function wrapTemplate(content: string, title: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="supported-color-schemes" content="dark" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <title>${title}</title>
   <!--[if mso]>
   <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
   <![endif]-->
   <style>
-    :root { color-scheme: dark; supported-color-schemes: dark; }
+    :root { color-scheme: light dark; supported-color-schemes: light dark; }
     body, .ew { background-color: #030b1a !important; }
     .ec { background-color: #060d1e !important; }
     .eh { background-color: #07112a !important; }
