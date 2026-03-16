@@ -5,6 +5,7 @@ import {
   Clock, Zap,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { cached } from '../../lib/cache';
 import { useVendor } from '../../contexts/VendorContext';
 import { useProfileCompletion } from './hooks/useProfileCompletion';
 
@@ -36,10 +37,11 @@ export function VendorDashboard() {
   const fetchDashboard = async () => {
     setLoading(true);
     try {
+      const vid = vendor!.id;
       const [invRes, eqRes, docRes] = await Promise.all([
-        supabase.from('vendor_invoices').select('id, amount_total, status, created_at, project_id, projects(id, name, status)').eq('vendor_id', vendor!.id).order('created_at', { ascending: false }),
-        supabase.from('vendor_equipment').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
-        supabase.from('vendor_documents').select('id', { count: 'exact', head: true }).eq('vendor_id', vendor!.id),
+        cached(`dash:inv:${vid}`, () => supabase.from('vendor_invoices').select('id, amount_total, status, created_at, project_id, projects(id, name, status)').eq('vendor_id', vid).order('created_at', { ascending: false }), 30_000),
+        cached(`dash:eq:${vid}`, () => supabase.from('vendor_equipment').select('id', { count: 'exact', head: true }).eq('vendor_id', vid), 60_000),
+        cached(`dash:doc:${vid}`, () => supabase.from('vendor_documents').select('id', { count: 'exact', head: true }).eq('vendor_id', vid), 60_000),
       ]);
       const invoices = invRes.data || [];
       // Derive unique projects from invoices (vendors are linked to projects via invoices)

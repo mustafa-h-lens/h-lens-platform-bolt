@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Banknote, Clock, FileText, ChevronDown, ChevronUp, CheckCircle, User, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
+import { cached } from '../../lib/cache';
 import { useVendor } from '../../contexts/VendorContext';
 import { StatusBadge, EmptyState, LoadingSpinner, Pagination } from './shared';
 
