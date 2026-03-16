@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   LayoutDashboard, User, Folder, FileText, Camera, Bell, AlertCircle,
   LogOut, Menu, X, Sun, Moon, ChevronLeft, ChevronRight, Lightbulb,
@@ -51,6 +51,20 @@ export const VendorPortal = () => {
   const [primaryService, setPrimaryService] = useState('');
   const [revisionNotes, setRevisionNotes] = useState<string | null>(null);
   const [resubmitting, setResubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNav, setPendingNav] = useState<VendorPage | null>(null);
+
+  const markDirty = useCallback(() => setIsDirty(true), []);
+  const clearDirty = useCallback(() => setIsDirty(false), []);
+
+  // Warn on browser close/refresh with unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   // Fetch vendor's primary service name
   useEffect(() => {
@@ -112,10 +126,25 @@ export const VendorPortal = () => {
   };
 
   const navigate = (id: VendorPage) => {
-    if (isRevisionMode && id !== 'profile') return;
+    if (id === currentPage) return;
+    if (isDirty) {
+      setPendingNav(id);
+      return;
+    }
     navigateTo(id);
     setDrawer(false);
   };
+
+  const confirmNavigation = () => {
+    if (pendingNav) {
+      setIsDirty(false);
+      navigateTo(pendingNav);
+      setDrawer(false);
+      setPendingNav(null);
+    }
+  };
+
+  const cancelNavigation = () => setPendingNav(null);
 
   const initials = vendor?.full_name?.split(' ').slice(0, 2).map(w => w[0]).join('') || '?';
 
@@ -216,7 +245,7 @@ export const VendorPortal = () => {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
-          {(isRevisionMode ? NAV_ITEMS.filter(i => i.id === 'profile') : NAV_ITEMS).map(item => {
+          {NAV_ITEMS.map(item => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return (
@@ -401,16 +430,57 @@ export const VendorPortal = () => {
               </div>
             )}
 
-            {!isRevisionMode && currentPage === 'dashboard' && <VendorDashboard />}
-            {currentPage === 'profile'        && <VendorProfile />}
-            {!isRevisionMode && currentPage === 'projects'       && <VendorProjects />}
-            {!isRevisionMode && currentPage === 'invoices'       && <VendorInvoices />}
-            {!isRevisionMode && currentPage === 'equipment'      && <VendorEquipment />}
-            {!isRevisionMode && currentPage === 'notifications'  && <VendorNotifications />}
-            {!isRevisionMode && currentPage === 'suggestions'    && <VendorSuggestions />}
+            {currentPage === 'dashboard'      && <VendorDashboard />}
+            {currentPage === 'profile'        && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
+            {currentPage === 'projects'       && <VendorProjects />}
+            {currentPage === 'invoices'       && <VendorInvoices />}
+            {currentPage === 'equipment'      && <VendorEquipment />}
+            {currentPage === 'notifications'  && <VendorNotifications />}
+            {currentPage === 'suggestions'    && <VendorSuggestions />}
           </div>
         </div>
       </main>
+
+      {/* Unsaved changes confirmation modal */}
+      {pendingNav && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 20,
+        }} onClick={cancelNavigation}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--cardBg, #ffffff)',
+            border: '1px solid var(--border, rgba(0,0,0,0.1))',
+            borderRadius: 16, padding: '24px 28px',
+            maxWidth: 380, width: '100%',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <AlertCircle size={22} style={{ color: '#f59e0b', flexShrink: 0 }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--textPri)', margin: 0 }}>تغييرات غير محفوظة</h3>
+            </div>
+            <p style={{ fontSize: '.85rem', color: 'var(--textSec)', lineHeight: 1.7, marginBottom: 20 }}>
+              لديك تعديلات لم يتم حفظها. هل تريد المغادرة بدون حفظ؟
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={cancelNavigation} style={{
+                padding: '8px 20px', borderRadius: 8, fontSize: '.82rem', fontWeight: 600,
+                background: 'var(--inputBg, #f1f5f9)', border: '1px solid var(--border, rgba(0,0,0,0.1))',
+                color: 'var(--textSec)', cursor: 'pointer',
+              }}>
+                البقاء والحفظ
+              </button>
+              <button onClick={confirmNavigation} style={{
+                padding: '8px 20px', borderRadius: 8, fontSize: '.82rem', fontWeight: 600,
+                background: '#ef4444', border: 'none', color: 'white', cursor: 'pointer',
+              }}>
+                مغادرة بدون حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

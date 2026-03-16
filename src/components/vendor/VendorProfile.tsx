@@ -80,7 +80,12 @@ function SearchableSelect({ value, onChange, items, placeholder, disabled, compa
   );
 }
 
-export function VendorProfile() {
+interface VendorProfileProps {
+  onDirtyChange?: () => void;
+  onSaved?: () => void;
+}
+
+export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {}) {
   const { vendor, refreshVendor } = useVendor();
   const { showSuccess, showError } = useNotification();
   const [tab, setTab] = useState<'info' | 'services' | 'financial' | 'travel' | 'docs'>('info');
@@ -138,6 +143,12 @@ export function VendorProfile() {
   const [savingFin, setSavingFin] = useState(false);
   const [savedFin, setSavedFin] = useState(false);
   const [editingFin, setEditingFin] = useState(false);
+
+  // Track dirty state — notify parent when any section is being edited
+  const isAnyEditing = editingInfo || editingServices || editingFin;
+  useEffect(() => {
+    if (isAnyEditing) onDirtyChange?.();
+  }, [isAnyEditing]);
 
   // Travel documents
   const [travelDocs, setTravelDocs] = useState<any[]>([]);
@@ -327,6 +338,7 @@ export function VendorProfile() {
       if (infoForm.id_number) payload.id_number = infoForm.id_number;
       if (infoForm.vendor_type) payload.vendor_type = infoForm.vendor_type;
       if (infoForm.email) payload.email = infoForm.email;
+      if (infoForm.country_code) payload.country_code = infoForm.country_code;
       payload.portfolio_url = infoForm.portfolio_url || null;
       payload.available_other_cities = infoForm.available_other_cities;
       payload.other_cities = infoForm.other_cities;
@@ -336,6 +348,7 @@ export function VendorProfile() {
       showSuccess('تم حفظ البيانات');
       setSavedInfo(true); setEditingInfo(false);
       setTimeout(() => setSavedInfo(false), 2500);
+      onSaved?.();
       await refreshVendor();
     } catch (err: any) {
       console.error('Save error:', err);
@@ -396,6 +409,7 @@ export function VendorProfile() {
       showSuccess('تم حفظ الخدمات');
       setSavedFields(true); setEditingServices(false);
       setTimeout(() => setSavedFields(false), 2500);
+      onSaved?.();
       await fetchFields();
       await refreshVendor();
     } catch (err: any) {
@@ -420,7 +434,7 @@ export function VendorProfile() {
       const payload = { ...financial, vendor_id: vendor!.id, updated_at: new Date().toISOString() };
       if (financial.id) { await supabase.from('vendor_financial_data').update(payload).eq('id', financial.id); }
       else { const { data } = await supabase.from('vendor_financial_data').insert(payload).select().single(); if (data) setFinancial(data); }
-      showSuccess('تم حفظ البيانات المالية'); setSavedFin(true); setEditingFin(false); setTimeout(() => setSavedFin(false), 2500);
+      showSuccess('تم حفظ البيانات المالية'); setSavedFin(true); setEditingFin(false); setTimeout(() => setSavedFin(false), 2500); onSaved?.();
     } catch { showError('حدث خطأ'); } finally { setSavingFin(false); }
   };
 
@@ -472,7 +486,7 @@ export function VendorProfile() {
       </PageCard>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', borderBottom: '1px solid var(--border)' }}>
+      <div className="vp-tabs-scroll" style={{ display: 'flex', gap: 5, flexWrap: 'wrap', borderBottom: '1px solid var(--border)' }}>
         <TabButton active={tab === 'info'} onClick={() => setTab('info')}><User size={14} /> البيانات الشخصية</TabButton>
         <TabButton active={tab === 'services'} onClick={() => setTab('services')}><Wrench size={14} /> الخدمات والتسعير</TabButton>
         <TabButton active={tab === 'financial'} onClick={() => setTab('financial')}><CreditCard size={14} /> البيانات المالية</TabButton>
