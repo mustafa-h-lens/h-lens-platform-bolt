@@ -90,17 +90,23 @@ function getEmailTemplate(
       .otp-badge-label { color: #60a5fa !important; }
     }
 
+    /* Logo swap defaults — hide light logo by default (dark is default) */
+    .logo-light { display: none !important; }
+    .logo-footer-light { display: none !important; }
+    .logo-dark { display: block !important; }
+    .logo-footer-dark { display: block !important; }
+
     /* Light mode logo swap */
     @media (prefers-color-scheme: light) {
-      .logo-dark { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-dark { display: none !important; }
       .logo-light { display: block !important; }
-      .logo-footer-dark { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-footer-dark { display: none !important; }
       .logo-footer-light { display: block !important; }
     }
     @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-light { display: none !important; }
       .logo-dark { display: block !important; }
-      .logo-footer-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-footer-light { display: none !important; }
       .logo-footer-dark { display: block !important; }
     }
 
@@ -125,8 +131,8 @@ function getEmailTemplate(
           <!-- Header -->
           <tr>
             <td class="email-header" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <img class="header-logo logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-              <img class="header-logo logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:none;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="header-logo logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="header-logo logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
                 <span class="otp-badge-label" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
               </div>
@@ -143,9 +149,9 @@ function getEmailTemplate(
 
           <!-- OTP Boxes -->
           <tr>
-            <td style="padding:0 32px;text-align:center;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;">
-                <tr>
+            <td style="padding:0 32px;text-align:center;" dir="ltr">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;direction:ltr;">
+                <tr dir="ltr">
                   <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
                   <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
@@ -208,8 +214,8 @@ function getEmailTemplate(
           <!-- Footer -->
           <tr>
             <td class="email-footer" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:none;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
+              <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
+              <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
               <div style="margin-top:12px;font-size:11px;line-height:2;">
                 <a class="footer-link" href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a class="footer-link" href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>

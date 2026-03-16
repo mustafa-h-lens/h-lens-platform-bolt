@@ -35,8 +35,8 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
   return `
   <tr>
     <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-      <img class="logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-      <img class="logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:none;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+      <img class="logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+      <img class="logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
       <div style="margin-top:16px;">
         <span style="display:inline-block;padding:6px 18px;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;font-size:13px;font-weight:700;color:${badgeColor};">${badge}</span>
       </div>
@@ -48,8 +48,8 @@ function baseFooter(): string {
   return `
   <tr>
     <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-      <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:none;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
+      <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
+      <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
       <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
         <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
         <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
@@ -100,16 +100,22 @@ function wrapTemplate(content: string, title: string): string {
       .et { color: #f0f4ff !important; }
       .es { color: rgba(200,215,255,0.6) !important; }
     }
+    /* Logo defaults — dark is default */
+    .logo-light { display: none !important; }
+    .logo-footer-light { display: none !important; }
+    .logo-dark { display: block !important; }
+    .logo-footer-dark { display: block !important; }
+
     @media (prefers-color-scheme: light) {
-      .logo-dark { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-dark { display: none !important; }
       .logo-light { display: block !important; }
-      .logo-footer-dark { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-footer-dark { display: none !important; }
       .logo-footer-light { display: block !important; }
     }
     @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-light { display: none !important; }
       .logo-dark { display: block !important; }
-      .logo-footer-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-footer-light { display: none !important; }
       .logo-footer-dark { display: block !important; }
     }
     @media only screen and (max-width: 600px) {
