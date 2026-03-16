@@ -33,7 +33,7 @@ const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeColor: string): string {
   return `
   <tr>
-    <td align="center" bgcolor="#07112a" style="background-color:#07112a;background:linear-gradient(180deg,#04081a 0%,#0a1628 100%);padding:32px 32px 24px;">
+    <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
       <img src="${logoUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
       <div style="margin-top:16px;">
         <span style="display:inline-block;padding:6px 18px;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;font-size:13px;font-weight:700;color:${badgeColor};">${badge}</span>
@@ -45,7 +45,7 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
 function baseFooter(): string {
   return `
   <tr>
-    <td align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
+    <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
       <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
       <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
         <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
@@ -59,17 +59,57 @@ function baseFooter(): string {
 
 function wrapTemplate(content: string, title: string): string {
   return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="supported-color-schemes" content="dark" />
   <title>${title}</title>
+  <!--[if mso]>
+  <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+  <![endif]-->
+  <style>
+    :root { color-scheme: dark; supported-color-schemes: dark; }
+    body, .ew { background-color: #030b1a !important; }
+    .ec { background-color: #060d1e !important; }
+    .eh { background-color: #07112a !important; }
+    .ef { background-color: #040910 !important; }
+    .et { color: #f0f4ff !important; }
+    .es { color: rgba(200,215,255,0.6) !important; }
+    [data-ogsc] body, [data-ogsc] .ew { background-color: #030b1a !important; }
+    [data-ogsc] .ec { background-color: #060d1e !important; }
+    [data-ogsc] .eh { background-color: #07112a !important; }
+    [data-ogsc] .ef { background-color: #040910 !important; }
+    [data-ogsc] .et { color: #f0f4ff !important; }
+    [data-ogsc] .es { color: rgba(200,215,255,0.6) !important; }
+    u + .eb .ew { background-color: #030b1a !important; }
+    u + .eb .ec { background-color: #060d1e !important; }
+    u + .eb .eh { background-color: #07112a !important; }
+    u + .eb .ef { background-color: #040910 !important; }
+    u + .eb .et { color: #f0f4ff !important; }
+    u + .eb .es { color: rgba(200,215,255,0.6) !important; }
+    @media (prefers-color-scheme: dark) {
+      body, .ew { background-color: #030b1a !important; }
+      .ec { background-color: #060d1e !important; }
+      .eh { background-color: #07112a !important; }
+      .ef { background-color: #040910 !important; }
+      .et { color: #f0f4ff !important; }
+      .es { color: rgba(200,215,255,0.6) !important; }
+    }
+    @media only screen and (max-width: 600px) {
+      .ec { border-radius: 0 !important; }
+      .ep { padding: 20px 16px !important; }
+      .eh { padding: 24px 16px 20px !important; }
+      .ef { padding: 20px 16px !important; }
+    }
+  </style>
 </head>
-<body bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
+<body class="eb" bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
     <tr>
       <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
+        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
           ${content}
         </table>
       </td>
