@@ -28,7 +28,7 @@ function getEmailTemplate(
   vendorName: string,
 ): string {
   const digits = otp.padStart(4, "0").slice(0, 4).split("");
-  const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
+  const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
   const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
   return `<!DOCTYPE html>

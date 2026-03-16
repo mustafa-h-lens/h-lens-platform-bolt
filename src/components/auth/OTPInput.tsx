@@ -409,13 +409,16 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
           margin-bottom: 14px;
           backdrop-filter: blur(8px);
           direction: ltr;
+          unicode-bidi: embed;
         }
         .otp-email-dot {
           width: 7px; height: 7px; border-radius: 50%;
           background: #10b981; flex-shrink: 0;
+          order: -1;
         }
         .otp-email-badge span {
           font-size: 0.8rem; color: var(--sl-text-sub);
+          direction: ltr; unicode-bidi: embed;
         }
 
         .otp-dev {

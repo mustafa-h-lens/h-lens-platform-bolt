@@ -26,7 +26,7 @@ interface StatusEmailRequest {
 // ── Shared template parts ──────────────────────────────────
 
 const logoUrl =
-  Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/project-files/Logo_White.png";
+  Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
 
 const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
