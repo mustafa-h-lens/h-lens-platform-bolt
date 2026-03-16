@@ -4,7 +4,7 @@ import {
   Wrench, Landmark, Hash, ChevronDown, ChevronUp,
   Loader2, Upload, Pencil, X, Search, Check,
   Plane, FileText, Lock, Award, Paperclip, Trash2, Download, AlertTriangle, Image,
-  MapPin, Briefcase, ToggleLeft, ToggleRight, Eye,
+  MapPin, Briefcase, ToggleLeft, ToggleRight, Eye, Star,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useVendor } from '../../contexts/VendorContext';
@@ -614,7 +614,7 @@ export function VendorProfile() {
         </PageCard>
       )}
 
-      {/* ── VEHICLE DATA (within info tab) ── */}
+      {/* ── VEHICLE DATA (within info tab, controlled by editingInfo) ── */}
       {tab === 'info' && (
         <PageCard>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -641,14 +641,16 @@ export function VendorProfile() {
                 <div style={{ fontSize: '.78rem' }}>لم يتم رفع صورة الاستمارة بعد</div>
               </div>
             )}
-            <div>
-              <input ref={vehicleImageRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) uploadVehicleImage(f); e.target.value = ''; }} />
-              <button onClick={() => vehicleImageRef.current?.click()} disabled={uploadingVehicleImage} className="vp-btn-primary" style={{ padding: '8px 16px', fontSize: '.78rem', width: '100%' }}>
-                {uploadingVehicleImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                {(vendor as any)?.vehicle_registration_image ? 'تحديث الصورة' : 'رفع صورة الاستمارة'}
-              </button>
-            </div>
+            {editingInfo && (
+              <div>
+                <input ref={vehicleImageRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) uploadVehicleImage(f); e.target.value = ''; }} />
+                <button onClick={() => vehicleImageRef.current?.click()} disabled={uploadingVehicleImage} className="vp-btn-primary" style={{ padding: '8px 16px', fontSize: '.78rem', width: '100%' }}>
+                  {uploadingVehicleImage ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                  {(vendor as any)?.vehicle_registration_image ? 'تحديث الصورة' : 'رفع صورة الاستمارة'}
+                </button>
+              </div>
+            )}
           </div>
         </PageCard>
       )}
@@ -693,10 +695,12 @@ export function VendorProfile() {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                           {(cat.subcategories || []).filter(s => selectedFields.find(sf => sf.field_id === s.id)).map(sub => {
                             const sf = selectedFields.find(f => f.field_id === sub.id);
+                            const isMain = selectedFields.indexOf(sf!) === 0;
                             return (
-                              <div key={sub.id} style={{ padding: '8px 14px', borderRadius: 10, background: 'var(--tagBg)', border: '1px solid var(--borderHi)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <Check size={13} style={{ color: 'var(--tagC)' }} />
-                                <span style={{ fontSize: '.8rem', fontWeight: 600, color: 'var(--tagC)' }}>{sub.name_ar}</span>
+                              <div key={sub.id} style={{ padding: '8px 14px', borderRadius: 10, background: isMain ? 'rgba(245,158,11,0.08)' : 'var(--tagBg)', border: `1px solid ${isMain ? 'rgba(245,158,11,0.3)' : 'var(--borderHi)'}`, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {isMain ? <Star size={13} style={{ color: '#f59e0b' }} /> : <Check size={13} style={{ color: 'var(--tagC)' }} />}
+                                <span style={{ fontSize: '.8rem', fontWeight: 600, color: isMain ? '#f59e0b' : 'var(--tagC)' }}>{sub.name_ar}</span>
+                                {isMain && <span style={{ fontSize: '.62rem', padding: '1px 6px', borderRadius: 5, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontWeight: 700 }}>رئيسي</span>}
                                 {sf?.rate_from && (
                                   <span style={{ fontSize: '.7rem', color: '#10b981', fontWeight: 600, direction: 'ltr' }}>
                                     {sf.rate_from}{sf.rate_to ? `–${sf.rate_to}` : ''} SAR
@@ -712,9 +716,66 @@ export function VendorProfile() {
                 </div>
               )}
 
-              {/* Edit mode: category accordion with checkboxes */}
+              {/* Edit mode: selected services with main/secondary + category accordion */}
               {editingServices && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {/* Selected services summary with main/secondary controls */}
+                  {selectedFields.length > 0 && (
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--textMut)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.05em' }}>الخدمات المختارة ({selectedFields.length})</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {selectedFields.map((sf, idx) => {
+                          const fieldName = sf.vendor_fields?.name_ar || '';
+                          const isMain = idx === 0; // First selected = main
+                          return (
+                            <div key={sf.field_id} style={{
+                              padding: '10px 14px', borderRadius: 10,
+                              border: `1px solid ${isMain ? 'rgba(245,158,11,0.3)' : 'var(--borderHi)'}`,
+                              background: isMain ? 'rgba(245,158,11,0.08)' : 'var(--tagBg)',
+                              display: 'flex', alignItems: 'center', gap: 8,
+                            }}>
+                              <span style={{
+                                padding: '2px 8px', borderRadius: 6, fontSize: '.65rem', fontWeight: 700,
+                                background: isMain ? 'rgba(245,158,11,0.2)' : 'rgba(100,116,139,0.15)',
+                                color: isMain ? '#f59e0b' : 'var(--textMut)',
+                              }}>
+                                {isMain ? 'رئيسي' : 'ثانوي'}
+                              </span>
+                              <span style={{ flex: 1, fontSize: '.82rem', fontWeight: 600, color: 'var(--textPri)' }}>{fieldName}</span>
+                              {!isMain && (
+                                <button
+                                  onClick={() => {
+                                    // Move this field to first position (make it main)
+                                    setSelectedFields(prev => {
+                                      const field = prev.find(f => f.field_id === sf.field_id);
+                                      if (!field) return prev;
+                                      return [field, ...prev.filter(f => f.field_id !== sf.field_id)];
+                                    });
+                                  }}
+                                  title="تعيين كرئيسي"
+                                  style={{
+                                    background: 'none', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6,
+                                    padding: '3px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                                    fontSize: '.68rem', fontWeight: 600, color: '#f59e0b',
+                                  }}
+                                >
+                                  <Star size={11} /> رئيسي
+                                </button>
+                              )}
+                              <button
+                                onClick={() => toggleField(sf.field_id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--textMut)', padding: 2 }}
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Category accordion */}
                   {allFields.map(cat => {
                     const selectedCount = (cat.subcategories || []).filter(s => selectedFields.find(sf => sf.field_id === s.id)).length;
                     const isExpanded = expandedCats.has(cat.id);
@@ -770,7 +831,7 @@ export function VendorProfile() {
             <EditBtn editing={editingFin} onEdit={() => setEditingFin(true)} onCancel={() => { setEditingFin(false); fetchFinancial(); }} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            <div><FieldLabel icon={Landmark}>اسم البنك</FieldLabel><SelectInput value={financial.bank_name} onChange={(e: any) => setFinancial(f => ({ ...f, bank_name: e.target.value }))} disabled={!editingFin}><option value="">اختر البنك</option>{banks.map(b => <option key={b.id} value={b.name_ar}>{b.name_ar}</option>)}</SelectInput></div>
+            <div><FieldLabel icon={Landmark}>اسم البنك</FieldLabel><SearchableSelect value={financial.bank_name} onChange={v => setFinancial(f => ({ ...f, bank_name: v }))} items={banks.map(b => ({ value: b.name_ar, label: b.name_ar }))} placeholder="اختر البنك" disabled={!editingFin} /></div>
             <div><FieldLabel icon={User}>اسم المستفيد</FieldLabel><TextInput value={financial.beneficiary_name} onChange={(e: any) => setFinancial(f => ({ ...f, beneficiary_name: e.target.value }))} placeholder="كما في كشف الحساب" disabled={!editingFin} /></div>
             <div>
               <FieldLabel icon={Hash}>رقم الآيبان (SA + 22 رقم)</FieldLabel>
@@ -780,7 +841,7 @@ export function VendorProfile() {
                 <div style={{ padding: '0 10px', display: 'flex', alignItems: 'center', fontSize: '.65rem', color: 'var(--textMut)', flexShrink: 0 }}>{ibanDigits.length}/22</div>
               </div>
             </div>
-            <div><FieldLabel icon={CreditCard}>طريقة الدفع</FieldLabel><SelectInput value={financial.payment_method} onChange={(e: any) => setFinancial(f => ({ ...f, payment_method: e.target.value }))} disabled={!editingFin}><option value="bank_transfer">تحويل بنكي</option><option value="cash">نقدي</option><option value="other">أخرى</option></SelectInput></div>
+            <div><FieldLabel icon={CreditCard}>طريقة الدفع</FieldLabel><SearchableSelect value={financial.payment_method} onChange={v => setFinancial(f => ({ ...f, payment_method: v }))} items={[{ value: 'bank_transfer', label: 'تحويل بنكي' }, { value: 'cash', label: 'نقدي' }, { value: 'other', label: 'أخرى' }]} placeholder="اختر طريقة الدفع" disabled={!editingFin} /></div>
             {/* Price includes tax */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <FieldLabel>السعر يشمل الضريبة (VAT)</FieldLabel>
