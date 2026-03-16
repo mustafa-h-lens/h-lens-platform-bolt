@@ -28,8 +28,10 @@ function getEmailTemplate(
   vendorName: string,
 ): string {
   const digits = otp.padStart(4, "0").slice(0, 4).split("");
-  const logoWhiteUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
-  const logoBlueUrl = "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co";
+  const storageBase = `${supabaseUrl}/storage/v1/object/public/email-assets`;
+  const logoBlueUrl = `${storageBase}/logo-blue.png`;
+  const logoWhiteUrl = `${storageBase}/logo-white.png`;
   const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
   return `<!DOCTYPE html>
@@ -68,6 +70,8 @@ function getEmailTemplate(
       .f-link { color: #60a5fa !important; }
       .f-copy { color: rgba(200,215,255,0.3) !important; }
       .badge-lbl { color: #60a5fa !important; background-color: rgba(37,99,235,0.12) !important; border-color: rgba(37,99,235,0.25) !important; }
+      .logo-light { display: none !important; max-height: 0 !important; overflow: hidden !important; }
+      .logo-dark { display: block !important; max-height: none !important; overflow: visible !important; }
     }
 
     /* Mobile responsive */
@@ -95,7 +99,8 @@ function getEmailTemplate(
           <!-- Header -->
           <tr>
             <td class="eh" align="center" bgcolor="#f0f4ff" style="background-color:#f0f4ff;padding:32px 32px 24px;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:none;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
                 <span class="badge-lbl" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:20px;font-size:13px;font-weight:700;color:#2563eb;">&#128272; رمز التحقق</span>
               </div>
@@ -177,7 +182,8 @@ function getEmailTemplate(
           <!-- Footer -->
           <tr>
             <td class="ef" align="center" bgcolor="#f1f5f9" style="background-color:#f1f5f9;padding:24px 32px;border-top:1px solid #e2e8f0;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.5;" />
+              <img class="logo-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.5;" />
+              <img class="logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:none;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.5;" />
               <div style="margin-top:12px;font-size:11px;line-height:2;">
                 <a class="f-link" href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a class="f-link" href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
