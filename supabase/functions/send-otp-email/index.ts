@@ -48,107 +48,65 @@ function getEmailTemplate(
   <style>
     :root { color-scheme: light dark; supported-color-schemes: light dark; }
 
-    body, .email-wrapper, .email-card, .email-header, .email-footer {
-      background-color: #030b1a !important;
-    }
-
-    /* Force dark on all clients */
-    [data-ogsc] body, [data-ogsc] .email-wrapper { background-color: #030b1a !important; }
-    [data-ogsc] .email-card { background-color: #060d1e !important; }
-    [data-ogsc] .email-header { background-color: #07112a !important; }
-    [data-ogsc] .email-body-text { color: #f0f4ff !important; }
-    [data-ogsc] .email-sub-text { color: rgba(200,215,255,0.6) !important; }
-    [data-ogsc] .email-footer { background-color: #040910 !important; }
-    [data-ogsc] .otp-digit { color: #60a5fa !important; background-color: rgba(37,99,235,0.15) !important; border-color: rgba(37,99,235,0.4) !important; }
-
-    /* Gmail dark mode override */
-    u + .email-body .email-wrapper { background-color: #030b1a !important; }
-    u + .email-body .email-card { background-color: #060d1e !important; }
-    u + .email-body .email-header { background-color: #07112a !important; }
-    u + .email-body .email-footer { background-color: #040910 !important; }
-    u + .email-body .email-body-text { color: #f0f4ff !important; }
-    u + .email-body .email-sub-text { color: rgba(200,215,255,0.6) !important; }
-    u + .email-body .otp-digit { color: #60a5fa !important; background-color: rgba(37,99,235,0.15) !important; }
-
-    /* Apple Mail / iOS dark mode */
+    /* Dark mode override for Apple Mail, iOS, Outlook (clients that don't auto-invert) */
     @media (prefers-color-scheme: dark) {
-      body, .email-wrapper { background-color: #030b1a !important; }
-      .email-card { background-color: #060d1e !important; }
-      .email-header { background-color: #07112a !important; }
-      .email-footer { background-color: #040910 !important; }
-      .email-body-text { color: #f0f4ff !important; }
-      .email-sub-text { color: rgba(200,215,255,0.6) !important; }
-      .otp-digit { color: #60a5fa !important; background-color: rgba(37,99,235,0.15) !important; border-color: rgba(37,99,235,0.4) !important; }
+      body, .ew { background-color: #030b1a !important; }
+      .ec { background-color: #060d1e !important; }
+      .eh { background-color: #07112a !important; }
+      .ef { background-color: #040910 !important; }
+      .et { color: #f0f4ff !important; }
+      .es { color: #94a3b8 !important; }
+      .otp-digit { color: #60a5fa !important; background-color: rgba(37,99,235,0.12) !important; border-color: rgba(37,99,235,0.35) !important; }
       .info-table { border-color: rgba(255,255,255,0.1) !important; }
-      .info-cell-label { color: rgba(200,215,255,0.5) !important; }
-      .info-cell-value { color: rgba(200,215,255,0.9) !important; }
-      .warning-box { background-color: rgba(245,158,11,0.08) !important; border-color: rgba(245,158,11,0.35) !important; }
-      .warning-text { color: #fbbf24 !important; }
-      .expiry-text { color: rgba(200,215,255,0.5) !important; }
-      .footer-link { color: rgba(200,215,255,0.45) !important; }
-      .footer-copy { color: rgba(200,215,255,0.22) !important; }
-      .otp-badge-label { color: #60a5fa !important; }
-    }
-
-    /* Logo swap defaults — hide light logo by default (dark is default) */
-    .logo-light { display: none !important; }
-    .logo-footer-light { display: none !important; }
-    .logo-dark { display: block !important; }
-    .logo-footer-dark { display: block !important; }
-
-    /* Light mode logo swap */
-    @media (prefers-color-scheme: light) {
-      .logo-dark { display: none !important; }
-      .logo-light { display: block !important; }
-      .logo-footer-dark { display: none !important; }
-      .logo-footer-light { display: block !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; }
-      .logo-dark { display: block !important; }
-      .logo-footer-light { display: none !important; }
-      .logo-footer-dark { display: block !important; }
+      .info-cell { border-color: rgba(255,255,255,0.05) !important; }
+      .ic-label { color: rgba(200,215,255,0.5) !important; }
+      .ic-value { color: rgba(200,215,255,0.9) !important; }
+      .warn-box { background-color: rgba(245,158,11,0.08) !important; border-color: rgba(245,158,11,0.35) !important; }
+      .warn-text { color: #fbbf24 !important; }
+      .exp-text { color: rgba(200,215,255,0.5) !important; }
+      .exp-text strong { color: rgba(200,215,255,0.8) !important; }
+      .f-link { color: #60a5fa !important; }
+      .f-copy { color: rgba(200,215,255,0.3) !important; }
+      .badge-lbl { color: #60a5fa !important; background-color: rgba(37,99,235,0.12) !important; border-color: rgba(37,99,235,0.25) !important; }
     }
 
     /* Mobile responsive */
     @media only screen and (max-width: 600px) {
-      .email-card { border-radius: 0 !important; }
-      .email-padding { padding: 20px 16px !important; }
-      .email-header { padding: 24px 16px 20px !important; }
-      .email-footer { padding: 20px 16px !important; }
+      .ec { border-radius: 0 !important; }
+      .ep { padding: 20px 16px !important; }
+      .eh { padding: 24px 16px 20px !important; }
+      .ef { padding: 20px 16px !important; }
       .otp-digit { width: 48px !important; height: 56px !important; font-size: 24px !important; }
       .otp-spacer { width: 7px !important; }
-      .header-logo { width: 130px !important; }
     }
   </style>
 </head>
-<body class="email-body" bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <!-- Preheader: controls notification preview text -->
-  <div dir="ltr" style="display:none;font-size:1px;color:#030b1a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+<body class="eb" bgcolor="#f8fafc" style="margin:0;padding:0;background-color:#f8fafc;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <!-- Preheader -->
+  <div dir="ltr" style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
     رمز التحقق الخاص بك: ${otp} — صالح لمدة 10 دقائق
     ${"&zwnj;&nbsp;".repeat(30)}
   </div>
-  <table class="email-wrapper" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
+  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f8fafc" style="background-color:#f8fafc;margin:0;padding:0;">
     <tr>
-      <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
-        <table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
+      <td align="center" bgcolor="#f8fafc" style="padding:24px 12px;background-color:#f8fafc;">
+        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;">
 
           <!-- Header -->
           <tr>
-            <td class="email-header" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <img class="header-logo logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-              <img class="header-logo logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+            <td class="eh" align="center" bgcolor="#f0f4ff" style="background-color:#f0f4ff;padding:32px 32px 24px;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
-                <span class="otp-badge-label" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
+                <span class="badge-lbl" style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:20px;font-size:13px;font-weight:700;color:#2563eb;">&#128272; رمز التحقق</span>
               </div>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td class="email-padding" style="padding:32px 32px 0;color:#f0f4ff;">
-              <p class="email-body-text" style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-              <p class="email-sub-text" style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
+            <td class="ep" style="padding:32px 32px 0;">
+              <p class="et" style="font-size:18px;font-weight:700;color:#1e293b;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
+              <p class="es" style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
             </td>
           </tr>
 
@@ -157,13 +115,13 @@ function getEmailTemplate(
             <td style="padding:0 32px;text-align:center;" dir="ltr">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;direction:ltr;">
                 <tr dir="ltr">
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[0]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[1]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[2]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[2]}</td>
                   <td class="otp-spacer" width="10" style="width:10px;"></td>
-                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.10);border:1.5px solid rgba(37,99,235,0.35);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[3]}</td>
+                  <td class="otp-digit" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:#eef2ff;border:2px solid #2563eb;border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#1d4ed8;">${digits[3]}</td>
                 </tr>
               </table>
             </td>
@@ -172,25 +130,25 @@ function getEmailTemplate(
           <!-- Expiry -->
           <tr>
             <td style="padding:18px 32px 0;text-align:center;">
-              <p class="expiry-text" style="font-size:13px;color:rgba(200,215,255,0.5);margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:rgba(200,215,255,0.8);">10 دقائق</strong></p>
+              <p class="exp-text" style="font-size:13px;color:#64748b;margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:#334155;">10 دقائق</strong></p>
             </td>
           </tr>
 
           <!-- Info Row -->
           <tr>
-            <td class="email-padding" style="padding:20px 32px 0;">
-              <table class="info-table" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+            <td class="ep" style="padding:20px 32px 0;">
+              <table class="info-table" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e2e8f0;border-radius:10px;">
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128338; وقت الطلب</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);" dir="rtl">${requestTime}</td>
+                  <td class="info-cell ic-label" style="padding:12px 18px;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0;">&#128338; وقت الطلب</td>
+                  <td class="info-cell ic-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;border-bottom:1px solid #e2e8f0;" dir="ltr">${requestTime}</td>
                 </tr>
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128231; البريد</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${email}</td>
+                  <td class="info-cell ic-label" style="padding:12px 18px;font-size:12px;color:#64748b;border-bottom:1px solid #e2e8f0;">&#128231; البريد</td>
+                  <td class="info-cell ic-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="ltr">${email}</td>
                 </tr>
                 <tr>
-                  <td class="info-cell-label" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);">&#128187; الجهاز</td>
-                  <td class="info-cell-value" style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
+                  <td class="ic-label" style="padding:12px 18px;font-size:12px;color:#64748b;">&#128187; الجهاز</td>
+                  <td class="ic-value" style="padding:12px 18px;font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
                 </tr>
               </table>
             </td>
@@ -198,10 +156,10 @@ function getEmailTemplate(
 
           <!-- Warning -->
           <tr>
-            <td class="email-padding" style="padding:18px 32px 0;">
-              <table class="warning-box" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);border-radius:10px;">
+            <td class="ep" style="padding:18px 32px 0;">
+              <table class="warn-box" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #fbbf24;background:#fef3c7;border-radius:10px;">
                 <tr>
-                  <td class="warning-text" style="padding:14px 18px;font-size:12px;color:#fbbf24;line-height:1.7;">
+                  <td class="warn-text" style="padding:14px 18px;font-size:12px;color:#92400e;line-height:1.7;">
                     &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق Half Lens لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
                   </td>
                 </tr>
@@ -212,21 +170,20 @@ function getEmailTemplate(
           <!-- CTA Button -->
           <tr>
             <td style="padding:24px 32px;text-align:center;">
-              <a href="${loginUrl}" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:#ffffff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 15px rgba(37,99,235,0.3);">&#127760; الذهاب إلى صفحة تسجيل الدخول</a>
+              <a href="${loginUrl}" style="display:inline-block;padding:14px 40px;background:#2563eb;color:#ffffff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;">&#127760; الذهاب إلى صفحة تسجيل الدخول</a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td class="email-footer" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
+            <td class="ef" align="center" bgcolor="#f1f5f9" style="background-color:#f1f5f9;padding:24px 32px;border-top:1px solid #e2e8f0;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.5;" />
               <div style="margin-top:12px;font-size:11px;line-height:2;">
-                <a class="footer-link" href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a class="footer-link" href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a class="footer-link" href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+                <a class="f-link" href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+                <a class="f-link" href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a class="f-link" href="${baseUrl}/terms" style="color:#2563eb;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <p class="footer-copy" style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p class="f-copy" style="font-size:10px;color:#94a3b8;margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 
