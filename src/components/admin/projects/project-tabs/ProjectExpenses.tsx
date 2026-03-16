@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
@@ -39,6 +39,8 @@ interface Vendor {
   id: string;
   full_name: string;
   primary_field: string | null;
+  default_category_id?: string | null;
+  default_rate?: number | null;
 }
 
 interface ProjectExpensesProps {
@@ -75,6 +77,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [vendorSearch, setVendorSearch] = useState('');
+  const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
+  const vendorDropdownRef = useRef<HTMLDivElement>(null);
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
@@ -83,6 +88,30 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     payment_date: new Date().toISOString().split('T')[0],
     notes: '',
   });
+
+  // Close vendor dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (vendorDropdownRef.current && !vendorDropdownRef.current.contains(e.target as Node)) {
+        setVendorDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Auto-fill category & amount when vendor is selected
+  const handleVendorSelect = (vendorId: string) => {
+    const vendor = vendors.find(v => v.id === vendorId);
+    setExpenseForm(prev => ({
+      ...prev,
+      vendor_id: vendorId,
+      category: vendor?.default_category_id || prev.category,
+      amount: vendor?.default_rate ? String(vendor.default_rate) : prev.amount,
+    }));
+    setVendorSearch(vendor?.full_name || '');
+    setVendorDropdownOpen(false);
+  };
 
   useEffect(() => {
     loadExpenses();
@@ -166,7 +195,29 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         .order('full_name');
 
       if (error) throw error;
-      setVendors(data || []);
+
+      // Fetch default category & rate for each vendor from vendor_selected_fields
+      const vendorIds = (data || []).map(v => v.id);
+      let fieldsMap: Record<string, { field_id: string; rate_from: number | null }> = {};
+      if (vendorIds.length > 0) {
+        const { data: selectedFields } = await supabase
+          .from('vendor_selected_fields')
+          .select('vendor_id, field_id, rate_from, vendor_fields(name_ar)')
+          .in('vendor_id', vendorIds)
+          .order('created_at', { ascending: true });
+        // Use the first selected field per vendor as default
+        (selectedFields || []).forEach(sf => {
+          if (!fieldsMap[sf.vendor_id]) {
+            fieldsMap[sf.vendor_id] = { field_id: sf.field_id, rate_from: sf.rate_from };
+          }
+        });
+      }
+
+      setVendors((data || []).map(v => ({
+        ...v,
+        default_category_id: fieldsMap[v.id]?.field_id || null,
+        default_rate: fieldsMap[v.id]?.rate_from || null,
+      })));
     } catch (error) {
       console.error('Error loading vendors:', error);
     }
@@ -297,6 +348,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     setEditingExpense(null);
     setExpenseForm({ vendor_id: '', category: '', amount: '', due_date: '', notes: '' });
     setSelectedFile(null);
+    setVendorSearch('');
+    setVendorDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -311,6 +364,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       notes: expense.notes || '',
     });
     setSelectedFile(null);
+    setVendorSearch(vendors.find(v => v.id === expense.vendor_id)?.full_name || '');
+    setVendorDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -394,9 +449,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
       setShowExpenseModal(false);
       loadExpenses();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving expense:', error);
-      showError('حدث خطأ أثناء حفظ المصروف');
+      showError(`حدث خطأ أثناء حفظ المصروف: ${error?.message || error?.code || ''}`);
     } finally {
       setSaving(false);
     }
@@ -775,30 +830,88 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           title={editingExpense ? 'تعديل مصروف' : 'إضافة مصروف جديد'}
         >
           <form onSubmit={handleExpenseSubmit} className="space-y-4">
-            {/* Vendor select */}
+            {/* Vendor select with search */}
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                 المورد <span className="text-red-500">*</span>
               </label>
-              <select
-                value={expenseForm.vendor_id}
-                onChange={(e) => setExpenseForm({ ...expenseForm, vendor_id: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-                required
-                disabled={!!editingExpense}
-              >
-                <option value="">اختر المورد</option>
-                {vendors.map((vendor) => (
-                  <option key={vendor.id} value={vendor.id}>
-                    {vendor.full_name}
-                  </option>
-                ))}
-              </select>
+              {editingExpense ? (
+                <div
+                  className="w-full px-4 py-2 rounded-lg border"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                    opacity: 0.6,
+                  }}
+                >
+                  {vendors.find(v => v.id === expenseForm.vendor_id)?.full_name || 'غير معروف'}
+                </div>
+              ) : (
+                <div ref={vendorDropdownRef} className="relative">
+                  <div className="relative">
+                    <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                    <input
+                      type="text"
+                      value={vendorSearch}
+                      onChange={(e) => { setVendorSearch(e.target.value); setVendorDropdownOpen(true); }}
+                      onFocus={() => setVendorDropdownOpen(true)}
+                      placeholder="ابحث عن مورد..."
+                      className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: expenseForm.vendor_id ? 'var(--color-primary)' : 'var(--color-border)',
+                        color: 'var(--color-text-primary)',
+                      }}
+                    />
+                    {expenseForm.vendor_id && (
+                      <button
+                        type="button"
+                        onClick={() => { setExpenseForm(prev => ({ ...prev, vendor_id: '', category: '', amount: '' })); setVendorSearch(''); }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {vendorDropdownOpen && (
+                    <div
+                      className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}
+                    >
+                      <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
+                        {vendors
+                          .filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch))
+                          .map(vendor => (
+                            <button
+                              key={vendor.id}
+                              type="button"
+                              onClick={() => handleVendorSelect(vendor.id)}
+                              className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                              style={{
+                                color: expenseForm.vendor_id === vendor.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                                backgroundColor: expenseForm.vendor_id === vendor.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
+                              }}
+                              onMouseEnter={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                              onMouseLeave={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                              <span className="font-medium text-sm">{vendor.full_name}</span>
+                              {vendor.primary_field && (
+                                <span className="text-xs opacity-50">{vendor.primary_field}</span>
+                              )}
+                            </button>
+                          ))}
+                        {vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch)).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Hidden required input for form validation */}
+                  <input type="text" value={expenseForm.vendor_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
+                </div>
+              )}
             </div>
 
             {/* Category select */}
