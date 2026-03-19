@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { createTransport } from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers":
     "Content-Type, Authorization, X-Client-Info, Apikey",
@@ -27,7 +27,18 @@ interface StatusEmailRequest {
 
 const logoWhiteUrl =
   Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
-const logoBlueUrl = "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
+const logoBlueUrl =
+  Deno.env.get("EMAIL_LOGO_BLUE_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
+
+// HTML-escape user input to prevent injection in email templates
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
@@ -286,7 +297,7 @@ function buildRejected(
           <tr>
             <td style="padding:16px 20px;">
               <p style="font-size:13px;font-weight:600;color:#f87171;margin:0 0 8px;">سبب الرفض:</p>
-              <p style="font-size:14px;color:rgba(200,215,255,0.7);line-height:1.8;margin:0;">${reason}</p>
+              <p style="font-size:14px;color:rgba(200,215,255,0.7);line-height:1.8;margin:0;">${escapeHtml(reason)}</p>
             </td>
           </tr>
         </table>
@@ -318,7 +329,7 @@ function buildRevisionRequested(
     <tr>
       <td style="padding:0 32px 28px;">
         ${alertBox(
-          `<strong>ملاحظات المراجع:</strong><br/>${reason}`,
+          `<strong>ملاحظات المراجع:</strong><br/>${escapeHtml(reason)}`,
           "rgba(245,158,11,0.05)",
           "rgba(245,158,11,0.3)",
           "#fbbf24"

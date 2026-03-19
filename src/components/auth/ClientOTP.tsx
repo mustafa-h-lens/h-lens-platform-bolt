@@ -10,7 +10,7 @@ interface ClientOTPProps {
 }
 
 export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) {
-  const [otp, setOtp]         = useState(['','','','']);
+  const [otp, setOtp]         = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
@@ -24,8 +24,8 @@ export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) 
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp]; newOtp[index] = value.slice(-1); setOtp(newOtp);
     setError(''); setRemainingAttempts(null);
-    if (value && index < 3) inputRefs.current[index+1]?.focus();
-    if (newOtp.every(d=>d) && newOtp.join('').length===4) verifyOTP(newOtp.join(''));
+    if (value && index < 5) inputRefs.current[index+1]?.focus();
+    if (newOtp.every(d=>d) && newOtp.join('').length===6) verifyOTP(newOtp.join(''));
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -34,10 +34,10 @@ export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) 
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,4);
+    const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
     const n = [...otp]; for(let i=0;i<p.length;i++) n[i]=p[i]; setOtp(n);
-    if(p.length===4) verifyOTP(p);
-    else if(p.length>0) inputRefs.current[Math.min(p.length,3)]?.focus();
+    if(p.length===6) verifyOTP(p);
+    else if(p.length>0) inputRefs.current[Math.min(p.length,5)]?.focus();
   };
 
   const verifyOTP = async (code: string) => {
@@ -108,12 +108,12 @@ export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) 
                 <span style={{ fontSize:'0.8rem', color:'rgba(200,220,255,0.85)', direction:'ltr' }}>{email}</span>
               </div>
               <h1 style={{ fontSize:'1.5rem', fontWeight:900, color:'white', marginBottom:7 }}>أدخل رمز التحقق</h1>
-              <p style={{ fontSize:'0.86rem', color:'rgba(148,163,184,0.75)', lineHeight:1.6 }}>تم إرسال رمز مكون من 4 أرقام إلى بريدك</p>
+              <p style={{ fontSize:'0.86rem', color:'rgba(148,163,184,0.75)', lineHeight:1.6 }}>تم إرسال رمز مكون من 6 أرقام إلى بريدك</p>
             </div>
 
             <div style={{ display:'flex', justifyContent:'center', gap:12, marginBottom:8, direction:'ltr' }}>
               {otp.map((digit, i) => (
-                <input key={i} ref={el=>inputRefs.current[i]=el} type="tel" inputMode="numeric" maxLength={1}
+                <input key={i} ref={el=>inputRefs.current[i]=el} type="tel" inputMode="numeric" maxLength={1} autoComplete="one-time-code"
                   value={digit} onChange={e=>handleChange(i,e.target.value)} onKeyDown={e=>handleKeyDown(i,e)} onPaste={handlePaste}
                   disabled={loading||success} style={boxStyle(digit)} />
               ))}

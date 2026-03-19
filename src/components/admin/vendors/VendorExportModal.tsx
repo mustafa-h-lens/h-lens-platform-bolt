@@ -48,7 +48,6 @@ interface ExportFields {
   nationality: boolean;
   primary_field: boolean;
   primary_city: boolean;
-  estimated_cost: boolean;
   status: boolean;
 }
 
@@ -78,7 +77,6 @@ const defaultFields: ExportFields = {
   nationality: false,
   primary_field: false,
   primary_city: false,
-  estimated_cost: false,
   status: false,
 };
 
@@ -164,6 +162,26 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     }
   };
 
+  // Preload Arabic font for PDF rendering
+  const ensureFontLoaded = async () => {
+    // Add font link if not already in document
+    if (!document.querySelector('link[href*="Cairo"]')) {
+      const link = document.createElement('link');
+      link.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap';
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    // Wait for the font to be ready
+    try {
+      await document.fonts.load('400 16px Cairo');
+      await document.fonts.load('600 16px Cairo');
+      await document.fonts.load('700 16px Cairo');
+    } catch {
+      // Fallback: wait a fixed time
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
+
   const handleExport = async () => {
     if (Object.values(selectedFields).every(v => !v)) {
       showError('يرجى اختيار حقل واحد على الأقل');
@@ -174,6 +192,8 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     savePreferences();
 
     try {
+      // Ensure Arabic font is loaded before rendering
+      await ensureFontLoaded();
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -189,13 +209,14 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
             const template = await createSingleVendorTemplate(vendor);
             printRef.current.appendChild(template);
 
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 500));
 
             const canvas = await html2canvas(printRef.current, {
               scale: 2,
               useCORS: true,
               allowTaint: true,
               backgroundColor: '#ffffff',
+              letterRendering: true,
             });
 
             const imgWidth = 297;
@@ -215,13 +236,14 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
           const template = await createAllVendorsTemplate();
           printRef.current.appendChild(template);
 
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 800));
 
           const canvas = await html2canvas(printRef.current, {
             scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
+            letterRendering: true,
           });
 
           const imgWidth = 297;
@@ -259,16 +281,11 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     const container = document.createElement('div');
     container.style.cssText = `
       direction: rtl;
-      font-family: 'Cairo', 'Arial', sans-serif;
+      font-family: 'Cairo', 'Noto Sans Arabic', 'Arial', 'Tahoma', sans-serif;
       padding: 40px;
       background: white;
       min-width: 1200px;
     `;
-
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
 
     const logoBase64 = await convertImageToBase64('/assets/logo-blue.png');
 
@@ -328,7 +345,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
     if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
     if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
-    if (selectedFields.estimated_cost) columns.push({ key: 'estimated_cost', label: 'التكلفة التقديرية' });
+
     if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
 
     const thead = document.createElement('thead');
@@ -491,9 +508,6 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
           }
         } else if (col.key === 'status') {
           td.textContent = getStatusText(vendor.status);
-        } else if (col.key === 'estimated_cost') {
-          td.textContent = vendor.estimated_cost ? `${toEnglishNumbers(vendor.estimated_cost.toString())} ريال` : '-';
-          td.style.direction = 'ltr';
         } else {
           td.textContent = (vendor[col.key as keyof Vendor] as string) || '-';
         }
@@ -514,16 +528,11 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     const container = document.createElement('div');
     container.style.cssText = `
       direction: rtl;
-      font-family: 'Cairo', 'Arial', sans-serif;
+      font-family: 'Cairo', 'Noto Sans Arabic', 'Arial', 'Tahoma', sans-serif;
       padding: 40px;
       background: white;
       min-width: 1000px;
     `;
-
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
 
     const logoBase64 = await convertImageToBase64('/assets/logo-blue.png');
 
@@ -587,7 +596,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
     if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
     if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
-    if (selectedFields.estimated_cost) columns.push({ key: 'estimated_cost', label: 'التكلفة التقديرية' });
+
     if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
 
     columns.forEach(col => {
@@ -889,16 +898,6 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
                   className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-slate-700 font-medium text-sm">المدينة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.estimated_cost}
-                  onChange={() => toggleField('estimated_cost')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">التكلفة التقديرية</span>
               </label>
 
               <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">

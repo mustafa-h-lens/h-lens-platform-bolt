@@ -59,7 +59,7 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
       // Find doc to delete from storage too
       const doc = documents.find(d => d.id === documentId);
       if (doc?.file_url) {
-        const bucketName = 'vendor-images';
+        const bucketName = 'vendor-documents';
         const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
         if (urlParts.length === 2) {
           const storagePath = decodeURIComponent(urlParts[1]);
@@ -245,6 +245,7 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showError } = useNotification();
   const [formData, setFormData] = useState({
     document_type: 'contract' as 'contract' | 'nda' | 'certificate' | 'other',
     file_name: '',
@@ -261,13 +262,13 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
       // Upload file to storage
       const filePath = `vendors/${vendorId}/documents/${Date.now()}_${selectedFile.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('vendor-images')
+        .from('vendor-documents')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('vendor-images')
+        .from('vendor-documents')
         .getPublicUrl(filePath);
 
       // Save record
@@ -287,7 +288,7 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
       onSuccess();
     } catch (error: any) {
       console.error('Error adding document:', error);
-      alert(error.message || 'حدث خطأ أثناء رفع المستند');
+      showError(error.message || 'حدث خطأ أثناء رفع المستند');
     } finally {
       setLoading(false);
     }
@@ -336,7 +337,7 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept="image/jpeg,image/png,image/webp"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) {

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, FolderOpen, User, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { ClientModal } from './ClientModal';
 import { formatNumber, formatDateArabic } from '../../../lib/formatters';
+import { toEnglishNumbers } from '../../../lib/numberUtils';
 import type { Client } from '../../../types/database';
 
 interface ClientWithProjects extends Client {
@@ -16,6 +18,7 @@ interface ClientsPageProps {
 type SortOption = 'name' | 'updated' | 'projects';
 
 export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
+  const { showError } = useNotification();
   const [clients, setClients] = useState<ClientWithProjects[]>([]);
   const [filteredClients, setFilteredClients] = useState<ClientWithProjects[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,10 +27,18 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('updated');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [page]);
+
+  // Reset page on search/sort change
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, sortBy]);
 
   useEffect(() => {
     let filtered = clients;
@@ -59,12 +70,16 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
     try {
       setLoading(true);
 
-      const { data: clientsData, error: clientsError } = await supabase
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data: clientsData, error: clientsError, count } = await supabase
         .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (clientsError) throw clientsError;
+      setTotalCount(count || 0);
 
       const clientsWithCounts = await Promise.all(
         (clientsData || []).map(async (client) => {
@@ -108,9 +123,9 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
     } catch (error: any) {
       console.error('Error deleting client:', error);
       if (error.code === '23503') {
-        alert('لا يمكن حذف هذا العميل لأنه مرتبط بمشاريع أخرى');
+        showError('لا يمكن حذف هذا العميل لأنه مرتبط بمشاريع أخرى');
       } else {
-        alert('حدث خطأ أثناء حذف العميل');
+        showError('حدث خطأ أثناء حذف العميل');
       }
     }
   };
@@ -287,6 +302,43 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
           ))}
         </div>
       )}
+
+      {/* Pagination */}
+      {(() => {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return totalPages > 1 ? (
+          <div
+            className="flex items-center justify-between p-4 rounded-lg border mt-6"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              السابق
+            </button>
+            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              التالي
+            </button>
+          </div>
+        ) : totalCount > 0 ? (
+          <div className="text-sm mt-4" style={{ color: 'var(--color-text-muted)' }}>
+            إجمالي: {toEnglishNumbers(totalCount.toString())} عميل
+          </div>
+        ) : null;
+      })()}
 
       {showModal && (
         <ClientModal

@@ -128,6 +128,15 @@ export interface ProjectTask {
   updated_at: string;
 }
 
+export interface InvoicePayment {
+  id: string;
+  amount: number;
+  payment_date: string;
+  payment_method: 'bank_transfer' | 'cash' | 'check';
+  notes: string | null;
+  created_at: string;
+}
+
 export interface Invoice {
   id: string;
   project_id: string;
@@ -135,12 +144,13 @@ export interface Invoice {
   invoice_number: string;
   issue_date: string;
   due_date: string;
-  status: 'paid' | 'unpaid' | 'partial' | 'cancelled';
+  status: 'paid' | 'unpaid' | 'partial' | 'cancelled' | 'draft' | 'sent';
   total_amount: number;
   paid_amount: number;
   currency: string;
   file_url: string | null;
   notes: string | null;
+  payments: InvoicePayment[] | null;
   created_at: string;
   updated_at: string;
 }

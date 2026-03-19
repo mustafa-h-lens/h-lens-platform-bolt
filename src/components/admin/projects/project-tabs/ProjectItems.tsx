@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, ShoppingBasket, Eye, X } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
+import { useNotification } from '../../../../contexts/NotificationContext';
 import { formatNumber, formatCurrency } from '../../../../lib/formatters';
 import { AddItemModal } from '../AddItemModal';
 
@@ -25,6 +26,7 @@ interface ProjectItemsProps {
 }
 
 export const ProjectItems = ({ projectId, currency }: ProjectItemsProps) => {
+  const { showError } = useNotification();
   const [items, setItems] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -74,7 +76,7 @@ export const ProjectItems = ({ projectId, currency }: ProjectItemsProps) => {
       loadItems();
     } catch (error) {
       console.error('Error deleting item:', error);
-      alert('حدث خطأ أثناء حذف البند');
+      showError('حدث خطأ أثناء حذف البند');
     }
   };
 

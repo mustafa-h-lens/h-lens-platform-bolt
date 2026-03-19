@@ -1,41 +1,34 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { getTheme, borderRadius } from '../../theme/tokens';
 
 interface CardProps {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
   padding?: 'none' | 'sm' | 'md' | 'lg';
+  glow?: boolean;
 }
+
+const paddingMap: Record<string, string> = {
+  none: '0',
+  sm: '12px',
+  md: '16px',
+  lg: '20px',
+};
 
 export const Card: React.FC<CardProps> = ({
   children,
   className = '',
   style = {},
   padding = 'lg',
+  glow = false,
 }) => {
-  const { isDarkMode } = useTheme();
-  const theme = getTheme(isDarkMode);
-
-  const paddingMap = {
-    none: '0',
-    sm: '1rem',
-    md: '1.5rem',
-    lg: '2rem',
-  };
-
-  const cardStyles: React.CSSProperties = {
-    backgroundColor: theme.background.card,
-    border: `1px solid ${theme.border.default}`,
-    borderRadius: borderRadius.DEFAULT,
-    padding: paddingMap[padding],
-    boxShadow: theme.shadow.sm,
-    ...style,
-  };
+  const classes = ['card', glow ? 'card-glow' : '', className].filter(Boolean).join(' ');
 
   return (
-    <div style={cardStyles} className={className}>
+    <div
+      className={classes}
+      style={{ padding: paddingMap[padding], ...style }}
+    >
       {children}
     </div>
   );

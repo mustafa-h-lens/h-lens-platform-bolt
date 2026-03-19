@@ -1,6 +1,4 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { getTheme, transitions, borderRadius, fontSize, fontWeight } from '../../theme/tokens';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -14,6 +12,21 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   tooltip?: string;
 }
+
+const variantClassMap: Record<ButtonVariant, string> = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  success: 'btn-success',
+  warning: 'btn-warning',
+  error: 'btn-danger',
+  ghost: 'btn-ghost',
+};
+
+const sizeClassMap: Record<ButtonSize, string> = {
+  sm: 'btn-sm',
+  md: '',
+  lg: 'btn-lg',
+};
 
 export const Button: React.FC<ButtonProps> = ({
   children,
@@ -29,115 +42,27 @@ export const Button: React.FC<ButtonProps> = ({
   style = {},
   ...props
 }) => {
-  const { isDarkMode } = useTheme();
-  const theme = getTheme(isDarkMode);
+  const classes = [
+    'btn',
+    variantClassMap[variant],
+    sizeClassMap[size],
+    className,
+  ].filter(Boolean).join(' ');
 
-  const getVariantStyles = (): React.CSSProperties => {
-    const baseStyles: React.CSSProperties = {
-      transition: transitions.DEFAULT,
-      fontWeight: fontWeight.medium,
-      borderRadius: borderRadius.DEFAULT,
-      border: 'none',
-      cursor: disabled || loading ? 'not-allowed' : 'pointer',
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '0.5rem',
-      opacity: disabled || loading ? 0.5 : 1,
-      width: fullWidth ? '100%' : 'auto',
-    };
-
-    const variantMap: Record<ButtonVariant, React.CSSProperties> = {
-      primary: {
-        backgroundColor: theme.primary.main,
-        color: theme.text.inverse,
-        boxShadow: theme.shadow.sm,
-      },
-      secondary: {
-        backgroundColor: theme.secondary.light,
-        color: theme.text.primary,
-        border: `1px solid ${theme.border.default}`,
-      },
-      success: {
-        backgroundColor: theme.status.success.main,
-        color: theme.text.inverse,
-      },
-      warning: {
-        backgroundColor: theme.status.warning.main,
-        color: theme.text.inverse,
-      },
-      error: {
-        backgroundColor: theme.status.error.main,
-        color: theme.text.inverse,
-      },
-      ghost: {
-        backgroundColor: 'transparent',
-        color: theme.text.secondary,
-        border: 'none',
-      },
-    };
-
-    return { ...baseStyles, ...variantMap[variant] };
-  };
-
-  const getSizeStyles = (): React.CSSProperties => {
-    const sizeMap: Record<ButtonSize, React.CSSProperties> = {
-      sm: {
-        padding: '0.5rem 1rem',
-        fontSize: fontSize.sm,
-      },
-      md: {
-        padding: '0.625rem 1.25rem',
-        fontSize: fontSize.base,
-      },
-      lg: {
-        padding: '0.75rem 1.5rem',
-        fontSize: fontSize.lg,
-      },
-    };
-
-    return sizeMap[size];
-  };
-
-  const getHoverStyles = (): React.CSSProperties => {
-    if (disabled || loading) return {};
-
-    const hoverMap: Record<ButtonVariant, React.CSSProperties> = {
-      primary: {
-        backgroundColor: theme.primary.hover,
-      },
-      secondary: {
-        backgroundColor: theme.background.hover,
-        borderColor: theme.border.hover,
-      },
-      success: {
-        backgroundColor: theme.status.success.dark,
-      },
-      warning: {
-        backgroundColor: theme.status.warning.dark,
-      },
-      error: {
-        backgroundColor: theme.status.error.dark,
-      },
-      ghost: {
-        backgroundColor: theme.background.hover,
-      },
-    };
-
-    return hoverMap[variant];
-  };
-
-  const [isHovered, setIsHovered] = React.useState(false);
-
-  const combinedStyles: React.CSSProperties = {
-    ...getVariantStyles(),
-    ...getSizeStyles(),
-    ...(isHovered ? getHoverStyles() : {}),
+  const btnStyle: React.CSSProperties = {
+    ...(fullWidth ? { width: '100%' } : {}),
+    ...(disabled || loading ? { opacity: 0.5, pointerEvents: 'none' } : {}),
     ...style,
   };
 
-  const buttonContent = (
-    <>
+  return (
+    <button
+      {...props}
+      disabled={disabled || loading}
+      className={classes}
+      style={Object.keys(btnStyle).length ? btnStyle : undefined}
+      title={tooltip}
+    >
       {loading && (
         <svg
           className="animate-spin"
@@ -164,45 +89,6 @@ export const Button: React.FC<ButtonProps> = ({
       {icon && iconPosition === 'left' && !loading && icon}
       {children}
       {icon && iconPosition === 'right' && !loading && icon}
-    </>
-  );
-
-  return (
-    <div style={{ position: 'relative', display: fullWidth ? 'block' : 'inline-block' }}>
-      <button
-        {...props}
-        disabled={disabled || loading}
-        style={combinedStyles}
-        className={className}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        title={tooltip}
-      >
-        {buttonContent}
-      </button>
-      {disabled && tooltip && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            marginBottom: '0.5rem',
-            padding: '0.5rem 0.75rem',
-            backgroundColor: theme.text.primary,
-            color: theme.text.inverse,
-            fontSize: fontSize.xs,
-            borderRadius: borderRadius.sm,
-            whiteSpace: 'nowrap',
-            opacity: isHovered ? 1 : 0,
-            pointerEvents: 'none',
-            transition: transitions.DEFAULT,
-            zIndex: 50,
-          }}
-        >
-          {tooltip}
-        </div>
-      )}
-    </div>
+    </button>
   );
 };

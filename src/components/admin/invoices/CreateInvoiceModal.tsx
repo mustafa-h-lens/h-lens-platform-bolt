@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Upload } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { Modal } from '../../shared/Modal';
 
 interface CreateInvoiceModalProps {
@@ -18,7 +20,12 @@ interface CreateInvoiceModalProps {
 
 export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoiceModalProps) => {
   const { user } = useAuth();
+  const { showError, showSuccess } = useNotification();
   const [loading, setLoading] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [formData, setFormData] = useState({
     issue_date: new Date().toISOString().split('T')[0],
@@ -27,7 +34,6 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
     total_amount: project.total_price.toString(),
     paid_amount: '0',
     notes: '',
-    file_url: '',
   });
 
   useEffect(() => {
@@ -46,11 +52,45 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const uploadFile = async (): Promise<string | null> => {
+    if (!selectedFile) return null;
+    setUploadingFile(true);
+    try {
+      const filePath = `invoices/${project.id}/${Date.now()}_${selectedFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, selectedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('project-files')
+        .getPublicUrl(filePath);
+
+      return urlData.publicUrl;
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      let fileUrl = uploadedFileUrl || null;
+      if (selectedFile && !uploadedFileUrl) {
+        fileUrl = await uploadFile();
+        if (fileUrl) setUploadedFileUrl(fileUrl);
+      }
+
       const { error } = await supabase.from('invoices').insert({
         project_id: project.id,
         client_id: project.client.id,
@@ -62,7 +102,7 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
         paid_amount: parseFloat(formData.paid_amount),
         currency: project.currency,
         notes: formData.notes || null,
-        file_url: formData.file_url || null,
+        file_url: fileUrl,
         created_by: user!.id,
       });
 
@@ -70,7 +110,7 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
       onSuccess();
     } catch (error) {
       console.error('Error creating invoice:', error);
-      alert('حدث خطأ أثناء إنشاء الفاتورة');
+      showError('حدث خطأ أثناء إنشاء الفاتورة');
     } finally {
       setLoading(false);
     }
@@ -154,15 +194,28 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">رابط ملف الفاتورة</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">ملف الفاتورة</label>
             <input
-              type="url"
-              value={formData.file_url}
-              onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="https://example.com/invoice.pdf"
-              dir="ltr"
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+              onChange={handleFileSelect}
             />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingFile}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 text-slate-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
+            >
+              <Upload className="w-5 h-5" />
+              {uploadingFile ? 'جاري الرفع...' : selectedFile ? selectedFile.name : 'اضغط لاختيار ملف الفاتورة'}
+            </button>
+            {selectedFile && (
+              <p className="text-xs text-green-600 mt-1">
+                تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+              </p>
+            )}
           </div>
 
           <div>

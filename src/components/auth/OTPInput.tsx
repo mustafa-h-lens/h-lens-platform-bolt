@@ -10,7 +10,7 @@ interface OTPInputProps {
 }
 
 export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputProps) {
-  const [otp, setOtp]         = useState(['','','','']);
+  const [otp, setOtp]         = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [success, setSuccess] = useState(false);
@@ -26,8 +26,8 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
     newOtp[index] = value.slice(-1);
     setOtp(newOtp);
     setError(''); setRemainingAttempts(null);
-    if (value && index < 3) inputRefs.current[index+1]?.focus();
-    if (newOtp.every(d => d) && newOtp.join('').length === 4) verifyOTP(newOtp.join(''));
+    if (value && index < 5) inputRefs.current[index+1]?.focus();
+    if (newOtp.every(d => d) && newOtp.join('').length === 6) verifyOTP(newOtp.join(''));
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -36,12 +36,12 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,4);
+    const pasted = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
     const newOtp = [...otp];
     for (let i = 0; i < pasted.length; i++) newOtp[i] = pasted[i];
     setOtp(newOtp);
-    if (pasted.length === 4) verifyOTP(pasted);
-    else if (pasted.length > 0) inputRefs.current[Math.min(pasted.length,3)]?.focus();
+    if (pasted.length === 6) verifyOTP(pasted);
+    else if (pasted.length > 0) inputRefs.current[Math.min(pasted.length,5)]?.focus();
   };
 
   const verifyOTP = async (code: string) => {
@@ -128,7 +128,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
                 <span dir="ltr">{email}</span>
               </div>
               <h1 className="sl-title">أدخل رمز التحقق</h1>
-              <p className="sl-subtitle">تم إرسال رمز مكون من 4 أرقام إلى بريدك</p>
+              <p className="sl-subtitle">تم إرسال رمز مكون من 6 أرقام إلى بريدك</p>
             </div>
 
             {/* DEV OTP */}
@@ -144,7 +144,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
               {otp.map((digit, index) => (
                 <input key={index}
                   ref={el => inputRefs.current[index] = el}
-                  type="tel" inputMode="numeric" maxLength={1}
+                  type="tel" inputMode="numeric" maxLength={1} autoComplete="one-time-code"
                   value={digit}
                   onChange={e => handleChange(index, e.target.value)}
                   onKeyDown={e => handleKeyDown(index, e)}

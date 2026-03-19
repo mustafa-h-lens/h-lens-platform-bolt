@@ -1,16 +1,137 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Plus, Search, Phone, MapPin, Download, Trash2, Filter, X, ChevronDown, Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { Modal } from '../../shared/Modal';
-import { VendorDetails } from './VendorDetails';
 import { SearchableDropdown } from '../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { VendorExportModal } from './VendorExportModal';
 import { ConfirmationModal } from '../../shared/ConfirmationModal';
-import { PendingVendorRequests } from './PendingVendorRequests';
-import { VendorRequestReview } from './VendorRequestReview';
 import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
+
+// Lazy-load heavy sub-components
+const VendorDetails = lazy(() => import('./VendorDetails').then(m => ({ default: m.VendorDetails })));
+const VendorExportModal = lazy(() => import('./VendorExportModal').then(m => ({ default: m.VendorExportModal })));
+const PendingVendorRequests = lazy(() => import('./PendingVendorRequests').then(m => ({ default: m.PendingVendorRequests })));
+const VendorRequestReview = lazy(() => import('./VendorRequestReview').then(m => ({ default: m.VendorRequestReview })));
+
+const VendorLazyFallback = () => (
+  <div className="flex items-center justify-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
+    جاري التحميل...
+  </div>
+);
+
+// Multi-select dropdown filter component
+function MultiSelectFilter({ label, options, selected, onToggle }: {
+  label: string;
+  options: { value: string; label: string }[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const filtered = search
+    ? options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition-all"
+        style={{
+          backgroundColor: selected.length > 0 ? 'var(--color-primary)' : 'var(--color-surface)',
+          borderColor: selected.length > 0 ? 'var(--color-primary)' : 'var(--color-border)',
+          color: selected.length > 0 ? '#ffffff' : 'var(--color-text-primary)',
+        }}
+      >
+        <span>{label}</span>
+        {selected.length > 0 && (
+          <span
+            className="flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
+            style={{ backgroundColor: 'rgba(255,255,255,0.25)', color: '#ffffff' }}
+          >
+            {selected.length}
+          </span>
+        )}
+        <ChevronDown size={14} />
+      </button>
+
+      {open && (
+        <div
+          className="absolute top-full mt-1 z-50 rounded-lg border shadow-lg overflow-hidden"
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+            minWidth: '200px',
+            maxHeight: '280px',
+          }}
+        >
+          {options.length > 6 && (
+            <div className="p-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="بحث..."
+                className="w-full px-2 py-1.5 rounded border text-sm focus:outline-none focus:ring-1"
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text-primary)',
+                }}
+                autoFocus
+              />
+            </div>
+          )}
+          <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+            {filtered.map((opt) => {
+              const isSelected = selected.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => onToggle(opt.value)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-right transition-colors"
+                  style={{
+                    color: 'var(--color-text-primary)',
+                    backgroundColor: isSelected ? 'rgba(37,99,235,0.08)' : 'transparent',
+                  }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = isSelected ? 'rgba(37,99,235,0.08)' : 'transparent'; }}
+                >
+                  <div
+                    className="w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center"
+                    style={{
+                      borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                      backgroundColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                    }}
+                  >
+                    {isSelected && <span className="text-white text-xs">✓</span>}
+                  </div>
+                  <span className="flex-1">{opt.label}</span>
+                </button>
+              );
+            })}
+            {filtered.length === 0 && (
+              <div className="px-3 py-4 text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
+                لا توجد نتائج
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Vendor {
   id: string;
@@ -46,6 +167,9 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Sub-tab: 'all' or 'pending'
   const [activeSubTab, setActiveSubTab] = useState<'all' | 'pending'>('all');
@@ -55,29 +179,46 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [reviewVendorId, setReviewVendorId] = useState<string | null>(null);
 
   const [filters, setFilters] = useState({
-    nationality: '',
-    primary_city: '',
-    primary_field: '',
-    status: '',
+    nationality: [] as string[],
+    primary_city: [] as string[],
+    primary_field: [] as string[],
+    status: [] as string[],
     minCost: '',
     maxCost: '',
   });
 
+  // Multi-select filter toggle helper
+  const toggleFilter = (key: 'nationality' | 'primary_city' | 'primary_field' | 'status', value: string) => {
+    setFilters(prev => {
+      const arr = prev[key];
+      return { ...prev, [key]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value] };
+    });
+  };
+
   useEffect(() => {
     fetchVendors();
     fetchPendingCount();
-  }, []);
+  }, [page]);
+
+  // Reset page on filter/search change
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, filters]);
 
   const fetchVendors = async () => {
     try {
-      const { data, error } = await supabase
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await supabase
         .from('vendors')
-        .select('*')
+        .select('*', { count: 'exact' })
         .in('status', ['active', 'inactive', 'blocked'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setVendors(data || []);
+      setTotalCount(count || 0);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     } finally {
@@ -104,10 +245,10 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       vendor.phone.includes(searchTerm) ||
       vendor.primary_field?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesNationality = !filters.nationality || vendor.nationality === filters.nationality;
-    const matchesCity = !filters.primary_city || vendor.primary_city === filters.primary_city;
-    const matchesField = !filters.primary_field || vendor.primary_field === filters.primary_field;
-    const matchesStatus = !filters.status || vendor.status === filters.status;
+    const matchesNationality = filters.nationality.length === 0 || (vendor.nationality && filters.nationality.includes(vendor.nationality));
+    const matchesCity = filters.primary_city.length === 0 || (vendor.primary_city && filters.primary_city.includes(vendor.primary_city));
+    const matchesField = filters.primary_field.length === 0 || (vendor.primary_field && filters.primary_field.includes(vendor.primary_field));
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(vendor.status);
 
     const matchesCost = (() => {
       if (!vendor.estimated_cost) return !filters.minCost && !filters.maxCost;
@@ -195,7 +336,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     return statusMap[status] || statusMap.active;
   };
 
-  const hasActiveFilters = filters.nationality || filters.primary_city || filters.primary_field || filters.status;
+  const hasActiveFilters = filters.nationality.length > 0 || filters.primary_city.length > 0 || filters.primary_field.length > 0 || filters.status.length > 0;
 
   const activeCount = filteredVendors.filter(v => v.status === 'active').length;
   const inactiveCount = filteredVendors.filter(v => v.status === 'inactive').length;
@@ -226,32 +367,36 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
   if (selectedVendorId) {
     return (
-      <VendorDetails
-        vendorId={selectedVendorId}
-        onBack={() => {
-          setSelectedVendorId(null);
-          onVendorSelect?.(null);
-          onTabChange?.(null);
-        }}
-        initialTab={initialTab}
-        onTabChange={onTabChange}
-      />
+      <Suspense fallback={<VendorLazyFallback />}>
+        <VendorDetails
+          vendorId={selectedVendorId}
+          onBack={() => {
+            setSelectedVendorId(null);
+            onVendorSelect?.(null);
+            onTabChange?.(null);
+          }}
+          initialTab={initialTab}
+          onTabChange={onTabChange}
+        />
+      </Suspense>
     );
   }
 
   // Pending vendor review mode
   if (reviewVendorId) {
     return (
-      <VendorRequestReview
-        vendorId={reviewVendorId}
-        onBack={() => setReviewVendorId(null)}
-        onActionComplete={() => {
-          setReviewVendorId(null);
-          fetchPendingCount();
-          fetchVendors();
-          setPendingRefreshTrigger(prev => prev + 1);
-        }}
-      />
+      <Suspense fallback={<VendorLazyFallback />}>
+        <VendorRequestReview
+          vendorId={reviewVendorId}
+          onBack={() => setReviewVendorId(null)}
+          onActionComplete={() => {
+            setReviewVendorId(null);
+            fetchPendingCount();
+            fetchVendors();
+            setPendingRefreshTrigger(prev => prev + 1);
+          }}
+        />
+      </Suspense>
     );
   }
 
@@ -329,10 +474,12 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
       {/* Pending Requests Tab */}
       {activeSubTab === 'pending' ? (
-        <PendingVendorRequests
-          onSelectVendor={setReviewVendorId}
-          refreshTrigger={pendingRefreshTrigger}
-        />
+        <Suspense fallback={<VendorLazyFallback />}>
+          <PendingVendorRequests
+            onSelectVendor={setReviewVendorId}
+            refreshTrigger={pendingRefreshTrigger}
+          />
+        </Suspense>
       ) : (
       <>
 
@@ -379,71 +526,47 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         className="flex items-center gap-3 flex-wrap p-4 rounded-lg border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
-        <Filter size={18} style={{ color: 'var(--color-text-muted)' }} />
+        <Filter size={18} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
 
-        <div className="relative">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-          >
-            <option value="">الحالة</option>
-            <option value="active">نشط</option>
-            <option value="inactive">غير نشط</option>
-            <option value="blocked">محظور</option>
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        {/* Status multi-select */}
+        <MultiSelectFilter
+          label="الحالة"
+          options={[
+            { value: 'active', label: 'نشط' },
+            { value: 'inactive', label: 'غير نشط' },
+            { value: 'blocked', label: 'محظور' },
+          ]}
+          selected={filters.status}
+          onToggle={(v) => toggleFilter('status', v)}
+        />
 
-        <div className="relative">
-          <select
-            value={filters.nationality}
-            onChange={(e) => setFilters({ ...filters, nationality: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-          >
-            <option value="">الجنسية</option>
-            {uniqueNationalities.map(n => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        {/* Nationality multi-select */}
+        <MultiSelectFilter
+          label="الجنسية"
+          options={uniqueNationalities.map(n => ({ value: n, label: n }))}
+          selected={filters.nationality}
+          onToggle={(v) => toggleFilter('nationality', v)}
+        />
 
-        <div className="relative">
-          <select
-            value={filters.primary_city}
-            onChange={(e) => setFilters({ ...filters, primary_city: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-          >
-            <option value="">المدينة</option>
-            {uniqueCities.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        {/* City multi-select */}
+        <MultiSelectFilter
+          label="المدينة"
+          options={uniqueCities.map(c => ({ value: c, label: c }))}
+          selected={filters.primary_city}
+          onToggle={(v) => toggleFilter('primary_city', v)}
+        />
 
-        <div className="relative">
-          <select
-            value={filters.primary_field}
-            onChange={(e) => setFilters({ ...filters, primary_field: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-          >
-            <option value="">المجال</option>
-            {uniqueFields.map(f => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        {/* Field multi-select */}
+        <MultiSelectFilter
+          label="المجال"
+          options={uniqueFields.map(f => ({ value: f, label: f }))}
+          selected={filters.primary_field}
+          onToggle={(v) => toggleFilter('primary_field', v)}
+        />
 
         {hasActiveFilters && (
           <button
-            onClick={() => setFilters({ nationality: '', primary_city: '', primary_field: '', status: '', minCost: '', maxCost: '' })}
+            onClick={() => setFilters({ nationality: [], primary_city: [], primary_field: [], status: [], minCost: '', maxCost: '' })}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all"
             style={{ color: 'var(--color-danger)' }}
           >
@@ -564,11 +687,42 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         </div>
       )}
 
-      {filteredVendors.length > 0 && (
-        <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          عرض {toEnglishNumbers(filteredVendors.length.toString())} من {toEnglishNumbers(vendors.length.toString())} مورد
-        </div>
-      )}
+      {/* Pagination */}
+      {(() => {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return totalPages > 1 ? (
+          <div
+            className="flex items-center justify-between p-4 rounded-lg border"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              السابق
+            </button>
+            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              التالي
+            </button>
+          </div>
+        ) : totalCount > 0 ? (
+          <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            إجمالي: {toEnglishNumbers(totalCount.toString())} مورد
+          </div>
+        ) : null;
+      })()}
 
       {showAddModal && (
         <AddVendorModal
@@ -581,6 +735,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       )}
 
       {showExportModal && (
+        <Suspense fallback={<VendorLazyFallback />}>
         <VendorExportModal
           vendors={selectedVendors.size > 0 ? vendors.filter(v => selectedVendors.has(v.id)) : filteredVendors}
           onClose={() => setShowExportModal(false)}
@@ -589,6 +744,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
             setSelectedVendors(new Set());
           }}
         />
+        </Suspense>
       )}
 
       {showDeleteConfirm && (

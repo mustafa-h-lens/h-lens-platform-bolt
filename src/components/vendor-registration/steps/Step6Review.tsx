@@ -161,7 +161,7 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
               <div className="review-fields">
                 {formData.selected_fields.map((field: SelectedField) => (
                   <span key={field.field_id} className="review-field-tag">
-                    {field.field_name_ar} · {field.rate_from}-{field.rate_to} ر.س/يوم
+                    {field.field_name_ar} · {field.rate_from}-{field.rate_to} ر.س
                   </span>
                 ))}
               </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { formatCurrency } from '../../../lib/formatters';
 import { Modal } from '../../shared/Modal';
 
@@ -25,6 +26,7 @@ interface AddItemModalProps {
 }
 
 export const AddItemModal = ({ projectId, currency, onClose, onSuccess, editItem }: AddItemModalProps) => {
+  const { showError } = useNotification();
   const [categories, setCategories] = useState<ItemCategory[]>([]);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -57,17 +59,17 @@ export const AddItemModal = ({ projectId, currency, onClose, onSuccess, editItem
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('الرجاء إدخال اسم البند');
+      showError('الرجاء إدخال اسم البند');
       return;
     }
 
     if (formData.unit_price <= 0) {
-      alert('الرجاء إدخال سعر صحيح');
+      showError('الرجاء إدخال سعر صحيح');
       return;
     }
 
     if (formData.quantity <= 0) {
-      alert('الرجاء إدخال كمية صحيحة');
+      showError('الرجاء إدخال كمية صحيحة');
       return;
     }
 
@@ -104,7 +106,7 @@ export const AddItemModal = ({ projectId, currency, onClose, onSuccess, editItem
       onClose();
     } catch (error) {
       console.error('Error saving item:', error);
-      alert('حدث خطأ أثناء حفظ البند');
+      showError('حدث خطأ أثناء حفظ البند');
     } finally {
       setSaving(false);
     }

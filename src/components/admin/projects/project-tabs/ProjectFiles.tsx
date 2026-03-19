@@ -64,14 +64,14 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       const filePath = `projects/${projectId}/${Date.now()}_${file.name}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('vendor-images')
+        .from('project-files')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('vendor-images')
+        .from('project-files')
         .getPublicUrl(filePath);
 
       // Determine file category
@@ -114,7 +114,7 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       if (!file) throw new Error('الملف غير موجود');
 
       // Extract storage path from the public URL
-      const bucketName = 'vendor-images';
+      const bucketName = 'project-files';
       const urlParts = file.file_url.split(`/storage/v1/object/public/${bucketName}/`);
       if (urlParts.length === 2) {
         const storagePath = decodeURIComponent(urlParts[1]);
@@ -174,7 +174,7 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
           type="file"
           className="hidden"
           onChange={handleUpload}
-          accept="image/jpeg,image/png,image/webp"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.zip,.rar"
         />
         <button
           onClick={() => fileInputRef.current?.click()}

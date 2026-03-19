@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Plus, Edit2, XCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import type { User, Client } from '../../types/database';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface UserManagementProps {
   onBack: () => void;
@@ -193,6 +194,7 @@ interface UserModalProps {
 }
 
 const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
+  const { showError } = useNotification();
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -246,7 +248,7 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
     } catch (error) {
       console.error('Error saving user:', error);
       const msg = error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ المستخدم';
-      alert(msg);
+      showError(msg);
     } finally {
       setLoading(false);
     }

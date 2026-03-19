@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { supabase } from '../../../lib/supabaseClient';
+import { Toggle } from '../../ui/Toggle';
 
 interface Props {
   formData: VendorFormData;
@@ -175,13 +176,11 @@ export const Step5Financial = ({ formData, updateFormData, errors = {} }: Props)
         </div>
 
         {/* VAT toggle */}
-        <div
-          className={`toggle-wrap ${formData.price_includes_tax ? 'on' : ''}`}
-          onClick={() => updateFormData({ price_includes_tax: !formData.price_includes_tax })}
-        >
-          <span className="toggle-label">السعر يشمل ضريبة القيمة المضافة؟</span>
-          <div className="toggle-sw" />
-        </div>
+        <Toggle
+          checked={!!formData.price_includes_tax}
+          onChange={(checked) => updateFormData({ price_includes_tax: checked })}
+          label="السعر يشمل ضريبة القيمة المضافة؟"
+        />
       </div>
     </>
   );

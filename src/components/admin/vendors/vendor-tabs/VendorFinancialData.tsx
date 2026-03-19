@@ -255,7 +255,7 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
                   onChange={(e) => setFormData({ ...formData, account_number: toEnglishNumbers(e.target.value) })}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
                   dir="ltr"
-                  placeholder="Account Number"
+                  placeholder="رقم الحساب"
                 />
               </div>
             </div>

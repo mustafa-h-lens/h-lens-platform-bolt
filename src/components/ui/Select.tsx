@@ -1,6 +1,4 @@
 import React from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { getTheme, transitions, borderRadius, fontSize } from '../../theme/tokens';
 
 interface SelectOption {
   label: string;
@@ -28,55 +26,21 @@ export const Select: React.FC<SelectProps> = ({
   error,
   className = '',
 }) => {
-  const { isDarkMode } = useTheme();
-  const theme = getTheme(isDarkMode);
-  const [isFocused, setIsFocused] = React.useState(false);
-
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-    width: fullWidth ? '100%' : 'auto',
-  };
-
-  const labelStyles: React.CSSProperties = {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
-    color: theme.text.primary,
-  };
-
-  const selectStyles: React.CSSProperties = {
-    width: '100%',
-    padding: '0.625rem 1rem',
-    fontSize: fontSize.base,
-    color: value ? theme.text.primary : theme.text.secondary,
-    backgroundColor: theme.background.input,
-    border: `1px solid ${error ? theme.status.error.main : isFocused ? theme.border.focus : theme.border.default}`,
-    borderRadius: borderRadius.DEFAULT,
-    outline: 'none',
-    cursor: 'pointer',
-    transition: transitions.DEFAULT,
-    appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'left 1rem center',
-    paddingLeft: '2.5rem',
-  };
-
-  const errorStyles: React.CSSProperties = {
-    fontSize: fontSize.sm,
-    color: theme.status.error.main,
-  };
+  const selectClasses = [
+    'input select',
+    error ? 'input-error' : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <div style={containerStyles} className={className}>
-      {label && <label style={labelStyles}>{label}</label>}
+    <div
+      className={`input-group ${className}`}
+      style={fullWidth ? { width: '100%' } : undefined}
+    >
+      {label && <label className="input-label">{label}</label>}
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        style={selectStyles}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
+        className={selectClasses}
       >
         {placeholder && (
           <option value="" disabled>
@@ -89,7 +53,7 @@ export const Select: React.FC<SelectProps> = ({
           </option>
         ))}
       </select>
-      {error && <span style={errorStyles}>{error}</span>}
+      {error && <span className="input-hint error">{error}</span>}
     </div>
   );
 };

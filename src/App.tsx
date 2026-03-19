@@ -1,20 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { VendorProvider } from './contexts/VendorContext';
-import { Login } from './components/auth/Login';
-import { NewAdminDashboard } from './components/admin/NewAdminDashboard';
-import { ClientDashboard } from './components/client/ClientDashboard';
-import { VendorPortal } from './components/vendor/VendorPortal';
-import { VendorRegistrationForm } from './components/vendor-registration/VendorRegistrationForm';
-import { TermsAndConditions } from './components/legal/TermsAndConditions';
-import { PrivacyPolicy } from './components/legal/PrivacyPolicy';
-import SupplierAuth from './components/auth/SupplierAuth';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
 import { supabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
+
+// ─────────────────────────────────────────────────────────────
+// LAZY-LOADED PAGE COMPONENTS (code splitting)
+// ─────────────────────────────────────────────────────────────
+const NewAdminDashboard = lazy(() =>
+  import('./components/admin/NewAdminDashboard').then(m => ({ default: m.NewAdminDashboard }))
+);
+const ClientDashboard = lazy(() =>
+  import('./components/client/ClientDashboard').then(m => ({ default: m.ClientDashboard }))
+);
+const VendorPortal = lazy(() =>
+  import('./components/vendor/VendorPortal').then(m => ({ default: m.VendorPortal }))
+);
+const VendorRegistrationForm = lazy(() =>
+  import('./components/vendor-registration/VendorRegistrationForm').then(m => ({ default: m.VendorRegistrationForm }))
+);
+const Login = lazy(() =>
+  import('./components/auth/Login').then(m => ({ default: m.Login }))
+);
+const SupplierAuth = lazy(() => import('./components/auth/SupplierAuth'));
+const TermsAndConditions = lazy(() =>
+  import('./components/legal/TermsAndConditions').then(m => ({ default: m.TermsAndConditions }))
+);
+const PrivacyPolicy = lazy(() =>
+  import('./components/legal/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy }))
+);
 
 // ─────────────────────────────────────────────────────────────
 // ROUTE CONSTANTS
@@ -78,6 +96,41 @@ function getStoredVendorSession(): { vendor: VendorData; session: VendorSession 
 function navigate(path: string) {
   window.history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
+}
+
+// ─────────────────────────────────────────────────────────────
+// LOADING FALLBACK FOR SUSPENSE
+// ─────────────────────────────────────────────────────────────
+function LoadingFallback() {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f9fafb',
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column' as const,
+        alignItems: 'center',
+        gap: '12px',
+      }}>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          border: '3px solid #e5e7eb',
+          borderTopColor: '#6366f1',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        <span style={{ color: '#6b7280', fontSize: '15px', fontFamily: 'sans-serif' }}>
+          جاري التحميل...
+        </span>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    </div>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -252,7 +305,11 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <NotificationProvider>
-          <AppContent />
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <AppContent />
+            </Suspense>
+          </ErrorBoundary>
         </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>

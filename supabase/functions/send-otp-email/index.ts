@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 import { createTransport } from "npm:nodemailer@6.9.8";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
@@ -13,9 +13,11 @@ interface OTPRequest {
   deviceInfo?: string;
 }
 
-// Generate 4-digit OTP
+// Generate 6-digit OTP using cryptographically secure random
 function generateOTP(): string {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  return (100000 + (array[0] % 900000)).toString();
 }
 
 // Email template
@@ -27,7 +29,7 @@ function getEmailTemplate(
   loginUrl: string,
   vendorName: string,
 ): string {
-  const digits = otp.padStart(4, "0").slice(0, 4).split("");
+  const digits = otp.padStart(6, "0").slice(0, 6).split("");
   const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
   const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
@@ -85,21 +87,32 @@ function getEmailTemplate(
             <td style="padding:0 32px;text-align:center;" dir="ltr">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;direction:ltr;">
                 <tr dir="ltr">
-                  <td class="otp" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
-                  <td class="sp" width="10" style="width:10px;"></td>
-                  <td class="otp" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
-                  <td class="sp" width="10" style="width:10px;"></td>
-                  <td class="otp" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[2]}</td>
-                  <td class="sp" width="10" style="width:10px;"></td>
-                  <td class="otp" align="center" valign="middle" width="58" height="64" style="width:58px;height:64px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:28px;font-weight:700;color:#60a5fa;">${digits[3]}</td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
+                  <td class="sp" width="8" style="width:8px;"></td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
+                  <td class="sp" width="8" style="width:8px;"></td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[2]}</td>
+                  <td class="sp" width="8" style="width:8px;"></td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[3]}</td>
+                  <td class="sp" width="8" style="width:8px;"></td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[4]}</td>
+                  <td class="sp" width="8" style="width:8px;"></td>
+                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[5]}</td>
                 </tr>
               </table>
             </td>
           </tr>
 
+          <!-- Copy OTP Button -->
+          <tr>
+            <td style="padding:16px 32px 0;text-align:center;">
+              <a id="copyBtn" href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText('${otp}');var b=document.getElementById('copyBtn');if(b){b.innerText='✅ تم النسخ';setTimeout(function(){b.innerHTML='&#128203; نسخ الرمز'},2000)};return false;" style="display:inline-block;padding:8px 24px;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:8px;font-size:13px;font-weight:600;color:#60a5fa;text-decoration:none;cursor:pointer;font-family:'Cairo',Arial,sans-serif;">&#128203; نسخ الرمز</a>
+            </td>
+          </tr>
+
           <!-- Expiry -->
           <tr>
-            <td style="padding:18px 32px 0;text-align:center;">
+            <td style="padding:14px 32px 0;text-align:center;">
               <p style="font-size:13px;color:rgba(200,215,255,0.5);margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:rgba(200,215,255,0.8);">10 دقائق</strong></p>
             </td>
           </tr>
@@ -259,6 +272,27 @@ Deno.serve(async (req: Request) => {
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // Daily cap: max 10 OTPs per email per 24 hours
+    const { count: dailyCount } = await supabase
+      .from("otp_codes")
+      .select("id", { count: "exact", head: true })
+      .eq("email", normalizedEmail)
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+    if (dailyCount && dailyCount >= 10) {
+      return new Response(
+        JSON.stringify({ error: "تم تجاوز الحد الأقصى لطلبات رمز التحقق اليومية. يرجى المحاولة غداً" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Invalidate all existing unused OTPs for this email
+    await supabase
+      .from("otp_codes")
+      .update({ used: true })
+      .eq("email", normalizedEmail)
+      .eq("used", false);
 
     // Generate OTP
     const otp = generateOTP();

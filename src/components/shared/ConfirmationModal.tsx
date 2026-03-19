@@ -23,62 +23,46 @@ export const ConfirmationModal = ({
 }: ConfirmationModalProps) => {
   if (!isOpen) return null;
 
-  const getIconColor = () => {
-    switch (type) {
-      case 'danger':
-        return 'text-blue-700';
-      case 'warning':
-        return 'text-blue-600';
-      case 'info':
-        return 'text-blue-500';
-      default:
-        return 'text-blue-600';
-    }
-  };
+  const iconColorClass =
+    type === 'danger' ? 'ci-red' :
+    type === 'warning' ? 'ci-amber' :
+    'ci-blue';
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="modal-bg" onClick={onCancel}>
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-        onClick={onCancel}
-      />
-
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-scaleIn">
-        <div className="p-6">
+        className="modal"
+        style={{ maxWidth: '28rem' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ padding: '24px' }}>
           <button
             onClick={onCancel}
-            className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="modal-close"
+            style={{ position: 'absolute', top: 16, left: 16 }}
             aria-label="إغلاق"
           >
-            <X className="w-5 h-5" />
+            <X size={20} />
           </button>
 
-          <div className="flex flex-col items-center text-center">
-            <div className="p-3 rounded-full mb-4"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 15%, white)' }}>
-              <AlertTriangle className={`w-8 h-8 ${getIconColor()}`} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div className={`card-icon ${iconColorClass}`} style={{ width: 56, height: 56, marginBottom: 16 }}>
+              <AlertTriangle size={28} />
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 mb-2" dir="rtl">
+            <h3 className="modal-ttl" style={{ marginBottom: 8 }} dir="rtl">
               {title}
             </h3>
 
-            <p className="text-slate-600 mb-6" dir="rtl">
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }} dir="rtl">
               {message}
             </p>
 
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={onCancel}
-                className="flex-1 px-4 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium"
-              >
+            <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onCancel}>
                 {cancelText}
               </button>
-              <button
-                onClick={onConfirm}
-                className="flex-1 px-4 py-2.5 text-white rounded-lg transition-colors font-medium"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={onConfirm}>
                 {confirmText}
               </button>
             </div>

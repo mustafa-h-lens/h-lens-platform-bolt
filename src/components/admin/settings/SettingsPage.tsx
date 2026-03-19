@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Sparkles, Tag, FileText, Building2, Shield, ChevronDown, Mail } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
 import { ServiceItemsCatalog } from '../ServiceItemsCatalog';
 import { ItemCategoriesManagement } from '../projects/ItemCategoriesManagement';
 import { ProjectStatusSettings } from './ProjectStatusSettings';
@@ -111,6 +112,20 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => {
+  const { profile } = useAuth();
+  const isDev = import.meta.env.DEV;
+  const isSuperAdmin = profile?.role === 'super_admin';
+
+  const visibleTabGroups = useMemo(() => {
+    return tabGroups.filter(group => {
+      // Only show AI group for super_admin in development mode
+      if (group.id === 'ai-group') {
+        return isDev && isSuperAdmin;
+      }
+      return true;
+    });
+  }, [isDev, isSuperAdmin]);
+
   const [activeTab, setActiveTab] = useState<TabId>(
     initialTab && ALL_TAB_IDS.includes(initialTab) ? initialTab as TabId : 'items-catalog'
   );
@@ -157,7 +172,7 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
         <div className="flex flex-col md:flex-row">
           <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-slate-800">
             <nav className="p-4 space-y-2">
-              {tabGroups.map((group) => {
+              {visibleTabGroups.map((group) => {
                 const GroupIcon = group.icon;
                 const isExpanded = expandedGroups.has(group.id);
 
@@ -219,7 +234,7 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
           </div>
 
           <div className="flex-1 p-6 bg-white dark:bg-dark-bg">
-            {tabGroups.flatMap(g => g.tabs).map(tab => (
+            {visibleTabGroups.flatMap(g => g.tabs).map(tab => (
               activeTab === tab.id && <tab.component key={tab.id} />
             ))}
           </div>

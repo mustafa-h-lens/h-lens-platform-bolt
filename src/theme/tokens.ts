@@ -1,8 +1,13 @@
+// ═══════════════════════════════════════════════════════════
+//  HALF LENS — Design System Tokens (aligned with DS v2.0)
+//  Source of truth: Design System/half-lens-ds-v3.html
+// ═══════════════════════════════════════════════════════════
+
 export const lightTheme = {
   primary: {
-    main: '#3b82f6',
-    hover: '#2563eb',
-    active: '#1d4ed8',
+    main: '#2563eb',
+    hover: '#1d4ed8',
+    active: '#1e40af',
     light: '#dbeafe',
     dark: '#1e40af',
   },
@@ -15,32 +20,50 @@ export const lightTheme = {
   },
   status: {
     success: {
-      main: '#10b981',
-      light: '#d1fae5',
+      main: '#059669',
+      light: 'rgba(5,150,105,0.07)',
       dark: '#047857',
+      text: '#047857',
+      border: 'rgba(5,150,105,0.2)',
     },
     warning: {
-      main: '#f59e0b',
-      light: '#fef3c7',
-      dark: '#d97706',
+      main: '#d97706',
+      light: 'rgba(217,119,6,0.07)',
+      dark: '#b45309',
+      text: '#b45309',
+      border: 'rgba(217,119,6,0.2)',
     },
     error: {
-      main: '#ef4444',
-      light: '#fee2e2',
-      dark: '#dc2626',
+      main: '#dc2626',
+      light: 'rgba(220,38,38,0.07)',
+      dark: '#b91c1c',
+      text: '#b91c1c',
+      border: 'rgba(220,38,38,0.2)',
     },
     info: {
-      main: '#06b6d4',
-      light: '#cffafe',
-      dark: '#0891b2',
+      main: '#0891b2',
+      light: 'rgba(8,145,178,0.07)',
+      dark: '#0e7490',
+      text: '#0e7490',
+      border: 'rgba(8,145,178,0.2)',
+    },
+    purple: {
+      main: '#7c3aed',
+      light: 'rgba(124,58,237,0.07)',
+      dark: '#6d28d9',
+      text: '#6d28d9',
+      border: 'rgba(124,58,237,0.2)',
     },
   },
   background: {
-    page: '#f8fafc',
-    card: '#ffffff',
-    hover: '#f1f5f9',
-    filter: '#f8fafc',
+    page: '#f4f6fb',
+    card: 'rgba(255,255,255,0.9)',
+    hover: '#f8faff',
+    filter: '#eef1f8',
     input: '#ffffff',
+    surface: '#ffffff',
+    elevated: '#ffffff',
+    glass: 'rgba(255,255,255,0.8)',
   },
   text: {
     primary: '#0f172a',
@@ -50,24 +73,35 @@ export const lightTheme = {
     inverse: '#ffffff',
   },
   border: {
-    default: '#e2e8f0',
-    hover: '#cbd5e1',
-    focus: '#3b82f6',
-    divider: '#f1f5f9',
+    default: 'rgba(0,0,0,0.1)',
+    hover: 'rgba(0,0,0,0.15)',
+    focus: '#2563eb',
+    divider: 'rgba(0,0,0,0.06)',
+    subtle: 'rgba(0,0,0,0.06)',
+    strong: 'rgba(0,0,0,0.22)',
+    accent: 'rgba(37,99,235,0.35)',
   },
   shadow: {
-    sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-    DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-    md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-    lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+    sm: '0 1px 3px rgba(0,0,0,0.08)',
+    DEFAULT: '0 1px 3px rgba(0,0,0,0.08)',
+    md: '0 4px 16px rgba(0,0,0,0.1)',
+    lg: '0 8px 32px rgba(0,0,0,0.12)',
+    glow: '0 0 20px rgba(37,99,235,0.12), 0 0 60px rgba(37,99,235,0.05)',
+    card: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05)',
+  },
+  accent: {
+    main: '#2563eb',
+    light: '#3b82f6',
+    lighter: '#1d4ed8',
+    glow: 'rgba(37,99,235,0.15)',
   },
 };
 
 export const darkTheme = {
   primary: {
-    main: '#60a5fa',
+    main: '#2563eb',
     hover: '#3b82f6',
-    active: '#2563eb',
+    active: '#1d4ed8',
     light: '#1e3a5f',
     dark: '#93c5fd',
   },
@@ -80,51 +114,80 @@ export const darkTheme = {
   },
   status: {
     success: {
-      main: '#34d399',
-      light: '#064e3b',
+      main: '#10b981',
+      light: 'rgba(16,185,129,0.1)',
       dark: '#6ee7b7',
+      text: '#34d399',
+      border: 'rgba(16,185,129,0.25)',
     },
     warning: {
-      main: '#fbbf24',
-      light: '#78350f',
+      main: '#f59e0b',
+      light: 'rgba(245,158,11,0.1)',
       dark: '#fcd34d',
+      text: '#fbbf24',
+      border: 'rgba(245,158,11,0.25)',
     },
     error: {
-      main: '#f87171',
-      light: '#7f1d1d',
+      main: '#ef4444',
+      light: 'rgba(239,68,68,0.1)',
       dark: '#fca5a5',
+      text: '#f87171',
+      border: 'rgba(239,68,68,0.25)',
     },
     info: {
-      main: '#22d3ee',
-      light: '#164e63',
+      main: '#06b6d4',
+      light: 'rgba(6,182,212,0.1)',
       dark: '#67e8f9',
+      text: '#22d3ee',
+      border: 'rgba(6,182,212,0.25)',
+    },
+    purple: {
+      main: '#8b5cf6',
+      light: 'rgba(139,92,246,0.1)',
+      dark: '#c4b5fd',
+      text: '#a78bfa',
+      border: 'rgba(139,92,246,0.25)',
     },
   },
   background: {
-    page: '#0f172a',
-    card: '#1e293b',
-    hover: '#334155',
-    filter: '#1a2332',
-    input: '#1e293b',
+    page: '#050d1e',
+    card: 'rgba(255,255,255,0.03)',
+    hover: 'rgba(255,255,255,0.06)',
+    filter: '#0d2040',
+    input: 'rgba(255,255,255,0.03)',
+    surface: '#071428',
+    elevated: '#0a1a35',
+    glass: 'rgba(7,20,45,0.75)',
   },
   text: {
-    primary: '#f1f5f9',
-    secondary: '#cbd5e1',
-    muted: '#94a3b8',
-    disabled: '#475569',
-    inverse: '#0f172a',
+    primary: '#f0f4ff',
+    secondary: 'rgba(200,215,255,0.65)',
+    muted: 'rgba(150,175,230,0.4)',
+    disabled: 'rgba(100,130,200,0.25)',
+    inverse: '#050d1e',
   },
   border: {
-    default: '#334155',
-    hover: '#475569',
-    focus: '#60a5fa',
-    divider: '#1e293b',
+    default: 'rgba(255,255,255,0.09)',
+    hover: 'rgba(255,255,255,0.14)',
+    focus: '#2563eb',
+    divider: 'rgba(255,255,255,0.05)',
+    subtle: 'rgba(255,255,255,0.05)',
+    strong: 'rgba(255,255,255,0.22)',
+    accent: 'rgba(37,99,235,0.4)',
   },
   shadow: {
-    sm: '0 1px 2px 0 rgb(0 0 0 / 0.3)',
-    DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4)',
-    md: '0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4)',
-    lg: '0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4)',
+    sm: '0 1px 3px rgba(0,0,0,0.4)',
+    DEFAULT: '0 1px 3px rgba(0,0,0,0.4)',
+    md: '0 4px 16px rgba(0,0,0,0.5)',
+    lg: '0 8px 32px rgba(0,0,0,0.6)',
+    glow: '0 0 20px rgba(37,99,235,0.2), 0 0 60px rgba(37,99,235,0.07)',
+    card: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.03)',
+  },
+  accent: {
+    main: '#2563eb',
+    light: '#3b82f6',
+    lighter: '#60a5fa',
+    glow: 'rgba(37,99,235,0.25)',
   },
 };
 
@@ -141,13 +204,15 @@ export const spacing = {
   lg: '1.5rem',     // 24px
   xl: '2rem',       // 32px
   '2xl': '3rem',    // 48px
+  '3xl': '4rem',    // 64px
 };
 
 export const borderRadius = {
-  sm: '0.25rem',    // 4px
-  DEFAULT: '0.5rem', // 8px
-  md: '0.75rem',    // 12px
-  lg: '1rem',       // 16px
+  sm: '6px',
+  DEFAULT: '10px',
+  md: '10px',
+  lg: '14px',
+  xl: '20px',
   full: '9999px',
 };
 
@@ -168,8 +233,13 @@ export const fontWeight = {
   bold: '700',
 };
 
+export const fontFamily = {
+  main: "'Cairo', sans-serif",
+  mono: "'JetBrains Mono', monospace",
+};
+
 export const transitions = {
-  fast: '150ms ease-in-out',
-  DEFAULT: '200ms ease-in-out',
-  slow: '300ms ease-in-out',
+  fast: '0.15s cubic-bezier(0.4,0,0.2,1)',
+  DEFAULT: '0.25s cubic-bezier(0.4,0,0.2,1)',
+  slow: '0.3s cubic-bezier(0.4,0,0.2,1)',
 };

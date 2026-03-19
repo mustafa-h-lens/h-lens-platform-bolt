@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
@@ -32,6 +32,39 @@ Deno.serve(async (req: Request) => {
             ...corsHeaders,
             'Content-Type': 'application/json',
           },
+        }
+      );
+    }
+
+    // Validate documentType
+    const validDocTypes = ['id', 'vehicle_registration'];
+    if (!validDocTypes.includes(documentType)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid documentType. Must be one of: ${validDocTypes.join(', ')}` }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // SSRF protection: only allow HTTPS URLs from known domains
+    try {
+      const parsedUrl = new URL(imageUrl);
+      if (parsedUrl.protocol !== 'https:') {
+        throw new Error('Only HTTPS URLs are allowed');
+      }
+      const supabaseHost = Deno.env.get("SUPABASE_URL");
+      const allowedHosts = supabaseHost ? [new URL(supabaseHost).hostname] : [];
+      if (allowedHosts.length > 0 && !allowedHosts.includes(parsedUrl.hostname)) {
+        throw new Error('URL domain not allowed');
+      }
+    } catch (urlError) {
+      return new Response(
+        JSON.stringify({ error: 'عنوان URL غير صالح أو غير مسموح به' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
@@ -191,12 +224,13 @@ Deno.serve(async (req: Request) => {
         },
       }
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error extracting document data:', error);
+    const errMsg = error instanceof Error ? error.message : 'Failed to extract data from image';
     return new Response(
       JSON.stringify({
-        error: error.message || 'Failed to extract data from image',
-        details: error.toString(),
+        error: errMsg,
+        details: String(error),
       }),
       {
         status: 500,

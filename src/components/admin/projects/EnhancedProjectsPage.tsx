@@ -45,6 +45,9 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
   const [managers, setManagers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [pageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
   const [filters, setFilters] = useState({
     status: '',
     client: '',
@@ -56,11 +59,18 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
   });
   useEffect(() => {
     loadData();
-  }, []);
+  }, [page]);
+
+  // Reset page on filter/search change
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, filters]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
       const [projectsRes, clientsRes, managersRes] = await Promise.all([
         supabase
           .from('projects')
@@ -76,8 +86,9 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
             currency,
             client:clients(id, name, client_image),
             project_manager:users!project_manager_id(full_name)
-          `)
-          .order('created_at', { ascending: false }),
+          `, { count: 'exact' })
+          .order('created_at', { ascending: false })
+          .range(from, to),
         supabase.from('clients').select('id, name').order('name'),
         supabase.from('users').select('id, full_name').order('full_name'),
       ]);
@@ -87,6 +98,7 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       if (managersRes.error) throw managersRes.error;
 
       setProjects(projectsRes.data as any || []);
+      setTotalCount(projectsRes.count || 0);
       setClients(clientsRes.data || []);
       setManagers(managersRes.data || []);
     } catch (error) {
@@ -561,11 +573,42 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
         </div>
       )}
 
-      {filteredProjects.length > 0 && (
-        <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          عرض {toEnglishNumbers(filteredProjects.length.toString())} من {toEnglishNumbers(projects.length.toString())} مشروع
-        </div>
-      )}
+      {/* Pagination */}
+      {(() => {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return totalPages > 1 ? (
+          <div
+            className="flex items-center justify-between p-4 rounded-lg border"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              السابق
+            </button>
+            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              التالي
+            </button>
+          </div>
+        ) : totalCount > 0 ? (
+          <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+            إجمالي: {toEnglishNumbers(totalCount.toString())} مشروع
+          </div>
+        ) : null;
+      })()}
     </div>
   );
 };

@@ -120,6 +120,9 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
         {/* Profile Image Upload */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> الصورة الشخصية</label>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>📸</span> ملاحظة: الصورة تكون بخلفية بيضاء
+          </div>
           <div
             className={`upload-zone ${profileDragging ? 'dragover' : ''}`}
             onDragOver={(e) => e.preventDefault()}

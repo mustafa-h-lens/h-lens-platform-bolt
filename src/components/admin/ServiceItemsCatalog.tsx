@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Plus, Edit2, Trash2, ArrowLeft, Search } from 'lucide-react';
 import type { ServiceItem } from '../../types/database';
+import { useNotification } from '../../contexts/NotificationContext';
 
 interface ServiceItemsCatalogProps {
   onBack?: () => void;
@@ -190,6 +191,7 @@ interface ItemModalProps {
 }
 
 const ItemModal = ({ item, onClose, onSuccess }: ItemModalProps) => {
+  const { showError } = useNotification();
   const [formData, setFormData] = useState({
     item_number: item?.item_number || '',
     name: item?.name || '',
@@ -240,7 +242,7 @@ const ItemModal = ({ item, onClose, onSuccess }: ItemModalProps) => {
       onSuccess();
     } catch (error: any) {
       console.error('Error saving item:', error);
-      alert(error.message || 'حدث خطأ أثناء حفظ البند');
+      showError(error.message || 'حدث خطأ أثناء حفظ البند');
     } finally {
       setLoading(false);
     }

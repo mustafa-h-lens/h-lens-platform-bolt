@@ -1,7 +1,5 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { getTheme, borderRadius, fontSize } from '../../theme/tokens';
 import { Button } from './Button';
 
 export interface FilterOption {
@@ -27,55 +25,26 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onReset,
   className = '',
 }) => {
-  const { isDarkMode } = useTheme();
-  const theme = getTheme(isDarkMode);
-
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    padding: '1rem',
-    backgroundColor: theme.background.filter,
-    border: `1px solid ${theme.border.default}`,
-    borderRadius: borderRadius.DEFAULT,
-    marginBottom: '1.5rem',
-    flexWrap: 'wrap',
-  };
-
-  const filterGroupStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-  };
-
-  const labelStyles: React.CSSProperties = {
-    fontSize: fontSize.sm,
-    fontWeight: '500',
-    color: theme.text.secondary,
-    whiteSpace: 'nowrap',
-  };
-
-  const selectStyles: React.CSSProperties = {
-    padding: '0.5rem 0.75rem',
-    fontSize: fontSize.sm,
-    color: theme.text.primary,
-    backgroundColor: theme.background.input,
-    border: `1px solid ${theme.border.default}`,
-    borderRadius: borderRadius.DEFAULT,
-    outline: 'none',
-    cursor: 'pointer',
-    minWidth: '150px',
-  };
-
   return (
-    <div style={containerStyles} className={className}>
+    <div
+      className={`card ${className}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '1rem',
+        padding: '12px 16px',
+        marginBottom: '1.5rem',
+        flexWrap: 'wrap',
+      }}
+    >
       {filters.map((filter, index) => (
-        <div key={index} style={filterGroupStyles}>
-          <label style={labelStyles}>{filter.label}:</label>
+        <div key={index} className="input-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+          <label className="input-label" style={{ whiteSpace: 'nowrap' }}>{filter.label}:</label>
           <select
             value={filter.value}
             onChange={(e) => filter.onChange(e.target.value)}
-            style={selectStyles}
+            className="input select"
+            style={{ minWidth: '150px', height: '34px', padding: '0 12px 0 32px' }}
           >
             {filter.options.map((option) => (
               <option key={option.value} value={option.value}>

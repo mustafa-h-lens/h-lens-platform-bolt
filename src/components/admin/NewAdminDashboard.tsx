@@ -1,21 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
 import { ProjectsList } from './projects/ProjectsList';
-import { UserManagement } from './UserManagement';
-import { ClientsPage } from './clients/ClientsPage';
-import { VendorsPage } from './vendors/VendorsPage';
-import { SettingsPage } from './settings/SettingsPage';
-import { ClientDetails } from './clients/ClientDetails';
-import { ImprovedProjectDetails } from './projects/ImprovedProjectDetails';
-import { EnhancedProjectsPage } from './projects/EnhancedProjectsPage';
-import { CreateProjectModal } from './projects/CreateProjectModal';
 import { formatNumber, formatCurrency } from '../../lib/formatters';
-import { ExpensesPage } from './expenses/ExpensesPage';
-import { ActivityLogPage } from './ActivityLogPage';
-import { AdminSuggestions } from './suggestions/AdminSuggestions';
+
+// Lazy-loaded section components
+const UserManagement = lazy(() => import('./UserManagement').then(m => ({ default: m.UserManagement })));
+const ClientsPage = lazy(() => import('./clients/ClientsPage').then(m => ({ default: m.ClientsPage })));
+const VendorsPage = lazy(() => import('./vendors/VendorsPage').then(m => ({ default: m.VendorsPage })));
+const SettingsPage = lazy(() => import('./settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const ClientDetails = lazy(() => import('./clients/ClientDetails').then(m => ({ default: m.ClientDetails })));
+const ImprovedProjectDetails = lazy(() => import('./projects/ImprovedProjectDetails').then(m => ({ default: m.ImprovedProjectDetails })));
+const EnhancedProjectsPage = lazy(() => import('./projects/EnhancedProjectsPage').then(m => ({ default: m.EnhancedProjectsPage })));
+const CreateProjectModal = lazy(() => import('./projects/CreateProjectModal').then(m => ({ default: m.CreateProjectModal })));
+const ExpensesPage = lazy(() => import('./expenses/ExpensesPage').then(m => ({ default: m.ExpensesPage })));
+const ActivityLogPage = lazy(() => import('./ActivityLogPage').then(m => ({ default: m.ActivityLogPage })));
+const AdminSuggestions = lazy(() => import('./suggestions/AdminSuggestions').then(m => ({ default: m.AdminSuggestions })));
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400 text-lg">
+    جاري التحميل...
+  </div>
+);
 
 const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity', 'suggestions'];
 
@@ -192,13 +200,15 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
-            <ImprovedProjectDetails
-              projectId={selectedProjectId}
-              onBack={() => { setSelectedProjectId(null); setActiveSubTab(null); }}
-              onViewVendor={handleViewVendor}
-              initialTab={activeSubTab}
-              onTabChange={setActiveSubTab}
-            />
+            <Suspense fallback={<LazyFallback />}>
+              <ImprovedProjectDetails
+                projectId={selectedProjectId}
+                onBack={() => { setSelectedProjectId(null); setActiveSubTab(null); }}
+                onViewVendor={handleViewVendor}
+                initialTab={activeSubTab}
+                onTabChange={setActiveSubTab}
+              />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -219,7 +229,9 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
-            <UserManagement onBack={() => setCurrentPage('dashboard')} />
+            <Suspense fallback={<LazyFallback />}>
+              <UserManagement onBack={() => setCurrentPage('dashboard')} />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -240,12 +252,14 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
-            <VendorsPage
-              initialVendorId={selectedVendorId}
-              onVendorSelect={setSelectedVendorId}
-              initialTab={activeSubTab}
-              onTabChange={setActiveSubTab}
-            />
+            <Suspense fallback={<LazyFallback />}>
+              <VendorsPage
+                initialVendorId={selectedVendorId}
+                onVendorSelect={setSelectedVendorId}
+                initialTab={activeSubTab}
+                onTabChange={setActiveSubTab}
+              />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -266,7 +280,9 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto bg-slate-50 dark:bg-dark-bg">
-            <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
+            <Suspense fallback={<LazyFallback />}>
+              <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -287,7 +303,9 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
-            <ActivityLogPage />
+            <Suspense fallback={<LazyFallback />}>
+              <ActivityLogPage />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -308,7 +326,9 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
-            <AdminSuggestions />
+            <Suspense fallback={<LazyFallback />}>
+              <AdminSuggestions />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -330,20 +350,22 @@ export const NewAdminDashboard = () => {
           <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
             {mobileMenuButton}
             <main className="flex-1 overflow-auto">
-              <ClientDetails
-                clientId={selectedClientId}
-                onBack={() => {
-                  setSelectedClientId(null);
-                  setClientView(null);
-                  setActiveSubTab(null);
-                }}
-                onViewProject={(projectId) => {
-                  setSelectedProjectId(projectId);
-                  setActiveSubTab(null);
-                }}
-                initialTab={activeSubTab}
-                onTabChange={setActiveSubTab}
-              />
+              <Suspense fallback={<LazyFallback />}>
+                <ClientDetails
+                  clientId={selectedClientId}
+                  onBack={() => {
+                    setSelectedClientId(null);
+                    setClientView(null);
+                    setActiveSubTab(null);
+                  }}
+                  onViewProject={(projectId) => {
+                    setSelectedProjectId(projectId);
+                    setActiveSubTab(null);
+                  }}
+                  initialTab={activeSubTab}
+                  onTabChange={setActiveSubTab}
+                />
+              </Suspense>
             </main>
           </div>
         </div>
@@ -363,11 +385,13 @@ export const NewAdminDashboard = () => {
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
-            <ClientsPage
-              onViewClient={(clientId) => {
-                setSelectedClientId(clientId);
-              }}
-            />
+            <Suspense fallback={<LazyFallback />}>
+              <ClientsPage
+                onViewClient={(clientId) => {
+                  setSelectedClientId(clientId);
+                }}
+              />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -538,32 +562,38 @@ export const NewAdminDashboard = () => {
 
         {currentPage === 'projects' && (
   <div className="space-y-6">
-    <EnhancedProjectsPage
-      onSelectProject={setSelectedProjectId}
-      onCreateProject={() => setShowCreateProjectModal(true)}
-    />
+    <Suspense fallback={<LazyFallback />}>
+      <EnhancedProjectsPage
+        onSelectProject={setSelectedProjectId}
+        onCreateProject={() => setShowCreateProjectModal(true)}
+      />
+    </Suspense>
   </div>
 )}
 
 {currentPage === 'expenses' && (
   <div className="space-y-6">
-    <ExpensesPage onViewProject={setSelectedProjectId} />
+    <Suspense fallback={<LazyFallback />}>
+      <ExpensesPage onViewProject={setSelectedProjectId} />
+    </Suspense>
   </div>
 )}
         </main>
       </div>
 
       {showCreateProjectModal && (
-        <CreateProjectModal
-          onClose={() => setShowCreateProjectModal(false)}
-          onSuccess={() => {
-            setShowCreateProjectModal(false);
-            if (reloadProjectsCallback) {
-              reloadProjectsCallback();
-            }
-            loadStats();
-          }}
-        />
+        <Suspense fallback={<LazyFallback />}>
+          <CreateProjectModal
+            onClose={() => setShowCreateProjectModal(false)}
+            onSuccess={() => {
+              setShowCreateProjectModal(false);
+              if (reloadProjectsCallback) {
+                reloadProjectsCallback();
+              }
+              loadStats();
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

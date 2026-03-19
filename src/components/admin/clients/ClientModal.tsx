@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import type { Client } from '../../../types/database';
 import { Modal } from '../../shared/Modal';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
@@ -14,6 +15,7 @@ interface ClientModalProps {
 
 export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) => {
   const { user } = useAuth();
+  const { showError } = useNotification();
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -52,12 +54,12 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
     if (!file) return;
 
     if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
-      alert('يرجى اختيار صورة بصيغة JPG أو PNG فقط');
+      showError('يرجى اختيار صورة بصيغة JPG أو PNG فقط');
       return;
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      alert('حجم الصورة يجب أن يكون أقل من 3 ميجابايت');
+      showError('حجم الصورة يجب أن يكون أقل من 3 ميجابايت');
       return;
     }
 
@@ -120,7 +122,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
       setShowCropModal(false);
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('حدث خطأ أثناء رفع الصورة');
+      showError('حدث خطأ أثناء رفع الصورة');
     } finally {
       setUploadingImage(false);
     }
@@ -157,7 +159,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
       onClose();
     } catch (error) {
       console.error('Error saving client:', error);
-      alert('حدث خطأ أثناء حفظ بيانات العميل');
+      showError('حدث خطأ أثناء حفظ بيانات العميل');
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
-import { FileText, Plus, Trash2, Save, ExternalLink } from 'lucide-react';
+import { FileText, Plus, Trash2, Save, ExternalLink, History, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 
 interface Section {
@@ -16,6 +16,15 @@ interface Section {
 interface TermsContent {
   lastUpdated: string;
   sections: Section[];
+}
+
+interface VersionRecord {
+  id: string;
+  version: string;
+  is_active: boolean;
+  content_ar: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const TermsSettings = () => {
@@ -32,15 +41,18 @@ export const TermsSettings = () => {
     sections: []
   });
   const [currentVersion, setCurrentVersion] = useState(1);
+  const [versionHistory, setVersionHistory] = useState<VersionRecord[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     loadTerms();
+    loadVersionHistory();
   }, []);
 
   async function loadTerms() {
     try {
       const { data, error } = await supabase
-        .from('legal_pages')
+        .from('terms_and_privacy_settings')
         .select('*')
         .eq('type', 'terms')
         .eq('is_active', true)
@@ -49,8 +61,17 @@ export const TermsSettings = () => {
       if (error) throw error;
 
       if (data) {
-        setContent(data.content as TermsContent);
-        setCurrentVersion(data.version);
+        try {
+          const parsed = JSON.parse(data.content_ar);
+          setContent(parsed as TermsContent);
+        } catch {
+          // Legacy plain-text content — wrap it in sections format
+          setContent({
+            lastUpdated: data.updated_at || '',
+            sections: [{ id: 'legacy', icon: '📄', title: 'الشروط والأحكام', body: data.content_ar }]
+          });
+        }
+        setCurrentVersion(parseInt(data.version) || 1);
       }
     } catch (error) {
       console.error('Error loading terms:', error);
@@ -60,40 +81,78 @@ export const TermsSettings = () => {
     }
   }
 
+  async function loadVersionHistory() {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('terms_and_privacy_settings')
+        .select('id, version, is_active, content_ar, created_at, updated_at')
+        .eq('type', 'terms')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setVersionHistory(data || []);
+    } catch (error) {
+      console.error('Error loading version history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
+
+  function handleLoadVersion(record: VersionRecord) {
+    const confirmed = window.confirm('سيتم استبدال المحتوى الحالي بمحتوى هذا الإصدار. هل تريد المتابعة؟ (التغييرات غير المحفوظة ستضيع)');
+    if (!confirmed) return;
+
+    try {
+      const parsed = JSON.parse(record.content_ar);
+      setContent(parsed as TermsContent);
+      showNotification(`تم تحميل محتوى الإصدار ${record.version}`, 'success');
+    } catch {
+      setContent({
+        lastUpdated: record.updated_at || '',
+        sections: [{ id: 'legacy', icon: '\u{1F4C4}', title: 'الشروط والأحكام', body: record.content_ar }]
+      });
+      showNotification(`تم تحميل محتوى الإصدار ${record.version}`, 'success');
+    }
+  }
+
   async function handleSave() {
     if (!user) return;
 
     setSaving(true);
     try {
+      // Deactivate old versions
       await supabase
-        .from('legal_pages')
+        .from('terms_and_privacy_settings')
         .update({ is_active: false })
         .eq('type', 'terms');
 
       const newVersion = currentVersion + 1;
+      const updatedContent: TermsContent = {
+        ...content,
+        lastUpdated: toEnglishNumbers(new Date().toLocaleDateString('ar-EG', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }))
+      };
+
       const { error } = await supabase
-        .from('legal_pages')
+        .from('terms_and_privacy_settings')
         .insert({
           type: 'terms',
-          version: newVersion,
-          last_updated: new Date().toISOString().split('T')[0],
-          content: {
-            ...content,
-            lastUpdated: toEnglishNumbers(new Date().toLocaleDateString('ar-EG', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }))
-          },
+          title_ar: 'الشروط والأحكام',
+          content_ar: JSON.stringify(updatedContent),
+          version: String(newVersion),
           is_active: true,
-          created_by: user.id,
-          published_at: new Date().toISOString()
+          updated_by: user.id,
         });
 
       if (error) throw error;
 
       setCurrentVersion(newVersion);
       showNotification(`تم حفظ الشروط والأحكام بنجاح! الإصدار: ${newVersion}`, 'success');
+      loadVersionHistory();
     } catch (error) {
       console.error('Error saving terms:', error);
       showNotification('حدث خطأ أثناء الحفظ', 'error');
@@ -290,6 +349,57 @@ export const TermsSettings = () => {
           <Plus size={20} />
           إضافة قسم جديد
         </button>
+      </div>
+
+      {/* Version History */}
+      <div className="mt-8 border-t border-slate-200 dark:border-slate-700 pt-6">
+        <div className="flex items-center gap-3 mb-4">
+          <History className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">سجل الإصدارات</h3>
+        </div>
+
+        {loadingHistory ? (
+          <div className="text-center py-4 text-slate-600 dark:text-slate-400">جاري التحميل...</div>
+        ) : versionHistory.length === 0 ? (
+          <div className="text-center py-4 text-slate-500 dark:text-slate-400">لا توجد إصدارات سابقة</div>
+        ) : (
+          <div className="space-y-2">
+            {versionHistory.map((record) => (
+              <div
+                key={record.id}
+                className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    الإصدار {record.version}
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {new Date(record.created_at).toLocaleDateString('ar-EG', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                  {record.is_active && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
+                      <CheckCircle size={12} />
+                      نشط
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleLoadVersion(record)}
+                  className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                >
+                  <AlertTriangle size={12} />
+                  تحميل في المحرر
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

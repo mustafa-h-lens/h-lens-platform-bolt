@@ -241,8 +241,25 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
   const confirmDelete = async () => {
     if (!deleteConfirm.docId) return;
 
+    // Find the document to get its file_url before deleting from DB
+    const allDocs = [...travelDocs, ...otherDocs];
+    const docToDelete = allDocs.find(d => d.id === deleteConfirm.docId);
+
     const { error } = await supabase.from('vendor_documents').delete().eq('id', deleteConfirm.docId);
     if (!error) {
+      // Clean up the file from storage
+      if (docToDelete?.file_url) {
+        try {
+          // Extract the storage path from the public URL
+          const url = new URL(docToDelete.file_url);
+          const pathMatch = url.pathname.match(/\/object\/public\/vendor-documents\/(.+)/);
+          if (pathMatch) {
+            await supabase.storage.from('vendor-documents').remove([decodeURIComponent(pathMatch[1])]);
+          }
+        } catch (e) {
+          console.error('Failed to clean up storage file:', e);
+        }
+      }
       showSuccess('تم الحذف');
       deleteConfirm.isTravelDoc
         ? setTravelDocs(prev => prev.filter(d => d.id !== deleteConfirm.docId))
@@ -269,6 +286,15 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
   const saveInfo = async () => {
     setSavingInfo(true);
     try {
+      // Validate Saudi phone number (must start with 5 and be 9 digits)
+      if (infoForm.phone && (infoForm.country_code || '+966') === '+966') {
+        if (!/^5\d{8}$/.test(infoForm.phone)) {
+          showError('رقم الجوال يجب أن يبدأ بـ 5 ويتكون من 9 أرقام');
+          setSavingInfo(false);
+          return;
+        }
+      }
+
       // Only send fields that have values — don't overwrite with empty strings
       const payload: Record<string, any> = { updated_at: new Date().toISOString() };
       if (infoForm.full_name) payload.full_name = infoForm.full_name;
@@ -409,6 +435,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
           <button onClick={() => imageRef.current?.click()} disabled={uploadingImage} style={{ position: 'absolute', bottom: -4, left: -4, width: 26, height: 26, borderRadius: 8, background: '#3b82f6', border: '2px solid var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
             {uploadingImage ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
           </button>
+          <div style={{ fontSize: '.6rem', color: 'var(--textMut)', marginTop: 4, textAlign: 'center', whiteSpace: 'nowrap' }}>خلفية بيضاء</div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

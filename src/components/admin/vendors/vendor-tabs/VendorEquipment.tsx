@@ -173,36 +173,30 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   };
 
   const fetchCategoryEquipmentWithoutBrands = async () => {
-    // التحقق من أن التصنيف المختار هو الإضاءة أو الأكسسوارات
-    const selectedCat = categories.find(c => c.id === selectedCategory);
-    if (selectedCat && (
-      selectedCat.name === 'إضاءة' ||
-      selectedCat.name_en === 'Lighting' ||
-      selectedCat.name === 'اكسسوارات' ||
-      selectedCat.name_en === 'Accessories'
-    )) {
-      try {
-        // جلب المعدات بدون علامات تجارية
-        const { data, error } = await supabase
-          .from('equipment_catalog')
-          .select(`
-            *,
-            equipment_categories (
-              id,
-              name,
-              name_en
-            )
-          `)
-          .eq('is_active', true)
-          .eq('category_id', selectedCategory)
-          .is('brand_id', null)
-          .order('name');
+    // Fetch any equipment in this category that has no brand (works for any category)
+    try {
+      const { data, error } = await supabase
+        .from('equipment_catalog')
+        .select(`
+          *,
+          equipment_categories (
+            id,
+            name,
+            name_en
+          )
+        `)
+        .eq('is_active', true)
+        .eq('category_id', selectedCategory)
+        .is('brand_id', null)
+        .order('name');
 
-        if (error) throw error;
-        setCatalogItems(data || []);
-      } catch (error) {
-        console.error('Error fetching equipment:', error);
+      if (error) throw error;
+      // Only set if there are brandless items; otherwise leave catalog empty for brand selection
+      if (data && data.length > 0) {
+        setCatalogItems(data);
       }
+    } catch (error) {
+      console.error('Error fetching equipment without brands:', error);
     }
   };
 
@@ -718,7 +712,7 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
                 value={formData.serial_number}
                 onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
                 className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Serial Number"
+                placeholder="الرقم التسلسلي"
                 dir="ltr"
               />
             </div>

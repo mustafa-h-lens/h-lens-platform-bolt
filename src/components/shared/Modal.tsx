@@ -10,14 +10,14 @@ interface ModalProps {
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
 }
 
-const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '3xl': 'max-w-3xl',
-  '4xl': 'max-w-4xl',
+const maxWidthMap: Record<string, string> = {
+  sm: '24rem',
+  md: '28rem',
+  lg: '32rem',
+  xl: '36rem',
+  '2xl': '42rem',
+  '3xl': '48rem',
+  '4xl': '56rem',
 };
 
 export const Modal = ({ isOpen, onClose, title, children, maxWidth = '4xl' }: ModalProps) => {
@@ -27,56 +27,33 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '4xl' }: Mo
     } else {
       document.body.style.overflow = 'unset';
     }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
+    return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
+    if (isOpen) document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{
-        background: 'rgba(0, 0, 0, 0.35)',
-        backdropFilter: 'blur(4px)',
-      }}
-      onClick={onClose}
-    >
+    <div className="modal-bg" onClick={onClose}>
       <div
-        className={`bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ${maxWidthClasses[maxWidth]} w-full max-h-[90vh] overflow-y-auto`}
+        className="modal"
+        style={{ maxWidth: maxWidthMap[maxWidth] }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 p-6 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-            {title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-            type="button"
-          >
-            <X className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+        <div className="modal-hdr">
+          <h2 className="modal-ttl">{title}</h2>
+          <button onClick={onClose} className="modal-close" type="button">
+            <X size={20} />
           </button>
         </div>
-        <div className="p-6">
+        <div className="modal-body" style={{ padding: '20px' }}>
           {children}
         </div>
       </div>

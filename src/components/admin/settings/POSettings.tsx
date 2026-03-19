@@ -63,15 +63,28 @@ export const POSettings = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('po_settings')
-        .update({
-          warning_threshold: formData.warning_threshold,
-          allow_split_task: formData.allow_split_task,
-          allow_po_exceed: formData.allow_po_exceed,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', settings?.id);
+      let error;
+      if (settings?.id) {
+        // Update existing row
+        ({ error } = await supabase
+          .from('po_settings')
+          .update({
+            warning_threshold: formData.warning_threshold,
+            allow_split_task: formData.allow_split_task,
+            allow_po_exceed: formData.allow_po_exceed,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', settings.id));
+      } else {
+        // Insert new row on fresh DB
+        ({ error } = await supabase
+          .from('po_settings')
+          .insert({
+            warning_threshold: formData.warning_threshold,
+            allow_split_task: formData.allow_split_task,
+            allow_po_exceed: formData.allow_po_exceed,
+          }));
+      }
 
       if (error) throw error;
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Tag, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 
 interface ItemCategory {
   id: string;
@@ -13,6 +14,7 @@ interface ItemCategory {
 
 export const ItemCategoriesManagement = () => {
   const { user } = useAuth();
+  const { showError } = useNotification();
   const [categories, setCategories] = useState<ItemCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -77,7 +79,7 @@ export const ItemCategoriesManagement = () => {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      alert('الرجاء إدخال اسم التصنيف');
+      showError('الرجاء إدخال اسم التصنيف');
       return;
     }
 
@@ -109,9 +111,9 @@ export const ItemCategoriesManagement = () => {
     } catch (error: any) {
       console.error('Error saving category:', error);
       if (error.code === '23505') {
-        alert('هذا التصنيف موجود بالفعل');
+        showError('هذا التصنيف موجود بالفعل');
       } else {
-        alert('حدث خطأ أثناء حفظ التصنيف');
+        showError('حدث خطأ أثناء حفظ التصنيف');
       }
     }
   };
@@ -130,7 +132,7 @@ export const ItemCategoriesManagement = () => {
       loadCategories();
     } catch (error) {
       console.error('Error deleting category:', error);
-      alert('حدث خطأ أثناء حذف التصنيف');
+      showError('حدث خطأ أثناء حذف التصنيف');
     }
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { VendorFormData } from '../VendorRegistrationForm';
 import { COUNTRY_CODES } from '../../../lib/shared-data';
+import { Toggle } from '../../ui/Toggle';
 
 interface Props {
   formData: VendorFormData;
@@ -174,13 +175,11 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
         </div>
 
         {/* Other cities toggle */}
-        <div
-          className={`toggle-wrap ${formData.available_other_cities ? 'on' : ''}`}
-          onClick={() => updateFormData({ available_other_cities: !formData.available_other_cities })}
-        >
-          <span className="toggle-label">متاح للعمل في مدن أخرى؟</span>
-          <div className="toggle-sw" />
-        </div>
+        <Toggle
+          checked={!!formData.available_other_cities}
+          onChange={(checked) => updateFormData({ available_other_cities: checked })}
+          label="متاح للعمل في مدن أخرى؟"
+        />
 
         {/* Other cities grid */}
         {formData.available_other_cities && (
