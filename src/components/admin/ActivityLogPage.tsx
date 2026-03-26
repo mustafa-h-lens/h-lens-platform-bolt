@@ -35,14 +35,30 @@ const ACTION_LABELS: Record<string, string> = {
   sent: 'أرسل',
   paid: 'دفع',
   status_changed: 'غير الحالة',
+  // Projects
   project_created: 'أنشأ مشروع',
+  project_updated: 'عدل مشروع',
+  project_deleted: 'حذف مشروع',
+  project_status_changed: 'غير حالة مشروع',
+  // Project Items
   item_added: 'أضاف بند',
   item_updated: 'عدل بند',
   item_deleted: 'حذف بند',
+  project_item_added: 'أضاف بند مشروع',
+  project_item_updated: 'عدل بند مشروع',
+  project_item_deleted: 'حذف بند مشروع',
+  // Project Files
   file_uploaded: 'رفع ملف',
   file_deleted: 'حذف ملف',
+  project_file_uploaded: 'رفع ملف مشروع',
+  project_file_deleted: 'حذف ملف مشروع',
+  // Invoices
   invoice_created: 'أنشأ فاتورة',
+  invoice_updated: 'عدل فاتورة',
+  invoice_deleted: 'حذف فاتورة',
   invoice_status_changed: 'غير حالة الفاتورة',
+  invoice_payment_recorded: 'سجل دفعة فاتورة',
+  // Vendors
   vendor_created: 'أنشأ مورد',
   vendor_updated: 'عدل بيانات مورد',
   vendor_deleted: 'حذف مورد',
@@ -52,23 +68,62 @@ const ACTION_LABELS: Record<string, string> = {
   vendor_revision_requested: 'طلب تعديلات من مورد',
   vendor_submitted: 'تقدم بطلب تسجيل',
   vendor_resubmitted: 'أعاد تقديم طلب التسجيل',
+  // Vendor Equipment
   equipment_added: 'أضاف معدة',
   equipment_updated: 'عدل معدة',
   equipment_deleted: 'حذف معدة',
+  // Vendor Documents
   document_uploaded: 'رفع مستند',
   document_deleted: 'حذف مستند',
+  // Vendor Financial Data
+  financial_data_added: 'أضاف بيانات مالية',
+  financial_data_updated: 'عدل بيانات مالية',
+  financial_data_deleted: 'حذف بيانات مالية',
+  // Vendor Travel Documents
+  travel_doc_added: 'أضاف وثيقة سفر',
+  travel_doc_updated: 'عدل وثيقة سفر',
+  travel_doc_deleted: 'حذف وثيقة سفر',
+  // Vendor Suggestions
+  suggestion_submitted: 'قدم اقتراح',
+  suggestion_status_changed: 'غير حالة اقتراح',
+  suggestion_updated: 'عدل اقتراح',
+  suggestion_deleted: 'حذف اقتراح',
+  // Expenses
   expense_created: 'أنشأ مصروف',
   expense_status_changed: 'غير حالة مصروف',
   expense_deleted: 'حذف مصروف',
   payment_added: 'أضاف دفعة',
   payment_deleted: 'حذف دفعة',
+  // Purchase Orders
   po_created: 'أنشأ أمر شراء',
   po_status_changed: 'غير حالة أمر شراء',
   po_deleted: 'حذف أمر شراء',
+  // Production Tasks
   task_created: 'أنشأ مهمة إنتاجية',
   task_status_changed: 'غير حالة مهمة',
   task_deleted: 'حذف مهمة',
+  // Task-PO Allocations
+  allocation_created: 'أنشأ تخصيص مهمة-أمر شراء',
+  allocation_updated: 'عدل تخصيص مهمة-أمر شراء',
+  allocation_deleted: 'حذف تخصيص مهمة-أمر شراء',
+  // Service Items
+  service_item_created: 'أنشأ بند خدمة',
+  service_item_updated: 'عدل بند خدمة',
+  service_item_deactivated: 'أوقف بند خدمة',
+  service_item_deleted: 'حذف بند خدمة',
+  // Equipment Brands & Categories
+  equipment_brand_created: 'أنشأ علامة تجارية للمعدات',
+  equipment_brand_updated: 'عدل علامة تجارية للمعدات',
+  equipment_brand_deleted: 'حذف علامة تجارية للمعدات',
+  equipment_category_created: 'أنشأ فئة معدات',
+  equipment_category_updated: 'عدل فئة معدات',
+  equipment_category_deleted: 'حذف فئة معدات',
+  // Settings
   settings_updated: 'عدل الإعدادات',
+  po_settings_created: 'أنشأ إعدادات أوامر الشراء',
+  po_settings_updated: 'عدل إعدادات أوامر الشراء',
+  terms_privacy_created: 'أنشأ شروط/خصوصية',
+  terms_privacy_updated: 'عدل شروط/خصوصية',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -84,14 +139,25 @@ const ENTITY_LABELS: Record<string, string> = {
   user: 'مستخدم',
   invoice: 'فاتورة',
   item: 'بند',
+  project_item: 'بند مشروع',
   file: 'ملف',
+  project_file: 'ملف مشروع',
   equipment: 'معدة',
   document: 'مستند',
+  financial_data: 'بيانات مالية',
+  travel_document: 'وثيقة سفر',
+  suggestion: 'اقتراح',
   expense: 'مصروف',
   payment: 'دفعة',
   purchase_order: 'أمر شراء',
   production_task: 'مهمة إنتاجية',
+  task_po_allocation: 'تخصيص مهمة',
+  service_item: 'بند خدمة',
+  equipment_brand: 'علامة تجارية',
+  equipment_category: 'فئة معدات',
   settings: 'إعدادات',
+  po_settings: 'إعدادات أوامر الشراء',
+  terms_privacy: 'شروط وخصوصية',
 };
 
 const getSourceBadge = (sourceType: string): string => {
@@ -206,6 +272,7 @@ export const ActivityLogPage = () => {
 
   const handleEntityClick = (activity: ActivityEntry) => {
     if (!activity.entity_id) return;
+    const details = activity.action_details || {};
     switch (activity.source_type) {
       case 'project':
         navigate(`/projects/${activity.entity_id}`);
@@ -216,6 +283,14 @@ export const ActivityLogPage = () => {
       case 'system':
         if (activity.entity_type === 'client') {
           navigate(`/clients/${activity.entity_id}`);
+        } else if (activity.entity_type === 'project') {
+          navigate(`/projects/${activity.entity_id}`);
+        } else if (activity.entity_type === 'project_item' || activity.entity_type === 'project_file') {
+          const projectId = details.project_id as string;
+          if (projectId) navigate(`/projects/${projectId}`);
+        } else if (activity.entity_type === 'invoice') {
+          const projectId = details.project_id as string;
+          if (projectId) navigate(`/projects/${projectId}`);
         }
         break;
     }
@@ -224,7 +299,10 @@ export const ActivityLogPage = () => {
   const isClickable = (activity: ActivityEntry) => {
     if (!activity.entity_id) return false;
     if (activity.source_type === 'project' || activity.source_type === 'vendor') return true;
-    if (activity.source_type === 'system' && activity.entity_type === 'client') return true;
+    if (activity.source_type === 'system') {
+      const clickableTypes = ['client', 'project', 'project_item', 'project_file', 'invoice'];
+      return clickableTypes.includes(activity.entity_type);
+    }
     return false;
   };
 
@@ -294,20 +372,7 @@ export const ActivityLogPage = () => {
 
         <MultiSelectFilter
           label="الإجراء"
-          options={[
-            { value: 'created', label: 'إنشاء' },
-            { value: 'updated', label: 'تعديل' },
-            { value: 'deleted', label: 'حذف' },
-            { value: 'uploaded', label: 'رفع' },
-            { value: 'status_changed', label: 'تغيير حالة' },
-            { value: 'project_created', label: 'إنشاء مشروع' },
-            { value: 'item_added', label: 'إضافة بند' },
-            { value: 'file_uploaded', label: 'رفع ملف' },
-            { value: 'invoice_created', label: 'إنشاء فاتورة' },
-            { value: 'paid', label: 'دفع' },
-            { value: 'sent', label: 'إرسال' },
-            { value: 'completed', label: 'إكمال' },
-          ]}
+          options={Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label }))}
           selected={actionFilter}
           onToggle={v => toggleFilter('action', v)}
         />
