@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { PermissionsProvider } from './contexts/PermissionsContext';
 import { VendorProvider } from './contexts/VendorContext';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
@@ -304,6 +305,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <PermissionsProvider>
         <NotificationProvider>
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -311,6 +313,7 @@ function App() {
             </Suspense>
           </ErrorBoundary>
         </NotificationProvider>
+        </PermissionsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

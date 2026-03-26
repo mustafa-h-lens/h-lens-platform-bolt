@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { supabase } from '../../lib/supabaseClient';
 
 interface SidebarProps {
@@ -43,18 +44,23 @@ interface MenuItem {
 export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) => {
   const { profile, signOut } = useAuth();
   const { theme: themeMode, toggleTheme } = useTheme();
-  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
+  const { hasAccess, isSuperAdmin, roleName } = usePermissions();
   const [pendingVendorCount, setPendingVendorCount] = useState(0);
   const [newSuggestionsCount, setNewSuggestionsCount] = useState(0);
 
   useEffect(() => {
-    if (isSuperAdmin) {
+    if (hasAccess('vendors')) {
       fetchPendingVendorCount();
-      fetchNewSuggestionsCount();
-      const interval = setInterval(() => { fetchPendingVendorCount(); fetchNewSuggestionsCount(); }, 60000);
-      return () => clearInterval(interval);
     }
-  }, [isSuperAdmin]);
+    if (hasAccess('suggestions')) {
+      fetchNewSuggestionsCount();
+    }
+    const interval = setInterval(() => {
+      if (hasAccess('vendors')) fetchPendingVendorCount();
+      if (hasAccess('suggestions')) fetchNewSuggestionsCount();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [hasAccess]);
 
   const fetchPendingVendorCount = async () => {
     try {
@@ -109,12 +115,8 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
       .toUpperCase();
   };
 
-  const getRoleLabel = (role?: string) => {
-    switch (role) {
-      case 'super_admin': return 'مدير عام';
-      case 'project_manager': return 'مدير مشاريع';
-      default: return '';
-    }
+  const getRoleLabel = () => {
+    return roleName || '';
   };
 
   const renderNavItem = (item: MenuItem) => {
@@ -220,18 +222,22 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
         {/* Navigation */}
         <nav style={{ flex: 1, overflowY: 'auto' }}>
           {menuItems.map((item) => {
-            if (item.adminOnly && !isSuperAdmin) return null;
+            if (!hasAccess(item.id as any)) return null;
             return renderNavItem(item);
           })}
 
-          {isSuperAdmin && (
+          {/* Admin section: show if user has access to any admin item */}
+          {adminItems.some(item => hasAccess(item.id as any)) && (
             <>
               {collapsed ? (
                 <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '8px 4px' }} />
               ) : (
                 <div className="sb-grp">إدارة</div>
               )}
-              {adminItems.map((item) => renderNavItem(item))}
+              {adminItems.map((item) => {
+                if (!hasAccess(item.id as any)) return null;
+                return renderNavItem(item);
+              })}
             </>
           )}
         </nav>
@@ -267,7 +273,7 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
             <div className="sb-user-profile">
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="u-name" style={{ fontSize: 13 }}>{profile?.full_name}</div>
-                <div className="u-role">{getRoleLabel(profile?.role)}</div>
+                <div className="u-role">{getRoleLabel()}</div>
               </div>
               <div className="avatar av-md" style={{ background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontSize: 12 }}>
                 {getInitials(profile?.full_name)}

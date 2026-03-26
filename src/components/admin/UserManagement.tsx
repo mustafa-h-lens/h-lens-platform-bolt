@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { Plus, Edit2, Users, UserCheck, UserX, Shield } from 'lucide-react';
-import type { User, Client } from '../../types/database';
+import type { User, Client, Role } from '../../types/database';
 import { useNotification } from '../../contexts/NotificationContext';
 import { formatNumber } from '../../lib/formatters';
 import { Modal } from '../shared/Modal';
+import { RolesManagement } from './RolesManagement';
 
 interface UserManagementProps {
   onBack: () => void;
 }
 
+type Tab = 'users' | 'roles';
+
 export const UserManagement = ({ onBack }: UserManagementProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>('users');
 
   useEffect(() => {
     loadData();
@@ -24,16 +29,19 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
 
   const loadData = async () => {
     try {
-      const [usersRes, clientsRes] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('clients').select('*')
+      const [usersRes, clientsRes, rolesRes] = await Promise.all([
+        supabase.from('users').select('*, roles(id, name, is_system)').order('created_at', { ascending: false }),
+        supabase.from('clients').select('*'),
+        supabase.from('roles').select('*').order('is_system', { ascending: false }).order('name'),
       ]);
 
       if (usersRes.error) throw usersRes.error;
       if (clientsRes.error) throw clientsRes.error;
+      if (rolesRes.error) throw rolesRes.error;
 
       setUsers(usersRes.data || []);
       setClients(clientsRes.data || []);
+      setRoles(rolesRes.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -41,11 +49,20 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
     }
   };
 
-  const getRoleBadge = (role: string) => {
-    switch (role) {
+  const getRoleBadge = (user: User) => {
+    // Use the joined role name if available
+    if (user.roles) {
+      const isSystem = user.roles.is_system;
+      return {
+        label: user.roles.name,
+        cls: isSystem ? 'badge badge-purple' : 'badge badge-blue',
+      };
+    }
+    // Fallback to legacy role field
+    switch (user.role) {
       case 'super_admin': return { label: 'مدير عام', cls: 'badge badge-purple' };
       case 'project_manager': return { label: 'مدير مشاريع', cls: 'badge badge-blue' };
-      default: return { label: role, cls: 'badge badge-gray' };
+      default: return { label: user.role, cls: 'badge badge-gray' };
     }
   };
 
@@ -71,7 +88,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
 
   const activeCount = users.filter(u => u.is_active).length;
   const inactiveCount = users.filter(u => !u.is_active).length;
-  const adminCount = users.filter(u => u.role === 'super_admin').length;
+  const adminCount = users.filter(u => u.role === 'super_admin' || (u.roles && u.roles.is_system)).length;
 
   if (loading) {
     return <div className="dash-empty" style={{ height: 384 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
@@ -83,123 +100,158 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
       <div className="page-title-row">
         <div>
           <div className="page-title">إدارة المستخدمين</div>
-          <div className="page-subtitle">إدارة حسابات وصلاحيات المستخدمين</div>
-        </div>
-        <button className="btn btn-primary" onClick={() => { setEditingUser(null); setShowModal(true); }}>
-          <Plus size={16} /> مستخدم جديد
-        </button>
-      </div>
-
-      {/* Stat Cards */}
-      <div className="stats-grid">
-        <div className="stat-card sc-blue">
-          <div className="stat-icon-box"><Users size={18} /></div>
-          <div className="stat-sub">إجمالي المستخدمين</div>
-          <div className="stat-val">{formatNumber(users.length)}</div>
-        </div>
-        <div className="stat-card sc-green">
-          <div className="stat-icon-box"><UserCheck size={18} /></div>
-          <div className="stat-sub">نشط</div>
-          <div className="stat-val">{formatNumber(activeCount)}</div>
-        </div>
-        <div className="stat-card sc-amber">
-          <div className="stat-icon-box"><UserX size={18} /></div>
-          <div className="stat-sub">غير نشط</div>
-          <div className="stat-val">{formatNumber(inactiveCount)}</div>
-        </div>
-        <div className="stat-card sc-purple">
-          <div className="stat-icon-box"><Shield size={18} /></div>
-          <div className="stat-sub">مدير عام</div>
-          <div className="stat-val">{formatNumber(adminCount)}</div>
+          <div className="page-subtitle">إدارة حسابات وصلاحيات المستخدمين والأدوار</div>
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div className="filter-bar">
-        <input className="input" placeholder="بحث بالاسم أو البريد..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ maxWidth: 260 }} />
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--border-soft)', marginBottom: 20 }}>
+        {([
+          { id: 'users' as Tab, label: 'المستخدمين', icon: <Users size={15} /> },
+          { id: 'roles' as Tab, label: 'الأدوار والصلاحيات', icon: <Shield size={15} /> },
+        ]).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '10px 20px', fontSize: 13, fontWeight: 600,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-muted)',
+              borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
+              marginBottom: -2, transition: 'all 0.2s',
+            }}
+          >
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
-      {filteredUsers.length === 0 ? (
-        <div className="dash-empty" style={{ height: 200 }}>
-          <Users size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
-          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا يوجد مستخدمون</span>
-        </div>
+      {activeTab === 'roles' ? (
+        <RolesManagement />
       ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>الاسم</th>
-                <th>البريد الإلكتروني</th>
-                <th>اسم المستخدم</th>
-                <th>الدور</th>
-                <th>الحالة</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => {
-                const roleBadge = getRoleBadge(user.role);
-                return (
-                  <tr key={user.id}>
-                    <td><span className="td-primary">{user.full_name}</span></td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">{user.email}</td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{user.username || '-'}</td>
-                    <td><span className={roleBadge.cls}>{roleBadge.label}</span></td>
-                    <td>
-                      {user.is_active ? (
-                        <span className="badge badge-green">
-                          <span className="badge-dot" style={{ background: 'var(--success)' }} />
-                          نشط
-                        </span>
-                      ) : (
-                        <span className="badge badge-red">
-                          <span className="badge-dot" style={{ background: 'var(--danger)' }} />
-                          غير نشط
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => { setEditingUser(user); setShowModal(true); }}
-                          style={{ color: 'var(--accent-lighter)', padding: 6 }}
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => toggleUserStatus(user)}
-                          style={{ color: user.is_active ? 'var(--danger-text)' : 'var(--success-text)', fontSize: 12 }}
-                        >
-                          {user.is_active ? 'إيقاف' : 'تفعيل'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+        <>
+          {/* Users tab header with add button */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div />
+            <button className="btn btn-primary" onClick={() => { setEditingUser(null); setShowModal(true); }}>
+              <Plus size={16} /> مستخدم جديد
+            </button>
+          </div>
 
-      {showModal && (
-        <UserModal
-          user={editingUser}
-          clients={clients}
-          onClose={() => {
-            setShowModal(false);
-            setEditingUser(null);
-          }}
-          onSuccess={() => {
-            loadData();
-            setShowModal(false);
-            setEditingUser(null);
-          }}
-        />
+          {/* Stat Cards */}
+          <div className="stats-grid">
+            <div className="stat-card sc-blue">
+              <div className="stat-icon-box"><Users size={18} /></div>
+              <div className="stat-sub">إجمالي المستخدمين</div>
+              <div className="stat-val">{formatNumber(users.length)}</div>
+            </div>
+            <div className="stat-card sc-green">
+              <div className="stat-icon-box"><UserCheck size={18} /></div>
+              <div className="stat-sub">نشط</div>
+              <div className="stat-val">{formatNumber(activeCount)}</div>
+            </div>
+            <div className="stat-card sc-amber">
+              <div className="stat-icon-box"><UserX size={18} /></div>
+              <div className="stat-sub">غير نشط</div>
+              <div className="stat-val">{formatNumber(inactiveCount)}</div>
+            </div>
+            <div className="stat-card sc-purple">
+              <div className="stat-icon-box"><Shield size={18} /></div>
+              <div className="stat-sub">مدير عام</div>
+              <div className="stat-val">{formatNumber(adminCount)}</div>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="filter-bar">
+            <input className="input" placeholder="بحث بالاسم أو البريد..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ maxWidth: 260 }} />
+          </div>
+
+          {/* Table */}
+          {filteredUsers.length === 0 ? (
+            <div className="dash-empty" style={{ height: 200 }}>
+              <Users size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا يوجد مستخدمون</span>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الاسم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>اسم المستخدم</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user) => {
+                    const roleBadge = getRoleBadge(user);
+                    return (
+                      <tr key={user.id}>
+                        <td><span className="td-primary">{user.full_name}</span></td>
+                        <td style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">{user.email}</td>
+                        <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{user.username || '-'}</td>
+                        <td><span className={roleBadge.cls}>{roleBadge.label}</span></td>
+                        <td>
+                          {user.is_active ? (
+                            <span className="badge badge-green">
+                              <span className="badge-dot" style={{ background: 'var(--success)' }} />
+                              نشط
+                            </span>
+                          ) : (
+                            <span className="badge badge-red">
+                              <span className="badge-dot" style={{ background: 'var(--danger)' }} />
+                              غير نشط
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="actions-cell">
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => { setEditingUser(user); setShowModal(true); }}
+                              style={{ color: 'var(--accent-lighter)', padding: 6 }}
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => toggleUserStatus(user)}
+                              style={{ color: user.is_active ? 'var(--danger-text)' : 'var(--success-text)', fontSize: 12 }}
+                            >
+                              {user.is_active ? 'إيقاف' : 'تفعيل'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showModal && (
+            <UserModal
+              user={editingUser}
+              clients={clients}
+              roles={roles}
+              onClose={() => {
+                setShowModal(false);
+                setEditingUser(null);
+              }}
+              onSuccess={() => {
+                loadData();
+                setShowModal(false);
+                setEditingUser(null);
+              }}
+            />
+          )}
+        </>
       )}
     </div>
   );
@@ -208,18 +260,19 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
 interface UserModalProps {
   user: User | null;
   clients: Client[];
+  roles: Role[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
+const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps) => {
   const { showError } = useNotification();
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
-    phone: user?.phone || '',
+    phone: (user as any)?.phone || '',
     username: user?.username || '',
-    role: user?.role || 'project_manager',
+    role_id: user?.role_id || roles.find(r => !r.is_system)?.id || '',
     password: '',
     confirmPassword: '',
     sendInvite: true,
@@ -234,16 +287,26 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
       return;
     }
 
+    if (!formData.role_id) {
+      showError('يرجى اختيار الدور');
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Determine the legacy role text from role_id
+      const selectedRole = roles.find(r => r.id === formData.role_id);
+      const legacyRole = selectedRole?.is_system ? 'super_admin' : 'project_manager';
+
       if (user) {
         const { error } = await supabase
           .from('users')
           .update({
             full_name: formData.full_name,
             username: formData.username || null,
-            role: formData.role
+            role: legacyRole,
+            role_id: formData.role_id,
           })
           .eq('id', user.id);
 
@@ -266,7 +329,8 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
             email: formData.email,
             full_name: formData.full_name,
             username: formData.username || null,
-            role: formData.role,
+            role: legacyRole,
+            role_id: formData.role_id,
           });
 
         if (userError) throw userError;
@@ -336,13 +400,16 @@ const UserModal = ({ user, clients, onClose, onSuccess }: UserModalProps) => {
             <label className="input-label">الدور <span className="req">*</span></label>
             <select
               className="input"
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value as User['role'] })}
+              value={formData.role_id}
+              onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
               required
             >
               <option value="" disabled>اختر الدور</option>
-              <option value="project_manager">مدير مشاريع</option>
-              <option value="super_admin">مدير عام</option>
+              {roles.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.name} {r.is_system ? '(نظامي)' : ''}
+                </option>
+              ))}
             </select>
           </div>
         </div>

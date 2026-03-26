@@ -7,6 +7,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   role: 'super_admin' | 'project_manager' | 'client';
+  role_id: string | null;
 }
 
 interface AuthContextType {

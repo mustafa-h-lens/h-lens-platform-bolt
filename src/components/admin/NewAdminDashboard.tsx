@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../../contexts/PermissionsContext';
 import { supabase } from '../../lib/supabaseClient';
 import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
@@ -79,15 +80,13 @@ interface ActivityEntry {
   created_at: string;
 }
 
-const SUPER_ADMIN_ONLY_PAGES = ['users', 'settings', 'activity'];
-
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
-  const isSuperAdmin = profile?.role === 'super_admin' || profile?.role === 'admin';
+  const { hasAccess, isSuperAdmin } = usePermissions();
   const initialHash = parseHash();
 
-  // Redirect project_manager away from super_admin-only pages
-  if (!isSuperAdmin && SUPER_ADMIN_ONLY_PAGES.includes(initialHash.page)) {
+  // Redirect user away from pages they don't have access to
+  if (!hasAccess(initialHash.page as any)) {
     initialHash.page = 'dashboard';
   }
   const [currentPage, setCurrentPage] = useState(initialHash.page);
@@ -144,15 +143,15 @@ export const NewAdminDashboard = () => {
   // Listen for browser back/forward
   const handleHashChange = useCallback(() => {
     const { page, id, tab } = parseHash();
-    // Block project_manager from super_admin-only pages
-    const safePage = (!isSuperAdmin && SUPER_ADMIN_ONLY_PAGES.includes(page)) ? 'dashboard' : page;
+    // Block users from pages they don't have access to
+    const safePage = !hasAccess(page as any) ? 'dashboard' : page;
     setCurrentPage(safePage);
     setSelectedProjectId(safePage === 'projects' ? id : null);
     setSelectedClientId(safePage === 'clients' ? id : null);
     setSelectedVendorId(safePage === 'vendors' ? id : null);
     setActiveSubTab(tab);
     if (safePage !== 'clients') setClientView(null);
-  }, [isSuperAdmin]);
+  }, [hasAccess]);
 
   useEffect(() => {
     window.addEventListener('hashchange', handleHashChange);

@@ -4,8 +4,51 @@ export interface User {
   username: string | null;
   full_name: string;
   role: 'super_admin' | 'project_manager' | 'client';
+  role_id: string | null;
   is_active: boolean;
   created_at: string;
+  roles?: Role;
+}
+
+export const MODULE_KEYS = [
+  'dashboard', 'clients', 'vendors', 'projects', 'expenses',
+  'suggestions', 'reports', 'activity', 'settings', 'users',
+] as const;
+
+export type ModuleKey = typeof MODULE_KEYS[number];
+
+export const MODULE_LABELS: Record<ModuleKey, string> = {
+  dashboard: 'الرئيسية',
+  clients: 'العملاء',
+  vendors: 'الموردين',
+  projects: 'المشاريع',
+  expenses: 'المصروفات',
+  suggestions: 'الاقتراحات',
+  reports: 'التقارير',
+  activity: 'سجل النشاط',
+  settings: 'الإعدادات',
+  users: 'إدارة المستخدمين',
+};
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RolePermission {
+  id: string;
+  role_id: string;
+  module_key: ModuleKey;
+  has_access: boolean;
+  created_at: string;
+}
+
+export interface RoleWithPermissions extends Role {
+  role_permissions: RolePermission[];
 }
 
 export interface ClientContact {
