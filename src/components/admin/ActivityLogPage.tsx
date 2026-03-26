@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, User, Clock, Search, FolderOpen, Briefcase, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, User, Clock, FolderOpen, Briefcase, UserCog, ChevronLeft, ChevronRight, RotateCcw, Activity } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
-import { formatDateArabic } from '../../lib/formatters';
-import { AdvancedFilterBar, type FilterConfig } from '../ui/AdvancedFilterBar';
+import { formatDateArabic, formatNumber } from '../../lib/formatters';
+import { toEnglishNumbers } from '../../lib/numberUtils';
+import { MultiSelectFilter } from '../shared/MultiSelectFilter';
 import { navigate } from '../../lib/router';
 
 interface ActivityEntry {
@@ -26,7 +27,6 @@ interface UserOption {
 const PAGE_SIZE = 30;
 
 const ACTION_LABELS: Record<string, string> = {
-  // General
   created: 'أنشأ',
   updated: 'عدل',
   deleted: 'حذف',
@@ -35,7 +35,6 @@ const ACTION_LABELS: Record<string, string> = {
   sent: 'أرسل',
   paid: 'دفع',
   status_changed: 'غير الحالة',
-  // Projects
   project_created: 'أنشأ مشروع',
   item_added: 'أضاف بند',
   item_updated: 'عدل بند',
@@ -44,38 +43,31 @@ const ACTION_LABELS: Record<string, string> = {
   file_deleted: 'حذف ملف',
   invoice_created: 'أنشأ فاتورة',
   invoice_status_changed: 'غير حالة الفاتورة',
-  // Vendors
   vendor_created: 'أنشأ مورد',
   vendor_updated: 'عدل بيانات مورد',
   vendor_deleted: 'حذف مورد',
   vendor_status_changed: 'غير حالة مورد',
-  // Vendor approval
   vendor_approved: 'وافق على مورد',
   vendor_rejected: 'رفض مورد',
   vendor_revision_requested: 'طلب تعديلات من مورد',
   vendor_submitted: 'تقدم بطلب تسجيل',
   vendor_resubmitted: 'أعاد تقديم طلب التسجيل',
-  // Vendor sub-entities
   equipment_added: 'أضاف معدة',
   equipment_updated: 'عدل معدة',
   equipment_deleted: 'حذف معدة',
   document_uploaded: 'رفع مستند',
   document_deleted: 'حذف مستند',
-  // Expenses
   expense_created: 'أنشأ مصروف',
   expense_status_changed: 'غير حالة مصروف',
   expense_deleted: 'حذف مصروف',
   payment_added: 'أضاف دفعة',
   payment_deleted: 'حذف دفعة',
-  // Purchase orders
   po_created: 'أنشأ أمر شراء',
   po_status_changed: 'غير حالة أمر شراء',
   po_deleted: 'حذف أمر شراء',
-  // Production tasks
   task_created: 'أنشأ مهمة إنتاجية',
   task_status_changed: 'غير حالة مهمة',
   task_deleted: 'حذف مهمة',
-  // Settings
   settings_updated: 'عدل الإعدادات',
 };
 
@@ -102,10 +94,13 @@ const ENTITY_LABELS: Record<string, string> = {
   settings: 'إعدادات',
 };
 
-const SOURCE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  project: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-800' },
-  vendor: { bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800' },
-  system: { bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800' },
+const getSourceBadge = (sourceType: string): string => {
+  switch (sourceType) {
+    case 'project': return 'badge badge-blue';
+    case 'vendor': return 'badge badge-amber';
+    case 'system': return 'badge badge-purple';
+    default: return 'badge badge-gray';
+  }
 };
 
 const getSourceIcon = (sourceType: string) => {
@@ -137,11 +132,14 @@ export const ActivityLogPage = () => {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('');
-  const [actionFilter, setActionFilter] = useState('');
-  const [userFilter, setUserFilter] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
+  const [actionFilter, setActionFilter] = useState<string[]>([]);
+  const [userFilter, setUserFilter] = useState<string[]>([]);
+
+  const toggleFilter = (key: 'source' | 'action' | 'user', value: string) => {
+    const setter = key === 'source' ? setSourceFilter : key === 'action' ? setActionFilter : setUserFilter;
+    setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  };
 
   useEffect(() => {
     loadUsers();
@@ -149,7 +147,7 @@ export const ActivityLogPage = () => {
 
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, sourceFilter, actionFilter, userFilter, dateFrom, dateTo]);
+  }, [searchQuery, sourceFilter, actionFilter, userFilter]);
 
   const loadActivities = useCallback(async () => {
     try {
@@ -163,20 +161,14 @@ export const ActivityLogPage = () => {
       if (searchQuery.trim()) {
         query = query.ilike('entity_name', `%${searchQuery.trim()}%`);
       }
-      if (sourceFilter) {
-        query = query.eq('source_type', sourceFilter);
+      if (sourceFilter.length > 0) {
+        query = query.in('source_type', sourceFilter);
       }
-      if (actionFilter) {
-        query = query.eq('action_type', actionFilter);
+      if (actionFilter.length > 0) {
+        query = query.in('action_type', actionFilter);
       }
-      if (userFilter) {
-        query = query.eq('user_id', userFilter);
-      }
-      if (dateFrom) {
-        query = query.gte('created_at', dateFrom + 'T00:00:00');
-      }
-      if (dateTo) {
-        query = query.lte('created_at', dateTo + 'T23:59:59');
+      if (userFilter.length > 0) {
+        query = query.in('user_id', userFilter);
       }
 
       const from = page * PAGE_SIZE;
@@ -194,7 +186,7 @@ export const ActivityLogPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, sourceFilter, actionFilter, userFilter, dateFrom, dateTo]);
+  }, [page, searchQuery, sourceFilter, actionFilter, userFilter]);
 
   useEffect(() => {
     loadActivities();
@@ -238,185 +230,183 @@ export const ActivityLogPage = () => {
 
   const resetFilters = () => {
     setSearchQuery('');
-    setSourceFilter('');
-    setActionFilter('');
-    setUserFilter('');
-    setDateFrom('');
-    setDateTo('');
+    setSourceFilter([]);
+    setActionFilter([]);
+    setUserFilter([]);
   };
 
-  const hasActiveFilters = sourceFilter || actionFilter || userFilter || dateFrom || dateTo;
+  const hasActiveFilters = sourceFilter.length > 0 || actionFilter.length > 0 || userFilter.length > 0;
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  const actionOptions = [
-    { label: 'الكل', value: '' },
-    { label: 'إنشاء', value: 'created' },
-    { label: 'تعديل', value: 'updated' },
-    { label: 'حذف', value: 'deleted' },
-    { label: 'رفع', value: 'uploaded' },
-    { label: 'تغيير حالة', value: 'status_changed' },
-    { label: 'إنشاء مشروع', value: 'project_created' },
-    { label: 'إضافة بند', value: 'item_added' },
-    { label: 'تعديل بند', value: 'item_updated' },
-    { label: 'حذف بند', value: 'item_deleted' },
-    { label: 'رفع ملف', value: 'file_uploaded' },
-    { label: 'حذف ملف', value: 'file_deleted' },
-    { label: 'إنشاء فاتورة', value: 'invoice_created' },
-    { label: 'تغيير حالة فاتورة', value: 'invoice_status_changed' },
-    { label: 'دفع', value: 'paid' },
-    { label: 'إرسال', value: 'sent' },
-    { label: 'إكمال', value: 'completed' },
-  ];
-
-  const filters: FilterConfig[] = [
-    {
-      type: 'select',
-      label: 'نوع المصدر',
-      value: sourceFilter,
-      options: [
-        { label: 'الكل', value: '' },
-        { label: 'مشاريع', value: 'project' },
-        { label: 'موردين', value: 'vendor' },
-        { label: 'النظام', value: 'system' },
-      ],
-      onChange: setSourceFilter,
-    },
-    {
-      type: 'select',
-      label: 'نوع الإجراء',
-      value: actionFilter,
-      options: actionOptions,
-      onChange: setActionFilter,
-    },
-    {
-      type: 'select',
-      label: 'المستخدم',
-      value: userFilter,
-      options: [
-        { label: 'الكل', value: '' },
-        ...users.map((u) => ({ label: u.full_name, value: u.id })),
-      ],
-      onChange: setUserFilter,
-    },
-    {
-      type: 'dateRange',
-      label: 'الفترة',
-      fromValue: dateFrom,
-      toValue: dateTo,
-      onFromChange: setDateFrom,
-      onToChange: setDateTo,
-    },
-  ];
+  if (loading && activities.length === 0) {
+    return <div className="dash-empty" style={{ height: 384 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
+  }
 
   return (
-    <div className="space-y-6" dir="rtl">
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <input
-          type="text"
-          placeholder="بحث باسم العنصر..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pr-12 pl-4 py-3 bg-white dark:bg-dark-card border border-slate-200 dark:border-dark-border
-            rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500
-            focus:outline-none focus:ring-2 focus:ring-[#1B4FA9]/30 focus:border-[#1B4FA9]
-            transition-all"
-        />
+    <div style={{ padding: 28 }}>
+      {/* Page Title */}
+      <div className="page-title-row">
+        <div>
+          <div className="page-title">سجل النشاط</div>
+          <div className="page-subtitle">متابعة جميع العمليات والتغييرات في النظام</div>
+        </div>
       </div>
 
-      {/* Filter bar */}
-      <AdvancedFilterBar
-        filters={filters}
-        onReset={hasActiveFilters ? resetFilters : undefined}
-      />
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><Activity size={18} /></div>
+          <div className="stat-sub">إجمالي الأنشطة</div>
+          <div className="stat-val">{formatNumber(totalCount)}</div>
+        </div>
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><FolderOpen size={18} /></div>
+          <div className="stat-sub">أنشطة المشاريع</div>
+          <div className="stat-val">{formatNumber(activities.filter(a => a.source_type === 'project').length)}</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><Briefcase size={18} /></div>
+          <div className="stat-sub">أنشطة الموردين</div>
+          <div className="stat-val">{formatNumber(activities.filter(a => a.source_type === 'vendor').length)}</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><UserCog size={18} /></div>
+          <div className="stat-sub">أنشطة النظام</div>
+          <div className="stat-val">{formatNumber(activities.filter(a => a.source_type === 'system').length)}</div>
+        </div>
+      </div>
 
-      {/* Results count */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {totalCount > 0 ? `${totalCount} نشاط` : 'لا توجد نتائج'}
-        </p>
-        {totalPages > 1 && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            صفحة {page + 1} من {totalPages}
-          </p>
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <input className="input" placeholder="بحث باسم العنصر..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ maxWidth: 220 }} />
+
+        <MultiSelectFilter
+          label="المصدر"
+          options={[
+            { value: 'project', label: 'مشاريع' },
+            { value: 'vendor', label: 'موردين' },
+            { value: 'system', label: 'النظام' },
+          ]}
+          selected={sourceFilter}
+          onToggle={v => toggleFilter('source', v)}
+        />
+
+        <MultiSelectFilter
+          label="الإجراء"
+          options={[
+            { value: 'created', label: 'إنشاء' },
+            { value: 'updated', label: 'تعديل' },
+            { value: 'deleted', label: 'حذف' },
+            { value: 'uploaded', label: 'رفع' },
+            { value: 'status_changed', label: 'تغيير حالة' },
+            { value: 'project_created', label: 'إنشاء مشروع' },
+            { value: 'item_added', label: 'إضافة بند' },
+            { value: 'file_uploaded', label: 'رفع ملف' },
+            { value: 'invoice_created', label: 'إنشاء فاتورة' },
+            { value: 'paid', label: 'دفع' },
+            { value: 'sent', label: 'إرسال' },
+            { value: 'completed', label: 'إكمال' },
+          ]}
+          selected={actionFilter}
+          onToggle={v => toggleFilter('action', v)}
+        />
+
+        <MultiSelectFilter
+          label="المستخدم"
+          options={users.map(u => ({ value: u.id, label: u.full_name }))}
+          selected={userFilter}
+          onToggle={v => toggleFilter('user', v)}
+        />
+
+        {hasActiveFilters && (
+          <button className="btn btn-ghost btn-sm" onClick={resetFilters}>
+            <RotateCcw size={13} /> إعادة تعيين
+          </button>
         )}
       </div>
 
       {/* Timeline */}
-      {loading ? (
-        <div className="text-center text-slate-600 dark:text-slate-400 py-12">
-          جاري التحميل...
-        </div>
-      ) : activities.length === 0 ? (
-        <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-12 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-100 dark:bg-slate-700
-            flex items-center justify-center">
-            <Bell className="w-10 h-10 text-slate-400 dark:text-slate-500" />
-          </div>
-          <p className="text-slate-500 dark:text-slate-400">لا توجد أنشطة مسجلة</p>
+      {activities.length === 0 ? (
+        <div className="dash-empty" style={{ height: 200 }}>
+          <Bell size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد أنشطة مسجلة</span>
         </div>
       ) : (
-        <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-6">
-          <div className="relative">
-            <div className="absolute right-[15px] top-0 bottom-0 w-0.5"
-              style={{ background: `linear-gradient(to bottom, color-mix(in srgb, var(--color-primary) 20%, transparent), transparent)` }}></div>
+        <div className="card" style={{ cursor: 'default', padding: 24 }}>
+          <div style={{ position: 'relative' }}>
+            {/* Timeline line */}
+            <div style={{
+              position: 'absolute', right: 15, top: 0, bottom: 0, width: 2,
+              background: 'linear-gradient(to bottom, var(--accent-glow-md), transparent)',
+            }} />
 
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               {activities.map((activity) => {
                 const SourceIcon = getSourceIcon(activity.source_type);
-                const colors = SOURCE_COLORS[activity.source_type] || SOURCE_COLORS.system;
+                const sourceBadgeCls = getSourceBadge(activity.source_type);
                 const clickable = isClickable(activity);
 
                 return (
-                  <div key={activity.id} className="relative flex gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full border-4 border-white dark:border-dark-card flex items-center justify-center z-10 shadow-lg"
-                      style={{ backgroundColor: 'var(--color-primary)' }}>
-                      <User className="w-4 h-4 text-white" strokeWidth={2.5} />
+                  <div key={activity.id} style={{ position: 'relative', display: 'flex', gap: 16 }}>
+                    {/* Timeline dot */}
+                    <div style={{
+                      flexShrink: 0, width: 32, height: 32, borderRadius: '50%',
+                      border: '3px solid var(--bg-surface)',
+                      background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      zIndex: 1, boxShadow: 'var(--shadow-sm)',
+                    }}>
+                      <User size={14} style={{ color: '#fff' }} strokeWidth={2.5} />
                     </div>
 
-                    <div className="flex-1 pb-6">
-                      <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-dark-border p-4
-                        hover:bg-slate-100 dark:hover:bg-slate-700 transition-all">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1">
-                            <span className="font-bold text-slate-800 dark:text-slate-100">{activity.user_name}</span>
-                            <span className="text-slate-600 dark:text-slate-400 mx-1">
-                              {ACTION_LABELS[activity.action_type] || activity.action_type}
-                            </span>
-                            <span className="text-slate-600 dark:text-slate-400">
-                              {ENTITY_LABELS[activity.entity_type] || activity.entity_type}
-                            </span>
-                            {activity.entity_name && (
-                              clickable ? (
-                                <button
-                                  onClick={() => handleEntityClick(activity)}
-                                  className="font-medium text-[#0A2A66] dark:text-[#47A1FF] mx-1
-                                    hover:underline cursor-pointer"
-                                >
-                                  "{activity.entity_name}"
-                                </button>
-                              ) : (
-                                <span className="font-medium text-[#0A2A66] dark:text-[#47A1FF] mx-1">
-                                  "{activity.entity_name}"
-                                </span>
-                              )
-                            )}
-                          </div>
-
-                          {/* Source badge */}
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
-                            border ${colors.bg} ${colors.text} ${colors.border}`}>
-                            <SourceIcon className="w-3 h-3" />
-                            {SOURCE_LABELS[activity.source_type] || activity.source_type}
-                          </div>
+                    {/* Content card */}
+                    <div style={{
+                      flex: 1, paddingBottom: 4,
+                      background: 'var(--bg-overlay)', borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-soft)', padding: '14px 16px',
+                      transition: 'background var(--transition-fast)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+                        <div style={{ flex: 1, fontSize: 13, lineHeight: 1.7 }}>
+                          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{activity.user_name}</span>
+                          <span style={{ color: 'var(--text-secondary)', margin: '0 4px' }}>
+                            {ACTION_LABELS[activity.action_type] || activity.action_type}
+                          </span>
+                          <span style={{ color: 'var(--text-secondary)' }}>
+                            {ENTITY_LABELS[activity.entity_type] || activity.entity_type}
+                          </span>
+                          {activity.entity_name && (
+                            clickable ? (
+                              <button
+                                onClick={() => handleEntityClick(activity)}
+                                style={{
+                                  fontWeight: 500, color: 'var(--accent-lighter)', margin: '0 4px',
+                                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                                  fontSize: 13, textDecoration: 'none',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                                onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                              >
+                                "{activity.entity_name}"
+                              </button>
+                            ) : (
+                              <span style={{ fontWeight: 500, color: 'var(--accent-lighter)', margin: '0 4px' }}>
+                                "{activity.entity_name}"
+                              </span>
+                            )
+                          )}
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                          <Clock className="w-3 h-3" />
-                          <span>{formatActivityTime(activity.created_at)}</span>
-                        </div>
+                        {/* Source badge */}
+                        <span className={sourceBadgeCls} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          <SourceIcon size={11} />
+                          {SOURCE_LABELS[activity.source_type] || activity.source_type}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)' }}>
+                        <Clock size={11} />
+                        <span>{formatActivityTime(activity.created_at)}</span>
                       </div>
                     </div>
                   </div>
@@ -428,39 +418,19 @@ export const ActivityLogPage = () => {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-4">
-          <button
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={page === 0}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
-              border border-slate-200 dark:border-dark-border
-              bg-white dark:bg-dark-card text-slate-700 dark:text-slate-200
-              hover:bg-slate-50 dark:hover:bg-slate-700
-              disabled:opacity-40 disabled:cursor-not-allowed
-              transition-all"
-          >
-            <ChevronRight className="w-4 h-4" />
-            السابق
-          </button>
-
-          <span className="text-sm text-slate-600 dark:text-slate-400">
-            {page + 1} / {totalPages}
-          </span>
-
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-            disabled={page >= totalPages - 1}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
-              border border-slate-200 dark:border-dark-border
-              bg-white dark:bg-dark-card text-slate-700 dark:text-slate-200
-              hover:bg-slate-50 dark:hover:bg-slate-700
-              disabled:opacity-40 disabled:cursor-not-allowed
-              transition-all"
-          >
-            التالي
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+      {totalPages > 0 && (
+        <div className="pagination">
+          <div className="pag-info">عرض <strong>{toEnglishNumbers((page * PAGE_SIZE + 1).toString())}-{toEnglishNumbers(Math.min((page + 1) * PAGE_SIZE, totalCount).toString())}</strong> من <strong>{toEnglishNumbers(totalCount.toString())}</strong> نشاط</div>
+          <div className="pag-controls">
+            <button className={`pag-btn ${page === 0 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronRight size={15} /></button>
+            {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
+              <button key={i} className={`pag-btn ${page === i ? 'active' : ''}`} onClick={() => setPage(i)}>{toEnglishNumbers((i + 1).toString())}</button>
+            ))}
+            {totalPages > 3 && <button className="pag-btn" style={{ fontSize: 11, letterSpacing: 1 }}>...</button>}
+            {totalPages > 3 && <button className={`pag-btn ${page === totalPages - 1 ? 'active' : ''}`} onClick={() => setPage(totalPages - 1)}>{toEnglishNumbers(totalPages.toString())}</button>}
+            <button className={`pag-btn ${page >= totalPages - 1 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronLeft size={15} /></button>
+          </div>
+          <div className="pag-per-page">إجمالي: {toEnglishNumbers(totalCount.toString())}</div>
         </div>
       )}
     </div>
