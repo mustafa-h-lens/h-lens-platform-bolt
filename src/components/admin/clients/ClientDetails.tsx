@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, User } from 'lucide-react';
+import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { PurchaseOrdersTabEnhanced } from './client-tabs/PurchaseOrdersTabEnhanced';
 import { ProductionTasksTab } from './client-tabs/ProductionTasksTab';
+import { ClientDocuments } from './client-tabs/ClientDocuments';
 import { ClientProjects } from './ClientProjects';
 
 interface Client {
@@ -20,12 +21,13 @@ interface ClientDetailsProps {
   onTabChange?: (tab: string | null) => void;
 }
 
-type TabType = 'projects' | 'purchase-orders' | 'production-tasks';
+type TabType = 'projects' | 'purchase-orders' | 'production-tasks' | 'documents';
 
 const TABS = [
   { id: 'projects', label: 'المشاريع', icon: FolderOpen },
   { id: 'purchase-orders', label: 'أوامر الشراء', icon: ShoppingCart },
   { id: 'production-tasks', label: 'المهام الإنتاجية', icon: ListChecks },
+  { id: 'documents', label: 'المستندات', icon: FileText },
 ] as const;
 
 const VALID_TAB_IDS: string[] = TABS.map(t => t.id);
@@ -165,6 +167,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
         )}
         {activeTab === 'purchase-orders' && <PurchaseOrdersTabEnhanced clientId={clientId} />}
         {activeTab === 'production-tasks' && <ProductionTasksTab clientId={clientId} />}
+        {activeTab === 'documents' && <ClientDocuments clientId={clientId} />}
       </div>
     </div>
   );

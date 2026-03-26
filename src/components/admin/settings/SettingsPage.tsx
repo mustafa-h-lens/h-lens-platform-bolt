@@ -12,10 +12,11 @@ import { POSettings } from './POSettings';
 import { TermsSettings } from './TermsSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { BanksSettings } from './BanksSettings';
+import { ClientDocumentTypesSettings } from './ClientDocumentTypesSettings';
 import AIExtractionTest from './AIExtractionTest';
 import EmailPreview from '../invoices/EmailPreview';
 
-type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'ai-test' | 'email-preview';
+type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'ai-test' | 'email-preview';
 
 interface SubTab {
   id: TabId;
@@ -81,7 +82,8 @@ const tabGroups: TabGroup[] = [
     color: '#DC2626',
     tabs: [
       { id: 'projects', label: 'إعدادات المشاريع', icon: FolderOpen, component: ProjectStatusSettings },
-      { id: 'suppliers', label: 'إعدادات الموردين', icon: Users, component: VendorFieldsSettings }
+      { id: 'suppliers', label: 'إعدادات الموردين', icon: Users, component: VendorFieldsSettings },
+      { id: 'clients', label: 'إعدادات العملاء', icon: FileText, component: ClientDocumentTypesSettings }
     ]
   },
   {
