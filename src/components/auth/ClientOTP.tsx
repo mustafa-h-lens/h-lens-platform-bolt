@@ -55,12 +55,12 @@ export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) 
       }
       setSuccess(true); setTimeout(()=>onSuccess(data), 1500);
     } catch(err) {
-      setError(err instanceof Error ? err.message : 'حدث خطأ'); setOtp(['','','','']); inputRefs.current[0]?.focus();
+      setError(err instanceof Error ? err.message : 'حدث خطأ'); setOtp(['','','','','','']); inputRefs.current[0]?.focus();
     } finally { setLoading(false); }
   };
 
   const handleResend = async () => {
-    setLoading(true); setError(''); setOtp(['','','','']); setRemainingAttempts(null);
+    setLoading(true); setError(''); setOtp(['','','','','','']); setRemainingAttempts(null);
     try {
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {

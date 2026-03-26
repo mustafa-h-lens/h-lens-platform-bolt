@@ -188,6 +188,8 @@ export const VendorRegistrationForm = () => {
         break;
       case 2:
         if (!formData.phone) errors.phone = 'رقم الجوال مطلوب';
+        if (!formData.email) errors.email = 'البريد الإلكتروني مطلوب';
+        else if (!formData.email.includes('@')) errors.email = 'البريد الإلكتروني غير صالح';
         if (!formData.primary_city) errors.primary_city = 'مدينة العمل الأساسية مطلوبة';
         break;
       case 3:

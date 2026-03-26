@@ -157,13 +157,13 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: Ven
       </div>
 
       {/* Tabs */}
-      <div className="tabs" style={{ marginBottom: 20, width: '100%' }}>
+      <div className="tabs-colored" style={{ marginBottom: 20, width: '100%', display: 'flex' }}>
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <div
               key={tab.id}
-              className={`tab ${activeTab === tab.id ? 'on' : ''}`}
+              className={`tab tab-blue ${activeTab === tab.id ? 'on' : ''}`}
               onClick={() => handleTabChange(tab.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
             >

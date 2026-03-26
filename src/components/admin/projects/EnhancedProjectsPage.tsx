@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, User, TrendingUp, TrendingDown, Filter, X, ChevronDown } from 'lucide-react';
+import { Plus, User, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Briefcase, Wallet, Receipt, BarChart3 } from 'lucide-react';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { formatNumber } from '../../../lib/formatters';
 
 interface Project {
   id: string;
@@ -53,10 +54,6 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
     status: [] as string[],
     client: [] as string[],
     manager: [] as string[],
-    startDateFrom: '',
-    startDateTo: '',
-    minValue: '',
-    maxValue: '',
   });
   const toggleFilter = (key: 'status' | 'client' | 'manager', value: string) => {
     setFilters(prev => {
@@ -126,35 +123,19 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       filters.manager.length === 0 ||
       (project.project_manager?.full_name && filters.manager.includes(project.project_manager.full_name));
 
-    const matchesStartDate = (() => {
-      if (!project.start_date) return !filters.startDateFrom && !filters.startDateTo;
-      const startDate = new Date(project.start_date);
-      const fromDate = filters.startDateFrom ? new Date(filters.startDateFrom) : null;
-      const toDate = filters.startDateTo ? new Date(filters.startDateTo) : null;
-      if (fromDate && startDate < fromDate) return false;
-      if (toDate && startDate > toDate) return false;
-      return true;
-    })();
-
-    const matchesValue = (() => {
-      const minValue = filters.minValue ? parseFloat(filters.minValue) : 0;
-      const maxValue = filters.maxValue ? parseFloat(filters.maxValue) : Infinity;
-      return project.total_price >= minValue && project.total_price <= maxValue;
-    })();
-
-    return matchesSearch && matchesStatus && matchesClient && matchesManager && matchesStartDate && matchesValue;
+    return matchesSearch && matchesStatus && matchesClient && matchesManager;
   });
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-      request: { label: 'طلب', color: 'var(--color-text-primary)', bgColor: 'var(--color-background-hover)' },
-      in_progress: { label: 'قيد التنفيذ', color: '#ffffff', bgColor: 'var(--color-info)' },
-      pending_payment: { label: 'بانتظار الدفع', color: '#ffffff', bgColor: 'var(--color-warning)' },
-      paid: { label: 'مدفوع', color: '#ffffff', bgColor: 'var(--color-success)' },
-      closed: { label: 'مغلق', color: 'var(--color-text-muted)', bgColor: 'var(--color-background-hover)' },
-      completed: { label: 'مكتمل', color: '#ffffff', bgColor: 'var(--color-success)' },
-      pending: { label: 'قيد الانتظار', color: '#ffffff', bgColor: 'var(--color-warning)' },
-      cancelled: { label: 'ملغي', color: '#ffffff', bgColor: 'var(--color-danger)' },
+    const statusMap: Record<string, { label: string; cls: string }> = {
+      request: { label: 'طلب', cls: 'badge badge-gray' },
+      in_progress: { label: 'قيد التنفيذ', cls: 'badge badge-blue' },
+      pending_payment: { label: 'بانتظار الدفع', cls: 'badge badge-amber' },
+      paid: { label: 'مدفوع', cls: 'badge badge-green' },
+      closed: { label: 'مغلق', cls: 'badge badge-gray' },
+      completed: { label: 'مكتمل', cls: 'badge badge-green' },
+      pending: { label: 'قيد الانتظار', cls: 'badge badge-amber' },
+      cancelled: { label: 'ملغي', cls: 'badge badge-red' },
     };
     return statusMap[status] || statusMap.request;
   };
@@ -171,145 +152,77 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
     return { profit, percentage, status };
   };
 
-  const getCostWarning = (price: number, cost: number | null) => {
-    if (!cost) return null;
-    const percentage = (cost / price) * 100;
-    if (percentage >= 80) return 'high';
-    return null;
-  };
-
-  const getProfitColor = (status: 'good' | 'warning' | 'danger') => {
-    switch (status) {
-      case 'good':
-        return 'var(--color-success)';
-      case 'warning':
-        return 'var(--color-warning)';
-      case 'danger':
-        return 'var(--color-danger)';
-    }
-  };
-
   const hasActiveFilters = filters.status.length > 0 || filters.client.length > 0 || filters.manager.length > 0;
 
   const resetFilters = () => {
-    setFilters({
-      status: [],
-      client: [],
-      manager: [],
-      startDateFrom: '',
-      startDateTo: '',
-      minValue: '',
-      maxValue: '',
-    });
+    setFilters({ status: [], client: [], manager: [] });
     setSearchTerm('');
   };
 
+  // Compute stats
+  const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.total_price || 0), 0);
+  const totalCost = filteredProjects.reduce((sum, p) => sum + (p.total_cost || 0), 0);
+  const totalProfit = totalBudget - totalCost;
+  const profitMargin = totalBudget > 0 ? (totalProfit / totalBudget) * 100 : 0;
+  const profitStatus: 'good' | 'warning' | 'danger' = profitMargin < 0 ? 'danger' : profitMargin < 20 ? 'warning' : 'good';
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-            style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
-          />
-          <p style={{ color: 'var(--color-text-secondary)' }}>جاري تحميل المشاريع...</p>
-        </div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 384 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري تحميل المشاريع...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-          المشاريع
-        </h1>
+    <div>
+      {/* Page Title */}
+      <div className="page-title-row">
+        <div>
+          <div className="page-title">المشاريع</div>
+          <div className="page-subtitle">إدارة المشاريع والعقود</div>
+        </div>
         {onCreateProject && (
-          <button
-            onClick={onCreateProject}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
-            style={{
-              backgroundColor: 'var(--color-primary)',
-              color: '#ffffff',
-            }}
-          >
-            <Plus size={20} />
-            مشروع جديد
+          <button className="btn btn-primary" onClick={onCreateProject}>
+            <Plus size={16} /> مشروع جديد
           </button>
         )}
       </div>
 
-      {/* Insight Cards */}
-      {(() => {
-        const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.total_price || 0), 0);
-        const totalCost = filteredProjects.reduce((sum, p) => sum + (p.total_cost || 0), 0);
-        const totalProfit = totalBudget - totalCost;
-        const profitMargin = totalBudget > 0 ? (totalProfit / totalBudget) * 100 : 0;
-        const profitStatus: 'good' | 'warning' | 'danger' = profitMargin < 0 ? 'danger' : profitMargin < 20 ? 'warning' : 'good';
-
-        return (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div
-              className="p-4 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><Briefcase size={18} /></div>
+          <div className="stat-sub">إجمالي المشاريع</div>
+          <div className="stat-val">{formatNumber(filteredProjects.length)}</div>
+        </div>
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><Wallet size={18} /></div>
+          <div className="stat-sub">إجمالي الميزانيات</div>
+          <div className="stat-val" dir="ltr">{formatCurrency(totalBudget, 'SAR')}</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><Receipt size={18} /></div>
+          <div className="stat-sub">إجمالي التكاليف</div>
+          <div className="stat-val" dir="ltr">{formatCurrency(totalCost, 'SAR')}</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><BarChart3 size={18} /></div>
+          <div className="stat-sub">إجمالي الأرباح</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="stat-val" dir="ltr">{formatCurrency(totalProfit, 'SAR')}</div>
+            <span
+              className={`badge ${profitStatus === 'good' ? 'badge-green' : profitStatus === 'warning' ? 'badge-amber' : 'badge-red'}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}
+              dir="ltr"
             >
-              <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي المشاريع</div>
-              <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-                {toEnglishNumbers(filteredProjects.length.toString())}
-              </div>
-            </div>
-            <div
-              className="p-4 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي الميزانيات</div>
-              <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                {formatCurrency(totalBudget, 'SAR')}
-              </div>
-            </div>
-            <div
-              className="p-4 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي التكاليف</div>
-              <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                {formatCurrency(totalCost, 'SAR')}
-              </div>
-            </div>
-            <div
-              className="p-4 rounded-lg border"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-            >
-              <div className="text-sm mb-1" style={{ color: 'var(--color-text-muted)' }}>إجمالي الأرباح</div>
-              <div className="flex items-center gap-2">
-                <div className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                  {formatCurrency(totalProfit, 'SAR')}
-                </div>
-                <span
-                  className="flex items-center gap-0.5 text-xs font-medium px-2 py-0.5 rounded-full"
-                  style={{
-                    color: getProfitColor(profitStatus),
-                    backgroundColor: profitStatus === 'good' ? 'rgba(16,185,129,0.1)' : profitStatus === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                  }}
-                  dir="ltr"
-                >
-                  {profitStatus === 'good' ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                  {toEnglishNumbers(profitMargin.toFixed(0))}%
-                </span>
-              </div>
-            </div>
+              {profitStatus === 'good' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+              {toEnglishNumbers(profitMargin.toFixed(0))}%
+            </span>
           </div>
-        );
-      })()}
+        </div>
+      </div>
 
-      {/* Filters + Search */}
-      <div
-        className="flex items-center gap-3 flex-wrap p-4 rounded-lg border"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-        }}
-      >
-        <Filter size={18} style={{ color: 'var(--color-text-muted)' }} />
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <input className="input" placeholder="بحث بالاسم..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ maxWidth: 220 }} />
 
         <MultiSelectFilter
           label="الحالة"
@@ -342,200 +255,89 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
         />
 
         {hasActiveFilters && (
-          <button
-            onClick={resetFilters}
-            className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{ color: 'var(--color-danger)' }}
-          >
-            <X size={14} />
-            مسح الفلاتر
+          <button className="btn btn-ghost btn-sm" onClick={resetFilters}>
+            <RotateCcw size={13} /> إعادة تعيين
           </button>
         )}
-
-        <div className="relative mr-auto">
-          <Search
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            size={16}
-            style={{ color: 'var(--color-text-muted)' }}
-          />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="بحث..."
-            className="pr-9 pl-3 py-2 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 w-48"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-          />
-        </div>
       </div>
 
+      {/* Table */}
       {filteredProjects.length === 0 ? (
-        <div
-          className="text-center py-16 rounded-lg border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          <p className="text-lg">لا توجد مشاريع تطابق البحث أو الفلاتر</p>
-        </div>
+        <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد مشاريع تطابق البحث أو الفلاتر</span></div>
       ) : (
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <table className="w-full">
-            <thead
-              style={{
-                backgroundColor: 'var(--color-table-header)',
-                borderBottom: '1px solid var(--color-table-border)',
-              }}
-            >
+        <div className="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  المشروع
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  العميل
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  مدير المشروع
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  الحالة
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  الميزانية
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  التكاليف
-                </th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                  الربح
-                </th>
+                <th>المشروع</th>
+                <th>العميل</th>
+                <th>مدير المشروع</th>
+                <th>الحالة</th>
+                <th>الميزانية</th>
+                <th>التكاليف</th>
+                <th>الربح</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProjects.map((project, index) => {
+              {filteredProjects.map((project) => {
                 const statusBadge = getStatusBadge(project.status);
                 const profitData = calculateProfit(project.total_price, project.total_cost);
-                const costPercentage = project.total_cost && project.total_price > 0
-                  ? (project.total_cost / project.total_price) * 100
-                  : 0;
 
                 return (
                   <tr
                     key={project.id}
                     onClick={() => onSelectProject(project.id)}
-                    className="cursor-pointer transition-colors"
-                    style={{
-                      borderBottom: index < filteredProjects.length - 1 ? '1px solid var(--color-table-border)' : 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    {/* Project Name + Mode Badge */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                          {project.name}
-                        </div>
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[11px] font-medium border"
-                          style={{
-                            borderColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.3)' : 'rgba(59,130,246,0.3)',
-                            color: project.project_mode === 'STANDARD' ? '#059669' : '#2563eb',
-                            backgroundColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.08)',
-                          }}
-                        >
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="td-primary">{project.name}</span>
+                        <span className={`badge ${project.project_mode === 'STANDARD' ? 'badge-green' : 'badge-blue'}`}>
                           {project.project_mode === 'STANDARD' ? 'مشروع' : 'عقد'}
                         </span>
                       </div>
                     </td>
-                    {/* Client */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                          style={{ backgroundColor: 'var(--color-background-hover)' }}
-                        >
+                    <td>
+                      <div className="user-row">
+                        <div className="client-logo" style={{ width: 28, height: 28 }}>
                           {project.client.client_image ? (
-                            <img
-                              src={project.client.client_image}
-                              alt={project.client.name}
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={project.client.client_image} alt={project.client.name} />
                           ) : (
-                            <User size={14} style={{ color: 'var(--color-text-muted)' }} />
+                            <User size={13} style={{ color: 'var(--text-muted)' }} />
                           )}
                         </div>
-                        <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                          {project.client.name}
-                        </span>
+                        <span className="u-name">{project.client.name}</span>
                       </div>
                     </td>
-                    {/* Project Manager */}
-                    <td className="px-6 py-4">
-                      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <td>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
                         {project.project_manager?.full_name || '-'}
                       </span>
                     </td>
-                    {/* Status */}
-                    <td className="px-6 py-4">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-medium inline-block"
-                        style={{
-                          backgroundColor: statusBadge.bgColor,
-                          color: statusBadge.color,
-                        }}
-                      >
-                        {statusBadge.label}
-                      </span>
+                    <td>
+                      <span className={statusBadge.cls}>{statusBadge.label}</span>
                     </td>
-                    {/* Budget */}
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                    <td>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">
                         {formatCurrency(project.total_price, project.currency)}
                       </span>
                     </td>
-                    {/* Cost */}
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+                    <td>
+                      <span style={{ fontWeight: 500, color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">
                         {project.total_cost ? formatCurrency(project.total_cost, project.currency) : '-'}
                       </span>
                     </td>
-                    {/* Profit */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }} dir="ltr">
                           {formatCurrency(profitData.profit, project.currency)}
                         </span>
                         <span
-                          className="flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-                          style={{
-                            color: getProfitColor(profitData.status as 'good' | 'warning' | 'danger'),
-                            backgroundColor: profitData.status === 'good' ? 'rgba(16,185,129,0.1)' : profitData.status === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                          }}
+                          className={`badge ${profitData.status === 'good' ? 'badge-green' : profitData.status === 'warning' ? 'badge-amber' : 'badge-red'}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 10 }}
                           dir="ltr"
                         >
-                          {profitData.status === 'good' ? (
-                            <TrendingUp size={12} />
-                          ) : (
-                            <TrendingDown size={12} />
-                          )}
+                          {profitData.status === 'good' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                           {toEnglishNumbers(profitData.percentage.toFixed(0))}%
                         </span>
                       </div>
@@ -549,56 +351,21 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       )}
 
       {/* Pagination */}
-      {(() => {
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return totalPages > 1 ? (
-          <div
-            className="flex items-center justify-between p-4 rounded-lg border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', direction: 'rtl' }}
-          >
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              التالي
-            </button>
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                عرض
-                <select
-                  value={pageSize}
-                  onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}
-                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '2px 6px', color: 'var(--color-text-primary)', fontSize: 13 }}
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                لكل صفحة
-              </span>
-            </div>
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              السابق
-            </button>
+      {totalPages > 0 && (
+        <div className="pagination">
+          <div className="pag-info">عرض <strong>{toEnglishNumbers((page * pageSize + 1).toString())}-{toEnglishNumbers(Math.min((page + 1) * pageSize, totalCount).toString())}</strong> من <strong>{toEnglishNumbers(totalCount.toString())}</strong> مشروع</div>
+          <div className="pag-controls">
+            <button className={`pag-btn ${page === 0 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronRight size={15} /></button>
+            {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
+              <button key={i} className={`pag-btn ${page === i ? 'active' : ''}`} onClick={() => setPage(i)}>{toEnglishNumbers((i + 1).toString())}</button>
+            ))}
+            {totalPages > 3 && <button className="pag-btn" style={{ fontSize: 11, letterSpacing: 1 }}>...</button>}
+            {totalPages > 3 && <button className={`pag-btn ${page === totalPages - 1 ? 'active' : ''}`} onClick={() => setPage(totalPages - 1)}>{toEnglishNumbers(totalPages.toString())}</button>}
+            <button className={`pag-btn ${page >= totalPages - 1 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronLeft size={15} /></button>
           </div>
-        ) : totalCount > 0 ? (
-          <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            إجمالي: {toEnglishNumbers(totalCount.toString())} مشروع
-          </div>
-        ) : null;
-      })()}
+          <div className="pag-per-page">عرض <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}><option value={10}>10</option><option value={20}>20</option><option value={50}>50</option><option value={100}>100</option></select> لكل صفحة</div>
+        </div>
+      )}
     </div>
   );
 };

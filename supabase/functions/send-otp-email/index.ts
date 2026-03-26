@@ -30,7 +30,8 @@ function getEmailTemplate(
   vendorName: string,
 ): string {
   const digits = otp.padStart(6, "0").slice(0, 6).split("");
-  const logoUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
+  const logoWhiteUrl = Deno.env.get("EMAIL_LOGO_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
+  const logoBlueUrl = Deno.env.get("EMAIL_LOGO_BLUE_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
   const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
   return `<!DOCTYPE html>
@@ -42,14 +43,25 @@ function getEmailTemplate(
   <meta name="supported-color-schemes" content="light dark" />
   <title>رمز التحقق - Half Lens</title>
   <style>
-    :root { color-scheme: light dark; supported-color-schemes: light dark; }
+    :root { color-scheme: light dark; }
+    /* Default: dark — white logos */
+    .logo-w { display: block !important; }
+    .logo-b { display: none !important; }
+    /* Light mode: blue logos + force white button text */
+    @media (prefers-color-scheme: light) {
+      .logo-w { display: none !important; }
+      .logo-b { display: block !important; }
+    }
+    /* Also target via Gmail/Apple dark mode selectors */
+    [data-ogsc] .logo-w { display: none !important; }
+    [data-ogsc] .logo-b { display: block !important; }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad { padding: 20px 16px !important; }
       .hdr { padding: 24px 16px 20px !important; }
       .ftr { padding: 20px 16px !important; }
-      .otp { width: 48px !important; height: 56px !important; font-size: 24px !important; }
-      .sp { width: 7px !important; }
+      .otp { width: 40px !important; height: 48px !important; font-size: 20px !important; }
+      .sp { width: 5px !important; }
     }
   </style>
 </head>
@@ -67,7 +79,8 @@ function getEmailTemplate(
           <!-- Header -->
           <tr>
             <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <img src="${logoUrl}" alt="Half Lens" width="160" style="display:block;margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;display:none;" />
               <div style="margin-top:16px;">
                 <span style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
               </div>
@@ -103,16 +116,9 @@ function getEmailTemplate(
             </td>
           </tr>
 
-          <!-- Copy OTP Button -->
-          <tr>
-            <td style="padding:16px 32px 0;text-align:center;">
-              <a id="copyBtn" href="#" onclick="navigator.clipboard&&navigator.clipboard.writeText('${otp}');var b=document.getElementById('copyBtn');if(b){b.innerText='✅ تم النسخ';setTimeout(function(){b.innerHTML='&#128203; نسخ الرمز'},2000)};return false;" style="display:inline-block;padding:8px 24px;background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.25);border-radius:8px;font-size:13px;font-weight:600;color:#60a5fa;text-decoration:none;cursor:pointer;font-family:'Cairo',Arial,sans-serif;">&#128203; نسخ الرمز</a>
-            </td>
-          </tr>
-
           <!-- Expiry -->
           <tr>
-            <td style="padding:14px 32px 0;text-align:center;">
+            <td style="padding:18px 32px 0;text-align:center;">
               <p style="font-size:13px;color:rgba(200,215,255,0.5);margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:rgba(200,215,255,0.8);">10 دقائق</strong></p>
             </td>
           </tr>
@@ -127,7 +133,7 @@ function getEmailTemplate(
                 </tr>
                 <tr>
                   <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128231; البريد</td>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${email}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);" dir="ltr">${email}</td>
                 </tr>
                 <tr>
                   <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);">&#128187; الجهاز</td>
@@ -153,20 +159,28 @@ function getEmailTemplate(
           <!-- CTA Button -->
           <tr>
             <td style="padding:24px 32px;text-align:center;">
-              <a href="${loginUrl}" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);color:#ffffff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 15px rgba(37,99,235,0.3);">&#127760; الذهاب إلى صفحة تسجيل الدخول</a>
+              <!--[if mso]>
+              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${loginUrl}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="21%" fillcolor="#2563eb" stroke="f">
+                <w:anchorlock/><center style="color:#ffffff;font-family:Cairo,Arial,sans-serif;font-size:14px;font-weight:bold;">الذهاب إلى صفحة تسجيل الدخول</center>
+              </v:roundrect>
+              <![endif]-->
+              <!--[if !mso]><!-->
+              <a href="${loginUrl}" style="display:inline-block;padding:14px 40px;background:#2563eb;color:#ffffff !important;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 15px rgba(37,99,235,0.3);mso-hide:all;">&#127760; <span style="color:#ffffff !important;">الذهاب إلى صفحة تسجيل الدخول</span></a>
+              <!--<![endif]-->
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
             <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img src="${logoUrl}" alt="Half Lens" width="100" style="display:block;margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
-                <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
+              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;display:none;" />
+              <div style="margin-top:12px;font-size:11px;color:#3b82f6;line-height:2;">
+                <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+                <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p style="font-size:10px;color:rgba(200,215,255,0.3);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 

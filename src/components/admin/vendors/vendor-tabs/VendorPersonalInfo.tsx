@@ -430,163 +430,148 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
 
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900">البيانات الشخصية</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>البيانات الشخصية</h2>
         {!isEditing ? (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="px-4 py-2 text-white rounded-lg transition-all font-medium"
-            style={{ backgroundColor: 'var(--color-primary)' }}
-          >
+          <button className="btn btn-primary btn-sm" onClick={() => setIsEditing(true)}>
             تعديل
           </button>
         ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-medium"
-            >
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
               إلغاء
             </button>
             <button
+              className="btn btn-sm"
               onClick={handleSave}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 font-medium"
+              style={{ background: 'var(--success)', color: '#fff', gap: 6 }}
             >
-              <Save className="w-4 h-4" />
+              <Save size={14} />
               {loading ? 'جاري الحفظ...' : 'حفظ'}
             </button>
           </div>
         )}
       </div>
 
-      <div className="md:col-span-2 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              الصورة الشخصية
-            </label>
-            <div className="flex items-center gap-4">
+      <div className="card" style={{ cursor: 'default' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          {/* Profile Image */}
+          <div className="input-group">
+            <label className="input-label">الصورة الشخصية</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
               {formData.profile_image ? (
                 <img
                   src={formData.profile_image}
                   alt="Profile"
-                  className="w-40 h-40 rounded-full object-cover border-2 border-slate-200"
+                  style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-soft)' }}
                 />
               ) : (
-                <div className="w-40 h-40 rounded-full flex items-center justify-center border-2 border-slate-200"
-                  style={{ backgroundColor: 'var(--color-primary)' }}>
-                  <span className="text-white text-5xl font-bold">
-                    {formData.full_name.charAt(0)}
-                  </span>
+                <div className="avatar av-xl" style={{ width: 120, height: 120, fontSize: 36, background: 'var(--accent)', color: '#fff' }}>
+                  {formData.full_name.charAt(0)}
                 </div>
               )}
               {isEditing && (
-                <div className="flex flex-col gap-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handleImageUpload}
-                    className="hidden"
+                    style={{ display: 'none' }}
                   />
                   <button
                     type="button"
+                    className="btn btn-secondary btn-sm"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    style={{ gap: 6 }}
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload size={14} />
                     {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
                   </button>
-                  <p className="text-xs text-slate-500">JPG, PNG, WebP - حد أقصى 5MB</p>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              صورة الهوية الشخصية
-            </label>
-            <div className="flex flex-col gap-4">
+          {/* ID Image */}
+          <div className="input-group">
+            <label className="input-label">صورة الهوية الشخصية</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {formData.id_image ? (
-                <div className="w-full max-w-sm">
-                  <img
-                    src={formData.id_image}
-                    alt="ID"
-                    className="w-full h-auto rounded-lg object-contain border-2 border-slate-200"
-                    style={{ maxHeight: '200px' }}
-                  />
-                </div>
+                <img
+                  src={formData.id_image}
+                  alt="ID"
+                  style={{ width: '100%', maxWidth: 280, maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
+                />
               ) : (
-                <div className="w-full max-w-sm h-40 rounded-lg bg-slate-100 flex items-center justify-center border-2 border-slate-200">
-                  <span className="text-slate-400 text-sm text-center p-2">لا توجد صورة</span>
+                <div style={{ width: '100%', maxWidth: 280, height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد صورة</span>
                 </div>
               )}
               {isEditing && (
-                <div className="flex flex-col gap-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <input
                     ref={idImageInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handleIdImageUpload}
-                    className="hidden"
+                    style={{ display: 'none' }}
                   />
                   <button
                     type="button"
+                    className="btn btn-secondary btn-sm"
                     onClick={() => idImageInputRef.current?.click()}
                     disabled={uploadingIdImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    style={{ gap: 6 }}
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload size={14} />
                     {uploadingIdImage ? 'جاري الرفع...' : 'رفع صورة الهوية'}
                   </button>
-                  <p className="text-xs text-slate-500">JPG, PNG, WebP - حد أقصى 5MB</p>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              صورة استمارة السيارة
-            </label>
-            <div className="flex flex-col gap-4">
+          {/* Vehicle Registration Image */}
+          <div className="input-group">
+            <label className="input-label">صورة استمارة السيارة</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {formData.vehicle_registration_image ? (
-                <div className="w-full max-w-sm">
-                  <img
-                    src={formData.vehicle_registration_image}
-                    alt="Vehicle Registration"
-                    className="w-full h-auto rounded-lg object-contain border-2 border-slate-200"
-                    style={{ maxHeight: '200px' }}
-                  />
-                </div>
+                <img
+                  src={formData.vehicle_registration_image}
+                  alt="Vehicle Registration"
+                  style={{ width: '100%', maxWidth: 280, maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
+                />
               ) : (
-                <div className="w-full max-w-sm h-40 rounded-lg bg-slate-100 flex items-center justify-center border-2 border-slate-200">
-                  <span className="text-slate-400 text-sm text-center p-2">لا توجد صورة</span>
+                <div style={{ width: '100%', maxWidth: 280, height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد صورة</span>
                 </div>
               )}
               {isEditing && (
-                <div className="flex flex-col gap-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <input
                     ref={vehicleRegImageInputRef}
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handleVehicleRegImageUpload}
-                    className="hidden"
+                    style={{ display: 'none' }}
                   />
                   <button
                     type="button"
+                    className="btn btn-secondary btn-sm"
                     onClick={() => vehicleRegImageInputRef.current?.click()}
                     disabled={uploadingVehicleRegImage}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                    style={{ gap: 6 }}
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload size={14} />
                     {uploadingVehicleRegImage ? 'جاري الرفع...' : 'رفع صورة الاستمارة'}
                   </button>
-                  <p className="text-xs text-slate-500">JPG, PNG, WebP - حد أقصى 5MB</p>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
                 </div>
               )}
             </div>
@@ -594,302 +579,286 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            الاسم الكامل <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={formData.full_name}
-            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="rtl"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            رقم الجوال <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="ltr"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            البريد الإلكتروني
-          </label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="ltr"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            المجال الأساسي
-          </label>
-          <SearchableDropdown
-            value={formData.primary_field}
-            onChange={(value) => setFormData({ ...formData, primary_field: value })}
-            options={vendorFields.map(field => ({ value: field.name, label: field.name }))}
-            placeholder="اختر المجال..."
-            disabled={!isEditing}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            رقم الهوية
-          </label>
-          <input
-            type="text"
-            value={formData.id_number}
-            onChange={(e) => setFormData({ ...formData, id_number: toEnglishNumbers(e.target.value) })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="ltr"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            تاريخ انتهاء الهوية
-          </label>
-          <input
-            type="date"
-            value={formData.id_expiry_date}
-            onChange={(e) => setFormData({ ...formData, id_expiry_date: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            رقم الاستمارة
-          </label>
-          <input
-            type="text"
-            value={formData.vehicle_registration_number}
-            onChange={(e) => setFormData({ ...formData, vehicle_registration_number: toEnglishNumbers(e.target.value) })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="ltr"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            ماركة المركبة
-          </label>
-          <input
-            type="text"
-            value={formData.vehicle_brand}
-            onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="rtl"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            رقم اللوحة بالإنجليزي
-          </label>
-          <input
-            type="text"
-            value={formData.vehicle_plate_number}
-            onChange={(e) => setFormData({ ...formData, vehicle_plate_number: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="ltr"
-          />
-        </div>
-
-        <div className="relative">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            الجنسية
-          </label>
-          {isEditing ? (
-            <div className="relative">
-              <input
-                type="text"
-                value={nationalitySearch || formData.nationality}
-                onChange={(e) => {
-                  setNationalitySearch(e.target.value);
-                  setShowNationalityDropdown(true);
-                }}
-                onFocus={() => setShowNationalityDropdown(true)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                dir="rtl"
-                placeholder="ابحث أو اختر..."
-              />
-              {showNationalityDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                  {filteredCountries.map((country) => (
-                    <button
-                      key={country.value}
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, nationality: country.value });
-                        setNationalitySearch('');
-                        setShowNationalityDropdown(false);
-                      }}
-                      className="w-full text-right px-4 py-2 hover:bg-slate-100 transition-colors"
-                    >
-                      {country.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
+      <div className="card" style={{ cursor: 'default' }}>
+        <div className="form-grid">
+          <div className="input-group">
+            <label className="input-label">الاسم الكامل <span className="req">*</span></label>
             <input
               type="text"
-              value={formData.nationality}
-              disabled
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg disabled:bg-slate-50 disabled:text-slate-600"
+              className="input"
+              value={formData.full_name}
+              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+              disabled={!isEditing}
               dir="rtl"
             />
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            مدينة العمل الأساسية
-          </label>
-          <SearchableDropdown
-            value={formData.primary_city}
-            onChange={(value) => setFormData({ ...formData, primary_city: value })}
-            options={cities.map(city => ({ value: city.name, label: city.name }))}
-            placeholder="اختر مدينة..."
-            disabled={!isEditing}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.available_other_cities}
-              onChange={(e) => setFormData({ ...formData, available_other_cities: e.target.checked })}
-              disabled={!isEditing}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-            />
-            <span className="text-sm font-medium text-slate-700">متاح للعمل في مدن أخرى</span>
-          </label>
-        </div>
-
-        {formData.available_other_cities && (
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              المدن الأخرى
-            </label>
-            {isEditing && (
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1">
-                  <SearchableDropdown
-                    value={newCity}
-                    onChange={(value) => setNewCity(value)}
-                    options={cities
-                      .filter(city => !formData.other_cities.includes(city.name))
-                      .map(city => ({ value: city.name, label: city.name }))}
-                    placeholder="اختر مدينة..."
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => addCity(newCity)}
-                  disabled={!newCity}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  إضافة
-                </button>
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {formData.other_cities.map((city) => (
-                <span
-                  key={city}
-                  className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                >
-                  {city}
-                  {isEditing && (
-                    <button
-                      type="button"
-                      onClick={() => removeCity(city)}
-                      className="hover:text-blue-900"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </span>
-              ))}
-            </div>
           </div>
-        )}
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            التكلفة التقديرية (ريال)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={formData.estimated_cost}
-            onChange={(e) => setFormData({ ...formData, estimated_cost: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            placeholder="مثال: 5000"
-            dir="ltr"
-          />
-          <p className="text-xs text-slate-500 mt-1">معلومة داخلية - لن تظهر للعملاء أو الموردين</p>
-        </div>
+          <div className="input-group">
+            <label className="input-label">رقم الجوال <span className="req">*</span></label>
+            <input
+              type="tel"
+              className="input"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })}
+              disabled={!isEditing}
+              dir="ltr"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            الحالة
-          </label>
-          <select
-            value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-            disabled={!isEditing}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="rtl"
-          >
-            <option value="active">نشط</option>
-            <option value="inactive">غير نشط</option>
-            <option value="blocked">محظور</option>
-          </select>
-        </div>
+          <div className="input-group">
+            <label className="input-label">البريد الإلكتروني</label>
+            <input
+              type="email"
+              className="input"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              disabled={!isEditing}
+              dir="ltr"
+            />
+          </div>
 
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            ملاحظات داخلية
-          </label>
-          <textarea
-            value={formData.internal_notes}
-            onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
-            disabled={!isEditing}
-            rows={4}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-slate-50 disabled:text-slate-600"
-            dir="rtl"
-            placeholder="ملاحظات خاصة بالفريق..."
-          />
+          <div className="input-group">
+            <label className="input-label">المجال الأساسي</label>
+            <SearchableDropdown
+              value={formData.primary_field}
+              onChange={(value) => setFormData({ ...formData, primary_field: value })}
+              options={vendorFields.map(field => ({ value: field.name, label: field.name }))}
+              placeholder="اختر المجال..."
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">رقم الهوية</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.id_number}
+              onChange={(e) => setFormData({ ...formData, id_number: toEnglishNumbers(e.target.value) })}
+              disabled={!isEditing}
+              dir="ltr"
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">تاريخ انتهاء الهوية</label>
+            <input
+              type="date"
+              className="input"
+              value={formData.id_expiry_date}
+              onChange={(e) => setFormData({ ...formData, id_expiry_date: e.target.value })}
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">رقم الاستمارة</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.vehicle_registration_number}
+              onChange={(e) => setFormData({ ...formData, vehicle_registration_number: toEnglishNumbers(e.target.value) })}
+              disabled={!isEditing}
+              dir="ltr"
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">ماركة المركبة</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.vehicle_brand}
+              onChange={(e) => setFormData({ ...formData, vehicle_brand: e.target.value })}
+              disabled={!isEditing}
+              dir="rtl"
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">رقم اللوحة بالإنجليزي</label>
+            <input
+              type="text"
+              className="input"
+              value={formData.vehicle_plate_number}
+              onChange={(e) => setFormData({ ...formData, vehicle_plate_number: e.target.value })}
+              disabled={!isEditing}
+              dir="ltr"
+            />
+          </div>
+
+          <div className="input-group" style={{ position: 'relative' }}>
+            <label className="input-label">الجنسية</label>
+            {isEditing ? (
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  className="input"
+                  value={nationalitySearch || formData.nationality}
+                  onChange={(e) => {
+                    setNationalitySearch(e.target.value);
+                    setShowNationalityDropdown(true);
+                  }}
+                  onFocus={() => setShowNationalityDropdown(true)}
+                  dir="rtl"
+                  placeholder="ابحث أو اختر..."
+                />
+                {showNationalityDropdown && (
+                  <div style={{
+                    position: 'absolute', zIndex: 10, width: '100%', marginTop: 4,
+                    background: 'var(--bg-surface)', border: '1px solid var(--border-soft)',
+                    borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
+                    maxHeight: 240, overflowY: 'auto'
+                  }}>
+                    {filteredCountries.map((country) => (
+                      <button
+                        key={country.value}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, nationality: country.value });
+                          setNationalitySearch('');
+                          setShowNationalityDropdown(false);
+                        }}
+                        style={{
+                          width: '100%', textAlign: 'right', padding: '8px 16px',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'var(--text-primary)', fontSize: 13,
+                          transition: 'background var(--transition-fast)',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-card-hover)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                      >
+                        {country.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <input
+                type="text"
+                className="input"
+                value={formData.nationality}
+                disabled
+                dir="rtl"
+              />
+            )}
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">مدينة العمل الأساسية</label>
+            <SearchableDropdown
+              value={formData.primary_city}
+              onChange={(value) => setFormData({ ...formData, primary_city: value })}
+              options={cities.map(city => ({ value: city.name, label: city.name }))}
+              placeholder="اختر مدينة..."
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                className="tbl-check"
+                checked={formData.available_other_cities}
+                onChange={(e) => setFormData({ ...formData, available_other_cities: e.target.checked })}
+                disabled={!isEditing}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>متاح للعمل في مدن أخرى</span>
+            </label>
+          </div>
+
+          {formData.available_other_cities && (
+            <div className="input-group" style={{ gridColumn: 'span 2' }}>
+              <label className="input-label">المدن الأخرى</label>
+              {isEditing && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <SearchableDropdown
+                      value={newCity}
+                      onChange={(value) => setNewCity(value)}
+                      options={cities
+                        .filter(city => !formData.other_cities.includes(city.name))
+                        .map(city => ({ value: city.name, label: city.name }))}
+                      placeholder="اختر مدينة..."
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => addCity(newCity)}
+                    disabled={!newCity}
+                  >
+                    إضافة
+                  </button>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {formData.other_cities.map((city) => (
+                  <span
+                    key={city}
+                    className="badge badge-blue"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    {city}
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => removeCity(city)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="input-group">
+            <label className="input-label">التكلفة التقديرية (ريال)</label>
+            <input
+              type="number"
+              step="0.01"
+              className="input"
+              value={formData.estimated_cost}
+              onChange={(e) => setFormData({ ...formData, estimated_cost: e.target.value })}
+              disabled={!isEditing}
+              placeholder="مثال: 5000"
+              dir="ltr"
+            />
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>معلومة داخلية - لن تظهر للعملاء أو الموردين</span>
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">الحالة</label>
+            <select
+              className="input"
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              disabled={!isEditing}
+              dir="rtl"
+            >
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+              <option value="blocked">محظور</option>
+            </select>
+          </div>
+
+          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+            <label className="input-label">ملاحظات داخلية</label>
+            <textarea
+              className="input"
+              value={formData.internal_notes}
+              onChange={(e) => setFormData({ ...formData, internal_notes: e.target.value })}
+              disabled={!isEditing}
+              rows={4}
+              dir="rtl"
+              placeholder="ملاحظات خاصة بالفريق..."
+            />
+          </div>
         </div>
       </div>
     </div>

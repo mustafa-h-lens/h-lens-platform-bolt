@@ -253,64 +253,54 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
   const getVisaStatusBadge = (status?: string) => {
     switch (status) {
       case 'valid':
-        return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">سارية</span>;
+        return <span className="badge badge-green">سارية</span>;
       case 'expired':
-        return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">منتهية</span>;
+        return <span className="badge badge-red">منتهية</span>;
       case 'expiring_soon':
-        return <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">تنتهي قريباً</span>;
+        return <span className="badge badge-amber">تنتهي قريباً</span>;
       default:
         return null;
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">جواز السفر</h3>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+      {/* Passport Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>جواز السفر</h3>
           {!editingPassport && (
-            <button
-              onClick={() => setEditingPassport(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Edit2 className="w-4 h-4" />
+            <button className="btn btn-primary btn-sm" onClick={() => setEditingPassport(true)} style={{ gap: 6 }}>
+              <Edit2 size={13} />
               {passportDoc ? 'تعديل' : 'إضافة'}
             </button>
           )}
         </div>
 
         {editingPassport ? (
-          <div className="bg-slate-50 rounded-lg p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  رقم الجواز
-                </label>
+          <div className="card" style={{ cursor: 'default' }}>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">رقم الجواز</label>
                 <input
                   type="text"
+                  className="input"
                   value={passportForm.passport_number}
                   onChange={(e) => setPassportForm({ ...passportForm, passport_number: toEnglishNumbers(e.target.value) })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="ltr"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  دولة الإصدار
-                </label>
+              <div className="input-group">
+                <label className="input-label">دولة الإصدار</label>
                 <select
+                  className="input"
                   value={passportForm.passport_issuing_country}
                   onChange={(e) => setPassportForm({ ...passportForm, passport_issuing_country: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="rtl"
                 >
                   <option value="">اختر دولة</option>
@@ -320,38 +310,32 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  تاريخ الإصدار
-                </label>
+              <div className="input-group">
+                <label className="input-label">تاريخ الإصدار</label>
                 <input
                   type="date"
+                  className="input"
                   value={passportForm.passport_issue_date}
                   onChange={(e) => setPassportForm({ ...passportForm, passport_issue_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  تاريخ الانتهاء
-                </label>
+              <div className="input-group">
+                <label className="input-label">تاريخ الانتهاء</label>
                 <input
                   type="date"
+                  className="input"
                   value={passportForm.passport_expiry_date}
                   onChange={(e) => setPassportForm({ ...passportForm, passport_expiry_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  رفع ملف الجواز
-                </label>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">رفع ملف الجواز</label>
                 <input
                   ref={passportFileRef}
                   type="file"
-                  className="hidden"
+                  style={{ display: 'none' }}
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -365,62 +349,58 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 />
                 <button
                   type="button"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => passportFileRef.current?.click()}
                   disabled={uploadingPassport}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  style={{ gap: 6 }}
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload size={14} />
                   {uploadingPassport ? 'جاري الرفع...' : 'اختيار ملف'}
                 </button>
                 {passportForm.passport_file && (
-                  <p className="text-xs text-green-600 mt-2">تم رفع الملف بنجاح</p>
+                  <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>تم رفع الملف بنجاح</span>
                 )}
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEditingPassport(false)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-              >
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => setEditingPassport(false)}>
                 إلغاء
               </button>
-              <button
-                onClick={savePassport}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Save className="w-4 h-4" />
+              <button className="btn btn-sm" onClick={savePassport} style={{ background: 'var(--success)', color: '#fff', gap: 6 }}>
+                <Save size={14} />
                 حفظ
               </button>
             </div>
           </div>
         ) : passportDoc ? (
-          <div className="bg-white border border-slate-200 rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="card" style={{ cursor: 'default' }}>
+            <div className="form-grid">
               <div>
-                <p className="text-sm text-slate-600">رقم الجواز</p>
-                <p className="text-slate-900 font-medium" dir="ltr">{passportDoc.passport_number || '-'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>رقم الجواز</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{passportDoc.passport_number || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-600">دولة الإصدار</p>
-                <p className="text-slate-900 font-medium">{passportDoc.passport_issuing_country || '-'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>دولة الإصدار</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{passportDoc.passport_issuing_country || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-600">تاريخ الإصدار</p>
-                <p className="text-slate-900 font-medium" dir="ltr">{passportDoc.passport_issue_date || '-'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ الإصدار</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{passportDoc.passport_issue_date || '-'}</p>
               </div>
               <div>
-                <p className="text-sm text-slate-600">تاريخ الانتهاء</p>
-                <p className="text-slate-900 font-medium" dir="ltr">{passportDoc.passport_expiry_date || '-'}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ الانتهاء</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{passportDoc.passport_expiry_date || '-'}</p>
               </div>
               {passportDoc.passport_file && (
-                <div className="md:col-span-2">
-                  <p className="text-sm text-slate-600 mb-2">الملف المرفق</p>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملف المرفق</p>
                   <button
+                    className="btn btn-ghost btn-sm"
                     onClick={() => window.open(passportDoc.passport_file, '_blank')}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                    style={{ gap: 6, color: 'var(--accent-lighter)' }}
                   >
-                    <FileText className="w-4 h-4" />
+                    <FileText size={14} />
                     عرض الملف
                   </button>
                 </div>
@@ -428,35 +408,31 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
             </div>
           </div>
         ) : (
-          <div className="bg-slate-50 rounded-lg p-8 text-center">
-            <p className="text-slate-600">لم يتم إضافة بيانات جواز السفر بعد</p>
+          <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 32 }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لم يتم إضافة بيانات جواز السفر بعد</p>
           </div>
         )}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-slate-900">الفيزا</h3>
-          <button
-            onClick={() => setAddingVisa(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+      {/* Visa Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>الفيزا</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => setAddingVisa(true)} style={{ gap: 6 }}>
+            <Plus size={13} />
             إضافة فيزا
           </button>
         </div>
 
         {addingVisa && (
-          <div className="bg-slate-50 rounded-lg p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  الدولة <span className="text-red-500">*</span>
-                </label>
+          <div className="card" style={{ cursor: 'default' }}>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">الدولة <span className="req">*</span></label>
                 <select
+                  className="input"
                   value={visaForm.visa_country}
                   onChange={(e) => setVisaForm({ ...visaForm, visa_country: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="rtl"
                   required
                 >
@@ -467,55 +443,47 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  نوع الفيزا
-                </label>
+              <div className="input-group">
+                <label className="input-label">نوع الفيزا</label>
                 <input
                   type="text"
+                  className="input"
                   value={visaForm.visa_type}
                   onChange={(e) => setVisaForm({ ...visaForm, visa_type: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="rtl"
                   placeholder="مثال: سياحية، عمل، دراسة"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  تاريخ البداية
-                </label>
+              <div className="input-group">
+                <label className="input-label">تاريخ البداية</label>
                 <input
                   type="date"
+                  className="input"
                   value={visaForm.visa_start_date}
                   onChange={(e) => setVisaForm({ ...visaForm, visa_start_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="ltr"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  تاريخ الانتهاء <span className="text-red-500">*</span>
-                </label>
+              <div className="input-group">
+                <label className="input-label">تاريخ الانتهاء <span className="req">*</span></label>
                 <input
                   type="date"
+                  className="input"
                   value={visaForm.visa_expiry_date}
                   onChange={(e) => setVisaForm({ ...visaForm, visa_expiry_date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   dir="ltr"
                   required
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  رفع إثبات الفيزا
-                </label>
+              <div className="input-group" style={{ gridColumn: 'span 2' }}>
+                <label className="input-label">رفع إثبات الفيزا</label>
                 <input
                   ref={visaFileRef}
                   type="file"
-                  className="hidden"
+                  style={{ display: 'none' }}
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -529,21 +497,23 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 />
                 <button
                   type="button"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => visaFileRef.current?.click()}
                   disabled={uploadingVisa}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  style={{ gap: 6 }}
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload size={14} />
                   {uploadingVisa ? 'جاري الرفع...' : 'اختيار ملف'}
                 </button>
                 {visaForm.visa_file && (
-                  <p className="text-xs text-green-600 mt-2">تم رفع الملف بنجاح</p>
+                  <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>تم رفع الملف بنجاح</span>
                 )}
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button
+                className="btn btn-secondary btn-sm"
                 onClick={() => {
                   setAddingVisa(false);
                   setVisaForm({
@@ -554,16 +524,16 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                     visa_file: '',
                   });
                 }}
-                className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
               >
                 إلغاء
               </button>
               <button
+                className="btn btn-sm"
                 onClick={saveVisa}
                 disabled={!visaForm.visa_country || !visaForm.visa_expiry_date}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'var(--success)', color: '#fff', gap: 6 }}
               >
-                <Save className="w-4 h-4" />
+                <Save size={14} />
                 حفظ
               </button>
             </div>
@@ -571,44 +541,46 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
         )}
 
         {visaDocs.length > 0 ? (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {visaDocs.map((visa) => (
-              <div key={visa.id} className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="flex items-start justify-between mb-4">
+              <div key={visa.id} className="card" style={{ cursor: 'default' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div>
-                    <h4 className="text-lg font-semibold text-slate-900">{visa.visa_country}</h4>
+                    <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{visa.visa_country}</h4>
                     {visa.visa_type && (
-                      <p className="text-sm text-slate-600">{visa.visa_type}</p>
+                      <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{visa.visa_type}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {getVisaStatusBadge(visa.visa_status)}
                     <button
+                      className="btn btn-ghost btn-sm"
                       onClick={() => deleteVisa(visa.id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      style={{ color: 'var(--danger-text)', padding: 6 }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
                   <div>
-                    <p className="text-sm text-slate-600">تاريخ البداية</p>
-                    <p className="text-slate-900 font-medium" dir="ltr">{visa.visa_start_date || '-'}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ البداية</p>
+                    <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{visa.visa_start_date || '-'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-600">تاريخ الانتهاء</p>
-                    <p className="text-slate-900 font-medium" dir="ltr">{visa.visa_expiry_date || '-'}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ الانتهاء</p>
+                    <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{visa.visa_expiry_date || '-'}</p>
                   </div>
                   {visa.visa_file && (
                     <div>
-                      <p className="text-sm text-slate-600 mb-2">الملف المرفق</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملف المرفق</p>
                       <button
+                        className="btn btn-ghost btn-sm"
                         onClick={() => window.open(visa.visa_file, '_blank')}
-                        className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-sm"
+                        style={{ gap: 6, color: 'var(--accent-lighter)', fontSize: 12 }}
                       >
-                        <FileText className="w-4 h-4" />
+                        <FileText size={14} />
                         عرض
                       </button>
                     </div>
@@ -619,8 +591,8 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
           </div>
         ) : (
           !addingVisa && (
-            <div className="bg-slate-50 rounded-lg p-8 text-center">
-              <p className="text-slate-600">لم يتم إضافة فيزا بعد</p>
+            <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 32 }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لم يتم إضافة فيزا بعد</p>
             </div>
           )
         )}

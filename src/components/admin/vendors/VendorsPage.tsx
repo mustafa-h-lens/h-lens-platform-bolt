@@ -239,6 +239,17 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         </button>
       </div>
 
+      {/* Sub-tabs */}
+      <div className="tabs-colored" style={{ marginBottom: 20, display: 'flex' }}>
+        <div className={`tab tab-blue ${activeSubTab === 'all' ? 'on' : ''}`} onClick={() => setActiveSubTab('all')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Store size={14} /> جميع الموردين
+        </div>
+        <div className={`tab tab-blue ${activeSubTab === 'pending' ? 'on' : ''}`} onClick={() => setActiveSubTab('pending')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Clock size={14} /> طلبات التسجيل
+          {pendingCount > 0 && <span className="sb-badge" style={{ marginRight: 0 }}>{toEnglishNumbers(pendingCount.toString())}</span>}
+        </div>
+      </div>
+
       {/* Stat Cards */}
       <div className="stats-grid">
         <div className="stat-card sc-blue">
@@ -260,15 +271,6 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
           <div className="stat-icon-box"><Users size={18} /></div>
           <div className="stat-sub">غير نشط / محظور</div>
           <div className="stat-val">{formatNumber(vendorStats.inactive)}</div>
-        </div>
-      </div>
-
-      {/* Sub-tabs */}
-      <div className="tabs" style={{ marginBottom: 20, display: 'flex', width: '100%' }}>
-        <div className={`tab ${activeSubTab === 'all' ? 'on' : ''}`} onClick={() => setActiveSubTab('all')} style={{ flex: 1, textAlign: 'center', justifyContent: 'center' }}>جميع الموردين</div>
-        <div className={`tab ${activeSubTab === 'pending' ? 'on' : ''}`} onClick={() => setActiveSubTab('pending')} style={{ flex: 1, textAlign: 'center', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Clock size={14} /> طلبات التسجيل
-          {pendingCount > 0 && <span className="sb-badge" style={{ marginRight: 0 }}>{toEnglishNumbers(pendingCount.toString())}</span>}
         </div>
       </div>
 

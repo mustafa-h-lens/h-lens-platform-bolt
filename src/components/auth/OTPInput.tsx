@@ -61,13 +61,13 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
       setTimeout(() => onSuccess(data), 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في التحقق');
-      setOtp(['','','','']);
+      setOtp(['','','','','','']);
       inputRefs.current[0]?.focus();
     } finally { setLoading(false); }
   };
 
   const handleResend = async () => {
-    setLoading(true); setError(''); setOtp(['','','','']); setRemainingAttempts(null);
+    setLoading(true); setError(''); setOtp(['','','','','','']); setRemainingAttempts(null);
     try {
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
@@ -374,7 +374,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
           flex: 1; display: flex; align-items: center; justify-content: center;
           padding: 0 1rem 3rem; position: relative; z-index: 2;
         }
-        .sl-card-wrap { width: 100%; max-width: 440px; }
+        .sl-card-wrap { width: 100%; max-width: 480px; }
 
         /* ══════════ GLASS CARD ══════════ */
         .sl-card {
@@ -440,19 +440,22 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
 
         /* OTP Inputs */
         .otp-inputs {
-          display: flex; justify-content: center; gap: 12px;
+          display: flex; justify-content: center; gap: 10px;
           margin-bottom: 8px;
           direction: ltr;
+          padding: 0 4px;
         }
         .otp-box {
-          width: 68px; height: 76px; text-align: center;
-          font-size: 2.1rem; font-weight: 800; border-radius: 14px;
+          width: 0; flex: 1; max-width: 52px; height: 60px; text-align: center;
+          font-size: 1.6rem; font-weight: 800; border-radius: 12px;
           background: var(--sl-input-bg);
           border: 2px solid var(--sl-input-border);
           color: var(--sl-text);
           outline: none; font-family: monospace;
           transition: all 0.2s;
           backdrop-filter: blur(8px);
+          box-sizing: border-box;
+          padding: 0;
         }
         .otp-box:focus {
           border-color: rgba(59,130,246,0.55);
@@ -565,8 +568,8 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
           .sl-title { font-size: 1.3rem; }
           .sl-topbar { padding: 16px; }
           .sl-blob { filter: blur(60px); }
-          .otp-box { width: 58px; height: 66px; font-size: 1.8rem; }
-          .otp-inputs { gap: 8px; }
+          .otp-box { max-width: 48px; height: 56px; font-size: 1.5rem; }
+          .otp-inputs { gap: 6px; }
         }
       `}</style>
     </div>

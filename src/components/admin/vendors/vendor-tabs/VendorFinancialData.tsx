@@ -141,39 +141,30 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900">البيانات المالية</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>البيانات المالية</h2>
         {!isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Edit2 className="w-4 h-4" />
+          <button className="btn btn-primary btn-sm" onClick={() => setIsEditing(true)} style={{ gap: 6 }}>
+            <Edit2 size={13} />
             {financialData ? 'تعديل' : 'إضافة'}
           </button>
         )}
       </div>
 
       {isEditing ? (
-        <div className="bg-slate-50 rounded-lg p-6 space-y-6">
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                طريقة الدفع
-              </label>
+        <div className="card" style={{ cursor: 'default' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div className="input-group">
+              <label className="input-label">طريقة الدفع</label>
               <select
+                className="input"
                 value={formData.payment_method}
                 onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 dir="rtl"
               >
                 <option value="bank_transfer">تحويل بنكي</option>
@@ -182,108 +173,97 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
               </select>
             </div>
 
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
+            <div className="input-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input
                   type="checkbox"
+                  className="tbl-check"
                   checked={formData.price_includes_tax}
                   onChange={(e) => setFormData({ ...formData, price_includes_tax: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-slate-700">السعر يشمل الضريبة</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>السعر يشمل الضريبة</span>
               </label>
             </div>
           </div>
 
           {formData.payment_method === 'bank_transfer' && (
-            <div className="space-y-4 pt-4 border-t border-slate-300">
-              <h3 className="text-lg font-semibold text-slate-900">البيانات البنكية</h3>
+            <div style={{ borderTop: '1px solid var(--border-soft)', marginTop: 20, paddingTop: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>البيانات البنكية</h3>
+              <div className="form-grid">
+                <div className="input-group">
+                  <label className="input-label">اسم البنك</label>
+                  <select
+                    className="input"
+                    value={formData.bank_name}
+                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                    dir="rtl"
+                  >
+                    <option value="">اختر بنك</option>
+                    {banksList.map((bank) => (
+                      <option key={bank} value={bank}>{bank}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  اسم البنك
-                </label>
-                <select
-                  value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  dir="rtl"
-                >
-                  <option value="">اختر بنك</option>
-                  {banksList.map((bank) => (
-                    <option key={bank} value={bank}>{bank}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="input-group">
+                  <label className="input-label">اسم المستفيد</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.beneficiary_name}
+                    onChange={(e) => setFormData({ ...formData, beneficiary_name: e.target.value })}
+                    dir="rtl"
+                    placeholder="الاسم كما يظهر في الحساب البنكي"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  اسم المستفيد
-                </label>
-                <input
-                  type="text"
-                  value={formData.beneficiary_name}
-                  onChange={(e) => setFormData({ ...formData, beneficiary_name: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  dir="rtl"
-                  placeholder="الاسم كما يظهر في الحساب البنكي"
-                />
-              </div>
+                <div className="input-group">
+                  <label className="input-label">رقم الآيبان (IBAN)</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.iban}
+                    onChange={(e) => setFormData({ ...formData, iban: toEnglishNumbers(e.target.value).toUpperCase() })}
+                    dir="ltr"
+                    placeholder="SA00 0000 0000 0000 0000 0000"
+                    maxLength={29}
+                    style={{ fontFamily: 'monospace' }}
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  رقم الآيبان (IBAN)
-                </label>
-                <input
-                  type="text"
-                  value={formData.iban}
-                  onChange={(e) => setFormData({ ...formData, iban: toEnglishNumbers(e.target.value).toUpperCase() })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-                  dir="ltr"
-                  placeholder="SA00 0000 0000 0000 0000 0000"
-                  maxLength={29}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  رقم الحساب (اختياري)
-                </label>
-                <input
-                  type="text"
-                  value={formData.account_number}
-                  onChange={(e) => setFormData({ ...formData, account_number: toEnglishNumbers(e.target.value) })}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-                  dir="ltr"
-                  placeholder="رقم الحساب"
-                />
+                <div className="input-group">
+                  <label className="input-label">رقم الحساب (اختياري)</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.account_number}
+                    onChange={(e) => setFormData({ ...formData, account_number: toEnglishNumbers(e.target.value) })}
+                    dir="ltr"
+                    placeholder="رقم الحساب"
+                    style={{ fontFamily: 'monospace' }}
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          <div className="flex gap-2 pt-4">
-            <button
-              onClick={handleCancel}
-              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-            >
+          <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+            <button className="btn btn-secondary btn-sm" onClick={handleCancel}>
               إلغاء
             </button>
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <Save className="w-4 h-4" />
+            <button className="btn btn-sm" onClick={handleSave} style={{ background: 'var(--success)', color: '#fff', gap: 6 }}>
+              <Save size={14} />
               حفظ
             </button>
           </div>
         </div>
       ) : financialData ? (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-lg p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="card" style={{ cursor: 'default' }}>
+            <div className="form-grid">
               <div>
-                <p className="text-sm text-slate-600 mb-1">طريقة الدفع</p>
-                <p className="text-slate-900 font-medium">
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>طريقة الدفع</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                   {financialData.payment_method === 'bank_transfer' && 'تحويل بنكي'}
                   {financialData.payment_method === 'cash' && 'نقدي'}
                   {financialData.payment_method === 'other' && 'أخرى'}
@@ -291,8 +271,8 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
               </div>
 
               <div>
-                <p className="text-sm text-slate-600 mb-1">السعر</p>
-                <p className="text-slate-900 font-medium">
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>السعر</p>
+                <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                   {financialData.price_includes_tax ? 'يشمل الضريبة' : 'لا يشمل الضريبة'}
                 </p>
               </div>
@@ -300,31 +280,31 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
           </div>
 
           {financialData.payment_method === 'bank_transfer' && (
-            <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">البيانات البنكية</h3>
+            <div className="card" style={{ cursor: 'default' }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>البيانات البنكية</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="form-grid">
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">اسم البنك</p>
-                  <p className="text-slate-900 font-medium">{financialData.bank_name || '-'}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم البنك</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{financialData.bank_name || '-'}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-slate-600 mb-1">اسم المستفيد</p>
-                  <p className="text-slate-900 font-medium">{financialData.beneficiary_name || '-'}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم المستفيد</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{financialData.beneficiary_name || '-'}</p>
                 </div>
 
-                <div className="md:col-span-2">
-                  <p className="text-sm text-slate-600 mb-1">رقم الآيبان (IBAN)</p>
-                  <p className="text-slate-900 font-medium font-mono" dir="ltr">
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>رقم الآيبان (IBAN)</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }} dir="ltr">
                     {financialData.iban || '-'}
                   </p>
                 </div>
 
                 {financialData.account_number && (
-                  <div className="md:col-span-2">
-                    <p className="text-sm text-slate-600 mb-1">رقم الحساب</p>
-                    <p className="text-slate-900 font-medium font-mono" dir="ltr">
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>رقم الحساب</p>
+                    <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }} dir="ltr">
                       {financialData.account_number}
                     </p>
                   </div>
@@ -334,12 +314,9 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
           )}
         </div>
       ) : (
-        <div className="bg-slate-50 rounded-lg p-12 text-center">
-          <p className="text-slate-600 mb-4">لم يتم إضافة البيانات المالية بعد</p>
-          <button
-            onClick={() => setIsEditing(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
+        <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 48 }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>لم يتم إضافة البيانات المالية بعد</p>
+          <button className="btn btn-primary btn-sm" onClick={() => setIsEditing(true)}>
             إضافة البيانات المالية
           </button>
         </div>

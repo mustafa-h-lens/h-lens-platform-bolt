@@ -99,112 +99,102 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
   };
 
   const getDocumentTypeBadge = (type: string) => {
-    const colors: Record<string, string> = {
-      contract: 'bg-blue-100 text-blue-800',
-      nda: 'bg-purple-100 text-purple-800',
-      certificate: 'bg-green-100 text-green-800',
-      other: 'bg-gray-100 text-gray-800',
+    const badgeClass: Record<string, string> = {
+      contract: 'badge badge-blue',
+      nda: 'badge badge-purple',
+      certificate: 'badge badge-green',
+      other: 'badge badge-gray',
     };
 
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${colors[type] || colors.other}`}>
+      <span className={badgeClass[type] || badgeClass.other}>
         {getDocumentTypeLabel(type)}
       </span>
     );
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="text-xl font-bold text-slate-900">المستندات</h2>
-          <p className="text-sm text-slate-600 mt-1">إدارة ملفات ومستندات المورد</p>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>المستندات</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>إدارة ملفات ومستندات المورد</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
+        <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ gap: 6 }}>
+          <Plus size={13} />
           رفع مستند
         </button>
       </div>
 
       {documents.length > 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">اسم الملف</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">النوع</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">تم الرفع بواسطة</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">تاريخ الرفع</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">الإجراءات</th>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم الملف</th>
+                <th>النوع</th>
+                <th>تم الرفع بواسطة</th>
+                <th>تاريخ الرفع</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((doc) => (
+                <tr key={doc.id}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <FileText size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                      <span className="td-primary">{doc.file_name}</span>
+                    </div>
+                  </td>
+                  <td>
+                    {getDocumentTypeBadge(doc.document_type)}
+                  </td>
+                  <td>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                      {doc.uploader?.full_name || 'غير معروف'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">
+                      {toEnglishNumbers(new Date(doc.created_at).toLocaleDateString('ar-SA'))}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="actions-cell">
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => window.open(doc.file_url, '_blank')}
+                        title="تحميل"
+                        style={{ color: 'var(--accent-lighter)', padding: 6 }}
+                      >
+                        <Download size={14} />
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setDeleteDocId(doc.id)}
+                        title="حذف"
+                        style={{ color: 'var(--danger-text)', padding: 6 }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {documents.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-5 h-5 text-slate-400" />
-                        <span className="font-medium text-slate-900">{doc.file_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getDocumentTypeBadge(doc.document_type)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-slate-700">
-                        {doc.uploader?.full_name || 'غير معروف'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-slate-700" dir="ltr">
-                        {toEnglishNumbers(new Date(doc.created_at).toLocaleDateString('ar-SA'))}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => window.open(doc.file_url, '_blank')}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="تحميل"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteDocId(doc.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="حذف"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="bg-slate-50 rounded-lg p-12 text-center">
-          <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-600 mb-4">لم يتم رفع أي مستندات بعد</p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
+        <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 48 }}>
+          <FileText size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 16px', opacity: 0.4 }} />
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16 }}>لم يتم رفع أي مستندات بعد</p>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)} style={{ gap: 6 }}>
+            <Plus size={13} />
             رفع أول مستند
           </button>
         </div>
@@ -296,15 +286,13 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
 
   return (
     <Modal isOpen={true} onClose={onClose} title="رفع مستند جديد">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            نوع المستند <span className="text-red-500">*</span>
-          </label>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="input-group">
+          <label className="input-label">نوع المستند <span className="req">*</span></label>
           <select
+            className="input"
             value={formData.document_type}
             onChange={(e) => setFormData({ ...formData, document_type: e.target.value as any })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             dir="rtl"
             required
           >
@@ -315,28 +303,24 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            اسم المستند
-          </label>
+        <div className="input-group">
+          <label className="input-label">اسم المستند</label>
           <input
             type="text"
+            className="input"
             value={formData.file_name}
             onChange={(e) => setFormData({ ...formData, file_name: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             dir="rtl"
             placeholder="سيتم استخدام اسم الملف إذا ترك فارغاً"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            اختيار الملف <span className="text-red-500">*</span>
-          </label>
+        <div className="input-group">
+          <label className="input-label">اختيار الملف <span className="req">*</span></label>
           <input
             ref={fileInputRef}
             type="file"
-            className="hidden"
+            style={{ display: 'none' }}
             accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -348,33 +332,29 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
               }
             }}
           />
-          <button
-            type="button"
+          <div
+            className="upload-area"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 text-slate-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
           >
-            <Upload className="w-5 h-5" />
-            {selectedFile ? selectedFile.name : 'اضغط لاختيار ملف'}
-          </button>
+            <Upload size={24} />
+            <strong>{selectedFile ? selectedFile.name : 'اضغط لاختيار ملف'}</strong>
+          </div>
           {selectedFile && (
-            <p className="text-xs text-green-600 mt-1">
+            <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>
               تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-            </p>
+            </span>
           )}
         </div>
 
-        <div className="flex gap-3 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-          >
+        <div style={{ display: 'flex', gap: 8, paddingTop: 16 }}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>
             إلغاء
           </button>
           <button
             type="submit"
+            className="btn btn-primary"
             disabled={loading || !selectedFile}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ flex: 1 }}
           >
             {loading ? 'جاري الرفع...' : 'رفع المستند'}
           </button>

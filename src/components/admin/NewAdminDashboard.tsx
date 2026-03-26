@@ -273,7 +273,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <Suspense fallback={<LazyFallback />}>
@@ -302,7 +302,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <Suspense fallback={<LazyFallback />}>
@@ -325,7 +325,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
             <Suspense fallback={<LazyFallback />}>
@@ -353,7 +353,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
             <Suspense fallback={<LazyFallback />}>
@@ -376,7 +376,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <Suspense fallback={<LazyFallback />}>
@@ -399,7 +399,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto p-6">
             <Suspense fallback={<LazyFallback />}>
@@ -423,7 +423,7 @@ export const NewAdminDashboard = () => {
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(c => !c)}
           />
-          <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+          <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
             {mobileMenuButton}
             <main className="flex-1 overflow-auto">
               <Suspense fallback={<LazyFallback />}>
@@ -458,7 +458,7 @@ export const NewAdminDashboard = () => {
           collapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(c => !c)}
         />
-        <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
           {mobileMenuButton}
           <main className="flex-1 overflow-auto">
             <Suspense fallback={<LazyFallback />}>
@@ -485,7 +485,7 @@ export const NewAdminDashboard = () => {
         onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
 
-      <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
         {mobileMenuButton}
 
         <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
@@ -668,7 +668,7 @@ export const NewAdminDashboard = () => {
           )}
 
         {currentPage === 'projects' && (
-  <div className="space-y-6">
+  <div style={{ padding: 28 }}>
     <Suspense fallback={<LazyFallback />}>
       <EnhancedProjectsPage
         onSelectProject={setSelectedProjectId}
@@ -679,7 +679,7 @@ export const NewAdminDashboard = () => {
 )}
 
 {currentPage === 'expenses' && (
-  <div className="space-y-6">
+  <div style={{ padding: 28 }}>
     <Suspense fallback={<LazyFallback />}>
       <ExpensesPage onViewProject={setSelectedProjectId} />
     </Suspense>

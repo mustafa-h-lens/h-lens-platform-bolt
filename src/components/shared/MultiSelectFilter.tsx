@@ -64,7 +64,7 @@ export function MultiSelectFilter({ label, options, selected, onToggle }: MultiS
           boxShadow: 'var(--shadow-lg, 0 10px 40px rgba(0,0,0,0.3))',
           overflow: 'hidden',
         }}>
-          {options.length > 6 && (
+          {options.length > 0 && (
             <div style={{ padding: 8, borderBottom: '1px solid var(--border-subtle, #1e293b)' }}>
               <input
                 type="text"

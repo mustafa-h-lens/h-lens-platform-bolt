@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { DollarSign, ChevronLeft, Filter, X, ChevronDown, ChevronUp, Calendar, Users, Receipt } from 'lucide-react';
+import { DollarSign, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Calendar, Users, Receipt, Wallet, CreditCard, RotateCcw } from 'lucide-react';
+import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
-import { formatCurrency, formatDateArabic } from '../../../lib/formatters';
+import { formatCurrency, formatDateArabic, formatNumber } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import type { VendorField } from '../../../types/database';
 
@@ -50,13 +51,19 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   const [totalCount, setTotalCount] = useState(0);
 
   // Filters
-  const [filterProject, setFilterProject] = useState('');
-  const [filterManager, setFilterManager] = useState('');
-  const [filterVendor, setFilterVendor] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterProject, setFilterProject] = useState<string[]>([]);
+  const [filterManager, setFilterManager] = useState<string[]>([]);
+  const [filterVendor, setFilterVendor] = useState<string[]>([]);
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
+
+  const toggleFilter = (key: 'project' | 'manager' | 'vendor', value: string) => {
+    const setter = key === 'project' ? setFilterProject : key === 'manager' ? setFilterManager : setFilterVendor;
+    setter(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+  };
 
   useEffect(() => {
     loadAllExpenses();
@@ -66,7 +73,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   // Reset page on filter change
   useEffect(() => {
     setPage(0);
-  }, [filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]);
+  }, [searchTerm, filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]);
 
   // Close date picker on outside click
   useEffect(() => {
@@ -216,21 +223,12 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
     return 'pending';
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid': return 'مدفوع';
-      case 'partial': return 'جزئي';
-      case 'overdue': return 'متأخر';
-      default: return 'معلق';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'var(--color-success)';
-      case 'partial': return 'var(--color-warning)';
-      case 'overdue': return 'var(--color-danger)';
-      default: return 'var(--color-text-secondary)';
+      case 'paid': return { label: 'مدفوع', cls: 'badge badge-green' };
+      case 'partial': return { label: 'جزئي', cls: 'badge badge-amber' };
+      case 'overdue': return { label: 'متأخر', cls: 'badge badge-red' };
+      default: return { label: 'معلق', cls: 'badge badge-gray' };
     }
   };
 
@@ -250,7 +248,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
     [expenses]
   );
 
-  const hasActiveFilters = filterProject || filterManager || filterVendor || filterDateFrom || filterDateTo;
+  const hasActiveFilters = searchTerm || filterProject.length > 0 || filterManager.length > 0 || filterVendor.length > 0 || filterDateFrom || filterDateTo;
 
   const dateRangeLabel = useMemo(() => {
     if (filterDateFrom && filterDateTo) return `${filterDateFrom} — ${filterDateTo}`;
@@ -260,9 +258,10 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   }, [filterDateFrom, filterDateTo]);
 
   const clearFilters = () => {
-    setFilterProject('');
-    setFilterManager('');
-    setFilterVendor('');
+    setSearchTerm('');
+    setFilterProject([]);
+    setFilterManager([]);
+    setFilterVendor([]);
     setFilterDateFrom('');
     setFilterDateTo('');
   };
@@ -270,14 +269,18 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   // Apply filters
   const filteredExpenses = useMemo(() =>
     expenses.filter(e => {
-      if (filterProject && e.project_id !== filterProject) return false;
-      if (filterManager && e.project_manager_name !== filterManager) return false;
-      if (filterVendor && e.vendor_name !== filterVendor) return false;
+      if (searchTerm) {
+        const s = searchTerm.toLowerCase();
+        if (!e.vendor_name.toLowerCase().includes(s) && !e.project_name.toLowerCase().includes(s) && !e.client_name.toLowerCase().includes(s)) return false;
+      }
+      if (filterProject.length > 0 && !filterProject.includes(e.project_id)) return false;
+      if (filterManager.length > 0 && !filterManager.includes(e.project_manager_name)) return false;
+      if (filterVendor.length > 0 && !filterVendor.includes(e.vendor_name)) return false;
       if (filterDateFrom && e.due_date && e.due_date < filterDateFrom) return false;
       if (filterDateTo && e.due_date && e.due_date > filterDateTo) return false;
       return true;
     }),
-    [expenses, filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]
+    [expenses, searchTerm, filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]
   );
 
   const totalAll = filteredExpenses.reduce((s, e) => s + e.amount, 0);
@@ -306,7 +309,6 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       v.total_amount += e.amount;
       v.total_paid += e.amount_paid;
       v.total_remaining += e.amount_remaining;
-      // Track the most recent operation date
       if (e.created_at && e.created_at > v.latest_activity) {
         v.latest_activity = e.created_at;
       }
@@ -319,165 +321,130 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         v.project_count += 1;
       }
     });
-    // Sort by most recent operation date (newest first)
     return Array.from(map.values()).sort((a, b) => b.latest_activity.localeCompare(a.latest_activity));
   }, [filteredExpenses]);
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   if (loading) {
-    return (
-      <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-        جاري التحميل...
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 384 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-        المصروفات
-      </h2>
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b" style={{ borderColor: 'var(--color-border)' }}>
-        <button
-          onClick={() => setActiveTab('expenses')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm transition-all border-b-2 -mb-px`}
-          style={{
-            borderColor: activeTab === 'expenses' ? 'var(--color-primary)' : 'transparent',
-            color: activeTab === 'expenses' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-          }}
-        >
-          <DollarSign size={16} />
-          المصروفات
-        </button>
-        <button
-          onClick={() => setActiveTab('vendors')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm transition-all border-b-2 -mb-px`}
-          style={{
-            borderColor: activeTab === 'vendors' ? 'var(--color-primary)' : 'transparent',
-            color: activeTab === 'vendors' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-          }}
-        >
-          <Users size={16} />
-          ملخص الموردين
-          {vendorSummaries.filter(v => v.total_remaining > 0).length > 0 && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full font-bold" style={{ backgroundColor: 'rgba(249,115,22,0.15)', color: '#f97316' }}>
-              {vendorSummaries.filter(v => v.total_remaining > 0).length}
-            </span>
-          )}
-        </button>
+    <div>
+      {/* Page Title */}
+      <div className="page-title-row">
+        <div>
+          <div className="page-title">المصروفات</div>
+          <div className="page-subtitle">إدارة المصروفات والمدفوعات</div>
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>إجمالي المصروفات</p>
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-            {formatCurrency(totalAll, 'SAR')}
-          </p>
+      {/* Tabs */}
+      <div className="tabs-colored" style={{ marginBottom: 20, display: 'flex' }}>
+        <div className={`tab tab-blue ${activeTab === 'expenses' ? 'on' : ''}`} onClick={() => setActiveTab('expenses')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <DollarSign size={14} />
+          المصروفات
         </div>
-        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المدفوع</p>
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-success)' }} dir="ltr">
-            {formatCurrency(totalPaid, 'SAR')}
-          </p>
+        <div className={`tab tab-blue ${activeTab === 'vendors' ? 'on' : ''}`} onClick={() => setActiveTab('vendors')} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Users size={14} />
+          ملخص الموردين
+          {vendorSummaries.filter(v => v.total_remaining > 0).length > 0 && (
+            <span className="sb-badge" style={{ marginRight: 0 }}>{vendorSummaries.filter(v => v.total_remaining > 0).length}</span>
+          )}
         </div>
-        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المتبقي</p>
-          <p className="text-2xl font-bold" style={{ color: totalRemaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
-            {formatCurrency(totalRemaining, 'SAR')}
-          </p>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><DollarSign size={18} /></div>
+          <div className="stat-sub">إجمالي المصروفات</div>
+          <div className="stat-val" dir="ltr">{formatCurrency(totalAll, 'SAR')}</div>
+        </div>
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><Wallet size={18} /></div>
+          <div className="stat-sub">المدفوع</div>
+          <div className="stat-val" dir="ltr">{formatCurrency(totalPaid, 'SAR')}</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><CreditCard size={18} /></div>
+          <div className="stat-sub">المتبقي</div>
+          <div className="stat-val" dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</div>
         </div>
       </div>
 
       {/* ═══ VENDOR SUMMARY TAB ═══ */}
       {activeTab === 'vendors' && (
-        <div className="space-y-4">
+        <>
           {vendorSummaries.length === 0 ? (
-            <div className="text-center py-16 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
-              <Users size={48} className="mx-auto mb-3 opacity-30" />
-              <p className="text-lg mb-2">لا توجد بيانات</p>
+            <div className="dash-empty" style={{ height: 200 }}>
+              <Users size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد بيانات</span>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-              {/* Table header */}
-              <table className="w-full">
-                <thead style={{ backgroundColor: 'var(--color-table-header)', borderBottom: '1px solid var(--color-table-border)' }}>
+            <div className="table-wrap">
+              <table>
+                <thead>
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المشاريع</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الفواتير</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الإجمالي</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدفوع</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المتبقي</th>
-                    <th className="px-4 py-3 text-center text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>السداد</th>
-                    <th className="px-4 py-3 w-10"></th>
+                    <th>المورد</th>
+                    <th style={{ textAlign: 'center' }}>المشاريع</th>
+                    <th style={{ textAlign: 'center' }}>الفواتير</th>
+                    <th>الإجمالي</th>
+                    <th>المدفوع</th>
+                    <th>المتبقي</th>
+                    <th style={{ textAlign: 'center' }}>السداد</th>
+                    <th style={{ width: 40 }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vendorSummaries.map((v, idx) => {
+                  {vendorSummaries.map((v) => {
                     const isExpanded = expandedVendor === v.vendor_id;
                     const paidPercent = v.total_amount > 0 ? Math.round((v.total_paid / v.total_amount) * 100) : 0;
-                    const statusLabel = v.total_remaining === 0 ? 'مسدد' : v.total_paid > 0 ? 'جزئي' : 'معلق';
-                    const statusColor = v.total_remaining === 0 ? 'var(--color-success)' : v.total_paid > 0 ? '#f97316' : 'var(--color-text-secondary)';
                     return (
                       <React.Fragment key={v.vendor_id}>
                         <tr
-                          className="cursor-pointer transition-colors"
-                          style={{ borderBottom: '1px solid var(--color-table-border)' }}
+                          style={{ cursor: 'pointer' }}
                           onClick={() => setExpandedVendor(isExpanded ? null : v.vendor_id)}
                         >
-                          <td className="px-4 py-3.5">
-                            <div className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>{v.vendor_name}</div>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>{v.project_count}</span>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }}>{v.invoice_count}</span>
-                          </td>
-                          <td className="px-4 py-3.5 font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                            {formatCurrency(v.total_amount, 'SAR')}
-                          </td>
-                          <td className="px-4 py-3.5 font-semibold text-sm" style={{ color: 'var(--color-success)' }} dir="ltr">
-                            {formatCurrency(v.total_paid, 'SAR')}
-                          </td>
-                          <td className="px-4 py-3.5 font-bold text-sm" style={{ color: v.total_remaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
-                            {formatCurrency(v.total_remaining, 'SAR')}
-                          </td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-2 justify-center">
-                              <div className="w-16 h-2 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
-                                <div className="h-full rounded-full" style={{ width: `${paidPercent}%`, backgroundColor: paidPercent === 100 ? 'var(--color-success)' : 'var(--color-primary)' }} />
+                          <td><span className="td-primary">{v.vendor_name}</span></td>
+                          <td style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>{v.project_count}</td>
+                          <td style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>{v.invoice_count}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_amount, 'SAR')}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_paid, 'SAR')}</td>
+                          <td style={{ fontWeight: 700, color: v.total_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_remaining, 'SAR')}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                              <div style={{ width: 64, height: 6, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
+                                <div style={{ width: `${paidPercent}%`, height: '100%', borderRadius: 99, background: paidPercent === 100 ? 'var(--success)' : 'var(--accent)' }} />
                               </div>
-                              <span className="text-xs font-bold" style={{ color: statusColor }}>{paidPercent}%</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: paidPercent === 100 ? 'var(--success-text)' : 'var(--warning-text)' }}>{paidPercent}%</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3.5 text-center">
-                            {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--color-text-secondary)' }} /> : <ChevronDown size={16} style={{ color: 'var(--color-text-secondary)' }} />}
+                          <td style={{ textAlign: 'center' }}>
+                            {isExpanded ? <ChevronUp size={14} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />}
                           </td>
                         </tr>
-                        {/* Expanded: project breakdown */}
                         {isExpanded && (
                           <tr>
-                            <td colSpan={8} style={{ backgroundColor: 'var(--color-background-hover)', padding: 0 }}>
-                              <div className="px-6 py-3">
-                                <div className="text-xs font-bold mb-2" style={{ color: 'var(--color-text-secondary)' }}>تفصيل المشاريع</div>
-                                <table className="w-full">
+                            <td colSpan={8} style={{ background: 'var(--bg-overlay)', padding: 0 }}>
+                              <div style={{ padding: '12px 24px' }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>تفصيل المشاريع</div>
+                                <table style={{ width: '100%' }}>
                                   <tbody>
                                     {v.projects.map((p, pi) => {
                                       const pp = p.amount > 0 ? Math.round((p.paid / p.amount) * 100) : 0;
                                       return (
-                                        <tr key={pi} style={{ borderBottom: pi < v.projects.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
-                                          <td className="py-2 text-sm" style={{ color: 'var(--color-text-primary)' }}>
-                                            <span className="flex items-center gap-1"><Receipt size={13} style={{ color: 'var(--color-primary)' }} /> {p.name}</span>
+                                        <tr key={pi} style={{ borderBottom: pi < v.projects.length - 1 ? '1px solid var(--border-soft)' : 'none' }}>
+                                          <td style={{ padding: '8px 0', fontSize: 13, color: 'var(--text-primary)' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Receipt size={12} style={{ color: 'var(--accent-lighter)' }} /> {p.name}</span>
                                           </td>
-                                          <td className="py-2 text-sm font-medium" style={{ color: 'var(--color-text-primary)' }} dir="ltr">{formatCurrency(p.amount, 'SAR')}</td>
-                                          <td className="py-2 text-sm font-medium" style={{ color: 'var(--color-success)' }} dir="ltr">{formatCurrency(p.paid, 'SAR')}</td>
-                                          <td className="py-2 text-sm font-bold" style={{ color: p.amount - p.paid > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">{formatCurrency(p.amount - p.paid, 'SAR')}</td>
-                                          <td className="py-2 w-20">
-                                            <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
-                                              <div className="h-full rounded-full" style={{ width: `${pp}%`, backgroundColor: pp === 100 ? 'var(--color-success)' : 'var(--color-primary)' }} />
+                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }} dir="ltr">{formatCurrency(p.amount, 'SAR')}</td>
+                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: 'var(--success-text)' }} dir="ltr">{formatCurrency(p.paid, 'SAR')}</td>
+                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 700, color: p.amount - p.paid > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} dir="ltr">{formatCurrency(p.amount - p.paid, 'SAR')}</td>
+                                          <td style={{ padding: '8px 0', width: 80 }}>
+                                            <div style={{ width: '100%', height: 4, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
+                                              <div style={{ width: `${pp}%`, height: '100%', borderRadius: 99, background: pp === 100 ? 'var(--success)' : 'var(--accent)' }} />
                                             </div>
                                           </td>
                                         </tr>
@@ -496,344 +463,188 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
               </table>
 
               {/* Footer */}
-              <div className="p-4" style={{ backgroundColor: 'var(--color-primary)' }}>
-                <div className="flex items-center justify-between gap-8">
-                  <span className="text-sm font-bold text-white">{vendorSummaries.length} مورد</span>
-                  <div className="flex items-center gap-6">
-                    <span className="text-sm text-white/70">الإجمالي: <strong className="text-white" dir="ltr">{formatCurrency(totalAll, 'SAR')}</strong></span>
-                    <span className="text-sm text-white/70">المدفوع: <strong className="text-green-300" dir="ltr">{formatCurrency(totalPaid, 'SAR')}</strong></span>
-                    <span className="text-sm text-white/70">المتبقي: <strong className="text-orange-300" dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</strong></span>
+              <div style={{ padding: 16, background: 'var(--accent)', borderRadius: '0 0 var(--radius-md) var(--radius-md)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{vendorSummaries.length} مورد</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</strong></span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{formatCurrency(totalPaid, 'SAR')}</strong></span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</strong></span>
                   </div>
                 </div>
               </div>
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* ═══ EXPENSES TAB ═══ */}
       {activeTab === 'expenses' && <>
-      {/* Filters */}
-      <div
-        className="rounded-xl border p-4"
-        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <Filter size={16} style={{ color: 'var(--color-text-secondary)' }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>تصفية</span>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="mr-auto flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors"
-              style={{ color: 'var(--color-danger)', backgroundColor: 'rgba(239,68,68,0.1)' }}
-            >
-              <X size={12} />
-              مسح الكل
-            </button>
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <input className="input" placeholder="بحث بالاسم..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ maxWidth: 220 }} />
+
+        <MultiSelectFilter
+          label="المشروع"
+          options={uniqueProjects.map(p => ({ value: p.id, label: p.name }))}
+          selected={filterProject}
+          onToggle={v => toggleFilter('project', v)}
+        />
+
+        <MultiSelectFilter
+          label="مدير المشروع"
+          options={uniqueManagers.map(m => ({ value: m, label: m }))}
+          selected={filterManager}
+          onToggle={v => toggleFilter('manager', v)}
+        />
+
+        <MultiSelectFilter
+          label="المورد"
+          options={uniqueVendors.map(v => ({ value: v, label: v }))}
+          selected={filterVendor}
+          onToggle={v => toggleFilter('vendor', v)}
+        />
+
+        {/* Date Range */}
+        <div style={{ position: 'relative' }} ref={datePickerRef}>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            style={{ gap: 6 }}
+          >
+            <Calendar size={13} />
+            <span style={{ fontSize: 12 }}>{dateRangeLabel || 'الفترة الزمنية'}</span>
+            {dateRangeLabel && (
+              <X
+                size={12}
+                style={{ flexShrink: 0 }}
+                onClick={e => { e.stopPropagation(); setFilterDateFrom(''); setFilterDateTo(''); }}
+              />
+            )}
+          </button>
+
+          {showDatePicker && (
+            <div style={{
+              position: 'absolute', top: '100%', marginTop: 8, left: 0, zIndex: 50,
+              borderRadius: 'var(--radius-md)', border: '1px solid var(--border-soft)',
+              padding: 16, boxShadow: 'var(--shadow-lg)', minWidth: 260,
+              background: 'var(--bg-surface)',
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="input-group">
+                  <label className="input-label">من</label>
+                  <input type="date" className="input" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} max={filterDateTo || undefined} />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">إلى</label>
+                  <input type="date" className="input" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} min={filterDateFrom || undefined} />
+                </div>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowDatePicker(false)}>تطبيق</button>
+              </div>
+            </div>
           )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Project */}
-          <div className="relative">
-            <select
-              value={filterProject}
-              onChange={e => setFilterProject(e.target.value)}
-              className="w-full appearance-none pr-3 pl-8 py-2.5 rounded-lg border text-sm cursor-pointer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: filterProject ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              }}
-            >
-              <option value="">كل المشاريع</option>
-              {uniqueProjects.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
-          </div>
 
-          {/* Project Manager */}
-          <div className="relative">
-            <select
-              value={filterManager}
-              onChange={e => setFilterManager(e.target.value)}
-              className="w-full appearance-none pr-3 pl-8 py-2.5 rounded-lg border text-sm cursor-pointer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: filterManager ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              }}
-            >
-              <option value="">كل مديري المشاريع</option>
-              {uniqueManagers.map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
-          </div>
-
-          {/* Vendor */}
-          <div className="relative">
-            <select
-              value={filterVendor}
-              onChange={e => setFilterVendor(e.target.value)}
-              className="w-full appearance-none pr-3 pl-8 py-2.5 rounded-lg border text-sm cursor-pointer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: filterVendor ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              }}
-            >
-              <option value="">كل الموردين</option>
-              {uniqueVendors.map(v => (
-                <option key={v} value={v}>{v}</option>
-              ))}
-            </select>
-            <ChevronDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
-          </div>
-
-          {/* Date Range */}
-          <div className="relative" ref={datePickerRef}>
-            <button
-              type="button"
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className="w-full flex items-center gap-2 pr-3 pl-8 py-2.5 rounded-lg border text-sm text-right cursor-pointer"
-              style={{
-                backgroundColor: 'var(--color-surface)',
-                borderColor: 'var(--color-border)',
-                color: dateRangeLabel ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              }}
-            >
-              <Calendar size={14} style={{ color: 'var(--color-text-secondary)' }} />
-              <span className="flex-1 truncate">{dateRangeLabel || 'الفترة الزمنية'}</span>
-              {dateRangeLabel && (
-                <X
-                  size={14}
-                  className="flex-shrink-0"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                  onClick={e => { e.stopPropagation(); setFilterDateFrom(''); setFilterDateTo(''); }}
-                />
-              )}
-            </button>
-            <ChevronDown size={14} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-secondary)' }} />
-
-            {showDatePicker && (
-              <div
-                className="absolute top-full mt-2 left-0 z-50 rounded-xl border p-4 shadow-lg min-w-[260px]"
-                style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-              >
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--color-text-secondary)' }}>من</label>
-                    <input
-                      type="date"
-                      value={filterDateFrom}
-                      onChange={e => setFilterDateFrom(e.target.value)}
-                      max={filterDateTo || undefined}
-                      className="w-full px-3 py-2 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: 'var(--color-surface)',
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-text-primary)',
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs mb-1 font-medium" style={{ color: 'var(--color-text-secondary)' }}>إلى</label>
-                    <input
-                      type="date"
-                      value={filterDateTo}
-                      onChange={e => setFilterDateTo(e.target.value)}
-                      min={filterDateFrom || undefined}
-                      className="w-full px-3 py-2 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: 'var(--color-surface)',
-                        borderColor: 'var(--color-border)',
-                        color: 'var(--color-text-primary)',
-                      }}
-                    />
-                  </div>
-                  <button
-                    onClick={() => setShowDatePicker(false)}
-                    className="w-full py-2 rounded-lg text-sm font-medium text-white"
-                    style={{ backgroundColor: 'var(--color-primary)' }}
-                  >
-                    تطبيق
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {hasActiveFilters && (
+          <button className="btn btn-ghost btn-sm" onClick={clearFilters}>
+            <RotateCcw size={13} /> إعادة تعيين
+          </button>
+        )}
       </div>
 
       {/* Expenses Table */}
       {filteredExpenses.length === 0 ? (
-        <div
-          className="text-center py-16 rounded-lg border"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-            color: 'var(--color-text-secondary)',
-          }}
-        >
-          <DollarSign size={48} className="mx-auto mb-3 opacity-30" />
-          <p className="text-lg mb-2">لا توجد مصروفات</p>
-          <p className="text-sm">يمكنك إضافة مصروفات من داخل صفحة المشروع</p>
+        <div className="dash-empty" style={{ height: 200 }}>
+          <DollarSign size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد مصروفات</span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 4 }}>يمكنك إضافة مصروفات من داخل صفحة المشروع</span>
         </div>
       ) : (
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{
-            backgroundColor: 'var(--color-surface)',
-            borderColor: 'var(--color-border)',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead
-                style={{
-                  backgroundColor: 'var(--color-table-header)',
-                  borderBottom: '1px solid var(--color-table-border)',
-                }}
-              >
-                <tr>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>العميل</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المشروع</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>مدير المشروع</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الدور</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المبلغ</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدفوع</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المتبقي</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الحالة</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الاستحقاق</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredExpenses.map((expense, index) => {
-                  const status = deriveStatus(expense);
-                  return (
-                    <tr
-                      key={expense.id}
-                      className="cursor-pointer transition-colors"
-                      style={{
-                        borderBottom: index < filteredExpenses.length - 1 ? '1px solid var(--color-table-border)' : 'none',
-                      }}
-                      onClick={() => onViewProject?.(expense.project_id)}
-                    >
-                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                        {expense.vendor_name}
-                      </td>
-                      <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                        <div className="flex items-center gap-2">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>المورد</th>
+                <th>العميل</th>
+                <th>المشروع</th>
+                <th>مدير المشروع</th>
+                <th>الدور</th>
+                <th>المبلغ</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>الحالة</th>
+                <th>الاستحقاق</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredExpenses.map((expense) => {
+                const status = deriveStatus(expense);
+                const badge = getStatusBadge(status);
+                return (
+                  <tr
+                    key={expense.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => onViewProject?.(expense.project_id)}
+                  >
+                    <td><span className="td-primary">{expense.vendor_name}</span></td>
+                    <td>
+                      <div className="user-row">
+                        <div className="client-logo" style={{ width: 28, height: 28 }}>
                           {expense.client_image ? (
-                            <img
-                              src={expense.client_image}
-                              alt={expense.client_name}
-                              className="w-7 h-7 rounded-full object-cover border"
-                              style={{ borderColor: 'var(--color-border)' }}
-                            />
+                            <img src={expense.client_image} alt={expense.client_name} />
                           ) : (
-                            <div
-                              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                              style={{ backgroundColor: 'var(--color-primary)' }}
-                            >
-                              {expense.client_name.charAt(0)}
-                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{expense.client_name.charAt(0)}</span>
                           )}
-                          {expense.client_name}
                         </div>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-primary)' }}>
-                        <span className="flex items-center gap-1">
-                          {expense.project_name}
-                          <ChevronLeft size={14} />
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                        {expense.project_manager_name}
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                        {getCategoryLabel(expense.category)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                        {formatCurrency(expense.amount, expense.currency)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-success)' }} dir="ltr">
-                        {formatCurrency(expense.amount_paid, expense.currency)}
-                      </td>
-                      <td className="px-4 py-3 font-semibold" style={{ color: expense.amount_remaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
-                        {formatCurrency(expense.amount_remaining, expense.currency)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="px-3 py-1 rounded-full text-xs font-medium"
-                          style={{ backgroundColor: getStatusColor(status), color: '#ffffff' }}
-                        >
-                          {getStatusLabel(status)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-                        {expense.due_date ? formatDateArabic(expense.due_date) : '-'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <span className="u-name">{expense.client_name}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-lighter)', fontSize: 13 }}>
+                        {expense.project_name}
+                        <ChevronLeft size={12} />
+                      </span>
+                    </td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{expense.project_manager_name}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{getCategoryLabel(expense.category)}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount, expense.currency)}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_paid, expense.currency)}</td>
+                    <td style={{ fontWeight: 600, color: expense.amount_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_remaining, expense.currency)}</td>
+                    <td><span className={badge.cls}>{badge.label}</span></td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">{expense.due_date ? formatDateArabic(expense.due_date) : '-'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
           {/* Footer total */}
-          <div className="p-4" style={{ backgroundColor: 'var(--color-primary)' }}>
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-bold text-white">إجمالي المصروفات</span>
-              <span className="text-xl font-bold text-white" dir="ltr">
-                {formatCurrency(totalAll, 'SAR')}
-              </span>
+          <div style={{ padding: 16, background: 'var(--accent)', borderRadius: '0 0 var(--radius-md) var(--radius-md)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>إجمالي المصروفات</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Pagination */}
-      {(() => {
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return totalPages > 1 ? (
-          <div
-            className="flex items-center justify-between p-4 rounded-lg border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              السابق
-            </button>
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
-            </div>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              التالي
-            </button>
+      {totalPages > 0 && (
+        <div className="pagination">
+          <div className="pag-info">عرض <strong>{toEnglishNumbers((page * pageSize + 1).toString())}-{toEnglishNumbers(Math.min((page + 1) * pageSize, totalCount).toString())}</strong> من <strong>{toEnglishNumbers(totalCount.toString())}</strong> مصروف</div>
+          <div className="pag-controls">
+            <button className={`pag-btn ${page === 0 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronRight size={15} /></button>
+            {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
+              <button key={i} className={`pag-btn ${page === i ? 'active' : ''}`} onClick={() => setPage(i)}>{toEnglishNumbers((i + 1).toString())}</button>
+            ))}
+            {totalPages > 3 && <button className="pag-btn" style={{ fontSize: 11, letterSpacing: 1 }}>...</button>}
+            {totalPages > 3 && <button className={`pag-btn ${page === totalPages - 1 ? 'active' : ''}`} onClick={() => setPage(totalPages - 1)}>{toEnglishNumbers(totalPages.toString())}</button>}
+            <button className={`pag-btn ${page >= totalPages - 1 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronLeft size={15} /></button>
           </div>
-        ) : totalCount > 0 ? (
-          <div className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            إجمالي: {toEnglishNumbers(totalCount.toString())} مصروف
-          </div>
-        ) : null;
-      })()}
+          <div className="pag-per-page">إجمالي: {toEnglishNumbers(totalCount.toString())}</div>
+        </div>
+      )}
       </>}
     </div>
   );

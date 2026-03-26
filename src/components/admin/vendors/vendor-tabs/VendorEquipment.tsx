@@ -103,7 +103,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   useEffect(() => {
     if (selectedCategory) {
       fetchBrands();
-      // جلب معدات الإضاءة بدون علامات تجارية مباشرة
       fetchCategoryEquipmentWithoutBrands();
       setSelectedBrand('');
       setCatalogItems([]);
@@ -173,7 +172,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   };
 
   const fetchCategoryEquipmentWithoutBrands = async () => {
-    // Fetch any equipment in this category that has no brand (works for any category)
     try {
       const { data, error } = await supabase
         .from('equipment_catalog')
@@ -191,7 +189,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
         .order('name');
 
       if (error) throw error;
-      // Only set if there are brandless items; otherwise leave catalog empty for brand selection
       if (data && data.length > 0) {
         setCatalogItems(data);
       }
@@ -202,7 +199,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
 
   const fetchBrands = async () => {
     try {
-      // جلب معرفات العلامات التجارية المرتبطة بهذا التصنيف
       const { data: brandCategoryData, error: bcError } = await supabase
         .from('brand_categories')
         .select('brand_id')
@@ -217,7 +213,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
         return;
       }
 
-      // جلب تفاصيل العلامات التجارية
       const { data: brandsData, error: brandsError } = await supabase
         .from('equipment_brands')
         .select('id, name, name_en')
@@ -422,132 +417,106 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-slate-900">المعدات</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          <Plus className="w-4 h-4" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>المعدات</h2>
+        <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)} style={{ gap: 6 }}>
+          <Plus size={13} />
           إضافة معدة
         </button>
       </div>
 
-      {/* عرض المعدات */}
       {equipment.length === 0 ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
-          <CameraIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-600">لا توجد معدات حالياً</p>
-          <p className="text-sm text-slate-400 mt-1">قم بإضافة أول معدة للمورد</p>
+        <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 48 }}>
+          <CameraIcon size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 16px', opacity: 0.4 }} />
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد معدات حالياً</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, opacity: 0.7 }}>قم بإضافة أول معدة للمورد</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {equipment.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all group"
-            >
-              {/* صورة المعدة */}
-              <div className="aspect-video bg-slate-100 dark:bg-slate-700 relative overflow-hidden">
+            <div key={item.id} className="card" style={{ cursor: 'default', padding: 0, overflow: 'hidden' }}>
+              {/* Equipment Image */}
+              <div style={{ aspectRatio: '16/9', background: 'var(--bg-overlay)', position: 'relative', overflow: 'hidden' }}>
                 {item.image ? (
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : item.equipment_catalog?.image_url ? (
-                  <img
-                    src={item.equipment_catalog.image_url}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={item.equipment_catalog.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <CameraIcon className="w-12 h-12 text-slate-400" />
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CameraIcon size={36} style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
                   </div>
                 )}
-                {/* شارة التصنيف */}
                 {item.type && (
-                  <div className="absolute top-3 right-3">
-                    <span className="px-3 py-1 backdrop-blur-sm text-white text-xs rounded-full font-medium"
-                      style={{ backgroundColor: 'var(--color-primary)' }}>
+                  <div style={{ position: 'absolute', top: 10, right: 10 }}>
+                    <span className="badge badge-blue" style={{ backdropFilter: 'blur(8px)' }}>
                       {item.type}
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* تفاصيل المعدة */}
-              <div className="p-4 space-y-3">
+              {/* Equipment Details */}
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
-                  <h3 className="font-semibold text-slate-900 mb-1">{item.name}</h3>
+                  <h3 style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14, marginBottom: 4 }}>{item.name}</h3>
                   {item.equipment_catalog && (
-                    <p className="text-xs text-slate-500">
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                       من الكتالوج: {item.equipment_catalog.name}
                     </p>
                   )}
                 </div>
 
-                {/* معلومات إضافية */}
-                <div className="space-y-2 text-sm">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
                   {item.serial_number && (
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="text-slate-500">الرقم التسلسلي:</span>
-                      <span className="font-mono" dir="ltr">{item.serial_number}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>الرقم التسلسلي:</span>
+                      <span style={{ fontFamily: 'monospace' }} dir="ltr">{item.serial_number}</span>
                     </div>
                   )}
                   {item.condition && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">الحالة:</span>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          item.condition === 'excellent'
-                            ? 'bg-gradient-to-r from-green-100 to-green-200 text-green-800'
-                            : item.condition === 'good'
-                            ? 'bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800'
-                            : 'bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800'
-                        }`}
-                      >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)' }}>الحالة:</span>
+                      <span className={`badge ${
+                        item.condition === 'excellent' ? 'badge-green' :
+                        item.condition === 'good' ? 'badge-blue' : 'badge-amber'
+                      }`}>
                         {CONDITION_OPTIONS.find((opt) => opt.value === item.condition)?.label}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-slate-600">
-                    <span className="text-slate-500">العدد:</span>
-                    <span className="font-semibold text-blue-600">{item.quantity}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>العدد:</span>
+                    <span style={{ fontWeight: 600, color: 'var(--accent-lighter)' }}>{item.quantity}</span>
                   </div>
                   {item.notes && (
-                    <div className="text-slate-600 text-xs bg-slate-50 rounded-lg p-2">
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', background: 'var(--bg-overlay)', borderRadius: 'var(--radius-md)', padding: 8 }}>
                       {item.notes}
                     </div>
                   )}
                 </div>
 
-                {/* أزرار التحكم */}
-                <div className="flex gap-2 pt-3 border-t border-slate-100">
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
                   <button
+                    className="btn btn-ghost btn-sm"
                     onClick={() => startEdit(item)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    style={{ flex: 1, gap: 6, color: 'var(--accent-lighter)', justifyContent: 'center' }}
                   >
-                    <Edit2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">تعديل</span>
+                    <Edit2 size={13} />
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>تعديل</span>
                   </button>
                   <button
+                    className="btn btn-ghost btn-sm"
                     onClick={() => handleDelete(item.id)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    style={{ flex: 1, gap: 6, color: 'var(--danger-text)', justifyContent: 'center' }}
                   >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">حذف</span>
+                    <Trash2 size={13} />
+                    <span style={{ fontSize: 12, fontWeight: 500 }}>حذف</span>
                   </button>
                 </div>
               </div>
@@ -556,27 +525,24 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
         </div>
       )}
 
-      {/* Modal إضافة/تعديل */}
+      {/* Add/Edit Modal */}
       <Modal
         isOpen={showModal}
         onClose={resetForm}
         title={editingId ? 'تعديل المعدة' : 'إضافة معدة جديدة'}
       >
-        <div className="space-y-4">
-          {/* اختيار من الكتالوج */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Catalog Selection */}
           {!editingId && (
-            <div className="space-y-4 bg-slate-50 rounded-lg p-4 border border-slate-200">
-              <h3 className="font-medium text-slate-900 mb-3">اختر من كتالوج المعدات</h3>
+            <div style={{ background: 'var(--bg-overlay)', borderRadius: 'var(--radius-md)', padding: 16, border: '1px solid var(--border-soft)' }}>
+              <h3 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 12, fontSize: 13 }}>اختر من كتالوج المعدات</h3>
 
-              {/* 1. اختيار التصنيف */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  1. التصنيف <span className="text-red-500">*</span>
-                </label>
+              <div className="input-group">
+                <label className="input-label">1. التصنيف <span className="req">*</span></label>
                 <select
+                  className="input"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                   dir="rtl"
                   required
                 >
@@ -589,16 +555,13 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
                 </select>
               </div>
 
-              {/* 2. اختيار العلامة التجارية */}
               {selectedCategory && brands.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    2. العلامة التجارية
-                  </label>
+                <div className="input-group" style={{ marginTop: 12 }}>
+                  <label className="input-label">2. العلامة التجارية</label>
                   <select
+                    className="input"
                     value={selectedBrand}
                     onChange={(e) => setSelectedBrand(e.target.value)}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     dir="rtl"
                   >
                     <option value="">اختر العلامة التجارية</option>
@@ -611,13 +574,13 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
                 </div>
               )}
 
-              {/* 3. اختيار المعدة */}
               {((selectedBrand && catalogItems.length > 0) || (catalogItems.length > 0 && brands.length === 0)) && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                <div className="input-group" style={{ marginTop: 12 }}>
+                  <label className="input-label">
                     {brands.length > 0 ? '3. المعدة' : '2. المعدة'} ({catalogItems.length} متاح)
                   </label>
                   <select
+                    className="input"
                     value={formData.catalog_item_id}
                     onChange={(e) => {
                       const selectedItem = catalogItems.find(item => item.id === e.target.value);
@@ -625,7 +588,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
                         handleCatalogSelect(selectedItem);
                       }
                     }}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     dir="rtl"
                   >
                     <option value="">اختر المعدة</option>
@@ -639,92 +601,83 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
               )}
 
               {selectedBrand && catalogItems.length === 0 && (
-                <div className="text-center py-4 text-slate-500">
-                  <CameraIcon className="w-12 h-12 mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm">لا توجد معدات متاحة لهذه العلامة</p>
+                <div style={{ textAlign: 'center', padding: 16, color: 'var(--text-muted)' }}>
+                  <CameraIcon size={36} style={{ margin: '0 auto 8px', opacity: 0.4 }} />
+                  <p style={{ fontSize: 12 }}>لا توجد معدات متاحة لهذه العلامة</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* معاينة العنصر المختار */}
+          {/* Selected catalog preview */}
           {selectedCatalogItem && (
-            <div className="rounded-lg p-4 border"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 8%, white)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-              <p className="text-sm font-medium text-blue-900 mb-2">تم الاختيار من الكتالوج:</p>
-              <div className="flex items-center gap-3">
+            <div style={{ borderRadius: 'var(--radius-md)', padding: 12, border: '1px solid var(--accent-glow-md)', background: 'var(--accent-glow)' }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--accent-lighter)', marginBottom: 8 }}>تم الاختيار من الكتالوج:</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 {selectedCatalogItem.image_url && (
                   <img
                     src={selectedCatalogItem.image_url}
                     alt={selectedCatalogItem.name}
-                    className="w-16 h-16 rounded-lg object-cover border-2 border-blue-300"
+                    style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', objectFit: 'cover', border: '2px solid var(--accent-glow-md)' }}
                   />
                 )}
                 <div>
-                  <div className="font-medium text-blue-900">{selectedCatalogItem.name}</div>
+                  <div style={{ fontWeight: 500, color: 'var(--accent-lighter)', fontSize: 13 }}>{selectedCatalogItem.name}</div>
                   {selectedCatalogItem.equipment_categories && (
-                    <div className="text-sm text-blue-700">{selectedCatalogItem.equipment_categories.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{selectedCatalogItem.equipment_categories.name}</div>
                   )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* الحقول الأساسية */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                الاسم <span className="text-red-500">*</span>
-              </label>
+          {/* Basic fields */}
+          <div className="form-grid">
+            <div className="input-group">
+              <label className="input-label">الاسم <span className="req">*</span></label>
               <input
                 type="text"
+                className="input"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="اسم المعدة"
                 disabled={!!selectedCatalogItem && !editingId}
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                التصنيف <span className="text-red-500">*</span>
-              </label>
+            <div className="input-group">
+              <label className="input-label">التصنيف <span className="req">*</span></label>
               <input
                 type="text"
+                className="input"
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="التصنيف"
                 disabled={!!selectedCatalogItem && !editingId}
               />
             </div>
           </div>
 
-          {/* الحقول الإضافية للمورد */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                الرقم التسلسلي (اختياري)
-              </label>
+          {/* Additional vendor fields */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div className="input-group">
+              <label className="input-label">الرقم التسلسلي (اختياري)</label>
               <input
                 type="text"
+                className="input"
                 value={formData.serial_number}
                 onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="الرقم التسلسلي"
                 dir="ltr"
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                الحالة (اختياري)
-              </label>
+            <div className="input-group">
+              <label className="input-label">الحالة (اختياري)</label>
               <select
+                className="input"
                 value={formData.condition}
                 onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 dir="rtl"
               >
                 <option value="">اختر الحالة</option>
@@ -736,83 +689,71 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                العدد
-              </label>
+            <div className="input-group">
+              <label className="input-label">العدد</label>
               <input
                 type="number"
+                className="input"
                 min="1"
                 value={formData.quantity}
                 onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="1"
               />
             </div>
           </div>
 
-          {/* رفع صورة مخصصة */}
+          {/* Custom image upload */}
           {!selectedCatalogItem && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                صورة المعدة (اختياري)
-              </label>
-              <div className="flex gap-3">
+            <div className="input-group">
+              <label className="input-label">صورة المعدة (اختياري)</label>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={handleImageUpload}
-                  className="hidden"
+                  style={{ display: 'none' }}
                 />
                 <button
                   type="button"
+                  className="btn btn-secondary btn-sm"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingImage}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
+                  style={{ gap: 6 }}
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload size={14} />
                   {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
                 </button>
                 {formData.image && (
                   <img
                     src={formData.image}
                     alt="Preview"
-                    className="w-16 h-16 rounded-lg object-cover border border-slate-200"
+                    style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', objectFit: 'cover', border: '1px solid var(--border-soft)' }}
                   />
                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-1">JPG, PNG, WebP - حد أقصى 5MB</p>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>JPG, PNG, WebP - حد أقصى 5MB</span>
             </div>
           )}
 
-          {/* ملاحظات */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              ملاحظات (اختياري)
-            </label>
+          {/* Notes */}
+          <div className="input-group">
+            <label className="input-label">ملاحظات (اختياري)</label>
             <textarea
+              className="input"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               rows={3}
               placeholder="أي ملاحظات أو تفاصيل إضافية..."
             />
           </div>
 
-          {/* أزرار التحكم */}
-          <div className="flex gap-3 pt-4 border-t border-slate-200">
-            <button
-              onClick={handleSave}
-              className="flex-1 px-4 py-2 text-white rounded-lg transition-all"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-            >
+          {/* Action buttons */}
+          <div style={{ display: 'flex', gap: 8, paddingTop: 16, borderTop: '1px solid var(--border-soft)' }}>
+            <button className="btn btn-primary" onClick={handleSave} style={{ flex: 1 }}>
               {editingId ? 'حفظ التغييرات' : 'إضافة المعدة'}
             </button>
-            <button
-              onClick={resetForm}
-              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
-            >
+            <button className="btn btn-secondary" onClick={resetForm}>
               إلغاء
             </button>
           </div>

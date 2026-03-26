@@ -134,7 +134,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
             style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }}
           />
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
-            Behance, Vimeo, Instagram, أو موقعك الشخصي
+            Google Drive, Behance, Vimeo, Instagram, أو موقعك الشخصي
           </div>
         </div>
 

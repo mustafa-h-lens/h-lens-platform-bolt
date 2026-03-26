@@ -60,111 +60,105 @@ export const VendorInvoices = ({ vendorId }: VendorInvoicesProps) => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-        return <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">مدفوعة</span>;
+        return <span className="badge badge-green">مدفوعة</span>;
       case 'partial':
-        return <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">مدفوعة جزئياً</span>;
+        return <span className="badge badge-blue">مدفوعة جزئياً</span>;
       case 'pending':
-        return <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">قيد الانتظار</span>;
+        return <span className="badge badge-amber">قيد الانتظار</span>;
       case 'overdue':
-        return <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">متأخرة</span>;
+        return <span className="badge badge-red">متأخرة</span>;
       default:
         return null;
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="text-xl font-bold text-slate-900">الفواتير</h2>
-          <p className="text-sm text-slate-600 mt-1">
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>الفواتير</h2>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
             عرض فقط - الفواتير تُنشأ تلقائياً عند تعيين المورد على مشروع
           </p>
         </div>
       </div>
 
       {invoices.length > 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">المشروع</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">العميل</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">المجال</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">الإجمالي</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">المدفوع</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">المتبقي</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">الحالة</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">تاريخ الاستحقاق</th>
-                  <th className="text-right px-6 py-3 text-sm font-semibold text-slate-700">الإجراءات</th>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>المشروع</th>
+                <th>العميل</th>
+                <th>المجال</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>الحالة</th>
+                <th>تاريخ الاستحقاق</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((invoice) => (
+                <tr key={invoice.id}>
+                  <td>
+                    <span className="td-primary">
+                      {invoice.project?.name || 'غير محدد'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                      {invoice.client?.name || 'غير محدد'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                      {invoice.project?.field || '-'}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">
+                      {formatCurrency(invoice.amount_total)}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ fontWeight: 500, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">
+                      {formatCurrency(invoice.amount_paid)}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={{ fontWeight: 500, color: 'var(--warning-text)', fontSize: 13 }} dir="ltr">
+                      {formatCurrency(invoice.amount_remaining)}
+                    </span>
+                  </td>
+                  <td>
+                    {getStatusBadge(invoice.status)}
+                  </td>
+                  <td>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">
+                      {invoice.due_date ? toEnglishNumbers(new Date(invoice.due_date).toLocaleDateString('ar-SA')) : '-'}
+                    </span>
+                  </td>
+                  <td>
+                    <button className="btn btn-ghost btn-sm" style={{ gap: 6, color: 'var(--accent-lighter)', fontSize: 12 }}>
+                      <ExternalLink size={13} />
+                      عرض المشروع
+                    </button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-slate-900">
-                        {invoice.project?.name || 'غير محدد'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-slate-700">
-                        {invoice.client?.name || 'غير محدد'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-slate-700">
-                        {invoice.project?.field || '-'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-medium text-slate-900" dir="ltr">
-                        {formatCurrency(invoice.amount_total)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-green-700 font-medium" dir="ltr">
-                        {formatCurrency(invoice.amount_paid)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-orange-700 font-medium" dir="ltr">
-                        {formatCurrency(invoice.amount_remaining)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getStatusBadge(invoice.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-slate-700" dir="ltr">
-                        {invoice.due_date ? toEnglishNumbers(new Date(invoice.due_date).toLocaleDateString('ar-SA')) : '-'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium text-sm">
-                        <ExternalLink className="w-4 h-4" />
-                        عرض المشروع
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-12 text-center">
-          <p className="text-blue-900 font-medium mb-2">لا توجد فواتير لهذا المورد</p>
-          <p className="text-blue-700 text-sm">
+        <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 48, background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)' }}>
+          <p style={{ color: 'var(--accent-lighter)', fontWeight: 500, marginBottom: 8 }}>لا توجد فواتير لهذا المورد</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
             سيتم إنشاء الفواتير تلقائياً عند تعيين المورد على مشاريع
           </p>
         </div>

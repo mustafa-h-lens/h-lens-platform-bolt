@@ -964,7 +964,7 @@ textarea.input { height: auto; min-height: 90px; padding: 10px 14px; resize: ver
 /* ═══════════════════════════════════════════════════════════════
    TABLE
 ═══════════════════════════════════════════════════════════════ */
-.table-wrap { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: visible; background: var(--bg-surface); box-shadow: var(--shadow-card); }
+.table-wrap { border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto; overflow-y: visible; background: var(--bg-surface); box-shadow: var(--shadow-card); }
 .table-wrap > table thead tr:first-child th:first-child { border-top-right-radius: var(--radius-lg); }
 .table-wrap > table thead tr:first-child th:last-child { border-top-left-radius: var(--radius-lg); }
 .table-wrap > table tbody tr:last-child td:first-child { border-bottom-right-radius: var(--radius-lg); }
@@ -4164,6 +4164,7 @@ tbody tr.selected { background: rgba(37,99,235,0.06); }
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 .filter-bar .input { max-width: 280px; }
 .filter-bar .select { max-width: 180px; }

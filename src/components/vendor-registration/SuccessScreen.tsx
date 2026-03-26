@@ -84,15 +84,15 @@ export const SuccessScreen = () => {
           <ul className="success-steps">
             <li>
               <span className="success-check">✓</span>
-              <span>سيتم مراجعة طلبك خلال 24-48 ساعة عمل</span>
+              <span>سيتم مراجعة طلبك خلال 24–48 ساعة عمل</span>
             </li>
             <li>
               <span className="success-check">✓</span>
-              <span>ستصلك رسالة على جوالك عند قبول الطلب</span>
+              <span>سيتم إشعارك عبر البريد الإلكتروني عند قبول الطلب</span>
             </li>
             <li>
               <span className="success-check">✓</span>
-              <span>بعد القبول يمكنك البدء في استقبال المشاريع</span>
+              <span>بعد تفعيل حسابك، يمكنك الدخول إلى لوحة التحكم ومتابعة مشاريعك</span>
             </li>
           </ul>
         </div>
@@ -100,7 +100,7 @@ export const SuccessScreen = () => {
         {/* Note card */}
         <div className="success-note-card">
           <span className="success-note-icon">💡</span>
-          <span>يمكنك تسجيل الدخول لاحقاً عبر رقم جوالك لمتابعة حالة طلبك وتحديث بياناتك.</span>
+          <span>يمكنك تسجيل الدخول لاحقاً عبر ايميلك لمتابعة حالة طلبك وتحديث بياناتك.</span>
         </div>
 
         {/* CTA */}
