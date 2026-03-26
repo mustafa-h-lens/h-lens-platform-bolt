@@ -24,6 +24,8 @@ interface Expense {
   vendor_id: string;
   vendor_name: string;
   category: string | null;
+  project_item_id: string | null;
+  project_item_name: string | null;
   amount: number;
   amount_paid: number;
   amount_remaining: number;
@@ -33,6 +35,12 @@ interface Expense {
   invoice_file_url: string | null;
   created_at: string;
   payments: Payment[];
+}
+
+interface SimpleProjectItem {
+  id: string;
+  name: string;
+  total_price: number;
 }
 
 interface VendorFieldSelection {
@@ -60,8 +68,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
+  const [projectItems, setProjectItems] = useState<SimpleProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projectTotalPrice, setProjectTotalPrice] = useState(0);
 
   // UI state
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -79,6 +87,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [expenseForm, setExpenseForm] = useState({
     vendor_id: '',
     category: '',
+    project_item_id: '',
     amount: '',
     due_date: '',
     notes: '',
@@ -125,11 +134,22 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     if (mainField) setCategorySearch(`${mainField.name_ar} — ${mainField.name_en || ''}`);
   };
 
+  const loadProjectItems = async () => {
+    try {
+      const { data } = await supabase
+        .from('project_items')
+        .select('id, name, total_price')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: true });
+      setProjectItems(data || []);
+    } catch {}
+  };
+
   useEffect(() => {
     loadExpenses();
     loadVendors();
     loadVendorFields();
-    loadProjectData();
+    loadProjectItems();
   }, [projectId]);
 
   const loadExpenses = async () => {
@@ -149,12 +169,16 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           status,
           due_date,
           category,
+          project_item_id,
           notes,
           invoice_file_url,
           created_at,
           vendors (
             full_name,
             primary_field
+          ),
+          project_items (
+            name
           ),
           expense_payments (
             id,
@@ -178,6 +202,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         vendor_id: item.vendor_id,
         vendor_name: item.vendors?.full_name || '',
         category: item.category || null,
+        project_item_id: item.project_item_id || null,
+        project_item_name: item.project_items?.name || null,
         amount: item.amount_total,
         amount_paid: item.amount_paid ?? 0,
         amount_remaining: item.amount_remaining ?? item.amount_total,
@@ -269,21 +295,6 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     return category;
   };
 
-  const loadProjectData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('total_price')
-        .eq('id', projectId)
-        .single();
-
-      if (error) throw error;
-      setProjectTotalPrice(data?.total_price || 0);
-    } catch (error) {
-      console.error('Error loading project data:', error);
-    }
-  };
-
   // Derived status with overdue detection
   const deriveStatus = (expense: Expense): string => {
     if (expense.status === 'paid') return 'paid';
@@ -315,16 +326,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalPaid = expenses.reduce((sum, e) => sum + e.amount_paid, 0);
   const totalRemaining = expenses.reduce((sum, e) => sum + e.amount_remaining, 0);
-  const profit = projectTotalPrice - totalExpenses;
-  const margin = projectTotalPrice > 0 ? (profit / projectTotalPrice) * 100 : 0;
-  const costRatio = projectTotalPrice > 0 ? (totalExpenses / projectTotalPrice) * 100 : 0;
-
-  const getMarginColor = () => {
-    if (totalExpenses > projectTotalPrice) return 'var(--color-danger)';
-    if (costRatio > 70) return '#f97316';
-    if (costRatio > 50) return 'var(--color-warning)';
-    return 'var(--color-success)';
-  };
+  const overdueCount = expenses.filter(e => deriveStatus(e) === 'overdue').length;
+  const paidPercentage = totalExpenses > 0 ? (totalPaid / totalExpenses) * 100 : 0;
 
   // Toggle row expansion
   const toggleRow = (id: string) => {
@@ -365,7 +368,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   // Open add modal
   const openAddModal = () => {
     setEditingExpense(null);
-    setExpenseForm({ vendor_id: '', category: '', amount: '', due_date: '', notes: '' });
+    setExpenseForm({ vendor_id: '', category: '', project_item_id: '', amount: '', due_date: '', notes: '' });
     setSelectedFile(null);
     setVendorSearch('');
     setVendorDropdownOpen(false);
@@ -380,6 +383,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     setExpenseForm({
       vendor_id: expense.vendor_id,
       category: expense.category || '',
+      project_item_id: expense.project_item_id || '',
       amount: String(expense.amount),
       due_date: expense.due_date || '',
       notes: expense.notes || '',
@@ -440,6 +444,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           .from('vendor_invoices')
           .update({
             category: expenseForm.category || null,
+            project_item_id: expenseForm.project_item_id || null,
             amount_total: amount,
             amount_remaining: amount - editingExpense.amount_paid,
             due_date: expenseForm.due_date || null,
@@ -458,6 +463,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             vendor_id: expenseForm.vendor_id,
             project_id: projectId,
             category: expenseForm.category || null,
+            project_item_id: expenseForm.project_item_id || null,
             amount_total: amount,
             amount_remaining: amount,
             due_date: expenseForm.due_date || null,
@@ -588,72 +594,40 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>إجمالي تكاليف الفريق</p>
-          <p className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-            {formatCurrency(totalExpenses, currency)}
-          </p>
-        </div>
-        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المدفوع</p>
           <p className="text-2xl font-bold" style={{ color: 'var(--color-success)' }} dir="ltr">
             {formatCurrency(totalPaid, currency)}
           </p>
+          {totalExpenses > 0 && (
+            <div className="mt-2">
+              <div className="w-full h-2 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
+                <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(paidPercentage, 100)}%`, backgroundColor: 'var(--color-success)' }} />
+              </div>
+              <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">{paidPercentage.toFixed(0)}% من الإجمالي</p>
+            </div>
+          )}
         </div>
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المتبقي</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المتبقي للدفع</p>
           <p className="text-2xl font-bold" style={{ color: totalRemaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
             {formatCurrency(totalRemaining, currency)}
           </p>
+          {overdueCount > 0 && (
+            <p className="text-xs mt-2" style={{ color: 'var(--color-danger)' }}>
+              {overdueCount} مصروف متأخر عن موعد الدفع
+            </p>
+          )}
+        </div>
+        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>عدد المصروفات</p>
+          <p className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
+            {expenses.length}
+          </p>
+          <p className="text-xs mt-2" style={{ color: 'var(--color-text-secondary)' }}>
+            {expenses.filter(e => deriveStatus(e) === 'paid').length} مدفوع · {expenses.filter(e => deriveStatus(e) === 'partial').length} جزئي · {expenses.filter(e => deriveStatus(e) === 'pending' || deriveStatus(e) === 'overdue').length} معلق
+          </p>
         </div>
       </div>
-
-      {/* Budget vs Actual */}
-      {projectTotalPrice > 0 && (
-        <div className="rounded-xl border p-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>الميزانية مقابل الفعلي</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>إيرادات المشروع</p>
-              <p className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                {formatCurrency(projectTotalPrice, currency)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>تكاليف الفريق</p>
-              <p className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                {formatCurrency(totalExpenses, currency)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>الربح المتوقع</p>
-              <p className="text-lg font-bold" style={{ color: getMarginColor() }} dir="ltr">
-                {formatCurrency(profit, currency)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>نسبة الربح</p>
-              <p className="text-lg font-bold" style={{ color: getMarginColor() }} dir="ltr">
-                {margin.toFixed(1)}%
-              </p>
-            </div>
-          </div>
-          {/* Progress bar */}
-          <div className="mt-4">
-            <div className="w-full h-3 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
-              <div
-                className="h-3 rounded-full transition-all"
-                style={{
-                  width: `${Math.min(costRatio, 100)}%`,
-                  backgroundColor: getMarginColor(),
-                }}
-              />
-            </div>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-              {costRatio.toFixed(1)}% من الإيرادات
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Expenses Table */}
       {expenses.length === 0 ? (
@@ -689,6 +663,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}></th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الدور</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>البند</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المبلغ</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المدفوع</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المتبقي</th>
@@ -727,6 +702,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                         </td>
                         <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
                           {getCategoryLabel(expense.category)}
+                        </td>
+                        <td className="px-4 py-3 text-sm" style={{ color: expense.project_item_name ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                          {expense.project_item_name || '-'}
                         </td>
                         <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
                           {formatCurrency(expense.amount, currency)}
@@ -921,9 +899,17 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                       style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}
                     >
                       <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
-                        {vendors
-                          .filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch))
-                          .map(vendor => (
+                        {(() => {
+                          const projectVendorIds = new Set(expenses.map(e => e.vendor_id));
+                          const filtered = vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch));
+                          const projectVendors = filtered.filter(v => projectVendorIds.has(v.id));
+                          const otherVendors = filtered.filter(v => !projectVendorIds.has(v.id));
+
+                          if (filtered.length === 0) {
+                            return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                          }
+
+                          const renderVendorBtn = (vendor: Vendor) => (
                             <button
                               key={vendor.id}
                               type="button"
@@ -941,10 +927,29 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                 <span className="text-xs opacity-50">{vendor.primary_field}</span>
                               )}
                             </button>
-                          ))}
-                        {vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch)).length === 0 && (
-                          <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>
-                        )}
+                          );
+
+                          return (
+                            <>
+                              {projectVendors.length > 0 && (
+                                <>
+                                  <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 6%, transparent)' }}>
+                                    موردي المشروع
+                                  </div>
+                                  {projectVendors.map(renderVendorBtn)}
+                                </>
+                              )}
+                              {otherVendors.length > 0 && (
+                                <>
+                                  <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
+                                    جميع الموردين
+                                  </div>
+                                  {otherVendors.map(renderVendorBtn)}
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
@@ -1066,6 +1071,32 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                 })()}
               </div>
             </div>
+
+            {/* Project Item (البند) */}
+            {projectItems.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  البند
+                </label>
+                <select
+                  value={expenseForm.project_item_id}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, project_item_id: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                >
+                  <option value="">بدون بند</option>
+                  {projectItems.map(item => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({formatCurrency(item.total_price, currency)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Amount */}
             <div>

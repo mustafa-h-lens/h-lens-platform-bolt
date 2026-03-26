@@ -20,7 +20,7 @@ interface EditProjectModalProps {
     client_id: string;
     project_code: string | null;
     description: string | null;
-    project_mode: 'STANDARD' | 'FRAMEWORK';
+    project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
     status: string;
     start_date: string | null;
     end_date: string | null;
@@ -121,7 +121,6 @@ export const EditProjectModal = ({ projectId, currentData, onClose, onSuccess }:
           end_date: formData.end_date || null,
           project_manager_id: formData.project_manager_id || null,
           internal_notes: formData.internal_notes.trim() || null,
-          total_cost: formData.total_cost,
           total_price: formData.total_price,
           currency: formData.currency,
           updated_at: new Date().toISOString(),
@@ -246,17 +245,20 @@ export const EditProjectModal = ({ projectId, currentData, onClose, onSuccess }:
               </label>
               <select
                 value={formData.project_mode}
-                onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' })}
+                onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' | 'CONTRACT' })}
                 className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg
                   bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
                   focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="STANDARD">مشروع (Standard)</option>
                 <option value="FRAMEWORK">عقد إطاري (Framework)</option>
+                <option value="CONTRACT">عقد (Contract)</option>
               </select>
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 {formData.project_mode === 'STANDARD'
                   ? 'مشروع محدد يحتوي على بنود ومهام'
+                  : formData.project_mode === 'CONTRACT'
+                  ? 'عقد بمبلغ ثابت ونطاق محدد بدون بنود تفصيلية'
                   : 'عقد تشغيل مستمر بدون بنود'}
               </p>
             </div>
@@ -314,18 +316,18 @@ export const EditProjectModal = ({ projectId, currentData, onClose, onSuccess }:
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                التكاليف
+                التكاليف <span className="text-xs font-normal text-slate-400">(محسوبة من المصروفات)</span>
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
                 value={formData.total_cost}
-                onChange={(e) => setFormData({ ...formData, total_cost: parseFloat(e.target.value) || 0 })}
                 className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg
-                  bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                  focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400
+                  cursor-not-allowed"
                 placeholder="0.00"
+                disabled
               />
             </div>
 

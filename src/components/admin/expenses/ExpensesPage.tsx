@@ -21,6 +21,7 @@ interface ExpenseRow {
   amount_remaining: number;
   status: string;
   due_date: string | null;
+  project_item_name: string | null;
   currency: string;
   created_at: string;
 }
@@ -125,9 +126,13 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           status,
           due_date,
           category,
+          project_item_id,
           created_at,
           vendors (
             full_name
+          ),
+          project_items (
+            name
           ),
           projects (
             name,
@@ -206,6 +211,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       project_id: item.project_id,
       project_manager_name: item.projects?.project_manager?.full_name || '-',
       category: item.category || null,
+      project_item_name: item.project_items?.name || null,
       amount: item.amount_total,
       amount_paid: item.amount_paid ?? 0,
       amount_remaining: item.amount_remaining ?? item.amount_total,
@@ -570,6 +576,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                 <th>المشروع</th>
                 <th>مدير المشروع</th>
                 <th>الدور</th>
+                <th>البند</th>
                 <th>المبلغ</th>
                 <th>المدفوع</th>
                 <th>المتبقي</th>
@@ -608,6 +615,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                     </td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{expense.project_manager_name}</td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{getCategoryLabel(expense.category)}</td>
+                    <td style={{ color: expense.project_item_name ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 13 }}>{expense.project_item_name || '-'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount, expense.currency)}</td>
                     <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_paid, expense.currency)}</td>
                     <td style={{ fontWeight: 600, color: expense.amount_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_remaining, expense.currency)}</td>

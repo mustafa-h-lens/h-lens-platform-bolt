@@ -14,7 +14,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
-  project_mode: 'STANDARD' | 'FRAMEWORK';
+  project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
   status: string;
   start_date: string | null;
   end_date: string | null;
@@ -205,11 +205,11 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initia
               <span
                 className="px-3 py-1 rounded-full text-xs font-medium"
                 style={{
-                  backgroundColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.12)' : 'rgba(59,130,246,0.12)',
-                  color: project.project_mode === 'STANDARD' ? '#059669' : '#2563eb',
+                  backgroundColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.12)' : project.project_mode === 'CONTRACT' ? 'rgba(139,92,246,0.12)' : 'rgba(59,130,246,0.12)',
+                  color: project.project_mode === 'STANDARD' ? '#059669' : project.project_mode === 'CONTRACT' ? '#7c3aed' : '#2563eb',
                 }}
               >
-                {project.project_mode === 'STANDARD' ? 'مشروع' : 'عقد إطاري'}
+                {project.project_mode === 'STANDARD' ? 'مشروع' : project.project_mode === 'CONTRACT' ? 'عقد' : 'عقد إطاري'}
               </span>
               <span
                 className="px-3 py-1 rounded-full text-xs font-medium"
@@ -290,9 +290,6 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initia
 
           <div className="flex gap-2 overflow-x-auto">
             {TABS.map((tab) => {
-              if (tab.id === 'items' && project.project_mode === 'FRAMEWORK') {
-                return null;
-              }
 
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -317,9 +314,9 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initia
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeTab === 'basic' && <ImprovedProjectBasicInfo project={project} client={client} onUpdate={loadProject} />}
-        {activeTab === 'items' && project.project_mode === 'STANDARD' && <ProjectItems projectId={projectId} />}
+        {activeTab === 'items' && <ProjectItems projectId={projectId} currency={project.currency} />}
         {activeTab === 'invoices' && <ProjectInvoices projectId={projectId} />}
-        {activeTab === 'expenses' && <ProjectExpenses projectId={projectId} />}
+        {activeTab === 'expenses' && <ProjectExpenses projectId={projectId} currency={project.currency} />}
         {activeTab === 'vendors' && <ProjectVendors projectId={projectId} onViewVendor={onViewVendor} />}
         {activeTab === 'files' && <ProjectFiles projectId={projectId} />}
       </div>

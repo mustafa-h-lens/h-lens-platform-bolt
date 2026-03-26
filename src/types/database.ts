@@ -87,7 +87,7 @@ export interface Project {
   name: string;
   project_code: string | null;
   description: string | null;
-  project_mode: 'STANDARD' | 'FRAMEWORK';
+  project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
   status: 'request' | 'quoted' | 'invoiced' | 'po_issued' | 'partial_paid' | 'paid' | 'closed' | 'cancelled' | 'pending' | 'in_progress' | 'completed';
   start_date: string | null;
   end_date: string | null;
@@ -126,6 +126,8 @@ export interface ProjectItem {
   total_price: number;
   currency: string;
   sort_order: number;
+  category_id: string | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

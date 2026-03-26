@@ -152,16 +152,19 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
             <label className="block text-sm font-medium text-slate-700 mb-2">نوع المشروع</label>
             <select
               value={formData.project_mode}
-              onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' })}
+              onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' | 'CONTRACT' })}
               className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               required
             >
               <option value="STANDARD">مشروع (Standard Project)</option>
               <option value="FRAMEWORK">عقد إطاري (Framework Contract)</option>
+              <option value="CONTRACT">عقد (Contract)</option>
             </select>
             <p className="mt-1 text-xs text-slate-500">
               {formData.project_mode === 'STANDARD'
                 ? 'مشروع محدد بنطاق واضح يحتوي على بنود ومهام'
+                : formData.project_mode === 'CONTRACT'
+                ? 'عقد بمبلغ ثابت ونطاق محدد بدون بنود تفصيلية'
                 : 'عقد تشغيل مستمر يعتمد على أوامر شراء بدون بنود'}
             </p>
           </div>
@@ -213,17 +216,6 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">التكلفة</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.total_cost}
-                onChange={(e) => setFormData({ ...formData, total_cost: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">السعر</label>
               <input

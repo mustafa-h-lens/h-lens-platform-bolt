@@ -14,7 +14,7 @@ interface Project {
   project_manager_id: string | null;
   internal_notes: string | null;
   project_code: string | null;
-  project_mode: 'STANDARD' | 'FRAMEWORK';
+  project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
   client_id: string;
   total_cost: number | null;
   total_price: number;
@@ -199,7 +199,7 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
     CURRENCIES.find(c => c.value === value)?.label || value;
 
   const getModeLabel = (mode: string) =>
-    mode === 'STANDARD' ? 'مشروع' : 'عقد إطاري';
+    mode === 'STANDARD' ? 'مشروع' : mode === 'CONTRACT' ? 'عقد' : 'عقد إطاري';
 
   const InfoField = ({ label, value, dir }: { label: string; value: string; dir?: string }) => (
     <div>
@@ -388,12 +388,13 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
                 </label>
                 <select
                   value={formData.project_mode}
-                  onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' })}
+                  onChange={(e) => setFormData({ ...formData, project_mode: e.target.value as 'STANDARD' | 'FRAMEWORK' | 'CONTRACT' })}
                   className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                   style={inputStyle}
                 >
                   <option value="STANDARD">مشروع</option>
                   <option value="FRAMEWORK">عقد إطاري</option>
+                  <option value="CONTRACT">عقد</option>
                 </select>
               </div>
 
@@ -446,18 +447,18 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                    التكاليف
+                    التكاليف <span className="text-xs font-normal" style={{ color: 'var(--color-text-muted)' }}>(محسوبة من المصروفات)</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
                     value={formData.total_cost}
-                    onChange={(e) => setFormData({ ...formData, total_cost: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                    style={inputStyle}
+                    className="w-full px-4 py-2 rounded-lg border transition-all"
+                    style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
                     placeholder="0.00"
                     dir="ltr"
+                    disabled
                   />
                 </div>
 
