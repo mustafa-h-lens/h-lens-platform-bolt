@@ -61,3 +61,7 @@ export type { AvatarSize } from './Avatar';
 export { Toggle } from './Toggle';
 
 export { Checkbox, Radio, CheckGroup } from './Checkbox';
+
+export { DatePicker } from './DatePicker';
+
+export { FileUploader } from './FileUploader';

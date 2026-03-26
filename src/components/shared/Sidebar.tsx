@@ -123,46 +123,33 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
     const isLocked = item.comingSoon;
 
     return (
-      <button
+      <div
         key={item.id}
+        className={`sb-item ${isActive ? 'on' : ''}`}
         onClick={() => !isLocked && handleItemClick(item.id)}
-        disabled={isLocked}
         title={collapsed ? item.label : undefined}
-        className={`
-          w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right
-          transition-all duration-200 group relative
-          ${collapsed ? 'justify-center px-0' : 'justify-between'}
-          ${isLocked
-            ? 'opacity-60 cursor-not-allowed'
-            : isActive
-              ? 'bg-[#113975] text-white'
-              : 'text-white/70 hover:text-white hover:bg-white/5'
-          }
-        `}
+        style={collapsed ? {
+          justifyContent: 'center', position: 'relative',
+          opacity: isLocked ? 0.5 : 1, cursor: isLocked ? 'not-allowed' : 'pointer',
+        } : {
+          opacity: isLocked ? 0.5 : 1, cursor: isLocked ? 'not-allowed' : 'pointer',
+        }}
       >
-        <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          {isActive && !isLocked && (
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#1B4FA9] rounded-r-full" />
-          )}
-          <Icon className="w-5 h-5 flex-shrink-0" />
-          {!collapsed && <span className="font-medium">{item.label}</span>}
-        </div>
-        {!collapsed && isLocked && (
-          <span className="px-2.5 py-1 rounded-full text-[9px] leading-none font-semibold bg-white/10 text-white/40">
-            قريباً
+        <Icon />
+        {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+        {!collapsed && isLocked && <Lock style={{ width: 12, height: 12, opacity: 0.4 }} />}
+        {!collapsed && !isLocked && item.badge && item.badge > 0 && (
+          <span className="sb-badge">{item.badge}</span>
+        )}
+        {collapsed && item.badge && item.badge > 0 && (
+          <span className="sb-badge" style={{
+            position: 'absolute', top: -2, left: -2,
+            fontSize: 9, padding: '0 5px', minWidth: 16, height: 16,
+          }}>
+            {item.badge}
           </span>
         )}
-        {!collapsed && !isLocked && item.badge && item.badge > 0 ? (
-          <span className="flex items-center justify-center rounded-full text-[11px] font-bold bg-amber-500 text-white min-w-[22px] h-[22px] px-1.5">
-            {item.badge}
-          </span>
-        ) : null}
-        {collapsed && item.badge && item.badge > 0 ? (
-          <span className="absolute -top-1 -left-1 w-5 h-5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex items-center justify-center">
-            {item.badge}
-          </span>
-        ) : null}
-      </button>
+      </div>
     );
   };
 
@@ -170,123 +157,130 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
           onClick={onClose}
         />
       )}
 
-      <aside className={`
-        fixed top-0 right-0 h-full bg-[#051A3A] dark:bg-[#0A0F1A] text-white z-50
-        transform transition-all duration-300 ease-in-out
-        ${collapsed ? 'md:w-20' : 'md:w-64'} w-64
-        ${isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
-      `}>
-        <div className="flex flex-col h-full">
-          {/* Logo section */}
-          <div className={`flex items-center border-b border-white/10 ${collapsed ? 'justify-center p-4' : 'justify-between p-6'}`}>
-            <div className="flex items-center gap-3">
-              <img
-                src="/assets/logo-white.png"
-                alt="Half Lens Production"
-                className={`w-auto object-contain ${collapsed ? 'h-8' : 'h-14'}`}
-              />
-            </div>
+      <aside
+        className={`sidebar fixed top-0 right-0 h-full z-50 transform transition-all duration-300 ease-in-out
+          ${collapsed ? 'md:w-[68px]' : 'md:w-60'} w-60
+          ${isOpen ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+        `}
+        style={{ overflow: 'visible' }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: collapsed ? '14px 8px' : '14px 10px' }}>
+        {/* Logo */}
+        <div className="sb-hl-logo" style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', padding: 0, marginBottom: collapsed ? 14 : 20 }}>
+          <img
+            src="/assets/logo-white.png"
+            alt="Half Lens"
+            className="sb-logo-img sb-logo-white"
+            style={{ height: collapsed ? 30 : 100, width: 'auto', objectFit: 'contain', maxWidth: collapsed ? 44 : undefined }}
+          />
+          <img
+            src="/assets/logo-blue.png"
+            alt="Half Lens"
+            className="sb-logo-img sb-logo-blue"
+            style={{ height: collapsed ? 30 : 100, width: 'auto', objectFit: 'contain', maxWidth: collapsed ? 44 : undefined }}
+          />
+          {!collapsed && (
             <button
               onClick={onClose}
-              className="md:hidden text-white/70 hover:text-white"
+              className="md:hidden"
+              style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', marginRight: 'auto' }}
             >
-              <X className="w-5 h-5" />
+              <X size={16} />
             </button>
-          </div>
+          )}
+        </div>
 
-          {/* Collapse toggle — desktop only */}
-          <button
-            onClick={onToggleCollapse}
-            className="hidden md:flex absolute top-20 -left-3 w-6 h-6 rounded-full bg-white text-slate-600
-              items-center justify-center shadow-[0_1px_4px_rgba(0,0,0,0.2)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:text-slate-800 transition-all z-50"
-          >
-            {collapsed ? <ChevronLeft className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          </button>
+        {/* Collapse toggle — desktop only */}
+        <button
+          onClick={onToggleCollapse}
+          className="hidden md:flex"
+          style={{
+            position: 'absolute', top: 56, left: -13,
+            width: 26, height: 26, borderRadius: 'var(--radius-full)',
+            background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+            color: '#fff',
+            alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 10px rgba(37,99,235,0.35), 0 2px 4px rgba(0,0,0,0.25)',
+            border: '2px solid rgba(255,255,255,0.12)',
+            zIndex: 60, cursor: 'pointer',
+            transition: 'var(--transition-fast)',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.12)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          {collapsed ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
+        </button>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-6">
-            <div className={`space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
-              {menuItems.map((item) => {
-                if (item.adminOnly && !isSuperAdmin) return null;
-                return renderNavItem(item);
-              })}
-            </div>
+        {/* Navigation */}
+        <nav style={{ flex: 1, overflowY: 'auto' }}>
+          {menuItems.map((item) => {
+            if (item.adminOnly && !isSuperAdmin) return null;
+            return renderNavItem(item);
+          })}
 
-            {isSuperAdmin && (
-              <>
-                <div className={`py-3 mt-4 ${collapsed ? 'px-2' : 'px-6'}`}>
-                  {collapsed ? (
-                    <div className="border-t border-white/10" />
-                  ) : (
-                    <p className="text-xs text-white/40 font-semibold uppercase tracking-wider">
-                      إدارة
-                    </p>
-                  )}
-                </div>
-                <div className={`space-y-1 ${collapsed ? 'px-2' : 'px-3'}`}>
-                  {adminItems.map((item) => renderNavItem(item))}
-                </div>
-              </>
-            )}
-          </nav>
-
-          {/* Bottom section: dark mode + user info + sign out */}
-          <div className="border-t border-white/10 p-3 space-y-1">
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleTheme}
-              title={collapsed ? (themeMode === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح') : undefined}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-lg
-                text-white/70 hover:text-white hover:bg-white/5
-                transition-colors duration-200
-                ${collapsed ? 'justify-center px-0' : ''}
-              `}
-            >
-              {themeMode === 'light' ? (
-                <Moon className="w-5 h-5 flex-shrink-0" />
+          {isSuperAdmin && (
+            <>
+              {collapsed ? (
+                <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '8px 4px' }} />
               ) : (
-                <Sun className="w-5 h-5 flex-shrink-0" />
+                <div className="sb-grp">إدارة</div>
               )}
-              {!collapsed && <span className="font-medium text-sm">{themeMode === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'}</span>}
-            </button>
+              {adminItems.map((item) => renderNavItem(item))}
+            </>
+          )}
+        </nav>
 
-            {/* User info */}
-            <div className={`
-              flex items-center gap-3 px-4 py-3 rounded-lg
-              ${collapsed ? 'justify-center px-0' : ''}
-            `}>
-              <div className="w-9 h-9 rounded-full bg-[#1B4FA9] flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-white">{getInitials(profile?.full_name)}</span>
-              </div>
-              {!collapsed && (
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white truncate">{profile?.full_name}</p>
-                  <p className="text-xs text-white/50 truncate">{getRoleLabel(profile?.role)}</p>
-                  <p className="text-xs text-white/40 truncate">{profile?.email}</p>
-                </div>
-              )}
+        {/* Bottom section */}
+        <div className="sb-bottom">
+          {/* Theme toggle */}
+          {collapsed ? (
+            <div className="sb-item" onClick={toggleTheme} title={themeMode === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'} style={{ justifyContent: 'center' }}>
+              {themeMode === 'light' ? <Moon /> : <Sun />}
             </div>
+          ) : (
+            <div className="sb-theme-toggle-row">
+              <div className="theme-toggle">
+                <button className={`theme-btn ${themeMode === 'light' ? 'active' : ''}`} onClick={() => themeMode !== 'light' && toggleTheme()}>
+                  <Sun size={13} />
+                </button>
+                <button className={`theme-btn ${themeMode === 'dark' ? 'active' : ''}`} onClick={() => themeMode !== 'dark' && toggleTheme()}>
+                  <Moon size={13} />
+                </button>
+              </div>
+            </div>
+          )}
 
-            {/* Sign out */}
-            <button
-              onClick={signOut}
-              title={collapsed ? 'تسجيل الخروج' : undefined}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right
-                text-red-400 hover:bg-red-500/10 transition-colors duration-200
-                ${collapsed ? 'justify-center px-0' : ''}
-              `}
-            >
-              <LogOut className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span className="font-medium">تسجيل الخروج</span>}
-            </button>
+          {/* User profile */}
+          {collapsed ? (
+            <div className="sb-item" style={{ justifyContent: 'center' }} title={profile?.full_name}>
+              <div className="avatar av-sm" style={{ background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontSize: 10, width: 28, height: 28 }}>
+                {getInitials(profile?.full_name)}
+              </div>
+            </div>
+          ) : (
+            <div className="sb-user-profile">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="u-name" style={{ fontSize: 13 }}>{profile?.full_name}</div>
+                <div className="u-role">{getRoleLabel(profile?.role)}</div>
+              </div>
+              <div className="avatar av-md" style={{ background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontSize: 12 }}>
+                {getInitials(profile?.full_name)}
+              </div>
+            </div>
+          )}
+
+          {/* Sign out */}
+          <div className="sb-item sb-logout" onClick={signOut} title={collapsed ? 'تسجيل الخروج' : undefined} style={collapsed ? { justifyContent: 'center' } : undefined}>
+            <LogOut />
+            {!collapsed && <span>تسجيل الخروج</span>}
           </div>
+        </div>
         </div>
       </aside>
     </>

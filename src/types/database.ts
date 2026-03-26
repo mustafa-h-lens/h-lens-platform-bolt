@@ -8,6 +8,14 @@ export interface User {
   created_at: string;
 }
 
+export interface ClientContact {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  role: string;
+}
+
 export interface Client {
   id: string;
   user_id: string;
@@ -18,6 +26,7 @@ export interface Client {
   address: string | null;
   notes: string | null;
   client_image: string | null;
+  contacts: ClientContact[] | null;
   created_at: string;
   updated_at: string;
 }

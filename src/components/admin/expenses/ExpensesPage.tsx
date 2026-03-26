@@ -21,6 +21,7 @@ interface ExpenseRow {
   status: string;
   due_date: string | null;
   currency: string;
+  created_at: string;
 }
 
 interface VendorSummary {
@@ -31,6 +32,7 @@ interface VendorSummary {
   total_amount: number;
   total_paid: number;
   total_remaining: number;
+  latest_activity: string;
   projects: { name: string; amount: number; paid: number }[];
 }
 
@@ -203,6 +205,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       status: item.status,
       due_date: item.due_date,
       currency: item.projects?.currency || 'SAR',
+      created_at: item.created_at || '',
     }));
 
   const deriveStatus = (row: ExpenseRow): string => {
@@ -294,6 +297,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           total_amount: 0,
           total_paid: 0,
           total_remaining: 0,
+          latest_activity: e.created_at || '',
           projects: [],
         });
       }
@@ -302,6 +306,10 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       v.total_amount += e.amount;
       v.total_paid += e.amount_paid;
       v.total_remaining += e.amount_remaining;
+      // Track the most recent operation date
+      if (e.created_at && e.created_at > v.latest_activity) {
+        v.latest_activity = e.created_at;
+      }
       const existing = v.projects.find(p => p.name === e.project_name);
       if (existing) {
         existing.amount += e.amount;
@@ -311,7 +319,8 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         v.project_count += 1;
       }
     });
-    return Array.from(map.values()).sort((a, b) => b.total_remaining - a.total_remaining);
+    // Sort by most recent operation date (newest first)
+    return Array.from(map.values()).sort((a, b) => b.latest_activity.localeCompare(a.latest_activity));
   }, [filteredExpenses]);
 
   if (loading) {

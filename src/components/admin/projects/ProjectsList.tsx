@@ -1,8 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
-import { Plus, Search, User, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Search, Crown, TrendingUp, TrendingDown, Zap, FlaskConical, Globe, Smartphone, Camera, Megaphone, PenTool, Film, Palette, Monitor, Rocket, Target, Briefcase, Layers } from 'lucide-react';
 import { formatCurrency } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+
+const PROJECT_ICONS = [Zap, Globe, FlaskConical, Smartphone, Camera, Megaphone, PenTool, Film, Palette, Monitor, Rocket, Target, Briefcase, Layers];
+const PROJECT_COLORS = [
+  { bg: 'var(--accent-glow)', color: 'var(--accent-lighter)', border: 'var(--accent-glow-md)' },
+  { bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' },
+  { bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' },
+  { bg: 'var(--purple-bg)', color: 'var(--purple-text)', border: 'var(--purple-border)' },
+  { bg: 'var(--info-bg)', color: 'var(--info-text)', border: 'var(--info-border)' },
+  { bg: 'var(--danger-bg)', color: 'var(--danger-text)', border: 'var(--danger-border)' },
+];
+
+const getProjectStyle = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
+  const iconIdx = Math.abs(hash) % PROJECT_ICONS.length;
+  const colorIdx = Math.abs(hash >> 4) % PROJECT_COLORS.length;
+  return { Icon: PROJECT_ICONS[iconIdx], ...PROJECT_COLORS[colorIdx] };
+};
 
 interface Project {
   id: string;
@@ -28,9 +46,10 @@ interface ProjectsListProps {
   onSelectProject: (projectId: string) => void;
   onCreateProject?: () => void;
   onLoadProjects?: (loadFn: () => void) => void;
+  limit?: number;
 }
 
-export const ProjectsList = ({ onSelectProject, onCreateProject, onLoadProjects }: ProjectsListProps) => {
+export const ProjectsList = ({ onSelectProject, onCreateProject, onLoadProjects, limit }: ProjectsListProps) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -60,7 +79,8 @@ export const ProjectsList = ({ onSelectProject, onCreateProject, onLoadProjects 
           client:clients(name, client_image),
           project_manager:users!project_manager_id(full_name)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(limit || 100);
 
       if (error) throw error;
       setProjects(data as any || []);
@@ -76,171 +96,143 @@ export const ProjectsList = ({ onSelectProject, onCreateProject, onLoadProjects 
     project.client.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-      request: { label: 'طلب', color: 'var(--color-text-primary)', bgColor: 'var(--color-background-hover)' },
-      in_progress: { label: 'قيد التنفيذ', color: '#ffffff', bgColor: 'var(--color-info)' },
-      pending_payment: { label: 'بانتظار الدفع', color: '#ffffff', bgColor: 'var(--color-warning)' },
-      paid: { label: 'مدفوع', color: '#ffffff', bgColor: 'var(--color-success)' },
-      closed: { label: 'مغلق', color: 'var(--color-text-muted)', bgColor: 'var(--color-background-hover)' },
-      completed: { label: 'مكتمل', color: '#ffffff', bgColor: 'var(--color-success)' },
-      pending: { label: 'قيد الانتظار', color: '#ffffff', bgColor: 'var(--color-warning)' },
-      cancelled: { label: 'ملغي', color: '#ffffff', bgColor: 'var(--color-danger)' },
+  const getStatusBadge = (status: string): { label: string; className: string } => {
+    const statusMap: Record<string, { label: string; className: string }> = {
+      request: { label: 'طلب', className: 'badge badge-gray' },
+      in_progress: { label: 'قيد التنفيذ', className: 'badge badge-green' },
+      pending_payment: { label: 'بانتظار الدفع', className: 'badge badge-amber' },
+      paid: { label: 'مدفوع', className: 'badge badge-green' },
+      closed: { label: 'مغلق', className: 'badge badge-gray' },
+      completed: { label: 'مكتمل', className: 'badge badge-green' },
+      pending: { label: 'قيد الانتظار', className: 'badge badge-amber' },
+      cancelled: { label: 'ملغي', className: 'badge badge-red' },
     };
     return statusMap[status] || statusMap.request;
   };
 
-  const calculateProfit = (price: number, cost: number | null) => {
-    if (!cost) return { profit: price, percentage: 100, status: 'good' };
-    const profit = price - cost;
-    const percentage = price > 0 ? (profit / price) * 100 : 0;
-    let status: 'good' | 'warning' | 'danger' = 'good';
-    if (percentage < 0) status = 'danger';
-    else if (percentage < 20) status = 'warning';
-    return { profit, percentage, status };
+  const getModeBadge = (mode: string): { label: string; className: string } => {
+    return mode === 'STANDARD'
+      ? { label: 'مشروع', className: 'badge badge-amber' }
+      : { label: 'مشغل', className: 'badge badge-blue' };
   };
 
-  const getProfitColor = (status: 'good' | 'warning' | 'danger') => {
-    switch (status) {
-      case 'good': return 'var(--color-success)';
-      case 'warning': return 'var(--color-warning)';
-      case 'danger': return 'var(--color-danger)';
-    }
+  const calculateProfit = (price: number, cost: number | null) => {
+    if (!cost) return { profit: price, percentage: 100, isPositive: true };
+    const profit = price - cost;
+    const percentage = price > 0 ? (profit / price) * 100 : 0;
+    return { profit, percentage, isPositive: profit >= 0 };
   };
 
   return (
     <div>
-      <div className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--color-text-muted)' }} />
+      {/* Filter bar */}
+      <div className="filter-bar" style={{ marginBottom: 14 }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 360 }}>
+          <Search size={14} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث عن مشروع أو عميل..."
-            className="w-full pr-9 pl-4 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
+            className="input"
+            style={{ paddingRight: 36 }}
           />
         </div>
-
         {onCreateProject && (
-          <button
-            onClick={onCreateProject}
-            className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-all font-medium whitespace-nowrap"
-            style={{ backgroundColor: 'var(--color-primary)' }}
-          >
-            <Plus size={18} />
-            إضافة مشروع جديد
+          <button className="btn btn-primary btn-sm" onClick={onCreateProject}>
+            <Plus size={14} /> إضافة مشروع جديد
           </button>
         )}
       </div>
 
       {loading ? (
-        <div className="p-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>جاري التحميل...</div>
+        <div className="dash-empty"><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>
       ) : filteredProjects.length === 0 ? (
-        <div className="p-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد مشاريع</div>
+        <div className="dash-empty"><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد مشاريع</span></div>
       ) : (
-        <div
-          className="rounded-lg border overflow-hidden"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
-        >
-          <table className="w-full">
-            <thead style={{ backgroundColor: 'var(--color-table-header)', borderBottom: '1px solid var(--color-table-border)' }}>
+        <div className="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المشروع</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>العميل</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>مدير المشروع</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الحالة</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الميزانية</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>التكاليف</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الربح</th>
+                <th>المشروع</th>
+                <th>العميل</th>
+                <th>مدير المشروع</th>
+                <th>الحالة</th>
+                <th>الميزانية</th>
+                <th>التكاليف</th>
+                <th>الربح</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProjects.map((project, index) => {
+              {filteredProjects.map((project) => {
                 const statusBadge = getStatusBadge(project.status);
+                const modeBadge = getModeBadge(project.project_mode);
                 const profitData = calculateProfit(project.total_price, project.total_cost);
+                const pStyle = getProjectStyle(project.id);
+                const ProjectIcon = pStyle.Icon;
                 return (
                   <tr
                     key={project.id}
                     onClick={() => onSelectProject(project.id)}
-                    className="cursor-pointer transition-colors"
-                    style={{ borderBottom: index < filteredProjects.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-table-row-hover)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+                    style={{ cursor: 'pointer' }}
                   >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{project.name}</div>
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[11px] font-medium border"
-                          style={{
-                            borderColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.3)' : 'rgba(59,130,246,0.3)',
-                            color: project.project_mode === 'STANDARD' ? '#059669' : '#2563eb',
-                            backgroundColor: project.project_mode === 'STANDARD' ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.08)',
-                          }}
-                        >
-                          {project.project_mode === 'STANDARD' ? 'مشروع' : 'عقد'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-                          style={{ backgroundColor: 'var(--color-background-hover)' }}
-                        >
-                          {project.client.client_image ? (
-                            <img src={project.client.client_image} alt={project.client.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <User size={14} style={{ color: 'var(--color-text-muted)' }} />
-                          )}
+                    <td>
+                      <div className="user-row">
+                        <div className="client-logo" style={{
+                          background: pStyle.bg, color: pStyle.color,
+                          border: `1px solid ${pStyle.border}`,
+                          width: 28, height: 28,
+                        }}>
+                          <ProjectIcon size={14} />
                         </div>
-                        <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>{project.client.name}</span>
+                        <div>
+                          <div className="u-name" style={{ fontSize: 12 }}>{project.name}</div>
+                          <div className="u-role">
+                            <span className={modeBadge.className} style={{ fontSize: 10, padding: '1px 6px' }}>
+                              {modeBadge.label}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                        {project.project_manager?.full_name || '-'}
-                      </span>
+                    <td>
+                      <div className="user-row">
+                        {project.client.client_image ? (
+                          <div className="client-logo" style={{ width: 28, height: 28 }}>
+                            <img src={project.client.client_image} alt={project.client.name} />
+                          </div>
+                        ) : (
+                          <div className="avatar av-sm" style={{ background: 'var(--success-bg)', color: 'var(--success-text)' }}>
+                            <Crown size={12} />
+                          </div>
+                        )}
+                        <span style={{ fontSize: 12 }}>{project.client.name}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-medium inline-block"
-                        style={{ backgroundColor: statusBadge.bgColor, color: statusBadge.color }}
-                      >
+                    <td style={{ fontSize: 12 }}>
+                      {project.project_manager?.full_name || <span style={{ color: 'var(--text-muted)' }}>-</span>}
+                    </td>
+                    <td>
+                      <span className={statusBadge.className} style={{ fontSize: 10, padding: '2px 8px' }}>
                         {statusBadge.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                        {formatCurrency(project.total_price, project.currency)}
-                      </span>
+                    <td className="td-primary" style={{ fontSize: 12 }} dir="ltr">
+                      {formatCurrency(project.total_price, project.currency)}
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-medium" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-                        {project.total_cost ? formatCurrency(project.total_cost, project.currency) : '-'}
-                      </span>
+                    <td style={{ fontSize: 12 }} dir="ltr">
+                      {project.total_cost ? formatCurrency(project.total_cost, project.currency) : <span style={{ color: 'var(--text-muted)' }}>-</span>}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 12 }} dir="ltr">
                           {formatCurrency(profitData.profit, project.currency)}
                         </span>
                         <span
-                          className="flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-full"
-                          style={{
-                            color: getProfitColor(profitData.status as 'good' | 'warning' | 'danger'),
-                            backgroundColor: profitData.status === 'good' ? 'rgba(16,185,129,0.1)' : profitData.status === 'warning' ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)',
-                          }}
-                          dir="ltr"
+                          className={profitData.isPositive ? 'badge badge-green' : 'badge badge-red'}
+                          style={{ fontSize: 10, padding: '1px 6px' }}
                         >
-                          {profitData.status === 'good' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                          {toEnglishNumbers(profitData.percentage.toFixed(0))}%
+                          ربح {toEnglishNumbers(profitData.percentage.toFixed(0))}%
                         </span>
                       </div>
                     </td>

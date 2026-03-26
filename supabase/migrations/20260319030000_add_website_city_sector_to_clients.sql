@@ -1,0 +1,4 @@
+-- Add new fields to clients table
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS website text DEFAULT NULL;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS city text DEFAULT NULL;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS sector text DEFAULT NULL;

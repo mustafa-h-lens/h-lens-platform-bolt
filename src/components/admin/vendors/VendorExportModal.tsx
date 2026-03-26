@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { Download, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
-import { Modal } from '../../shared/Modal';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import html2canvas from 'html2canvas';
@@ -192,6 +192,62 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     savePreferences();
 
     try {
+      // ── CSV / XLSX export ──
+      if (exportFormat === 'csv' || exportFormat === 'xlsx') {
+        const columns: { key: string; label: string }[] = [];
+        if (selectedFields.full_name) columns.push({ key: 'full_name', label: 'الاسم الثلاثي' });
+        if (selectedFields.phone) columns.push({ key: 'phone', label: 'رقم الجوال' });
+        if (selectedFields.email) columns.push({ key: 'email', label: 'البريد الإلكتروني' });
+        if (selectedFields.id_number) columns.push({ key: 'id_number', label: 'رقم الهوية' });
+        if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
+        if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
+        if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
+        if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
+        if (selectedFields.vehicle_registration_number) columns.push({ key: 'vehicle_registration_number', label: 'رقم الاستمارة' });
+        if (selectedFields.vehicle_brand) columns.push({ key: 'vehicle_brand', label: 'ماركة المركبة' });
+        if (selectedFields.vehicle_plate_number) columns.push({ key: 'vehicle_plate_number', label: 'رقم اللوحة' });
+        if (selectedFields.equipment) columns.push({ key: 'equipment', label: 'المعدات' });
+
+        const header = columns.map(c => c.label);
+        const rows = vendors.map(v => columns.map(c => {
+          if (c.key === 'status') return getStatusText(v.status);
+          if (c.key === 'equipment') {
+            const eq = equipmentData[v.id] || [];
+            return eq.map(e => `${e.quantity} ${e.name}`).join(' | ') || '-';
+          }
+          return (v as any)[c.key] || '-';
+        }));
+
+        // BOM for UTF-8 Arabic support
+        const BOM = '\uFEFF';
+        const csvContent = BOM + [header.join(','), ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+        if (exportFormat === 'csv') {
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `vendors_export_${new Date().toISOString().split('T')[0]}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } else {
+          // XLSX: generate as TSV (opens in Excel with proper columns)
+          const tsvContent = BOM + [header.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
+          const blob = new Blob([tsvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `vendors_export_${new Date().toISOString().split('T')[0]}.xls`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        showSuccess('تم تصدير البيانات بنجاح');
+        onSuccess();
+        return;
+      }
+
+      // ── PDF export ──
       // Ensure Arabic font is loaded before rendering
       await ensureFontLoaded();
       const doc = new jsPDF({
@@ -200,43 +256,35 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
         format: 'a4',
       });
 
-      if (separatePages) {
-        for (let i = 0; i < vendors.length; i++) {
-          const vendor = vendors[i];
+      // Calculate rows per page based on content: images need ~110px height, text ~45px
+      const hasImages = selectedFields.profile_image || selectedFields.id_image || selectedFields.vehicle_registration_image || selectedFields.equipment_images;
+      const ROWS_PER_PAGE = separatePages ? 1 : (hasImages ? 4 : 8);
 
-          if (printRef.current) {
-            printRef.current.innerHTML = '';
-            const template = await createSingleVendorTemplate(vendor);
-            printRef.current.appendChild(template);
+      if (printRef.current) {
+        // Pre-warm: render a test Arabic element to force font rasterization
+        printRef.current.innerHTML = '';
+        const warmup = document.createElement('div');
+        warmup.style.cssText = 'font-family: Tahoma, Arial, sans-serif; font-size: 14px; font-weight: 700; direction: rtl; position: absolute; white-space: nowrap;';
+        warmup.textContent = 'الاسم الثلاثي صورة الهوية رقم الجوال المعدات الجنسية المدينة الحالة البريد الإلكتروني';
+        printRef.current.appendChild(warmup);
+        await new Promise(r => setTimeout(r, 300));
+        // Capture warmup to force font rasterization in html2canvas
+        await html2canvas(warmup, { scale: 1, backgroundColor: '#ffffff' });
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+        for (let pageIdx = 0; pageIdx < Math.ceil(vendors.length / ROWS_PER_PAGE); pageIdx++) {
+          const pageVendors = vendors.slice(pageIdx * ROWS_PER_PAGE, (pageIdx + 1) * ROWS_PER_PAGE);
 
-            const canvas = await html2canvas(printRef.current, {
-              scale: 2,
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#ffffff',
-              letterRendering: true,
-            });
-
-            const imgWidth = 297;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            const imgData = canvas.toDataURL('image/png');
-
-            if (i > 0) {
-              doc.addPage();
-            }
-
-            doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          }
-        }
-      } else {
-        if (printRef.current) {
           printRef.current.innerHTML = '';
-          const template = await createAllVendorsTemplate();
-          printRef.current.appendChild(template);
 
-          await new Promise(resolve => setTimeout(resolve, 800));
+          if (separatePages) {
+            const template = await createSingleVendorTemplate(pageVendors[0]);
+            printRef.current.appendChild(template);
+          } else {
+            const template = await createAllVendorsTemplate(pageVendors, pageIdx === 0);
+            printRef.current.appendChild(template);
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 400));
 
           const canvas = await html2canvas(printRef.current, {
             scale: 2,
@@ -247,22 +295,11 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
           });
 
           const imgWidth = 297;
-          const pageHeight = 210;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           const imgData = canvas.toDataURL('image/png');
 
-          let heightLeft = imgHeight;
-          let position = 0;
-
-          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            doc.addPage();
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-          }
+          if (pageIdx > 0) doc.addPage();
+          doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, 210));
         }
       }
 
@@ -277,11 +314,12 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     }
   };
 
-  const createAllVendorsTemplate = async (): Promise<HTMLElement> => {
+  const createAllVendorsTemplate = async (pageVendors?: Vendor[], showHeader: boolean = true): Promise<HTMLElement> => {
+    const vendorsToRender = pageVendors || vendors;
     const container = document.createElement('div');
     container.style.cssText = `
       direction: rtl;
-      font-family: 'Cairo', 'Noto Sans Arabic', 'Arial', 'Tahoma', sans-serif;
+      font-family: 'Tahoma', 'Arial', 'Cairo', sans-serif;
       padding: 40px;
       background: white;
       min-width: 1200px;
@@ -319,13 +357,13 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     `;
     header.appendChild(titleDiv);
 
-    container.appendChild(header);
+    if (showHeader) container.appendChild(header);
 
     const table = document.createElement('table');
     table.style.cssText = `
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
+      margin-top: ${showHeader ? '20px' : '0'};
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     `;
 
@@ -348,20 +386,26 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
 
     if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
 
+    // Always show table header on every page
     const thead = document.createElement('thead');
-    thead.style.cssText = 'background: #3b82f6;';
+    thead.style.cssText = 'background: #1e3a5f;';
     const headerRow = document.createElement('tr');
 
     columns.forEach(col => {
       const th = document.createElement('th');
       th.style.cssText = `
-        padding: 12px;
+        padding: 14px 12px;
         text-align: center;
         color: white;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1px solid #2563eb;
+        font-weight: 700;
+        font-size: 14px;
+        border: 1px solid #1e3a5f;
         vertical-align: middle;
+        font-family: Tahoma, Arial, sans-serif;
+        direction: rtl;
+        unicode-bidi: embed;
+        letter-spacing: 0;
+        word-spacing: 0;
       `;
       th.textContent = col.label;
       headerRow.appendChild(th);
@@ -372,8 +416,8 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
 
     const tbody = document.createElement('tbody');
 
-    for (let i = 0; i < vendors.length; i++) {
-      const vendor = vendors[i];
+    for (let i = 0; i < vendorsToRender.length; i++) {
+      const vendor = vendorsToRender[i];
       const dataRow = document.createElement('tr');
       dataRow.style.cssText = `
         ${i % 2 === 0 ? 'background: #f8fafc;' : 'background: white;'}
@@ -383,12 +427,15 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
       for (const col of columns) {
         const td = document.createElement('td');
         td.style.cssText = `
-          padding: 8px;
+          padding: 10px 8px;
           text-align: center;
           border: 1px solid #e2e8f0;
-          font-size: 12px;
+          font-size: 13px;
           color: #334155;
           vertical-align: middle;
+          font-family: Tahoma, Arial, sans-serif;
+          direction: rtl;
+          unicode-bidi: embed;
         `;
 
         if (col.key === 'profile_image' && vendor.profile_image) {
@@ -528,7 +575,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     const container = document.createElement('div');
     container.style.cssText = `
       direction: rtl;
-      font-family: 'Cairo', 'Noto Sans Arabic', 'Arial', 'Tahoma', sans-serif;
+      font-family: 'Tahoma', 'Arial', 'Cairo', sans-serif;
       padding: 40px;
       background: white;
       min-width: 1000px;
@@ -630,6 +677,9 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
         font-size: 13px;
         color: #334155;
         vertical-align: middle;
+        font-family: Tahoma, Arial, sans-serif;
+        direction: rtl;
+        unicode-bidi: embed;
       `;
 
       if (col.key === 'profile_image' && vendor.profile_image) {
@@ -740,223 +790,150 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     return container;
   };
 
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'csv' | 'xlsx'>('pdf');
+  const [exportScope, setExportScope] = useState<'all' | 'filtered' | 'selected'>('all');
+
+  const selectedFieldCount = Object.values(selectedFields).filter(Boolean).length;
+  const selectAllFields = () => setSelectedFields(Object.fromEntries(Object.keys(selectedFields).map(k => [k, true])) as ExportFields);
+  const clearAllFields = () => setSelectedFields(Object.fromEntries(Object.keys(selectedFields).map(k => [k, false])) as ExportFields);
+
+  const fieldLabels: Record<keyof ExportFields, string> = {
+    full_name: 'اسم المورد', phone: 'رقم الهاتف', email: 'البريد الإلكتروني',
+    primary_field: 'التصنيف / الخدمة', nationality: 'الجنسية', primary_city: 'المدينة',
+    status: 'الحالة', id_number: 'رقم الهوية', profile_image: 'الصورة الشخصية',
+    id_image: 'صورة الهوية', vehicle_registration_number: 'رقم الاستمارة',
+    vehicle_brand: 'ماركة المركبة', vehicle_plate_number: 'رقم اللوحة',
+    vehicle_registration_image: 'صورة الاستمارة', equipment: 'المعدات', equipment_images: 'صور المعدات',
+  };
+
+  const scopeCount = exportScope === 'all' ? vendors.length : exportScope === 'selected' ? 0 : vendors.length;
+
   return (
     <>
-      <Modal isOpen={true} onClose={onClose} title="تصدير بيانات الموردين إلى PDF">
-        <div className="space-y-6">
-          <div>
-            <p className="text-sm text-slate-600 mb-4">
-              اختر الحقول التي تريد تصديرها ({vendors.length} مورد محدد)
-            </p>
-
-            <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto p-2">
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.full_name}
-                  onChange={() => toggleField('full_name')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">الاسم الثلاثي</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.phone}
-                  onChange={() => toggleField('phone')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">رقم الجوال</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.id_number}
-                  onChange={() => toggleField('id_number')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">رقم الهوية</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.profile_image}
-                  onChange={() => toggleField('profile_image')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">الصورة الشخصية</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.id_image}
-                  onChange={() => toggleField('id_image')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">صورة الهوية</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.vehicle_registration_image}
-                  onChange={() => toggleField('vehicle_registration_image')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">صورة استمارة السيارة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.vehicle_registration_number}
-                  onChange={() => toggleField('vehicle_registration_number')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">رقم الاستمارة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.vehicle_brand}
-                  onChange={() => toggleField('vehicle_brand')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">ماركة المركبة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.vehicle_plate_number}
-                  onChange={() => toggleField('vehicle_plate_number')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">رقم اللوحة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.equipment}
-                  onChange={() => toggleField('equipment')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">المعدات</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.equipment_images}
-                  onChange={() => toggleField('equipment_images')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">صور المعدات</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.email}
-                  onChange={() => toggleField('email')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">البريد الإلكتروني</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.nationality}
-                  onChange={() => toggleField('nationality')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">الجنسية</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.primary_field}
-                  onChange={() => toggleField('primary_field')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">المجال الأساسي</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.primary_city}
-                  onChange={() => toggleField('primary_city')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">المدينة</span>
-              </label>
-
-              <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedFields.status}
-                  onChange={() => toggleField('status')}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-slate-700 font-medium text-sm">الحالة</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200 pt-4">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">إعدادات التصدير</h3>
-
-            <label className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
-              <input
-                type="checkbox"
-                checked={separatePages}
-                onChange={() => setSeparatePages(!separatePages)}
-                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
+      <div className="modal-overlay show" onClick={onClose}>
+        <div className="modal" style={{ maxWidth: 620 }} onClick={e => e.stopPropagation()}>
+          <div className="modal-hdr">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="card-icon ci-green"><Download size={18} /></div>
               <div>
-                <span className="text-slate-800 font-medium text-sm block">كل مورد في صفحة مستقلة</span>
-                <span className="text-slate-600 text-xs">إذا لم تحدد، سيتم عرض جميع الموردين في صفحات متتالية</span>
+                <div className="modal-ttl">تصدير الموردين</div>
+                <div className="modal-sub">اختر صيغة التصدير والحقول المطلوبة</div>
               </div>
-            </label>
+            </div>
+            <button className="modal-close" onClick={onClose}><X size={16} /></button>
+          </div>
 
-            <div className="mt-3 p-3 bg-slate-50 rounded-lg">
-              <p className="text-xs text-slate-600">
-                <strong>حجم الورق:</strong> A4 (أفقي - Landscape)
-              </p>
-              <p className="text-xs text-slate-600 mt-1">
-                <strong>الهوامش:</strong> قياسية (40px من جميع الجوانب)
-              </p>
+          <div className="modal-body">
+            {/* File Format */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, textAlign: 'right' }}>صيغة الملف</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {([
+                  { id: 'pdf' as const, label: 'PDF', sub: 'تقرير جاهز للطباعة', color: '#ef4444' },
+                  { id: 'csv' as const, label: 'CSV', sub: 'نص مفصول بفواصل', color: '#10b981' },
+                  { id: 'xlsx' as const, label: 'Excel', sub: 'جداول بيانات مع تنسيق', color: '#2563eb' },
+                ]).map(fmt => (
+                  <div
+                    key={fmt.id}
+                    onClick={() => setExportFormat(fmt.id)}
+                    style={{
+                      padding: '16px 12px', borderRadius: 'var(--radius-lg)', cursor: 'pointer',
+                      textAlign: 'center', transition: 'var(--transition-fast)',
+                      border: `2px solid ${exportFormat === fmt.id ? 'var(--accent)' : 'var(--border-soft)'}`,
+                      background: exportFormat === fmt.id ? 'var(--accent-glow)' : 'var(--bg-card)',
+                    }}
+                  >
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 'var(--radius-md)', margin: '0 auto 8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: `${fmt.color}20`, color: fmt.color, fontSize: 11, fontWeight: 800,
+                      border: `1px solid ${fmt.color}40`,
+                    }}>{fmt.label}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{fmt.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{fmt.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* PDF Layout (only when PDF) */}
+            {exportFormat === 'pdf' && (
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, textAlign: 'right' }}>تخطيط PDF</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+                  <div
+                    onClick={() => setSeparatePages(false)}
+                    style={{
+                      padding: '18px 14px', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'center',
+                      border: `2px solid ${!separatePages ? 'var(--accent)' : 'var(--border-soft)'}`,
+                      background: !separatePages ? 'var(--accent-glow)' : 'var(--bg-card)',
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 6, opacity: 0.5 }}>☰</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>جدول موحد</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>جميع الموردين في جدول واحد</div>
+                  </div>
+                  <div
+                    onClick={() => setSeparatePages(true)}
+                    style={{
+                      padding: '18px 14px', borderRadius: 'var(--radius-lg)', cursor: 'pointer', textAlign: 'center',
+                      border: `2px solid ${separatePages ? 'var(--accent)' : 'var(--border-soft)'}`,
+                      background: separatePages ? 'var(--accent-glow)' : 'var(--bg-card)',
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 6, opacity: 0.5 }}>☷</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>صفحة لكل مورد</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>تفاصيل كاملة لكل مورد في صفحة مستقلة</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Fields Selection */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>الحقول المطلوبة</div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button onClick={selectAllFields} style={{ fontSize: 12, color: 'var(--accent-lighter)', background: 'none', border: 'none', cursor: 'pointer' }}>تحديد الكل</button>
+                  <button onClick={clearAllFields} style={{ fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>إلغاء الكل</button>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                {(Object.keys(fieldLabels) as (keyof ExportFields)[]).map(key => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <input type="checkbox" className="tbl-check" checked={selectedFields[key]} onChange={() => toggleField(key)} />
+                    <span>{fieldLabels[key]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Export Summary */}
+            <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--bg-overlay)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14 }}>◉</span> ملخص التصدير
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                <span>الصيغة: <strong style={{ color: 'var(--text-primary)' }}>{exportFormat === 'pdf' ? 'PDF' : exportFormat === 'csv' ? 'CSV' : 'Excel (XLSX)'}</strong></span>
+                <span>السجلات: <strong style={{ color: 'var(--text-primary)' }}>{toEnglishNumbers(vendors.length.toString())} مورد</strong></span>
+                <span>الحقول: <strong style={{ color: 'var(--text-primary)' }}>{toEnglishNumbers(selectedFieldCount.toString())} حقل</strong></span>
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-slate-200">
+          <div className="modal-foot">
+            <button className="btn btn-secondary" onClick={onClose} disabled={loading}>إلغاء</button>
             <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1 px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors disabled:opacity-50"
-            >
-              إلغاء
-            </button>
-            <button
+              className="btn btn-primary"
               onClick={handleExport}
-              disabled={loading || Object.values(selectedFields).every(v => !v)}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || selectedFieldCount === 0}
+              style={{ background: 'var(--success)', boxShadow: '0 2px 8px rgba(16,185,129,0.35)' }}
             >
-              {loading ? 'جاري التصدير...' : 'تصدير PDF'}
+              {loading ? 'جاري التصدير...' : <><Download size={15} /> بدء التصدير</>}
             </button>
           </div>
         </div>
-      </Modal>
+      </div>
 
       <div ref={printRef} style={{ position: 'absolute', left: '-9999px', top: 0 }} />
     </>

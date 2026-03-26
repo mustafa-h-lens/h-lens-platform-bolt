@@ -151,7 +151,7 @@ export const darkTheme = {
   },
   background: {
     page: '#050d1e',
-    card: 'rgba(255,255,255,0.03)',
+    card: '#071428',
     hover: 'rgba(255,255,255,0.06)',
     filter: '#0d2040',
     input: 'rgba(255,255,255,0.03)',

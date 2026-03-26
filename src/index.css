@@ -110,43 +110,43 @@
   html.dark {
     color-scheme: dark;
 
-    --color-primary: #60a5fa;
+    --color-primary: #2563eb;
     --color-primary-hover: #3b82f6;
-    --color-primary-active: #2563eb;
+    --color-primary-active: #1d4ed8;
     --color-primary-light: #1e3a5f;
     --color-primary-dark: #93c5fd;
 
-    --color-success: #34d399;
-    --color-success-light: #064e3b;
-    --color-success-dark: #6ee7b7;
+    --color-success: #10b981;
+    --color-success-light: rgba(16,185,129,0.1);
+    --color-success-dark: #34d399;
 
-    --color-warning: #fbbf24;
-    --color-warning-light: #78350f;
-    --color-warning-dark: #fcd34d;
+    --color-warning: #f59e0b;
+    --color-warning-light: rgba(245,158,11,0.1);
+    --color-warning-dark: #fbbf24;
 
-    --color-danger: #f87171;
-    --color-danger-light: #7f1d1d;
-    --color-danger-dark: #fca5a5;
+    --color-danger: #ef4444;
+    --color-danger-light: rgba(239,68,68,0.1);
+    --color-danger-dark: #f87171;
 
-    --color-info: #22d3ee;
-    --color-info-light: #164e63;
-    --color-info-dark: #67e8f9;
+    --color-info: #06b6d4;
+    --color-info-light: rgba(6,182,212,0.1);
+    --color-info-dark: #22d3ee;
 
-    --color-surface: #1e293b;
-    --color-background: #0f172a;
-    --color-background-hover: #334155;
+    --color-surface: #071428;
+    --color-background: #050d1e;
+    --color-background-hover: rgba(255,255,255,0.06);
 
-    --color-border: #334155;
-    --color-border-hover: #475569;
-    --color-border-focus: #60a5fa;
+    --color-border: rgba(255,255,255,0.09);
+    --color-border-hover: rgba(255,255,255,0.14);
+    --color-border-focus: #2563eb;
 
-    --color-text-primary: #f1f5f9;
-    --color-text-secondary: #cbd5e1;
-    --color-text-muted: #94a3b8;
-    --color-text-disabled: #475569;
+    --color-text-primary: #f0f4ff;
+    --color-text-secondary: rgba(200,215,255,0.65);
+    --color-text-muted: rgba(150,175,230,0.4);
+    --color-text-disabled: rgba(100,130,200,0.25);
 
-    --color-table-header: #1e293b;
-    --color-table-row-hover: #334155;
+    --color-table-header: #0a1a35;
+    --color-table-row-hover: rgba(255,255,255,0.03);
     --color-table-border: #334155;
 
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
@@ -155,15 +155,63 @@
   }
 
   body {
-    font-family: 'Tajawal', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-main, 'Cairo'), 'Tajawal', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     direction: rtl;
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
+    background-color: var(--bg-base, var(--color-background));
+    color: var(--text-primary, var(--color-text-primary));
   }
 
   * {
     direction: rtl;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAILWIND → DS VARIABLE BRIDGE
+   Maps common Tailwind dark: classes to DS CSS variables
+   so legacy components get correct dark mode colors
+═══════════════════════════════════════════════════════════ */
+html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700 { color: var(--text-primary) !important; }
+html.dark .text-slate-600, html.dark .text-slate-500 { color: var(--text-secondary) !important; }
+html.dark .text-slate-400, html.dark .text-slate-300 { color: var(--text-muted) !important; }
+html.dark .bg-white { background-color: var(--bg-surface) !important; }
+html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: var(--bg-overlay) !important; }
+html.dark .border-slate-200, html.dark .border-slate-300 { border-color: var(--border-soft) !important; }
+html.dark .bg-blue-50, html.dark .bg-blue-100 { background-color: var(--accent-glow) !important; }
+html.dark .text-blue-600, html.dark .text-blue-700, html.dark .text-blue-900 { color: var(--accent-lighter) !important; }
+html.dark .bg-green-50, html.dark .bg-green-100 { background-color: var(--success-bg) !important; }
+html.dark .text-green-600, html.dark .text-green-700 { color: var(--success-text) !important; }
+html.dark .bg-red-50, html.dark .bg-red-100 { background-color: var(--danger-bg) !important; }
+html.dark .text-red-500, html.dark .text-red-600 { color: var(--danger-text) !important; }
+html.dark .bg-orange-50, html.dark .bg-orange-100 { background-color: var(--warning-bg) !important; }
+html.dark .text-orange-600 { color: var(--warning-text) !important; }
+html.dark .bg-purple-50, html.dark .bg-purple-100 { background-color: var(--purple-bg) !important; }
+html.dark .text-purple-600 { color: var(--purple-text) !important; }
+html.dark .bg-emerald-50, html.dark .bg-emerald-100 { background-color: var(--success-bg) !important; }
+html.dark .text-emerald-600 { color: var(--success-text) !important; }
+html.dark .hover\:bg-slate-50:hover, html.dark .hover\:bg-slate-100:hover { background-color: var(--bg-card-hover) !important; }
+html.dark .hover\:bg-blue-100:hover { background-color: var(--accent-glow) !important; }
+html.dark .hover\:bg-red-50:hover { background-color: var(--danger-bg) !important; }
+html.dark .focus\:ring-blue-500:focus { --tw-ring-color: rgba(37,99,235,0.3) !important; }
+html.dark .border-blue-200 { border-color: var(--accent-glow-md) !important; }
+html.dark .border-blue-600 { border-color: var(--accent) !important; }
+html.dark .shadow-sm { box-shadow: var(--shadow-sm) !important; }
+html.dark .rounded-xl { border-radius: var(--radius-lg) !important; }
+html.dark input:not(.input):not(.tbl-check):not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+html.dark select:not(.input):not(.select),
+html.dark textarea:not(.input) {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-soft) !important;
+  color: var(--text-primary) !important;
+}
+html.dark input:not(.input):not(.tbl-check):not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+html.dark select:not(.input):not(.select):focus,
+html.dark textarea:not(.input):focus {
+  border-color: rgba(37,99,235,0.55) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important;
+}
+html.dark input:not(.input)::placeholder, html.dark textarea:not(.input)::placeholder {
+  color: var(--text-muted) !important;
 }
 
 @layer utilities {

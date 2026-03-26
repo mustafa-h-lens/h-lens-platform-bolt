@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, FolderOpen, User, ChevronDown } from 'lucide-react';
+import { Plus, Search, Users, UserCheck, UserPlus, HeartHandshake, Globe, Eye, Pencil, FolderPlus, Trash2, MoreHorizontal, ChevronRight, ChevronLeft, RotateCcw } from 'lucide-react';
+import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ClientModal } from './ClientModal';
@@ -15,88 +16,115 @@ interface ClientsPageProps {
   onViewClient?: (clientId: string) => void;
 }
 
-type SortOption = 'name' | 'updated' | 'projects';
+const CLIENT_ICONS = [Users, UserCheck, UserPlus, HeartHandshake];
+const CLIENT_COLORS = [
+  { bg: 'var(--accent-glow)', color: 'var(--accent-lighter)' },
+  { bg: 'var(--success-bg)', color: 'var(--success-text)' },
+  { bg: 'var(--warning-bg)', color: 'var(--warning-text)' },
+  { bg: 'var(--purple-bg)', color: 'var(--purple-text)' },
+  { bg: 'var(--info-bg)', color: 'var(--info-text)' },
+  { bg: 'var(--danger-bg)', color: 'var(--danger-text)' },
+];
+
+const getClientStyle = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
+  return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length];
+};
 
 export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
   const { showError } = useNotification();
   const [clients, setClients] = useState<ClientWithProjects[]>([]);
-  const [filteredClients, setFilteredClients] = useState<ClientWithProjects[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('updated');
-  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('updated');
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [stats, setStats] = useState({ total: 0, active: 0, newThisQuarter: 0, retention: 0 });
+
+  useEffect(() => { loadClients(); }, [page, sortBy, pageSize]);
+  useEffect(() => { setPage(0); }, [searchQuery, statusFilter]);
 
   useEffect(() => {
-    loadClients();
-  }, [page]);
-
-  // Reset page on search/sort change
-  useEffect(() => {
-    setPage(0);
-  }, [searchQuery, sortBy]);
-
-  useEffect(() => {
-    let filtered = clients;
-
-    if (searchQuery.trim() !== '') {
-      const query = searchQuery.toLowerCase();
-      filtered = clients.filter(
-        (client) =>
-          client.name.toLowerCase().includes(query) ||
-          (client.email && client.email.toLowerCase().includes(query))
-      );
-    }
-
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortBy === 'name') {
-        return a.name.localeCompare(b.name);
-      } else if (sortBy === 'updated') {
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
-      } else if (sortBy === 'projects') {
-        return (b.projects_count || 0) - (a.projects_count || 0);
-      }
-      return 0;
-    });
-
-    setFilteredClients(sorted);
-  }, [searchQuery, clients, sortBy]);
+    const handleClick = () => setOpenDropdown(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   const loadClients = async () => {
     try {
       setLoading(true);
-
       const from = page * pageSize;
       const to = from + pageSize - 1;
-      const { data: clientsData, error: clientsError, count } = await supabase
+      let query = supabase
         .from('clients')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .select('*', { count: 'exact' });
 
-      if (clientsError) throw clientsError;
+      // Apply sort
+      if (sortBy === 'name') {
+        query = query.order('name', { ascending: true });
+      } else if (sortBy === 'projects') {
+        query = query.order('created_at', { ascending: false }); // sort by projects done client-side
+      } else {
+        query = query.order('created_at', { ascending: false }); // default: newest first
+      }
+
+      const { data, error, count } = await query.range(from, to);
+
+      if (error) throw error;
       setTotalCount(count || 0);
 
       const clientsWithCounts = await Promise.all(
-        (clientsData || []).map(async (client) => {
+        (data || []).map(async (client) => {
           const { count } = await supabase
             .from('projects')
             .select('id', { count: 'exact', head: true })
             .eq('client_id', client.id);
-
-          return {
-            ...client,
-            projects_count: count || 0,
-          };
+          return { ...client, projects_count: count || 0 };
         })
       );
 
+      // Client-side sort for project count
+      if (sortBy === 'projects') {
+        clientsWithCounts.sort((a, b) => (b.projects_count || 0) - (a.projects_count || 0));
+      }
       setClients(clientsWithCounts);
-      setFilteredClients(clientsWithCounts);
+
+      // Calculate stats
+      const totalClients = count || 0;
+
+      // New this quarter: clients created in current quarter
+      const now = new Date();
+      const quarterMonth = Math.floor(now.getMonth() / 3) * 3; // 0, 3, 6, 9
+      const quarterStart = new Date(now.getFullYear(), quarterMonth, 1).toISOString();
+      const { count: newQ } = await supabase
+        .from('clients')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', quarterStart);
+
+      // Retention: clients with at least 2 projects / clients with at least 1 project
+      const { data: projectCounts } = await supabase
+        .from('projects')
+        .select('client_id');
+      const clientProjectMap = new Map<string, number>();
+      (projectCounts || []).forEach((p: any) => {
+        clientProjectMap.set(p.client_id, (clientProjectMap.get(p.client_id) || 0) + 1);
+      });
+      const returningClients = [...clientProjectMap.values()].filter(c => c >= 2).length;
+      const retentionRate = totalClients > 0 ? Math.round((returningClients / totalClients) * 100) : 0;
+
+      const activeClients = clientProjectMap.size; // clients with at least 1 project
+      setStats({
+        total: totalClients,
+        active: Math.max(0, activeClients),
+        newThisQuarter: Math.max(0, newQ || 0),
+        retention: Math.max(0, Math.min(100, retentionRate)),
+      });
     } catch (error) {
       console.error('Error loading clients:', error);
     } finally {
@@ -104,24 +132,13 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
     }
   };
 
-  const handleDelete = async (client: Client, e: React.MouseEvent) => {
-    e.stopPropagation();
-
-    if (!confirm(`هل أنت متأكد من حذف العميل "${client.name}"؟`)) {
-      return;
-    }
-
+  const handleDelete = async (client: Client) => {
+    if (!confirm(`هل أنت متأكد من حذف العميل "${client.name}"؟`)) return;
     try {
-      const { error } = await supabase
-        .from('clients')
-        .delete()
-        .eq('id', client.id);
-
+      const { error } = await supabase.from('clients').delete().eq('id', client.id);
       if (error) throw error;
-
       loadClients();
     } catch (error: any) {
-      console.error('Error deleting client:', error);
       if (error.code === '23503') {
         showError('لا يمكن حذف هذا العميل لأنه مرتبط بمشاريع أخرى');
       } else {
@@ -130,223 +147,185 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
     }
   };
 
-  const handleEdit = (client: Client, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setSelectedClient(client);
-    setShowModal(true);
-  };
+  const filtered = clients.filter(c => {
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.website && (c as any).website.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes((c as any).status || 'active');
+    return matchesSearch && matchesStatus;
+  });
 
-  const handleRowClick = (clientId: string) => {
-    if (onViewClient) {
-      onViewClient(clientId);
-    }
-  };
-
-  const getSortLabel = (option: SortOption) => {
-    switch (option) {
-      case 'name':
-        return 'الاسم';
-      case 'updated':
-        return 'آخر تحديث';
-      case 'projects':
-        return 'عدد المشاريع';
-      default:
-        return 'آخر تحديث';
-    }
-  };
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">العملاء</h1>
-        <button
-          onClick={() => {
-            setSelectedClient(null);
-            setShowModal(true);
-          }}
-          className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-lg transition-all font-medium"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          <Plus className="w-5 h-5" />
-          <span>إضافة عميل جديد</span>
+    <div style={{ padding: 28 }}>
+      {/* Page Title */}
+      <div className="page-title-row">
+        <div>
+          <div className="page-title">العملاء</div>
+          <div className="page-subtitle">إدارة وتتبع جميع العملاء</div>
+        </div>
+        <button className="btn btn-primary" onClick={() => { setSelectedClient(null); setShowModal(true); }}>
+          <Plus size={16} /> إضافة عميل
         </button>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن عميل..."
-            className="w-full pr-10 pl-4 py-3 border border-slate-300 dark:border-dark-border rounded-lg
-              bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-              focus:ring-2 focus:ring-[#0A2A66] focus:border-transparent"
-          />
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><Users size={18} /></div>
+          <div className="stat-sub">إجمالي العملاء</div>
+          <div className="stat-val">{formatNumber(stats.total)}</div>
+          <div className="stat-hint">جميع العملاء المسجلين في النظام</div>
         </div>
-
-        <div className="relative">
-          <button
-            onClick={() => setShowSortMenu(!showSortMenu)}
-            className="flex items-center gap-2 px-4 py-3 border border-slate-300 dark:border-dark-border
-              rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300
-              hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors min-w-[200px] justify-between"
-          >
-            <span className="text-sm">ترتيب حسب: {getSortLabel(sortBy)}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-
-          {showSortMenu && (
-            <div className="absolute left-0 mt-2 w-full bg-white dark:bg-slate-800 border border-slate-200
-              dark:border-dark-border rounded-lg shadow-lg z-10 overflow-hidden">
-              {(['name', 'updated', 'projects'] as SortOption[]).map((option) => (
-                <button
-                  key={option}
-                  onClick={() => {
-                    setSortBy(option);
-                    setShowSortMenu(false);
-                  }}
-                  className={`w-full px-4 py-2 text-right text-sm hover:bg-slate-50 dark:hover:bg-slate-700
-                    transition-colors ${
-                      sortBy === option
-                        ? 'bg-[#0A2A66]/10 dark:bg-[#0A2A66]/20 text-[#0A2A66] dark:text-[#47A1FF] font-medium'
-                        : 'text-slate-700 dark:text-slate-300'
-                    }`}
-                >
-                  {getSortLabel(option)}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><UserCheck size={18} /></div>
+          <div className="stat-sub">العملاء النشطون</div>
+          <div className="stat-val">{formatNumber(stats.active)}</div>
+          <div className="stat-hint">عملاء لديهم مشاريع نشطة</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><UserPlus size={18} /></div>
+          <div className="stat-sub">عملاء جدد هذا الربع</div>
+          <div className="stat-val">{formatNumber(stats.newThisQuarter)}</div>
+          <div className="stat-hint">تم إضافتهم منذ بداية الربع الحالي</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><HeartHandshake size={18} /></div>
+          <div className="stat-sub">معدل الاحتفاظ</div>
+          <div className="stat-val">{stats.retention}%</div>
+          <div className="stat-hint">عملاء لديهم أكثر من مشروع واحد</div>
         </div>
       </div>
 
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <input
+          className="input"
+          placeholder="بحث بالاسم أو الموقع..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ maxWidth: 280 }}
+        />
+        <MultiSelectFilter
+          label="الحالة"
+          options={[
+            { value: 'active', label: 'نشط' },
+            { value: 'pending', label: 'معلق' },
+            { value: 'inactive', label: 'غير نشط' },
+          ]}
+          selected={statusFilter}
+          onToggle={(v) => setStatusFilter(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+        />
+        <select className="input select" style={{ maxWidth: 180 }} value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="updated">ترتيب حسب: الأحدث</option>
+          <option value="name">الاسم</option>
+          <option value="projects">عدد المشاريع</option>
+        </select>
+        <button className="btn btn-ghost btn-sm" onClick={() => { setSearchQuery(''); setStatusFilter([]); setSortBy('updated'); }}>
+          <RotateCcw size={13} /> إعادة تعيين
+        </button>
+      </div>
+
+      {/* Table */}
       {loading ? (
-        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200 dark:border-dark-border p-8">
-          <div className="text-center text-slate-600 dark:text-slate-300">جاري التحميل...</div>
-        </div>
-      ) : filteredClients.length === 0 ? (
-        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200 dark:border-dark-border p-8">
-          <div className="text-center text-slate-600 dark:text-slate-300">
-            {searchQuery ? 'لا توجد نتائج للبحث' : 'لا يوجد عملاء'}
-          </div>
-        </div>
+        <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>
+      ) : filtered.length === 0 ? (
+        <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{searchQuery ? 'لا توجد نتائج للبحث' : 'لا يوجد عملاء'}</span></div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredClients.map((client) => (
-            <div
-              key={client.id}
-              onClick={() => handleRowClick(client.id)}
-              className="bg-white dark:bg-dark-card rounded-[24px] shadow-sm border border-slate-200
-                dark:border-dark-border p-6 hover:shadow-lg hover:border-[#0A2A66]/30
-                dark:hover:border-[#0A2A66]/50 transition-all duration-300 cursor-pointer
-                hover:bg-slate-50/50 dark:hover:bg-slate-800/50"
-            >
-              <div className="flex items-center gap-6">
-                <div className="flex-shrink-0">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg overflow-hidden"
-                    style={{ backgroundColor: 'var(--color-primary)' }}>
-                    {client.client_image ? (
-                      <img
-                        src={client.client_image}
-                        alt={client.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-10 h-10 text-white" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">
-                    {client.name}
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">{client.email || 'لا يوجد بريد إلكتروني'}</p>
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="w-4 h-4 text-[#0A2A66] dark:text-[#47A1FF]" />
-                      <span className="text-sm text-slate-600 dark:text-slate-400">
-                        {formatNumber(client.projects_count || 0)} مشروع
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-500 dark:text-slate-400">
-                      آخر تحديث {formatDateArabic(client.updated_at)}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    onClick={(e) => handleEdit(client, e)}
-                    className="p-2.5 text-[#0A2A66] hover:bg-[#0A2A66]/10 dark:text-[#47A1FF]
-                      dark:hover:bg-[#0A2A66]/20 rounded-lg transition-colors"
-                    title="تعديل"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(client, e)}
-                    className="p-2.5 text-slate-600 hover:bg-slate-100 dark:text-slate-400
-                      dark:hover:bg-slate-700 rounded-lg transition-colors"
-                    title="حذف"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>العميل</th>
+                <th>الموقع الإلكتروني</th>
+                <th>الحالة</th>
+                <th>تاريخ الانضمام</th>
+                <th>المشاريع</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((client) => {
+                const cStyle = getClientStyle(client.id);
+                return (
+                  <tr key={client.id} onClick={() => onViewClient?.(client.id)} style={{ cursor: 'pointer' }}>
+                    <td>
+                      <div className="user-row">
+                        {client.client_image ? (
+                          <div className="client-logo">
+                            <img src={client.client_image} alt={client.name} />
+                          </div>
+                        ) : (
+                          <div className="client-logo" style={{ background: cStyle.bg, color: cStyle.color, border: 'none' }}>
+                            <Users size={18} />
+                          </div>
+                        )}
+                        <div className="u-name">{client.name}</div>
+                      </div>
+                    </td>
+                    <td>
+                      {client.website ? (
+                        <span className="client-website"><Globe size={12} /> {client.website}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>-</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="badge badge-green"><span className="badge-dot" style={{ background: 'var(--success)' }} /> نشط</span>
+                    </td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      {client.created_at ? client.created_at.split('T')[0] : '-'}
+                    </td>
+                    <td className="td-primary">{formatNumber(client.projects_count || 0)}</td>
+                    <td className="actions-cell" onClick={e => e.stopPropagation()}>
+                      <button
+                        className={`actions-btn ${openDropdown === client.id ? 'open' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === client.id ? null : client.id); }}
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                      {openDropdown === client.id && (
+                        <div className="actions-dropdown show">
+                          <button className="dd-item" onClick={() => { onViewClient?.(client.id); setOpenDropdown(null); }}><Eye size={15} /> عرض التفاصيل</button>
+                          <button className="dd-item" onClick={() => { setSelectedClient(client); setShowModal(true); setOpenDropdown(null); }}><Pencil size={15} /> تعديل العميل</button>
+                          <button className="dd-item"><FolderPlus size={15} /> إضافة مشروع</button>
+                          <div className="dd-sep" />
+                          <button className="dd-item dd-danger" onClick={() => { handleDelete(client); setOpenDropdown(null); }}><Trash2 size={15} /> حذف العميل</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* Pagination */}
-      {(() => {
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return totalPages > 1 ? (
-          <div
-            className="flex items-center justify-between p-4 rounded-lg border mt-6"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
-          >
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              السابق
-            </button>
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
-            </div>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              التالي
-            </button>
+      {totalPages > 0 && (
+        <div className="pagination">
+          <div className="pag-info">عرض <strong>{toEnglishNumbers((page * pageSize + 1).toString())}-{toEnglishNumbers(Math.min((page + 1) * pageSize, totalCount).toString())}</strong> من <strong>{toEnglishNumbers(totalCount.toString())}</strong> عميل</div>
+          <div className="pag-controls">
+            <button className={`pag-btn ${page === 0 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}><ChevronRight size={15} /></button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
+              <button key={i} className={`pag-btn ${page === i ? 'active' : ''}`} onClick={() => setPage(i)}>{toEnglishNumbers((i + 1).toString())}</button>
+            ))}
+            {totalPages > 5 && <>
+              <button className="pag-btn" style={{ fontSize: 11, letterSpacing: 1 }}>...</button>
+              <button className={`pag-btn ${page === totalPages - 1 ? 'active' : ''}`} onClick={() => setPage(totalPages - 1)}>{toEnglishNumbers(totalPages.toString())}</button>
+            </>}
+            <button className={`pag-btn ${page >= totalPages - 1 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronLeft size={15} /></button>
           </div>
-        ) : totalCount > 0 ? (
-          <div className="text-sm mt-4" style={{ color: 'var(--color-text-muted)' }}>
-            إجمالي: {toEnglishNumbers(totalCount.toString())} عميل
-          </div>
-        ) : null;
-      })()}
+          <div className="pag-per-page">عرض <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}><option value={10}>10</option><option value={20}>20</option><option value={50}>50</option><option value={100}>100</option></select> لكل صفحة</div>
+        </div>
+      )}
 
       {showModal && (
         <ClientModal
           client={selectedClient}
-          onClose={() => {
-            setShowModal(false);
-            setSelectedClient(null);
-          }}
+          onClose={() => { setShowModal(false); setSelectedClient(null); }}
           onSuccess={loadClients}
         />
       )}

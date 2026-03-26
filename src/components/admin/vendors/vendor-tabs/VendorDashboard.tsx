@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FolderOpen, Users, DollarSign, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
-import { formatCurrency } from '../../../../lib/formatters';
+import { formatCurrency, formatNumber } from '../../../../lib/formatters';
 
 interface DashboardStats {
   projectsCount: number;
@@ -17,121 +17,78 @@ interface VendorDashboardProps {
 
 export const VendorDashboard = ({ vendorId }: VendorDashboardProps) => {
   const [stats, setStats] = useState<DashboardStats>({
-    projectsCount: 0,
-    clientsCount: 0,
-    totalAmount: 0,
-    paidAmount: 0,
-    unpaidAmount: 0,
+    projectsCount: 0, clientsCount: 0, totalAmount: 0, paidAmount: 0, unpaidAmount: 0,
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, [vendorId]);
+  useEffect(() => { fetchStats(); }, [vendorId]);
 
   const fetchStats = async () => {
     try {
-      const { data: invoices, error } = await supabase
-        .from('vendor_invoices')
-        .select('*')
-        .eq('vendor_id', vendorId);
-
+      const { data: invoices, error } = await supabase.from('vendor_invoices').select('*').eq('vendor_id', vendorId);
       if (error) throw error;
-
       const projectIds = new Set(invoices?.map(inv => inv.project_id) || []);
       const clientIds = new Set(invoices?.map(inv => inv.client_id) || []);
-
       const totalAmount = invoices?.reduce((sum, inv) => sum + Number(inv.amount_total || 0), 0) || 0;
       const paidAmount = invoices?.reduce((sum, inv) => sum + Number(inv.amount_paid || 0), 0) || 0;
-      const unpaidAmount = totalAmount - paidAmount;
-
-      setStats({
-        projectsCount: projectIds.size,
-        clientsCount: clientIds.size,
-        totalAmount,
-        paidAmount,
-        unpaidAmount,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    } finally {
-      setLoading(false);
-    }
+      setStats({ projectsCount: projectIds.size, clientsCount: clientIds.size, totalAmount, paidAmount, unpaidAmount: totalAmount - paidAmount });
+    } catch (error) { console.error('Error fetching stats:', error); }
+    finally { setLoading(false); }
   };
 
-  const statCards = [
-    {
-      label: 'عدد المشاريع',
-      value: stats.projectsCount,
-      icon: FolderOpen,
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      label: 'عدد العملاء',
-      value: stats.clientsCount,
-      icon: Users,
-      color: 'bg-purple-100 text-purple-600',
-    },
-    {
-      label: 'إجمالي المبالغ',
-      value: formatCurrency(stats.totalAmount),
-      icon: DollarSign,
-      color: 'bg-green-100 text-green-600',
-    },
-    {
-      label: 'المبالغ المسددة',
-      value: formatCurrency(stats.paidAmount),
-      icon: CheckCircle,
-      color: 'bg-emerald-100 text-emerald-600',
-    },
-    {
-      label: 'المبالغ غير المسددة',
-      value: formatCurrency(stats.unpaidAmount),
-      icon: Clock,
-      color: 'bg-orange-100 text-orange-600',
-    },
-  ];
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-slate-600">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-slate-900">نظرة عامة</h2>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {statCards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <div
-              key={index}
-              className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-slate-600 mb-2">{card.label}</p>
-                  <p className="text-2xl font-bold text-slate-900">
-                    {card.value}
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg ${card.color}`}>
-                  <Icon className="w-6 h-6" />
-                </div>
-              </div>
-            </div>
-          );
-        })}
+    <div>
+      {/* Stat Cards */}
+      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><FolderOpen size={18} /></div>
+          <div className="stat-sub">عدد المشاريع</div>
+          <div className="stat-val">{formatNumber(stats.projectsCount)}</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><Users size={18} /></div>
+          <div className="stat-sub">عدد العملاء</div>
+          <div className="stat-val">{formatNumber(stats.clientsCount)}</div>
+        </div>
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><DollarSign size={18} /></div>
+          <div className="stat-sub">إجمالي المبالغ</div>
+          <div className="stat-val" style={{ fontSize: 22 }} dir="ltr">{formatCurrency(stats.totalAmount)}</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><CheckCircle size={18} /></div>
+          <div className="stat-sub">المسددة</div>
+          <div className="stat-val" style={{ fontSize: 22 }} dir="ltr">{formatCurrency(stats.paidAmount)}</div>
+        </div>
       </div>
 
+      {/* Unpaid alert */}
+      {stats.unpaidAmount > 0 && (
+        <div className="dash-alert" style={{ marginTop: 20 }}>
+          <div className="dash-alert-item">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+              <div className="card-icon ci-amber" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}><Clock size={14} /></div>
+              <div>
+                <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 600 }}>مبالغ غير مسددة</span>
+                <div style={{ fontSize: 12, color: 'var(--warning-text)', marginTop: 2 }} dir="ltr">{formatCurrency(stats.unpaidAmount)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
       {stats.projectsCount === 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <p className="text-blue-900 font-medium">لم يتم تعيين هذا المورد على أي مشروع بعد</p>
-          <p className="text-blue-700 text-sm mt-2">قم بتعيين المورد على مشروع لبدء تتبع الفواتير والمدفوعات</p>
+        <div className="card" style={{ marginTop: 20, textAlign: 'center', padding: '32px 20px', cursor: 'default' }}>
+          <div className="card-icon ci-blue" style={{ width: 48, height: 48, margin: '0 auto 12px', borderRadius: 'var(--radius-lg)' }}>
+            <FolderOpen size={22} />
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4 }}>لم يتم تعيين هذا المورد على أي مشروع بعد</div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>قم بتعيين المورد على مشروع لبدء تتبع الفواتير والمدفوعات</div>
         </div>
       )}
     </div>

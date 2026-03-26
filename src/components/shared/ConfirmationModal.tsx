@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -28,7 +29,7 @@ export const ConfirmationModal = ({
     type === 'warning' ? 'ci-amber' :
     'ci-blue';
 
-  return (
+  return createPortal(
     <div className="modal-bg" onClick={onCancel}>
       <div
         className="modal"
@@ -69,6 +70,7 @@ export const ConfirmationModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

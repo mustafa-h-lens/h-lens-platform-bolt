@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, User, TrendingUp, TrendingDown, Filter, X, ChevronDown } from 'lucide-react';
+import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
@@ -46,20 +47,26 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
-  const [pageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [filters, setFilters] = useState({
-    status: '',
-    client: '',
-    manager: '',
+    status: [] as string[],
+    client: [] as string[],
+    manager: [] as string[],
     startDateFrom: '',
     startDateTo: '',
     minValue: '',
     maxValue: '',
   });
+  const toggleFilter = (key: 'status' | 'client' | 'manager', value: string) => {
+    setFilters(prev => {
+      const arr = prev[key];
+      return { ...prev, [key]: arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value] };
+    });
+  };
   useEffect(() => {
     loadData();
-  }, [page]);
+  }, [page, pageSize]);
 
   // Reset page on filter/search change
   useEffect(() => {
@@ -113,11 +120,11 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.client.name.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = !filters.status || project.status === filters.status;
-    const matchesClient = !filters.client || project.client.id === filters.client;
+    const matchesStatus = filters.status.length === 0 || filters.status.includes(project.status);
+    const matchesClient = filters.client.length === 0 || filters.client.includes(project.client.id);
     const matchesManager =
-      !filters.manager ||
-      project.project_manager?.full_name === filters.manager;
+      filters.manager.length === 0 ||
+      (project.project_manager?.full_name && filters.manager.includes(project.project_manager.full_name));
 
     const matchesStartDate = (() => {
       if (!project.start_date) return !filters.startDateFrom && !filters.startDateTo;
@@ -182,13 +189,13 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
     }
   };
 
-  const hasActiveFilters = filters.status || filters.client || filters.manager;
+  const hasActiveFilters = filters.status.length > 0 || filters.client.length > 0 || filters.manager.length > 0;
 
   const resetFilters = () => {
     setFilters({
-      status: '',
-      client: '',
-      manager: '',
+      status: [],
+      client: [],
+      manager: [],
       startDateFrom: '',
       startDateTo: '',
       minValue: '',
@@ -304,67 +311,35 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       >
         <Filter size={18} style={{ color: 'var(--color-text-muted)' }} />
 
-        <div className="relative">
-          <select
-            value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            <option value="">الحالة</option>
-            <option value="request">طلب</option>
-            <option value="in_progress">قيد التنفيذ</option>
-            <option value="pending_payment">بانتظار الدفع</option>
-            <option value="paid">مدفوع</option>
-            <option value="completed">مكتمل</option>
-            <option value="pending">قيد الانتظار</option>
-            <option value="closed">مغلق</option>
-            <option value="cancelled">ملغي</option>
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        <MultiSelectFilter
+          label="الحالة"
+          options={[
+            { value: 'request', label: 'طلب' },
+            { value: 'in_progress', label: 'قيد التنفيذ' },
+            { value: 'pending_payment', label: 'بانتظار الدفع' },
+            { value: 'paid', label: 'مدفوع' },
+            { value: 'completed', label: 'مكتمل' },
+            { value: 'pending', label: 'قيد الانتظار' },
+            { value: 'closed', label: 'مغلق' },
+            { value: 'cancelled', label: 'ملغي' },
+          ]}
+          selected={filters.status}
+          onToggle={(v) => toggleFilter('status', v)}
+        />
 
-        <div className="relative">
-          <select
-            value={filters.client}
-            onChange={(e) => setFilters({ ...filters, client: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            <option value="">العميل</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        <MultiSelectFilter
+          label="العميل"
+          options={clients.map(c => ({ value: c.id, label: c.name }))}
+          selected={filters.client}
+          onToggle={(v) => toggleFilter('client', v)}
+        />
 
-        <div className="relative">
-          <select
-            value={filters.manager}
-            onChange={(e) => setFilters({ ...filters, manager: e.target.value })}
-            className="appearance-none pr-3 pl-8 py-2 rounded-lg border text-sm cursor-pointer focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
-            <option value="">مدير المشروع</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.full_name}>{m.full_name}</option>
-            ))}
-          </select>
-          <ChevronDown size={14} className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--color-text-muted)' }} />
-        </div>
+        <MultiSelectFilter
+          label="مدير المشروع"
+          options={managers.map(m => ({ value: m.full_name, label: m.full_name }))}
+          selected={filters.manager}
+          onToggle={(v) => toggleFilter('manager', v)}
+        />
 
         {hasActiveFilters && (
           <button
@@ -579,21 +554,8 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
         return totalPages > 1 ? (
           <div
             className="flex items-center justify-between p-4 rounded-lg border"
-            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', direction: 'rtl' }}
           >
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
-            >
-              السابق
-            </button>
-            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
-              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
-              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
-            </div>
             <button
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
@@ -601,6 +563,34 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
             >
               التالي
+            </button>
+            <div className="flex items-center gap-4 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <span>صفحة {toEnglishNumbers((page + 1).toString())} من {toEnglishNumbers(totalPages.toString())}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+              <span>إجمالي: {toEnglishNumbers(totalCount.toString())}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>|</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                عرض
+                <select
+                  value={pageSize}
+                  onChange={e => { setPageSize(Number(e.target.value)); setPage(0); }}
+                  style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '2px 6px', color: 'var(--color-text-primary)', fontSize: 13 }}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                لكل صفحة
+              </span>
+            </div>
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', backgroundColor: 'var(--color-surface)' }}
+            >
+              السابق
             </button>
           </div>
         ) : totalCount > 0 ? (

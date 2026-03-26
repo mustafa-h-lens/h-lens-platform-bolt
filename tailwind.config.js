@@ -6,18 +6,18 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#0A2A66',
-          light: '#1B4FA9',
-          lighter: '#256DDA',
+          DEFAULT: '#2563eb',
+          light: '#3b82f6',
+          lighter: '#60a5fa',
         },
         dark: {
-          bg: '#0E1116',
-          card: '#1A1F2E',
-          border: '#2D3748',
+          bg: '#050d1e',
+          card: '#071428',
+          border: 'rgba(255,255,255,0.09)',
         }
       },
       fontFamily: {
-        sans: ['Tajawal', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['Cairo', 'Tajawal', 'Inter', 'system-ui', 'sans-serif'],
       },
     },
   },

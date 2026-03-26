@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
-import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu } from 'lucide-react';
+import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
 import { ProjectsList } from './projects/ProjectsList';
-import { formatNumber, formatCurrency } from '../../lib/formatters';
+import { formatNumber, formatCurrency, formatDateArabic } from '../../lib/formatters';
 
 // Lazy-loaded section components
 const UserManagement = lazy(() => import('./UserManagement').then(m => ({ default: m.UserManagement })));
@@ -20,7 +20,7 @@ const ActivityLogPage = lazy(() => import('./ActivityLogPage').then(m => ({ defa
 const AdminSuggestions = lazy(() => import('./suggestions/AdminSuggestions').then(m => ({ default: m.AdminSuggestions })));
 
 const LazyFallback = () => (
-  <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400 text-lg">
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '16rem', color: 'var(--text-muted)', fontSize: '1.125rem' }}>
     جاري التحميل...
   </div>
 );
@@ -51,6 +51,32 @@ interface Stats {
   totalClients: number;
   totalInvoices: number;
   totalRevenue: number;
+}
+
+interface PendingItems {
+  pendingVendors: number;
+  unpaidInvoices: number;
+  unpaidAmount: number;
+  overdueInvoices: number;
+}
+
+interface UnpaidInvoice {
+  id: string;
+  invoice_number: string;
+  client_name: string;
+  total_amount: number;
+  paid_amount: number;
+  currency: string;
+  created_at: string;
+}
+
+interface ActivityEntry {
+  id: string;
+  action_type: string;
+  entity_type: string;
+  entity_name: string | null;
+  user_name: string;
+  created_at: string;
 }
 
 const SUPER_ADMIN_ONLY_PAGES = ['users', 'settings', 'activity'];
@@ -87,6 +113,9 @@ export const NewAdminDashboard = () => {
     totalInvoices: 0,
     totalRevenue: 0,
   });
+  const [pendingItems, setPendingItems] = useState<PendingItems>({ pendingVendors: 0, unpaidInvoices: 0, unpaidAmount: 0, overdueInvoices: 0 });
+  const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
 
   // Sync hash to URL whenever navigation state changes
   useEffect(() => {
@@ -132,6 +161,7 @@ export const NewAdminDashboard = () => {
 
   useEffect(() => {
     loadStats();
+    loadDashboardData();
   }, []);
 
   const handleNavigation = (page: string) => {
@@ -175,20 +205,66 @@ export const NewAdminDashboard = () => {
     }
   };
 
-  const sidebarMargin = sidebarCollapsed ? 'md:mr-20' : 'md:mr-64';
+  const loadDashboardData = async () => {
+    try {
+      const [vendorsRes, invoicesRes, activityRes] = await Promise.all([
+        supabase.from('vendors').select('id', { count: 'exact', head: true }).in('status', ['pending_approval', 'revision_requested']),
+        supabase.from('invoices').select('id, invoice_number, total_amount, paid_amount, status, currency, created_at, project_id, projects(client_id, clients(name))').in('status', ['draft', 'sent', 'overdue']),
+        supabase.from('global_activity_log').select('id, action_type, entity_type, entity_name, user_name, created_at').order('created_at', { ascending: false }).limit(10),
+      ]);
+
+      // Pending items
+      const unpaidInvs = invoicesRes.data || [];
+      const overdueCount = unpaidInvs.filter((i: any) => i.status === 'overdue').length;
+      const unpaidTotal = unpaidInvs.reduce((sum: number, i: any) => sum + ((i.total_amount || 0) - (i.paid_amount || 0)), 0);
+      setPendingItems({
+        pendingVendors: vendorsRes.count || 0,
+        unpaidInvoices: unpaidInvs.length,
+        unpaidAmount: unpaidTotal,
+        overdueInvoices: overdueCount,
+      });
+
+      // Unpaid invoices (top 5)
+      const mapped: UnpaidInvoice[] = unpaidInvs.slice(0, 5).map((i: any) => ({
+        id: i.id,
+        invoice_number: i.invoice_number,
+        client_name: i.projects?.clients?.name || '-',
+        total_amount: i.total_amount || 0,
+        paid_amount: i.paid_amount || 0,
+        currency: i.currency || 'SAR',
+        created_at: i.created_at,
+      }));
+      setUnpaidInvoices(mapped);
+
+      // Activity
+      setRecentActivity(activityRes.data || []);
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+    }
+  };
+
+  const daysSince = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const ACTION_LABELS: Record<string, string> = { created: 'أنشأ', updated: 'عدّل', deleted: 'حذف', uploaded: 'رفع', approved: 'وافق', rejected: 'رفض', sent: 'أرسل', completed: 'أكمل' };
+  const ENTITY_LABELS: Record<string, string> = { project: 'مشروع', client: 'عميل', vendor: 'مورد', invoice: 'فاتورة', expense: 'مصروف', user: 'مستخدم', equipment: 'معدة', document: 'مستند' };
+
+  const sidebarMargin = sidebarCollapsed ? 'md:mr-[68px]' : 'md:mr-60';
 
   const mobileMenuButton = (
     <button
       onClick={() => setSidebarOpen(true)}
-      className="fixed top-4 right-4 z-30 md:hidden p-2 rounded-xl bg-white dark:bg-dark-card shadow-lg border border-slate-200 dark:border-dark-border"
+      className="fixed top-4 right-4 z-30 md:hidden btn btn-secondary btn-icon"
     >
-      <Menu className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+      <Menu size={20} />
     </button>
   );
 
   if (selectedProjectId) {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage="projects"
           onNavigate={handleNavigation}
@@ -217,7 +293,7 @@ export const NewAdminDashboard = () => {
 
   if (currentPage === 'users') {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -240,7 +316,7 @@ export const NewAdminDashboard = () => {
 
   if (currentPage === 'vendors') {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -268,7 +344,7 @@ export const NewAdminDashboard = () => {
 
   if (currentPage === 'settings') {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -279,7 +355,7 @@ export const NewAdminDashboard = () => {
         />
         <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
           {mobileMenuButton}
-          <main className="flex-1 overflow-auto bg-slate-50 dark:bg-dark-bg">
+          <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
             <Suspense fallback={<LazyFallback />}>
               <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
             </Suspense>
@@ -291,7 +367,7 @@ export const NewAdminDashboard = () => {
 
   if (currentPage === 'activity') {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -314,7 +390,7 @@ export const NewAdminDashboard = () => {
 
   if (currentPage === 'suggestions') {
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -338,7 +414,7 @@ export const NewAdminDashboard = () => {
   if (currentPage === 'clients') {
     if (selectedClientId) {
       return (
-        <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+        <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
           <Sidebar
             currentPage={currentPage}
             onNavigate={handleNavigation}
@@ -373,7 +449,7 @@ export const NewAdminDashboard = () => {
     }
 
     return (
-      <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
         <Sidebar
           currentPage={currentPage}
           onNavigate={handleNavigation}
@@ -399,7 +475,7 @@ export const NewAdminDashboard = () => {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-dark-bg">
+    <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigation}
@@ -412,149 +488,180 @@ export const NewAdminDashboard = () => {
       <div className={`flex-1 flex flex-col ${sidebarMargin}`}>
         {mobileMenuButton}
 
-        <main className="flex-1 overflow-auto p-6 bg-slate-50 dark:bg-dark-bg" dir="rtl">
+        <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
           {currentPage === 'dashboard' && (
-            <div className="space-y-6">
-              <div className="relative overflow-hidden backdrop-blur-xl bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] rounded-[32px] p-8 text-white shadow-2xl border border-white/20">
-                <div className="relative z-10 flex items-center gap-4">
-                  <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm
-                    border border-white/30 flex items-center justify-center">
-                    <Sparkles className="w-8 h-8 text-white" strokeWidth={2} />
+            <div className="page-section active" style={{ display: 'block' }}>
+              {/* ═══ WELCOME BANNER ═══ */}
+              <div className="dash-welcome">
+                <div className="dash-welcome-content">
+                  <div>
+                    <div className="dash-welcome-title">مرحباً، {profile?.full_name} 👋🏻</div>
+                    <div className="dash-welcome-sub">إليك نظرة سريعة على أداء المشاريع والعمليات</div>
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-3xl font-bold mb-1">مرحباً، {profile?.full_name}</h2>
-                    <p className="text-white/90 text-base">إليك نظرة سريعة على أداء المشاريع والعمليات</p>
-                  </div>
-                </div>
-                <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                  <div className="absolute -top-10 -left-10 w-40 h-40 bg-white rounded-full blur-3xl"></div>
-                  <div className="absolute -bottom-10 -right-10 w-60 h-60 bg-white rounded-full blur-3xl"></div>
+                  <div className="dash-welcome-icon"><Sparkles size={28} /></div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
-                  rounded-[24px] p-6 shadow-xl border border-white/60 dark:border-dark-border
-                  hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
-                        group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-                        <Wallet className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">الإيرادات</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
-                        {formatCurrency(stats.totalRevenue)}
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">المحصّل</p>
-                  </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
+              {/* ═══ STAT CARDS ═══ */}
+              <div className="stats-grid" style={{ marginTop: 20 }}>
+                <div className="stat-card sc-blue">
+                  <div className="stat-icon-box"><Wallet size={18} /></div>
+                  <div className="stat-sub">الإيرادات</div>
+                  <div className="stat-val" dir="ltr">{formatCurrency(stats.totalRevenue)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--sc-blue-label)', marginTop: 4 }}>المحصّل</div>
                 </div>
-
-                <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
-                  rounded-[24px] p-6 shadow-xl border border-white/60 dark:border-dark-border
-                  hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
-                        group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-                        <CreditCard className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">الفواتير</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
-                        {formatNumber(stats.totalInvoices)}
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">إجمالي الفواتير</p>
-                  </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
+                <div className="stat-card sc-green">
+                  <div className="stat-icon-box"><CreditCard size={18} /></div>
+                  <div className="stat-sub">الفواتير</div>
+                  <div className="stat-val" dir="ltr">{formatNumber(stats.totalInvoices)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--sc-green-label)', marginTop: 4 }}>إجمالي الفواتير</div>
                 </div>
-
-                <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
-                  rounded-[24px] p-6 shadow-xl border border-white/60 dark:border-dark-border
-                  hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
-                        group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-                        <Users className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">العملاء</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
-                        {formatNumber(stats.totalClients)}
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">إجمالي العملاء</p>
-                  </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
+                <div className="stat-card sc-amber">
+                  <div className="stat-icon-box"><Users size={18} /></div>
+                  <div className="stat-sub">العملاء</div>
+                  <div className="stat-val" dir="ltr">{formatNumber(stats.totalClients)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--sc-amber-label)', marginTop: 4 }}>إجمالي العملاء</div>
                 </div>
-
-                <div className="group relative overflow-hidden backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none
-                  rounded-[24px] p-6 shadow-xl border border-white/60 dark:border-dark-border
-                  hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex-shrink-0 w-14 h-14 rounded-2xl border flex items-center justify-center
-                        group-hover:scale-110 transition-transform"
-                        style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-                        <FolderOpen className="w-7 h-7" style={{ color: 'var(--color-primary)' }} strokeWidth={2} />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">المشاريع</p>
-                      <p className="text-3xl font-bold bg-gradient-to-l from-[#0A2A66] to-[#1B4FA9] bg-clip-text text-transparent" dir="ltr">
-                        {formatNumber(stats.totalProjects)}
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 border-t border-slate-200 dark:border-dark-border pt-3">
-                      {formatNumber(stats.activeProjects)} مشروع نشط
-                    </p>
-                  </div>
-                  <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"
-                    style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}></div>
+                <div className="stat-card sc-purple">
+                  <div className="stat-icon-box"><FolderOpen size={18} /></div>
+                  <div className="stat-sub">المشاريع</div>
+                  <div className="stat-val" dir="ltr">{formatNumber(stats.totalProjects)}</div>
+                  <div style={{ fontSize: 12, color: 'var(--sc-purple-label)', marginTop: 4 }}>{formatNumber(stats.activeProjects)} مشروع نشط</div>
                 </div>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-xl border"
-                      style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-                      <FolderOpen className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">المشاريع الأخيرة</h2>
+              {/* ═══ QUICK ACTIONS ═══ */}
+              <div className="dash-quick-actions">
+                {[
+                  { label: 'مشروع جديد', icon: <FolderOpen size={18} />, color: 'ci-blue', action: () => setShowCreateProjectModal(true) },
+                  { label: 'فاتورة جديدة', icon: <CreditCard size={18} />, color: 'ci-green', action: () => { handleNavigation('expenses'); } },
+                  { label: 'مورد جديد', icon: <Users size={18} />, color: 'ci-amber', action: () => handleNavigation('vendors') },
+                  { label: 'عميل جديد', icon: <UserCheck size={18} />, color: 'ci-purple', action: () => handleNavigation('clients') },
+                ].map((item, i) => (
+                  <div key={i} className="dash-qa-item" style={{ cursor: 'pointer' }} onClick={item.action}>
+                    <div className={`dash-qa-icon ${item.color}`}>{item.icon}<span className="dash-qa-plus">+</span></div>
+                    <span>{item.label}</span>
                   </div>
-                  <button
-                    onClick={() => setCurrentPage('projects')}
-                    className="text-sm font-medium transition-all hover:opacity-70"
-                    style={{ color: 'var(--color-primary)' }}
-                  >
-                    عرض جميع المشاريع
-                  </button>
+                ))}
+              </div>
+
+              {/* ═══ NEEDS ATTENTION ═══ */}
+              {(pendingItems.pendingVendors > 0 || pendingItems.unpaidInvoices > 0) && (
+                <div className="dash-alert">
+                  <div className="dash-alert-header">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <AlertTriangle size={18} style={{ color: 'var(--warning-text)' }} />
+                      <strong style={{ color: 'var(--text-primary)' }}>يحتاج انتباهك</strong>
+                    </span>
+                  </div>
+                  {pendingItems.pendingVendors > 0 && (
+                    <div className="dash-alert-item" onClick={() => handleNavigation('vendors')} style={{ cursor: 'pointer' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <div className="card-icon ci-amber" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}><Users size={14} /></div>
+                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{pendingItems.pendingVendors} طلب تسجيل مورد بانتظار المراجعة</span>
+                      </div>
+                      <button className="btn btn-ghost btn-sm"><ArrowLeft size={14} /></button>
+                    </div>
+                  )}
+                  {pendingItems.unpaidInvoices > 0 && (
+                    <div className="dash-alert-item" onClick={() => handleNavigation('expenses')} style={{ cursor: 'pointer', marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
+                        <div className="card-icon ci-red" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}><Receipt size={14} /></div>
+                        <div>
+                          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{pendingItems.unpaidInvoices} فاتورة غير مسددة بقيمة {formatCurrency(pendingItems.unpaidAmount, 'SAR')}</span>
+                          {pendingItems.overdueInvoices > 0 && (
+                            <div style={{ fontSize: 11, color: 'var(--danger-text)', marginTop: 2 }}>منها {pendingItems.overdueInvoices} متأخرة</div>
+                          )}
+                        </div>
+                      </div>
+                      <button className="btn btn-ghost btn-sm"><ArrowLeft size={14} /></button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══ RECENT PROJECTS ═══ */}
+              <div className="dash-section">
+                <div className="dash-section-header">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FolderOpen size={18} style={{ color: 'var(--accent-lighter)' }} />
+                    <strong>المشاريع الأخيرة</strong>
+                  </span>
+                  <a onClick={() => handleNavigation('projects')} style={{ fontSize: 12, color: 'var(--accent-lighter)', cursor: 'pointer', textDecoration: 'none' }}>عرض الكل</a>
+                </div>
+                <ProjectsList
+                  onSelectProject={setSelectedProjectId}
+                  onCreateProject={() => setShowCreateProjectModal(true)}
+                  onLoadProjects={(loadFn) => setReloadProjectsCallback(() => loadFn)}
+                  limit={5}
+                />
+              </div>
+
+              {/* ═══ BOTTOM TWO COLUMNS ═══ */}
+              <div className="dash-bottom-grid">
+                {/* Unpaid Invoices */}
+                <div className="dash-bottom-card">
+                  <div className="dash-section-header" style={{ marginBottom: 16 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <CreditCard size={18} style={{ color: 'var(--warning-text)' }} />
+                      <strong>فواتير غير مسددة</strong>
+                    </span>
+                    <a onClick={() => handleNavigation('expenses')} style={{ fontSize: 12, color: 'var(--accent-lighter)', cursor: 'pointer', textDecoration: 'none' }}>عرض الكل</a>
+                  </div>
+                  {unpaidInvoices.length === 0 ? (
+                    <div className="dash-empty">
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد فواتير غير مسددة</span>
+                    </div>
+                  ) : (
+                    <div className="dash-activity-list">
+                      {unpaidInvoices.map((inv) => (
+                        <div key={inv.id} className="dash-activity-item">
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{inv.client_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>#{inv.invoice_number} · منذ {daysSince(inv.created_at)} يوم</div>
+                          </div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--warning-text)' }} dir="ltr">{formatCurrency(inv.total_amount - inv.paid_amount, inv.currency)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="backdrop-blur-xl bg-white/60 dark:bg-dark-card dark:backdrop-blur-none rounded-[32px] shadow-xl border border-white/60 dark:border-dark-border
-                  overflow-hidden hover:shadow-2xl transition-all duration-300">
-                  <div className="p-6">
-                    <ProjectsList
-                      onSelectProject={setSelectedProjectId}
-                      onCreateProject={() => setShowCreateProjectModal(true)}
-                      onLoadProjects={(loadFn) => setReloadProjectsCallback(() => loadFn)}
-                    />
+                {/* Recent Activity */}
+                <div className="dash-bottom-card">
+                  <div className="dash-section-header" style={{ marginBottom: 16 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Clock size={18} style={{ color: 'var(--info-text)' }} />
+                      <strong>النشاط الأخير</strong>
+                    </span>
+                    {isSuperAdmin && (
+                      <a onClick={() => handleNavigation('activity')} style={{ fontSize: 12, color: 'var(--accent-lighter)', cursor: 'pointer', textDecoration: 'none' }}>عرض الكل</a>
+                    )}
                   </div>
+                  {recentActivity.length === 0 ? (
+                    <div className="dash-empty">
+                      <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا يوجد نشاط</span>
+                    </div>
+                  ) : (
+                    <div className="dash-activity-list">
+                      {recentActivity.map((act) => (
+                        <div key={act.id} className="dash-activity-item">
+                          <div className="card-icon ci-blue" style={{ width: 30, height: 30, borderRadius: 'var(--radius-sm)' }}>
+                            <FileText size={13} />
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+                              <span className="a-user">{act.user_name}</span>{' '}
+                              <span className="a-action">{ACTION_LABELS[act.action_type] || act.action_type}</span>{' '}
+                              <span className="a-action">{ENTITY_LABELS[act.entity_type] || act.entity_type}</span>{' '}
+                              {act.entity_name && <span className="a-target">{act.entity_name}</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{formatDateArabic(act.created_at)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
