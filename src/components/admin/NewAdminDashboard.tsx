@@ -82,13 +82,10 @@ interface ActivityEntry {
 
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
-  const { hasAccess, isSuperAdmin } = usePermissions();
+  const { hasAccess, isSuperAdmin, loading: permissionsLoading } = usePermissions();
   const initialHash = parseHash();
 
-  // Redirect user away from pages they don't have access to
-  if (!hasAccess(initialHash.page as any)) {
-    initialHash.page = 'dashboard';
-  }
+  // Always initialize from hash — don't check permissions yet (they may still be loading)
   const [currentPage, setCurrentPage] = useState(initialHash.page);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     initialHash.page === 'projects' ? initialHash.id : null
@@ -100,6 +97,17 @@ export const NewAdminDashboard = () => {
     initialHash.page === 'vendors' ? initialHash.id : null
   );
   const [activeSubTab, setActiveSubTab] = useState<string | null>(initialHash.tab);
+
+  // Redirect to dashboard AFTER permissions load if user lacks access to current page
+  useEffect(() => {
+    if (!permissionsLoading && currentPage !== 'dashboard' && !hasAccess(currentPage as any)) {
+      setCurrentPage('dashboard');
+      setSelectedProjectId(null);
+      setSelectedClientId(null);
+      setSelectedVendorId(null);
+      setActiveSubTab(null);
+    }
+  }, [permissionsLoading]);
   const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
