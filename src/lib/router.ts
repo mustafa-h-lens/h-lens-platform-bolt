@@ -5,9 +5,9 @@ const LAST_VISITED_PAGE_KEY = 'lastVisitedPage';
 
 // Pages to exclude from being saved as last visited
 const EXCLUDED_PATHS = [
-  '/portal-admin-hl',
-  '/vendor-login',
-  '/vendor-registration',
+  '/admin',
+  '/vendor/login',
+  '/join',
 ];
 
 // ── navigate ──────────────────────────────────────────────────
@@ -87,8 +87,8 @@ export function useRouteTracking() {
 // Helper function to navigate between admin and vendor portals
 export function navigateToPortal(portalType: 'admin' | 'vendor') {
   if (portalType === 'admin') {
-    navigate('/portal-admin-hl', true);
+    navigate('/admin', true);
   } else {
-    navigate('/vendor-login', true);
+    navigate('/vendor/login', true);
   }
 }

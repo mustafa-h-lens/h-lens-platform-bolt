@@ -39,16 +39,16 @@ const PrivacyPolicy = lazy(() =>
 // ─────────────────────────────────────────────────────────────
 const ROUTES = {
   // Public
-  VENDOR_REGISTRATION: '/vendor-registration',
-  VENDOR_LOGIN:        '/vendor-login',
+  VENDOR_REGISTRATION: '/join',
+  VENDOR_LOGIN:        '/vendor/login',
   VENDOR_PORTAL:       '/vendor',
   TERMS:               '/terms-and-conditions',
   PRIVACY:             '/privacy-policy',
 
-  // Protected (obfuscated)
-  ADMIN_LOGIN:         '/portal-admin-hl',
-  ADMIN_DASHBOARD:     '/portal-admin-hl/dashboard',
-  CLIENT_DASHBOARD:    '/portal-client-hl/dashboard',
+  // Protected
+  ADMIN_LOGIN:         '/admin',
+  ADMIN_DASHBOARD:     '/admin',
+  CLIENT_DASHBOARD:    '/client',
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -171,8 +171,8 @@ function AppContent() {
     if (lastVisitedPage && isLoginPage) {
       const storedVendorSession = getStoredVendorSession();
       const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
-      const isAdminRoute = lastVisitedPage.startsWith('/portal-admin-hl') ||
-                          lastVisitedPage.startsWith('/portal-client-hl');
+      const isAdminRoute = lastVisitedPage.startsWith('/admin') ||
+                          lastVisitedPage.startsWith('/client');
 
       // Restore vendor route if vendor is logged in
       if (isVendorRoute && storedVendorSession) {
@@ -263,8 +263,8 @@ function AppContent() {
 
   const isAdminPath =
     currentPath === ROUTES.ADMIN_LOGIN ||
-    currentPath.startsWith('/portal-admin-hl') ||
-    currentPath.startsWith('/portal-client-hl');
+    currentPath.startsWith('/admin') ||
+    currentPath.startsWith('/client');
 
   if (!isAdminPath) {
     navigate(ROUTES.ADMIN_LOGIN);

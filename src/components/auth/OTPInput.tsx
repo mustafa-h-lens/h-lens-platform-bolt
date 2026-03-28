@@ -212,7 +212,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
           <div className="sl-register">
             <p>
               لست موّرداً بعد؟{' '}
-              <a href="/vendor-registration">سجّل حسابك</a>
+              <a href="/join">سجّل حسابك</a>
             </p>
           </div>
         </div>

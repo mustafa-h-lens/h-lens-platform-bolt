@@ -150,7 +150,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
 
     await supabase.auth.signOut();
 
-    window.history.pushState({}, '', '/vendor-login');
+    window.history.pushState({}, '', '/vendor/login');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
