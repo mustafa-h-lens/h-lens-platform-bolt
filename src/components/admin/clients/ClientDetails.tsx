@@ -185,7 +185,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
                   <CheckCircle size={16} />
                   العميل نشط في البوابة
                 </span>
-              ) : client.invitation_status === 'pending' || client.invitation_status === 'invited' ? (
+              ) : client.invitation_status === 'pending' ? (
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                     style={{ background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)', color: 'var(--color-warning)' }}>

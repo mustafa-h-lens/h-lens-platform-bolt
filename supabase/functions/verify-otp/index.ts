@@ -156,7 +156,7 @@ Deno.serve(async (req: Request) => {
         .from("clients")
         .update({ invitation_status: "active" })
         .eq("id", client.id)
-        .in("invitation_status", ["pending", "invited"]);
+        .eq("invitation_status", "pending");
 
       return new Response(
         JSON.stringify({

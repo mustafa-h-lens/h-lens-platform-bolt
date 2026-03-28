@@ -212,7 +212,6 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
           options={[
             { value: 'active', label: 'نشط' },
             { value: 'pending', label: 'بانتظار الدخول' },
-            { value: 'invited', label: 'تم الدعوة' },
             { value: 'not_invited', label: 'غير مدعو' },
           ]}
           selected={statusFilter}
@@ -280,8 +279,6 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
                             return <span className="badge badge-green"><span className="badge-dot" style={{ background: 'var(--success)' }} /> نشط</span>;
                           case 'pending':
                             return <span className="badge badge-amber"><span className="badge-dot" style={{ background: 'var(--warning)' }} /> بانتظار الدخول</span>;
-                          case 'invited':
-                            return <span className="badge badge-blue"><span className="badge-dot" style={{ background: 'var(--accent)' }} /> تم الدعوة</span>;
                           default:
                             return <span className="badge badge-gray"><span className="badge-dot" style={{ background: 'var(--text-muted)' }} /> غير مدعو</span>;
                         }
