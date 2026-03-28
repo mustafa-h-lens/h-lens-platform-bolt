@@ -151,7 +151,7 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.email && c.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (c.website && (c as any).website.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesStatus = statusFilter.length === 0 || statusFilter.includes((c as any).status || 'active');
+    const matchesStatus = statusFilter.length === 0 || statusFilter.includes((c as any).invitation_status || 'not_invited');
     return matchesSearch && matchesStatus;
   });
 
@@ -208,11 +208,12 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
           style={{ maxWidth: 280 }}
         />
         <MultiSelectFilter
-          label="الحالة"
+          label="حالة البوابة"
           options={[
             { value: 'active', label: 'نشط' },
-            { value: 'pending', label: 'معلق' },
-            { value: 'inactive', label: 'غير نشط' },
+            { value: 'pending', label: 'بانتظار الدخول' },
+            { value: 'invited', label: 'تم الدعوة' },
+            { value: 'not_invited', label: 'غير مدعو' },
           ]}
           selected={statusFilter}
           onToggle={(v) => setStatusFilter(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
@@ -272,7 +273,19 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
                       )}
                     </td>
                     <td>
-                      <span className="badge badge-green"><span className="badge-dot" style={{ background: 'var(--success)' }} /> نشط</span>
+                      {(() => {
+                        const status = (client as any).invitation_status || 'not_invited';
+                        switch (status) {
+                          case 'active':
+                            return <span className="badge badge-green"><span className="badge-dot" style={{ background: 'var(--success)' }} /> نشط</span>;
+                          case 'pending':
+                            return <span className="badge badge-amber"><span className="badge-dot" style={{ background: 'var(--warning)' }} /> بانتظار الدخول</span>;
+                          case 'invited':
+                            return <span className="badge badge-blue"><span className="badge-dot" style={{ background: 'var(--accent)' }} /> تم الدعوة</span>;
+                          default:
+                            return <span className="badge badge-gray"><span className="badge-dot" style={{ background: 'var(--text-muted)' }} /> غير مدعو</span>;
+                        }
+                      })()}
                     </td>
                     <td style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                       {client.created_at ? client.created_at.split('T')[0] : '-'}

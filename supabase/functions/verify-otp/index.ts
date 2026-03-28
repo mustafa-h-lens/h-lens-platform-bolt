@@ -10,6 +10,7 @@ const corsHeaders = {
 interface VerifyOTPRequest {
   email: string;
   code: string;
+  portal_type?: 'vendor' | 'client';
 }
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -32,7 +33,7 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, code }: VerifyOTPRequest = await req.json();
+    const { email, code, portal_type = "vendor" }: VerifyOTPRequest = await req.json();
 
     if (!email || !code || !email.includes("@")) {
       return new Response(
@@ -116,55 +117,113 @@ Deno.serve(async (req: Request) => {
       .update({ used: true })
       .eq("id", otpRecord.id);
 
-    // Get vendor details
-    const { data: vendor, error: vendorError } = await supabase
-      .from("vendors")
-      .select("id, email, full_name, vendor_type")
-      .eq("email", normalizedEmail)
-      .maybeSingle();
-
-    if (vendorError || !vendor) {
-      return new Response(
-        JSON.stringify({ error: "المورد غير موجود" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Create and persist session token
+    // Create session based on portal type
     const sessionToken = crypto.randomUUID();
     const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
-    const { error: sessionError } = await supabase
-      .from("vendor_sessions")
-      .insert({
-        token: sessionToken,
-        vendor_id: vendor.id,
-        expires_at: sessionExpiry.toISOString(),
-        ip_address: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown",
-      });
+    if (portal_type === "client") {
+      // Get client details
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id, email, name, client_image, portal_email")
+        .or(`email.eq.${normalizedEmail},portal_email.eq.${normalizedEmail}`)
+        .maybeSingle();
 
-    if (sessionError) {
-      console.error("Session creation error:", sessionError);
-      // Fall back to returning vendor data without persistent session
-    }
+      if (clientError || !client) {
+        return new Response(
+          JSON.stringify({ error: "العميل غير موجود" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "تم التحقق بنجاح",
-        vendor: {
-          id: vendor.id,
-          email: vendor.email,
-          name: vendor.full_name,
-          vendor_type: vendor.vendor_type,
-        },
-        session: {
+      // Create client session
+      const { error: sessionError } = await supabase
+        .from("client_sessions")
+        .insert({
           token: sessionToken,
-          expiresAt: sessionExpiry.toISOString(),
-        }
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+          client_id: client.id,
+          expires_at: sessionExpiry.toISOString(),
+          ip_address: ipAddress,
+        });
+
+      if (sessionError) {
+        console.error("Client session creation error:", sessionError);
+      }
+
+      // Activate client on first login (pending → active)
+      await supabase
+        .from("clients")
+        .update({ invitation_status: "active" })
+        .eq("id", client.id)
+        .in("invitation_status", ["pending", "invited"]);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "تم التحقق بنجاح",
+          portal_type: "client",
+          client: {
+            id: client.id,
+            email: client.portal_email || client.email,
+            name: client.name,
+            client_image: client.client_image,
+          },
+          session: {
+            token: sessionToken,
+            expiresAt: sessionExpiry.toISOString(),
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } else {
+      // Get vendor details
+      const { data: vendor, error: vendorError } = await supabase
+        .from("vendors")
+        .select("id, email, full_name, vendor_type")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (vendorError || !vendor) {
+        return new Response(
+          JSON.stringify({ error: "المورد غير موجود" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create vendor session
+      const { error: sessionError } = await supabase
+        .from("vendor_sessions")
+        .insert({
+          token: sessionToken,
+          vendor_id: vendor.id,
+          expires_at: sessionExpiry.toISOString(),
+          ip_address: ipAddress,
+        });
+
+      if (sessionError) {
+        console.error("Vendor session creation error:", sessionError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "تم التحقق بنجاح",
+          portal_type: "vendor",
+          vendor: {
+            id: vendor.id,
+            email: vendor.email,
+            name: vendor.full_name,
+            vendor_type: vendor.vendor_type,
+          },
+          session: {
+            token: sessionToken,
+            expiresAt: sessionExpiry.toISOString(),
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
   } catch (error) {
     console.error("Error in verify-otp:", error);

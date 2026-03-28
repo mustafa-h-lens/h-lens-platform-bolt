@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User } from 'lucide-react';
+import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User, Send, CheckCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { PurchaseOrdersTabEnhanced } from './client-tabs/PurchaseOrdersTabEnhanced';
 import { ProductionTasksTab } from './client-tabs/ProductionTasksTab';
 import { ClientDocuments } from './client-tabs/ClientDocuments';
@@ -11,6 +12,8 @@ interface Client {
   name: string;
   email: string | null;
   client_image: string | null;
+  invitation_status: string;
+  portal_email: string | null;
 }
 
 interface ClientDetailsProps {
@@ -33,7 +36,9 @@ const TABS = [
 const VALID_TAB_IDS: string[] = TABS.map(t => t.id);
 
 export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onTabChange }: ClientDetailsProps) => {
+  const { showSuccess, showError } = useNotification();
   const [client, setClient] = useState<Client | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(
     initialTab && VALID_TAB_IDS.includes(initialTab) ? initialTab as TabType : 'projects'
   );
@@ -53,7 +58,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
       setLoading(true);
       const { data, error } = await supabase
         .from('clients')
-        .select('id, name, email, client_image')
+        .select('id, name, email, client_image, invitation_status, portal_email')
         .eq('id', clientId)
         .single();
 
@@ -63,6 +68,48 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
       console.error('Error loading client:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInviteClient = async () => {
+    if (!client?.email) {
+      showError('يجب إضافة بريد إلكتروني للعميل أولاً');
+      return;
+    }
+    setInviting(true);
+    try {
+      // Update client invitation status and portal email
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          invitation_status: 'pending',
+          invited_at: new Date().toISOString(),
+          portal_email: client.email,
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+
+      // Send OTP email to the client (this serves as the invitation)
+      const deviceInfo = 'دعوة من لوحة التحكم';
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ email: client.email, deviceInfo, portal_type: 'client', invite_only: true }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'حدث خطأ أثناء إرسال الدعوة');
+      }
+
+      showSuccess('تم إرسال الدعوة بنجاح');
+      loadClient(); // Refresh to show updated status
+    } catch (error) {
+      console.error('Error inviting client:', error);
+      showError(error instanceof Error ? error.message : 'حدث خطأ أثناء إرسال الدعوة');
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -127,6 +174,58 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
                   {client.email}
                 </p>
+              )}
+            </div>
+
+            {/* Portal status + Invite button */}
+            <div style={{ marginRight: 'auto' }}>
+              {client.invitation_status === 'active' ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                    style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
+                    <CheckCircle size={16} />
+                    العميل نشط في البوابة
+                  </span>
+                  <button
+                    onClick={handleInviteClient}
+                    disabled={inviting}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background: 'transparent', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', opacity: inviting ? 0.5 : 1 }}
+                  >
+                    <Send size={14} />
+                    {inviting ? 'جاري الإرسال...' : 'إعادة إرسال'}
+                  </button>
+                </div>
+              ) : client.invitation_status === 'pending' || client.invitation_status === 'invited' ? (
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                    style={{ background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)', color: 'var(--color-warning)' }}>
+                    <Send size={16} />
+                    {client.invitation_status === 'pending' ? 'بانتظار تسجيل الدخول' : 'تم إرسال الدعوة'}
+                  </span>
+                  <button
+                    onClick={handleInviteClient}
+                    disabled={inviting}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', opacity: inviting ? 0.5 : 1 }}
+                  >
+                    <Send size={14} />
+                    {inviting ? 'جاري الإرسال...' : 'إعادة إرسال الدعوة'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleInviteClient}
+                  disabled={inviting || !client.email}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    background: 'var(--color-primary)', color: '#fff',
+                    opacity: inviting || !client.email ? 0.5 : 1,
+                  }}
+                >
+                  <Send size={16} />
+                  {inviting ? 'جاري الإرسال...' : 'دعوة العميل للبوابة'}
+                </button>
               )}
             </div>
           </div>

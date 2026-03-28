@@ -7,9 +7,10 @@ interface OTPInputProps {
   onBack: () => void;
   onSuccess: (vendorData: any) => void;
   devOTP?: string | null;
+  portalType?: 'vendor' | 'client';
 }
 
-export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputProps) {
+export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType = 'vendor' }: OTPInputProps) {
   const [otp, setOtp]         = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -50,7 +51,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email, code, portal_type: portalType }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -73,7 +74,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP }: OTPInputP
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, deviceInfo }),
+        body: JSON.stringify({ email, deviceInfo, portal_type: portalType }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'حدث خطأ');

@@ -32,6 +32,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [contacts, setContacts] = useState<ClientContact[]>([]);
+  const [sendInvite, setSendInvite] = useState(!client); // Default ON for new clients
   const [formData, setFormData] = useState({
     name: '', code: '', email: '', phone: '', address: '', notes: '', client_image: '', website: '', city: '', sector: '',
   });
@@ -128,8 +129,29 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
         const { error } = await supabase.from('clients').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', client.id);
         if (error) throw error;
       } else {
+        // Add invitation fields if sending invite
+        if (sendInvite && formData.email) {
+          payload.invitation_status = 'pending';
+          payload.invited_at = new Date().toISOString();
+          payload.portal_email = formData.email;
+        }
         const { error } = await supabase.from('clients').insert({ ...payload, created_by: user.id });
         if (error) throw error;
+
+        // Send invitation email
+        if (sendInvite && formData.email) {
+          try {
+            const deviceInfo = 'دعوة من لوحة التحكم';
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
+              body: JSON.stringify({ email: formData.email, deviceInfo, portal_type: 'client', invite_only: true }),
+            });
+          } catch (emailErr) {
+            console.error('Error sending invitation email:', emailErr);
+            // Don't block client creation if email fails
+          }
+        }
       }
       onSuccess(); onClose();
     } catch (error) {
@@ -264,10 +286,37 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
             </div>
           </div>
 
+          {/* Invite toggle (new clients only) */}
+          {!client && (
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-soft)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>دعوة العميل</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>إرسال دعوة عبر البريد الإلكتروني</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSendInvite(!sendInvite)}
+                style={{
+                  width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
+                  background: sendInvite ? 'var(--accent)' : 'var(--border-soft)',
+                  position: 'relative', transition: 'background 0.2s',
+                }}
+              >
+                <div style={{
+                  width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                  position: 'absolute', top: 3,
+                  right: sendInvite ? 3 : 'auto',
+                  left: sendInvite ? 'auto' : 3,
+                  transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                }} />
+              </button>
+            </div>
+          )}
+
           <div className="modal-foot">
             <button type="button" className="btn btn-secondary" onClick={onClose}>إلغاء</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'جاري الحفظ...' : <><Plus size={15} /> {client ? 'تحديث العميل' : 'إضافة العميل'}</>}
+              {loading ? 'جاري الحفظ...' : <><Plus size={15} /> {client ? 'تحديث العميل' : (sendInvite ? 'إضافة ودعوة العميل' : 'إضافة العميل')}</>}
             </button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { VendorProvider } from './contexts/VendorContext';
+import { ClientPortalProvider } from './contexts/ClientPortalContext';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
 import { supabase } from './lib/supabaseClient';
@@ -28,6 +29,10 @@ const Login = lazy(() =>
   import('./components/auth/Login').then(m => ({ default: m.Login }))
 );
 const SupplierAuth = lazy(() => import('./components/auth/SupplierAuth'));
+const ClientAuth = lazy(() => import('./components/client/ClientAuth'));
+const ClientPortal = lazy(() =>
+  import('./components/client/ClientPortal').then(m => ({ default: m.ClientPortal }))
+);
 const TermsAndConditions = lazy(() =>
   import('./components/legal/TermsAndConditions').then(m => ({ default: m.TermsAndConditions }))
 );
@@ -46,10 +51,13 @@ const ROUTES = {
   TERMS:               '/terms-and-conditions',
   PRIVACY:             '/privacy-policy',
 
+  // Client Portal
+  CLIENT_LOGIN:        '/portal-client-hl',
+  CLIENT_PORTAL:       '/portal-client-hl/dashboard',
+
   // Protected (obfuscated)
   ADMIN_LOGIN:         '/portal-admin-hl',
   ADMIN_DASHBOARD:     '/portal-admin-hl/dashboard',
-  CLIENT_DASHBOARD:    '/portal-client-hl/dashboard',
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -89,6 +97,42 @@ function getStoredVendorSession(): { vendor: VendorData; session: VendorSession 
     }
 
     return { vendor, session };
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLIENT SESSION HELPERS
+// ─────────────────────────────────────────────────────────────
+interface ClientData {
+  id: string;
+  email: string;
+  name: string;
+  client_image?: string | null;
+}
+
+interface ClientSession {
+  token: string;
+  expiresAt: string;
+}
+
+function getStoredClientSession(): { client: ClientData; session: ClientSession } | null {
+  try {
+    const sessionRaw = localStorage.getItem('client_session');
+    const clientRaw = localStorage.getItem('client_data');
+    if (!sessionRaw || !clientRaw) return null;
+
+    const session: ClientSession = JSON.parse(sessionRaw);
+    const client: ClientData = JSON.parse(clientRaw);
+
+    if (new Date(session.expiresAt) < new Date()) {
+      localStorage.removeItem('client_session');
+      localStorage.removeItem('client_data');
+      return null;
+    }
+
+    return { client, session };
   } catch {
     return null;
   }
@@ -171,9 +215,10 @@ function AppContent() {
 
     if (lastVisitedPage && isLoginPage) {
       const storedVendorSession = getStoredVendorSession();
+      const storedClientSession = getStoredClientSession();
       const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
-      const isAdminRoute = lastVisitedPage.startsWith('/portal-admin-hl') ||
-                          lastVisitedPage.startsWith('/portal-client-hl');
+      const isClientPortalRoute = lastVisitedPage.startsWith('/portal-client-hl');
+      const isAdminRoute = lastVisitedPage.startsWith('/portal-admin-hl');
 
       // Restore vendor route if vendor is logged in
       if (isVendorRoute && storedVendorSession) {
@@ -182,7 +227,14 @@ function AppContent() {
         return;
       }
 
-      // Restore admin/client route if user is logged in
+      // Restore client portal route if client is logged in
+      if (isClientPortalRoute && storedClientSession) {
+        navigate(lastVisitedPage);
+        setHasRestoredRoute(true);
+        return;
+      }
+
+      // Restore admin route if user is logged in
       if (isAdminRoute && user && profile) {
         navigate(lastVisitedPage);
         setHasRestoredRoute(true);
@@ -260,12 +312,53 @@ function AppContent() {
     );
   }
 
-  // ── ADMIN / CLIENT ROUTES ──
+  // ── CLIENT PORTAL ROUTES ──
+
+  // /portal-client-hl/dashboard → has session? show portal : redirect to login
+  if (currentPath === ROUTES.CLIENT_PORTAL) {
+    const stored = getStoredClientSession();
+    if (stored) {
+      return (
+        <ErrorBoundary>
+          <ClientPortalProvider
+            initialClient={{
+              id: stored.client.id,
+              email: stored.client.email,
+              name: stored.client.name,
+              client_image: stored.client.client_image || null,
+            }}
+            initialSession={stored.session}
+          >
+            <ClientPortal />
+          </ClientPortalProvider>
+        </ErrorBoundary>
+      );
+    }
+    navigate(ROUTES.CLIENT_LOGIN);
+    return null;
+  }
+
+  // /portal-client-hl → has session? go to portal : show OTP login
+  if (currentPath === ROUTES.CLIENT_LOGIN) {
+    const stored = getStoredClientSession();
+    if (stored) {
+      navigate(ROUTES.CLIENT_PORTAL);
+      return null;
+    }
+    localStorage.removeItem('client_session');
+    localStorage.removeItem('client_data');
+    return (
+      <ClientAuth
+        onSuccess={() => navigate(ROUTES.CLIENT_PORTAL)}
+      />
+    );
+  }
+
+  // ── ADMIN ROUTES ──
 
   const isAdminPath =
     currentPath === ROUTES.ADMIN_LOGIN ||
-    currentPath.startsWith('/portal-admin-hl') ||
-    currentPath.startsWith('/portal-client-hl');
+    currentPath.startsWith('/portal-admin-hl');
 
   if (!isAdminPath) {
     navigate(ROUTES.ADMIN_LOGIN);
@@ -291,11 +384,7 @@ function AppContent() {
     return <Login />;
   }
 
-  if (profile.role === 'super_admin' || profile.role === 'project_manager' || profile.role === 'admin') {
-    return <ErrorBoundary><NewAdminDashboard /></ErrorBoundary>;
-  }
-
-  return <ErrorBoundary><ClientDashboard /></ErrorBoundary>;
+  return <ErrorBoundary><NewAdminDashboard /></ErrorBoundary>;
 }
 
 // ─────────────────────────────────────────────────────────────
