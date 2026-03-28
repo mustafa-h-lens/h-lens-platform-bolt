@@ -10,7 +10,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
-  project_mode: 'STANDARD' | 'FRAMEWORK';
+  project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
   status: string;
   start_date: string | null;
   total_price: number;
@@ -292,8 +292,8 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span className="td-primary">{project.name}</span>
-                        <span className={`badge ${project.project_mode === 'STANDARD' ? 'badge-green' : 'badge-blue'}`}>
-                          {project.project_mode === 'STANDARD' ? 'مشروع' : 'عقد'}
+                        <span className={`badge ${project.project_mode === 'STANDARD' ? 'badge-green' : project.project_mode === 'CONTRACT' ? 'badge-purple' : 'badge-blue'}`}>
+                          {project.project_mode === 'STANDARD' ? 'مشروع' : project.project_mode === 'CONTRACT' ? 'عقد' : 'عقد إطاري'}
                         </span>
                       </div>
                     </td>

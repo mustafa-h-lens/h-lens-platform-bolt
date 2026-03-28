@@ -125,7 +125,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
           <div className="sl-register">
             <p>
               لست موّرداً بعد؟{' '}
-              <a href="/vendor-registration">سجّل حسابك</a>
+              <a href="/join">سجّل حسابك</a>
             </p>
           </div>
         </div>

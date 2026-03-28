@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Seed Test Vendors</title>
+  <style>
+    body { font-family: system-ui; max-width: 700px; margin: 40px auto; padding: 20px; background: #f1f5f9; }
+    .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-green { background: #22c55e; }
+    .btn-green:hover { background: #16a34a; }
+    input { width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; margin-bottom: 10px; box-sizing: border-box; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
+    h1 { color: #1e293b; }
+    h3 { color: #334155; margin-bottom: 8px; }
+    p { color: #64748b; font-size: 14px; }
+    .status { padding: 10px 16px; border-radius: 8px; margin-top: 12px; font-size: 14px; }
+    .success { background: #dcfce7; color: #166534; }
+    .error { background: #fee2e2; color: #991b1b; }
+    .info { background: #dbeafe; color: #1e40af; }
+    #log { background: #1e293b; color: #a5f3fc; padding: 16px; border-radius: 8px; font-size: 12px; font-family: monospace; max-height: 200px; overflow-y: auto; margin-top: 16px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Seed Test Vendor Data</h1>
+
+  <div class="card" id="authCard">
+    <h3>Step 1: Sign In as Admin</h3>
+    <input type="email" id="emailInput" placeholder="Admin email" dir="ltr" />
+    <input type="password" id="passwordInput" placeholder="Password" dir="ltr" />
+    <button class="btn-green" id="signInBtn">Sign In</button>
+    <div id="authResult"></div>
+  </div>
+
+  <div class="card">
+    <h3>Step 2: Insert Test Vendors</h3>
+    <p>Inserts 4 test vendors: 3 pending + 1 revision requested.</p>
+    <button id="seedBtn" disabled>Insert Test Vendors</button>
+    <div id="seedResult"></div>
+  </div>
+
+  <div class="card">
+    <h3>🗑️ Cleanup</h3>
+    <button class="btn-danger" id="cleanupBtn" disabled>Remove Test Vendors</button>
+    <div id="cleanupResult"></div>
+  </div>
+
+  <div class="card">
+    <h3>Console Log</h3>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+
+    const SUPABASE_URL = 'https://akcpkjzfhtmurtwzyzhn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrY3BranpmaHRtdXJ0d3p5emhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY3NjMyODgsImV4cCI6MjA4MjMzOTI4OH0.P3gFUrxKvvkZxjLbg3nQpZqicDK79zW3EvpDufonQPo';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const TEST_PHONES = ['+966501234567', '+966509876543', '+966555111222', '+966555333444'];
+
+    const logEl = document.getElementById('log');
+    function log(msg) {
+      console.log(msg);
+      logEl.textContent += msg + '\n';
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    log('Supabase client initialized.');
+
+    document.getElementById('signInBtn').addEventListener('click', async () => {
+      const email = document.getElementById('emailInput').value.trim();
+      const password = document.getElementById('passwordInput').value.trim();
+      const result = document.getElementById('authResult');
+
+      log('Signing in with: ' + email);
+
+      if (!email || !password) {
+        result.innerHTML = '<div class="status error">Please enter email and password.</div>';
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          log('Auth error: ' + error.message);
+          result.innerHTML = '<div class="status error">❌ ' + error.message + '</div>';
+        } else {
+          log('Signed in as: ' + data.user.email);
+          result.innerHTML = '<div class="status success">✅ Signed in as ' + data.user.email + '</div>';
+          document.getElementById('seedBtn').disabled = false;
+          document.getElementById('cleanupBtn').disabled = false;
+        }
+      } catch (e) {
+        log('Exception: ' + e.message);
+        result.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      }
+    });
+
+    document.getElementById('seedBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('seedBtn');
+      const result = document.getElementById('seedResult');
+      btn.disabled = true;
+      result.innerHTML = '<div class="status info">⏳ Inserting...</div>';
+      log('Starting vendor insert...');
+
+      try {
+        const testVendors = [
+          { full_name: 'أحمد محمد العلي', phone: '+966501234567', email: 'ahmed.ali@test.com', nationality: 'سعودي', vendor_type: 'individual', primary_city: 'الرياض', primary_field: 'إخراج', id_number: '1234567890', status: 'pending_approval' },
+          { full_name: 'شركة النور للإنتاج', phone: '+966509876543', email: 'info@alnour-prod.com', nationality: 'سعودي', vendor_type: 'company', primary_city: 'جدة', primary_field: 'إنتاج', id_number: '9876543210', status: 'pending_approval' },
+          { full_name: 'خالد عبدالله السبيعي', phone: '+966555111222', email: 'khaled.s@test.com', nationality: 'سعودي', vendor_type: 'individual', primary_city: 'الدمام', primary_field: 'تصوير', id_number: '5551112222', status: 'revision_requested' },
+          { full_name: 'سارة أحمد الحربي', phone: '+966555333444', email: 'sara.h@test.com', nationality: 'سعودي', vendor_type: 'individual', primary_city: 'الرياض', primary_field: 'مونتاج', id_number: '5553334444', status: 'pending_approval' },
+        ];
+
+        const { data, error } = await supabase.from('vendors').insert(testVendors).select();
+
+        if (error) {
+          log('Vendor insert error: ' + error.message);
+          result.innerHTML = '<div class="status error">❌ ' + error.message + '</div>';
+          btn.disabled = false;
+          return;
+        }
+
+        log('Inserted ' + data.length + ' vendors');
+        result.innerHTML = '<div class="status success">✅ Inserted ' + data.length + ' test vendors!</div>';
+
+        // Try approval log
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const logEntries = data.map(v => ({ vendor_id: v.id, action: 'submitted' }));
+
+          const khaled = data.find(v => v.phone === '+966555111222');
+          if (khaled) {
+            logEntries.push({
+              vendor_id: khaled.id,
+              action: 'revision_requested',
+              reason: 'يرجى تحديث صورة الهوية بصورة أوضح وإضافة رقم IBAN الصحيح. كما يرجى التأكد من صحة رقم الجوال.',
+              performed_by: userData?.user?.id || null,
+            });
+          }
+
+          const { error: logError } = await supabase.from('vendor_approval_log').insert(logEntries);
+          if (logError) {
+            log('Approval log error: ' + logError.message);
+            result.innerHTML += '<div class="status error" style="margin-top:8px">⚠️ Approval log: ' + logError.message + '</div>';
+          } else {
+            log('Approval log entries created');
+            result.innerHTML += '<div class="status success" style="margin-top:8px">✅ Approval log entries created!</div>';
+          }
+        } catch (le) {
+          log('Log exception: ' + le.message);
+        }
+
+        result.innerHTML += '<div class="status info" style="margin-top:8px">🔄 Now refresh your admin panel!</div>';
+      } catch (e) {
+        log('Exception: ' + e.message);
+        result.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('cleanupBtn').addEventListener('click', async () => {
+      const result = document.getElementById('cleanupResult');
+      result.innerHTML = '<div class="status info">⏳ Removing...</div>';
+      log('Cleaning up test vendors...');
+
+      try {
+        const { error } = await supabase.from('vendors').delete().in('phone', TEST_PHONES);
+        if (error) {
+          log('Cleanup error: ' + error.message);
+          result.innerHTML = '<div class="status error">❌ ' + error.message + '</div>';
+        } else {
+          log('Cleanup done');
+          result.innerHTML = '<div class="status success">✅ Test vendors removed!</div>';
+        }
+      } catch (e) {
+        log('Exception: ' + e.message);
+        result.innerHTML = '<div class="status error">❌ ' + e.message + '</div>';
+      }
+    });
+
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('signInBtn').click();
+    });
+  </script>
+</body>
+</html>

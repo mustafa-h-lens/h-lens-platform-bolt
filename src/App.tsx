@@ -45,19 +45,19 @@ const PrivacyPolicy = lazy(() =>
 // ─────────────────────────────────────────────────────────────
 const ROUTES = {
   // Public
-  VENDOR_REGISTRATION: '/vendor-registration',
-  VENDOR_LOGIN:        '/vendor-login',
+  VENDOR_REGISTRATION: '/join',
+  VENDOR_LOGIN:        '/vendor/login',
   VENDOR_PORTAL:       '/vendor',
   TERMS:               '/terms-and-conditions',
   PRIVACY:             '/privacy-policy',
 
   // Client Portal
-  CLIENT_LOGIN:        '/portal-client-hl',
-  CLIENT_PORTAL:       '/portal-client-hl/dashboard',
+  CLIENT_LOGIN:        '/client',
+  CLIENT_PORTAL:       '/client/dashboard',
 
-  // Protected (obfuscated)
-  ADMIN_LOGIN:         '/portal-admin-hl',
-  ADMIN_DASHBOARD:     '/portal-admin-hl/dashboard',
+  // Protected
+  ADMIN_LOGIN:         '/admin',
+  ADMIN_DASHBOARD:     '/admin',
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -217,8 +217,8 @@ function AppContent() {
       const storedVendorSession = getStoredVendorSession();
       const storedClientSession = getStoredClientSession();
       const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
-      const isClientPortalRoute = lastVisitedPage.startsWith('/portal-client-hl');
-      const isAdminRoute = lastVisitedPage.startsWith('/portal-admin-hl');
+      const isClientPortalRoute = lastVisitedPage.startsWith('/client');
+      const isAdminRoute = lastVisitedPage.startsWith('/admin');
 
       // Restore vendor route if vendor is logged in
       if (isVendorRoute && storedVendorSession) {
@@ -313,8 +313,8 @@ function AppContent() {
   }
 
   // ── CLIENT PORTAL ROUTES ──
-  // Catch ALL /portal-client-hl* paths before admin routes
-  if (currentPath.startsWith('/portal-client-hl')) {
+  // Catch ALL /client* paths before admin routes
+  if (currentPath.startsWith('/client')) {
     const stored = getStoredClientSession();
 
     // Has valid session → show portal (regardless of exact sub-path)
@@ -359,7 +359,7 @@ function AppContent() {
 
   const isAdminPath =
     currentPath === ROUTES.ADMIN_LOGIN ||
-    currentPath.startsWith('/portal-admin-hl');
+    currentPath.startsWith('/admin');
 
   if (!isAdminPath) {
     navigate(ROUTES.ADMIN_LOGIN);

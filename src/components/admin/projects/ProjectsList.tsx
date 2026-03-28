@@ -26,7 +26,7 @@ interface Project {
   id: string;
   name: string;
   description: string | null;
-  project_mode: 'STANDARD' | 'FRAMEWORK';
+  project_mode: 'STANDARD' | 'FRAMEWORK' | 'CONTRACT';
   status: string;
   client: {
     name: string;
@@ -111,9 +111,9 @@ export const ProjectsList = ({ onSelectProject, onCreateProject, onLoadProjects,
   };
 
   const getModeBadge = (mode: string): { label: string; className: string } => {
-    return mode === 'STANDARD'
-      ? { label: 'مشروع', className: 'badge badge-amber' }
-      : { label: 'مشغل', className: 'badge badge-blue' };
+    if (mode === 'STANDARD') return { label: 'مشروع', className: 'badge badge-amber' };
+    if (mode === 'CONTRACT') return { label: 'عقد', className: 'badge badge-purple' };
+    return { label: 'عقد إطاري', className: 'badge badge-blue' };
   };
 
   const calculateProfit = (price: number, cost: number | null) => {

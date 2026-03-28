@@ -114,7 +114,7 @@ export const ClientPortalProvider = ({ children, initialClient, initialSession }
   const signOut = () => {
     localStorage.removeItem('client_session');
     localStorage.removeItem('client_data');
-    window.history.pushState({}, '', '/portal-client-hl');
+    window.history.pushState({}, '', '/client');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 

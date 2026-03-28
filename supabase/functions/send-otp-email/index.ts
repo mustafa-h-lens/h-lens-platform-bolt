@@ -306,7 +306,7 @@ Deno.serve(async (req: Request) => {
       const appLoginUrl = Deno.env.get("APP_LOGIN_URL") || Deno.env.get("APP_BASE_URL") || "";
       let appOrigin = appLoginUrl;
       try { appOrigin = new URL(appLoginUrl).origin; } catch { appOrigin = appLoginUrl.replace(/\/[^/]*$/, '') || appLoginUrl; }
-      const portalUrl = `${appOrigin}/portal-client-hl`;
+      const portalUrl = `${appOrigin}/client`;
 
       const smtpHost = Deno.env.get("SMTP_HOST");
       const smtpPort = Deno.env.get("SMTP_PORT");
@@ -588,8 +588,8 @@ Deno.serve(async (req: Request) => {
       appBase = appLoginUrl.replace(/\/[^/]*$/, '') || appLoginUrl;
     }
     const loginUrl = portal_type === "client"
-      ? `${appBase}/portal-client-hl`
-      : `${appBase}/vendor-login`;
+      ? `${appBase}/client`
+      : `${appBase}/vendor/login`;
 
     const emailHtml = getEmailTemplate(
       otp,

@@ -120,7 +120,6 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
 
   const visibleTabGroups = useMemo(() => {
     return tabGroups.filter(group => {
-      // Only show AI group for super_admin in development mode
       if (group.id === 'ai-group') {
         return isDev && isSuperAdmin;
       }
@@ -159,87 +158,114 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
   const currentGroup = getCurrentGroup();
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
-      <div className="bg-white dark:bg-dark-card rounded-[32px] shadow-xl border border-slate-200 dark:border-dark-border overflow-hidden">
-        <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-dark-border p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl border"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--color-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)' }}>
-              <SettingsIcon className="w-5 h-5 text-[#0A2A66] dark:text-[#47A1FF]" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">الإعدادات</h1>
+    <div style={{ padding: 28 }} dir="rtl">
+      {/* Page Title */}
+      <div className="page-title-row" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="card-icon ci-blue" style={{ width: 44, height: 44 }}>
+            <SettingsIcon size={20} />
           </div>
+          <div className="page-title" style={{ fontSize: 26 }}>الإعدادات</div>
         </div>
+      </div>
 
-        <div className="flex flex-col md:flex-row">
-          <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-slate-800">
-            <nav className="p-4 space-y-2">
-              {visibleTabGroups.map((group) => {
-                const GroupIcon = group.icon;
-                const isExpanded = expandedGroups.has(group.id);
+      {/* Settings Layout */}
+      <div style={{ display: 'flex', gap: 20, minHeight: 600 }}>
 
-                return (
-                  <div key={group.id} className="space-y-1">
-                    {/* Group Header */}
-                    <button
-                      onClick={() => toggleGroup(group.id)}
-                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg
-                        text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700
-                        font-bold text-sm transition-all duration-200"
-                    >
-                      <div className="flex items-center gap-2">
-                        <GroupIcon className="w-4 h-4" style={{ color: group.color }} />
-                        <span>{group.label}</span>
-                        <span className="text-xs text-slate-500 dark:text-slate-400">({group.tabs.length})</span>
-                      </div>
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
+        {/* Sidebar Nav (first = right in RTL) */}
+        <nav style={{
+          width: 240, flexShrink: 0,
+          overflowY: 'auto', alignSelf: 'flex-start',
+        }}>
+          {visibleTabGroups.map((group) => {
+            const GroupIcon = group.icon;
+            const isExpanded = expandedGroups.has(group.id);
 
-                    {/* Sub Tabs */}
-                    {isExpanded && (
-                      <div className="pr-4 space-y-1">
-                        {group.tabs.map((tab) => {
-                          const TabIcon = tab.icon;
-                          const isActive = activeTab === tab.id;
+            return (
+              <div key={group.id} style={{
+                padding: '4px 0',
+              }}>
+                {/* Group Header */}
+                <button
+                  onClick={() => toggleGroup(group.id)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center',
+                    gap: 8, direction: 'ltr',
+                    padding: '6px 4px', borderRadius: 'var(--radius-sm)',
+                    background: 'transparent',
+                    border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                    color: 'var(--text-primary)', fontSize: 13, fontWeight: 700,
+                    transition: 'background var(--transition-fast)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card-hover)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                >
+                  <ChevronDown
+                    size={12}
+                    style={{
+                      color: 'var(--text-muted)',
+                      transition: 'transform 0.2s',
+                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 20, height: 20, borderRadius: '50%',
+                    background: 'var(--bg-overlay)', color: 'var(--text-muted)',
+                    fontSize: 10, fontWeight: 600, flexShrink: 0,
+                  }}>
+                    {group.tabs.length}
+                  </span>
+                  <span style={{ flex: 1, textAlign: 'right' }}>{group.label}</span>
+                </button>
 
-                          return (
-                            <button
-                              key={tab.id}
-                              onClick={() => handleTabChange(tab.id)}
-                              className={`
-                                w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-right
-                                transition-all duration-200 text-sm
-                                ${isActive
-                                  ? 'text-white shadow-md font-medium'
-                                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-normal'
-                                }
-                              `}
-                              style={isActive ? {
-                                background: `linear-gradient(to left, ${group.color}, ${group.color}dd)`
-                              } : {}}
-                            >
-                              <TabIcon className="w-4 h-4" />
-                              <span>{tab.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                {/* Sub Tabs */}
+                {isExpanded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 6 }}>
+                    {group.tabs.map((tab) => {
+                      const TabIcon = tab.icon;
+                      const isActive = activeTab === tab.id;
+
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => handleTabChange(tab.id)}
+                          style={{
+                            width: '100%', display: 'flex', alignItems: 'center',
+                            gap: 8, direction: 'ltr',
+                            padding: '8px 12px', borderRadius: 'var(--radius-sm)',
+                            border: 'none',
+                            cursor: 'pointer', fontFamily: 'inherit',
+                            fontSize: 12.5,
+                            fontWeight: isActive ? 600 : 400,
+                            color: isActive ? '#fff' : 'var(--text-secondary)',
+                            background: isActive ? 'var(--accent)' : 'transparent',
+                            boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                            transition: 'all 0.15s',
+                          }}
+                          onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bg-card-hover)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
+                          onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}
+                        >
+                          <span style={{ flex: 1, textAlign: 'right' }}>{tab.label}</span>
+                          <TabIcon size={13} style={{ flexShrink: 0 }} />
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </nav>
-          </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
 
-          <div className="flex-1 p-6 bg-white dark:bg-dark-bg">
-            {visibleTabGroups.flatMap(g => g.tabs).map(tab => (
-              activeTab === tab.id && <tab.component key={tab.id} />
-            ))}
-          </div>
+        {/* Content Area (second = left in RTL) — separate card */}
+        <div className="card" style={{
+          cursor: 'default', flex: 1, padding: 28, overflow: 'auto',
+        }}>
+          {visibleTabGroups.flatMap(g => g.tabs).map(tab => (
+            activeTab === tab.id && <tab.component key={tab.id} />
+          ))}
         </div>
       </div>
     </div>
