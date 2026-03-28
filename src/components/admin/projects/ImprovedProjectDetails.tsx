@@ -50,10 +50,10 @@ type TabType = 'basic' | 'items' | 'invoices' | 'expenses' | 'vendors' | 'files'
 
 const TABS = [
   { id: 'basic', label: 'البيانات الأساسية', icon: Home },
-  { id: 'vendors', label: 'الموردين', icon: Users },
-  { id: 'expenses', label: 'المصروفات', icon: DollarSign },
-  { id: 'invoices', label: 'الفواتير', icon: FileText },
   { id: 'items', label: 'البنود', icon: ShoppingCart },
+  { id: 'expenses', label: 'المصروفات', icon: DollarSign },
+  { id: 'vendors', label: 'الموردين', icon: Users },
+  { id: 'invoices', label: 'الفواتير', icon: FileText },
   { id: 'files', label: 'الملفات', icon: Folder },
 ] as const;
 

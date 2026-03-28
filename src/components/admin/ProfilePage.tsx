@@ -195,21 +195,21 @@ export const ProfilePage = ({ onBack }: Props) => {
         </div>
       </div>
 
-      {/* Profile header card — full width */}
-      <div className="card" style={{ cursor: 'default', padding: '32px', marginBottom: 20 }}>
+      {/* Profile header card */}
+      <div className="card" style={{ cursor: 'default', padding: '28px 32px', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Avatar + Info — first in RTL = right side */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {/* Avatar */}
             <div style={{ position: 'relative', cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
               {avatarUrl ? (
                 <img
                   src={avatarUrl}
                   alt="avatar"
-                  style={{ width: 88, height: 88, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-soft)' }}
+                  style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-soft)' }}
                 />
               ) : (
-                <div className="avatar av-xl" style={{
-                  width: 88, height: 88, fontSize: 24, fontWeight: 700,
+                <div className="avatar" style={{
+                  width: 80, height: 80, fontSize: 22, fontWeight: 700,
                   background: 'var(--accent-glow)', color: 'var(--accent-lighter)',
                   border: '3px solid var(--border-soft)',
                 }}>
@@ -218,12 +218,12 @@ export const ProfilePage = ({ onBack }: Props) => {
               )}
               <div style={{
                 position: 'absolute', bottom: 2, left: 2,
-                width: 28, height: 28, borderRadius: '50%',
+                width: 26, height: 26, borderRadius: '50%',
                 background: 'var(--accent)', color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid var(--bg-surface)',
+                border: '2px solid var(--bg-card)',
               }}>
-                {uploadingAvatar ? <Loader2 size={12} className="spin" /> : <Camera size={13} />}
+                {uploadingAvatar ? <Loader2 size={11} className="spin" /> : <Camera size={12} />}
               </div>
               <input
                 ref={fileRef}
@@ -237,17 +237,16 @@ export const ProfilePage = ({ onBack }: Props) => {
                 }}
               />
             </div>
+            {/* Name + role + email */}
             <div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.full_name}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Shield size={12} /> {getRoleLabel(profile?.role)}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{getRoleLabel(profile?.role)}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }} dir="ltr">
                 <Mail size={12} /> {user?.email}
               </div>
             </div>
           </div>
-          {/* Badge — last in RTL = left side */}
+          {/* Status badge */}
           <span className="badge badge-green" style={{ fontSize: 12 }}>
             <span className="badge-dot" style={{ background: 'var(--success)' }} />
             نشط
