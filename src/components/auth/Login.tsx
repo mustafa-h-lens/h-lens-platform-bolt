@@ -15,8 +15,11 @@ export const Login = () => {
     setError('');
     setLoading(true);
     try {
+      console.log('[Login] Attempting signIn for:', email);
       await signIn(email, password);
+      console.log('[Login] signIn succeeded');
     } catch (err) {
+      console.error('[Login] signIn failed:', err);
       setError('فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور');
     } finally {
       setLoading(false);

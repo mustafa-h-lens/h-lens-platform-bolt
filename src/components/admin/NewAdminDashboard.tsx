@@ -19,6 +19,7 @@ const CreateProjectModal = lazy(() => import('./projects/CreateProjectModal').th
 const ExpensesPage = lazy(() => import('./expenses/ExpensesPage').then(m => ({ default: m.ExpensesPage })));
 const ActivityLogPage = lazy(() => import('./ActivityLogPage').then(m => ({ default: m.ActivityLogPage })));
 const AdminSuggestions = lazy(() => import('./suggestions/AdminSuggestions').then(m => ({ default: m.AdminSuggestions })));
+const ProfilePage = lazy(() => import('./ProfilePage').then(m => ({ default: m.ProfilePage })));
 
 const LazyFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '16rem', color: 'var(--text-muted)', fontSize: '1.125rem' }}>
@@ -26,7 +27,7 @@ const LazyFallback = () => (
   </div>
 );
 
-const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity', 'suggestions'];
+const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity', 'suggestions', 'profile'];
 
 const parseHash = (): { page: string; id: string | null; tab: string | null } => {
   const hash = window.location.hash.slice(1); // remove '#'
@@ -342,6 +343,29 @@ export const NewAdminDashboard = () => {
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
               />
+            </Suspense>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentPage === 'profile') {
+    return (
+      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigation}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
+        />
+        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
+          {mobileMenuButton}
+          <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
+            <Suspense fallback={<LazyFallback />}>
+              <ProfilePage onBack={() => handleNavigation('dashboard')} />
             </Suspense>
           </main>
         </div>

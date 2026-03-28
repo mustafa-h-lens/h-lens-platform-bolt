@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -61,8 +62,8 @@ interface ToastContainerProps {
 }
 
 export const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
-  return (
-    <div className="toast-container" style={{ position: 'fixed', top: 16, left: 16, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }} dir="ltr">
+  return createPortal(
+    <div className="toast-container" style={{ position: 'fixed', top: 16, left: 16, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8 }} dir="ltr">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -73,6 +74,7 @@ export const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
           onClose={onClose}
         />
       ))}
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -264,13 +264,13 @@ export const Sidebar = ({ currentPage, onNavigate, isOpen, onClose, collapsed, o
 
           {/* User profile */}
           {collapsed ? (
-            <div className="sb-item" style={{ justifyContent: 'center' }} title={profile?.full_name}>
+            <div className="sb-item" style={{ justifyContent: 'center', cursor: 'pointer' }} title={profile?.full_name} onClick={() => onNavigate('profile')}>
               <div className="avatar av-sm" style={{ background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontSize: 10, width: 28, height: 28 }}>
                 {getInitials(profile?.full_name)}
               </div>
             </div>
           ) : (
-            <div className="sb-user-profile">
+            <div className="sb-user-profile" style={{ cursor: 'pointer' }} onClick={() => onNavigate('profile')}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="u-name" style={{ fontSize: 13 }}>{profile?.full_name}</div>
                 <div className="u-role">{getRoleLabel()}</div>

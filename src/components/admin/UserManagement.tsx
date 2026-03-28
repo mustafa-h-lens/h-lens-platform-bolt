@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
-import { Plus, Edit2, Users, UserCheck, UserX, Shield } from 'lucide-react';
+import { Plus, Edit2, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import type { User, Client, Role } from '../../types/database';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatNumber } from '../../lib/formatters';
 import { Modal } from '../shared/Modal';
 import { RolesManagement } from './RolesManagement';
@@ -14,6 +16,8 @@ interface UserManagementProps {
 type Tab = 'users' | 'roles';
 
 export const UserManagement = ({ onBack }: UserManagementProps) => {
+  const { profile } = useAuth();
+  const { showSuccess, showError, confirm } = useNotification();
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -66,17 +70,86 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
     }
   };
 
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const toggleUserStatus = async (user: User) => {
+    const action = user.is_active ? 'إيقاف' : 'تفعيل';
+    const confirmed = await confirm({
+      title: `${action} المستخدم`,
+      message: `هل تريد ${action} حساب "${user.full_name}"؟`,
+      confirmText: action,
+      type: user.is_active ? 'danger' : 'info',
+    });
+    if (!confirmed) return;
+
+    setTogglingId(user.id);
+    // Optimistic update
+    setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: !u.is_active } : u));
     try {
       const { error } = await supabase
         .from('users')
         .update({ is_active: !user.is_active })
         .eq('id', user.id);
-
       if (error) throw error;
-      loadData();
+      showSuccess(`تم ${action} المستخدم بنجاح`);
     } catch (error) {
-      console.error('Error toggling user status:', error);
+      // Revert optimistic update
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_active: user.is_active } : u));
+      showError('حدث خطأ أثناء تحديث حالة المستخدم');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const deleteUser = async (user: User) => {
+    // Prevent self-delete
+    if (user.email === profile?.email) {
+      showError('لا يمكنك حذف حسابك الخاص');
+      return;
+    }
+
+    // Check if last admin
+    const adminUsers = users.filter(u => (u.role === 'super_admin' || (u.roles && u.roles.is_system)) && u.id !== user.id);
+    if ((user.role === 'super_admin' || (user.roles && user.roles.is_system)) && adminUsers.length === 0) {
+      showError('لا يمكن حذف آخر مدير عام في النظام');
+      return;
+    }
+
+    // Check if user has data (projects, activity)
+    const [projectsRes, activityRes] = await Promise.all([
+      supabase.from('projects').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+      supabase.from('activity_logs').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+    ]);
+    const projectCount = projectsRes.count || 0;
+    const activityCount = activityRes.count || 0;
+
+    let message = `هل أنت متأكد من حذف المستخدم "${user.full_name}"؟`;
+    if (projectCount > 0 || activityCount > 0) {
+      message += '\n\n⚠️ تنبيه: هذا المستخدم لديه بيانات مرتبطة:';
+      if (projectCount > 0) message += `\n• ${projectCount} مشروع`;
+      if (activityCount > 0) message += `\n• ${activityCount} سجل نشاط`;
+      message += '\n\nيُفضل إيقاف الحساب بدلاً من حذفه. هل تريد المتابعة؟';
+    }
+
+    const confirmed = await confirm({
+      title: 'حذف المستخدم',
+      message,
+      confirmText: 'حذف نهائي',
+      type: 'danger',
+    });
+    if (!confirmed) return;
+
+    setDeletingId(user.id);
+    try {
+      const { error } = await supabase.from('users').delete().eq('id', user.id);
+      if (error) throw error;
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      showSuccess(`تم حذف المستخدم "${user.full_name}" بنجاح`);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      showError('فشل حذف المستخدم. قد تكون هناك بيانات مرتبطة تمنع الحذف.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -210,20 +283,32 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
                           )}
                         </td>
                         <td>
-                          <div className="actions-cell">
+                          <div className="actions-cell" style={{ gap: 4 }}>
                             <button
                               className="btn btn-ghost btn-sm"
                               onClick={() => { setEditingUser(user); setShowModal(true); }}
                               style={{ color: 'var(--accent-lighter)', padding: 6 }}
+                              title="تعديل"
                             >
                               <Edit2 size={14} />
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"
                               onClick={() => toggleUserStatus(user)}
-                              style={{ color: user.is_active ? 'var(--danger-text)' : 'var(--success-text)', fontSize: 12 }}
+                              disabled={togglingId === user.id}
+                              style={{ color: user.is_active ? 'var(--danger-text)' : 'var(--success-text)', fontSize: 12, minWidth: 50 }}
+                              title={user.is_active ? 'إيقاف الحساب' : 'تفعيل الحساب'}
                             >
-                              {user.is_active ? 'إيقاف' : 'تفعيل'}
+                              {togglingId === user.id ? <Loader2 size={14} className="spin" /> : (user.is_active ? 'إيقاف' : 'تفعيل')}
+                            </button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => deleteUser(user)}
+                              disabled={deletingId === user.id}
+                              style={{ color: 'var(--danger-text)', padding: 6 }}
+                              title="حذف المستخدم"
+                            >
+                              {deletingId === user.id ? <Loader2 size={14} className="spin" /> : <Trash2 size={14} />}
                             </button>
                           </div>
                         </td>
@@ -278,6 +363,8 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
     sendInvite: true,
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,14 +399,25 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
 
         if (error) throw error;
       } else {
-        // Create auth user in Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        // Use a separate client so we don't replace the admin session
+        const anonClient = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          { auth: { persistSession: false, autoRefreshToken: false } }
+        );
+        const { data: authData, error: authError } = await anonClient.auth.signUp({
           email: formData.email,
           password: formData.password,
+          options: { data: { full_name: formData.full_name } },
         });
 
         if (authError) throw authError;
         if (!authData.user) throw new Error('فشل في إنشاء المستخدم');
+
+        // Check if user already exists (signUp returns user with empty identities)
+        if (authData.user.identities && authData.user.identities.length === 0) {
+          throw new Error('هذا البريد الإلكتروني مسجل مسبقاً');
+        }
 
         // Create user record in users table
         const { error: userError } = await supabase
@@ -329,6 +427,7 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
             email: formData.email,
             full_name: formData.full_name,
             username: formData.username || null,
+            phone: formData.phone || null,
             role: legacyRole,
             role_id: formData.role_id,
           });
@@ -419,28 +518,48 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
           <div className="form-grid">
             <div className="input-group">
               <label className="input-label">كلمة المرور <span className="req">*</span></label>
-              <input
-                type="password"
-                className="input"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-                minLength={6}
-                dir="ltr"
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="input"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  minLength={6}
+                  dir="ltr"
+                  style={{ paddingLeft: 40 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div className="input-group">
               <label className="input-label">تأكيد كلمة المرور <span className="req">*</span></label>
-              <input
-                type="password"
-                className="input"
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                required
-                minLength={6}
-                dir="ltr"
-              />
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  className="input"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  required
+                  minLength={6}
+                  dir="ltr"
+                  style={{ paddingLeft: 40 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
           </div>
         )}
