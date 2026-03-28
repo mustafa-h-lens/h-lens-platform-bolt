@@ -106,7 +106,7 @@ export const SuccessScreen = () => {
         {/* CTA */}
         <button
           className="success-btn"
-          onClick={() => window.location.href = '/'}
+          onClick={() => window.location.href = '/admin'}
           type="button"
         >
           العودة إلى الصفحة الرئيسية

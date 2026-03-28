@@ -45,7 +45,8 @@ export function VendorInvoices() {
       const categoryIds = [...new Set((data || []).map((i: any) => i.category).filter(Boolean))];
       let categoryMap: Record<string, string> = {};
       if (categoryIds.length > 0) {
-        const { data: fields } = await supabase.from('vendor_fields').select('id, name_ar').in('id', categoryIds);
+        const { data: fields, error: fieldsError } = await supabase.from('vendor_fields').select('id, name_ar').in('id', categoryIds);
+        if (fieldsError) console.error('Failed to fetch vendor_fields:', fieldsError);
         (fields || []).forEach(f => { categoryMap[f.id] = f.name_ar; });
       }
 

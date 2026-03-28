@@ -1,6 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Sparkles, Tag, FileText, Building2, Shield, ChevronDown, Mail } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useState } from 'react';
+import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Tag, FileText, Building2, Shield, ChevronDown } from 'lucide-react';
 import { ServiceItemsCatalog } from '../ServiceItemsCatalog';
 import { ItemCategoriesManagement } from '../projects/ItemCategoriesManagement';
 import { ProjectStatusSettings } from './ProjectStatusSettings';
@@ -13,10 +12,7 @@ import { TermsSettings } from './TermsSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { BanksSettings } from './BanksSettings';
 import { ClientDocumentTypesSettings } from './ClientDocumentTypesSettings';
-import AIExtractionTest from './AIExtractionTest';
-import EmailPreview from '../invoices/EmailPreview';
-
-type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'ai-test' | 'email-preview';
+type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks';
 
 interface SubTab {
   id: TabId;
@@ -86,24 +82,6 @@ const tabGroups: TabGroup[] = [
       { id: 'clients', label: 'إعدادات العملاء', icon: FileText, component: ClientDocumentTypesSettings }
     ]
   },
-  {
-    id: 'ai-group',
-    label: 'الذكاء الاصطناعي',
-    icon: Sparkles,
-    color: '#F59E0B',
-    tabs: [
-      { id: 'ai-test', label: 'اختبار الذكاء الاصطناعي', icon: Sparkles, component: AIExtractionTest }
-    ]
-  },
-  {
-    id: 'email-group',
-    label: 'قوالب البريد الإلكتروني',
-    icon: Mail,
-    color: '#8B5CF6',
-    tabs: [
-      { id: 'email-preview', label: 'معاينة قالب OTP', icon: Mail, component: EmailPreview }
-    ]
-  }
 ];
 
 const ALL_TAB_IDS: string[] = tabGroups.flatMap(g => g.tabs.map(t => t.id));
@@ -114,18 +92,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => {
-  const { profile } = useAuth();
-  const isDev = import.meta.env.DEV;
-  const isSuperAdmin = profile?.role === 'super_admin';
-
-  const visibleTabGroups = useMemo(() => {
-    return tabGroups.filter(group => {
-      if (group.id === 'ai-group') {
-        return isDev && isSuperAdmin;
-      }
-      return true;
-    });
-  }, [isDev, isSuperAdmin]);
+  const visibleTabGroups = tabGroups;
 
   const [activeTab, setActiveTab] = useState<TabId>(
     initialTab && ALL_TAB_IDS.includes(initialTab) ? initialTab as TabId : 'items-catalog'
@@ -136,7 +103,7 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
     onTabChange?.(tab);
   };
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group', 'ai-group', 'email-group'])
+    new Set(['items-group', 'equipment-group', 'legal-group', 'financial-group', 'general-group'])
   );
 
   const toggleGroup = (groupId: string) => {

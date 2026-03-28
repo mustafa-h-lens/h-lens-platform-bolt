@@ -369,7 +369,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
       const mainField = selectedFields[0];
       const fieldName = mainField?.vendor_fields?.name_ar || '';
       if (fieldName) {
-        await supabase.from('vendors').update({ primary_field: fieldName, updated_at: new Date().toISOString() }).eq('id', vendor!.id).catch(() => {});
+        await supabase.from('vendors').update({ primary_field: fieldName, updated_at: new Date().toISOString() }).eq('id', vendor!.id).catch(err => console.error('Update error:', err));
       }
 
       showSuccess('تم حفظ الخدمات');

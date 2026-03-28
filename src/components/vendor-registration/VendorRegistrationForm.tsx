@@ -284,10 +284,10 @@ export const VendorRegistrationForm = () => {
 
       try {
         const uploads = await Promise.all([
-          formData.id_image ? uploadFile(formData.id_image, 'id_images').catch(() => '') : Promise.resolve(idImageUrl),
-          formData.profile_image ? uploadFile(formData.profile_image, 'profile_images').catch(() => '') : Promise.resolve(profileImageUrl),
-          formData.passport_file ? uploadFile(formData.passport_file, 'passport_images').catch(() => '') : Promise.resolve(passportFileUrl),
-          formData.visa_file ? uploadFile(formData.visa_file, 'visa_documents').catch(() => '') : Promise.resolve(visaFileUrl),
+          formData.id_image ? uploadFile(formData.id_image, 'id_images').catch((err) => { console.error('Upload error:', err); return ''; }) : Promise.resolve(idImageUrl),
+          formData.profile_image ? uploadFile(formData.profile_image, 'profile_images').catch((err) => { console.error('Upload error:', err); return ''; }) : Promise.resolve(profileImageUrl),
+          formData.passport_file ? uploadFile(formData.passport_file, 'passport_images').catch((err) => { console.error('Upload error:', err); return ''; }) : Promise.resolve(passportFileUrl),
+          formData.visa_file ? uploadFile(formData.visa_file, 'visa_documents').catch((err) => { console.error('Upload error:', err); return ''; }) : Promise.resolve(visaFileUrl),
         ]);
         idImageUrl = uploads[0] || idImageUrl;
         profileImageUrl = uploads[1] || profileImageUrl;
@@ -333,11 +333,12 @@ export const VendorRegistrationForm = () => {
             .single();
           vendor = updatedVendor;
           if (vendor) {
-            await Promise.all([
+            const deleteResults = await Promise.all([
               supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id),
               supabase.from('vendor_financial_data').delete().eq('vendor_id', vendor.id),
               supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor.id),
             ]);
+            deleteResults.forEach(({ error }) => { if (error) console.error('Delete error during re-registration:', error); });
           }
         } else {
           const { data: newVendor } = await supabase
@@ -402,7 +403,7 @@ export const VendorRegistrationForm = () => {
       }
 
       // Clean up draft (fire-and-forget)
-      supabase.from('vendor_registration_drafts').delete().eq('session_id', sessionId).then(() => {});
+      supabase.from('vendor_registration_drafts').delete().eq('session_id', sessionId).then(() => {}).catch(console.error);
 
       // Emails (fire-and-forget, don't await)
       if (vendor?.id) {

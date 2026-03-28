@@ -46,7 +46,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth] onAuthStateChange:', event, session?.user?.email);
       (async () => {
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -70,7 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) throw error;
-      console.log('[Auth] fetchProfile result:', data?.email, data?.role);
       setProfile(data);
     } catch (error) {
       console.error('[Auth] Error fetching profile:', error);

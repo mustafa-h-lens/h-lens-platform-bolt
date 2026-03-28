@@ -43,6 +43,9 @@ export function VendorDashboard() {
         cached(`dash:eq:${vid}`, () => supabase.from('vendor_equipment').select('id', { count: 'exact', head: true }).eq('vendor_id', vid), 60_000),
         cached(`dash:doc:${vid}`, () => supabase.from('vendor_documents').select('id', { count: 'exact', head: true }).eq('vendor_id', vid), 60_000),
       ]);
+      if (invRes.error) console.error('Failed to fetch vendor invoices:', invRes.error);
+      if (eqRes.error) console.error('Failed to fetch vendor equipment:', eqRes.error);
+      if (docRes.error) console.error('Failed to fetch vendor documents:', docRes.error);
       const invoices = invRes.data || [];
       // Derive unique projects from invoices (vendors are linked to projects via invoices)
       const projectMap = new Map<string, any>();

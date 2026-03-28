@@ -433,8 +433,8 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   });
 
   useEffect(() => {
-    supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data }) => setAllFields(data || []));
-    supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data }) => setCities(data || []));
+    supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data, error }) => { if (error) console.error('Failed to fetch supplier_fields:', error); setAllFields(data || []); });
+    supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data, error }) => { if (error) console.error('Failed to fetch cities:', error); setCities(data || []); });
   }, []);
 
   // Build service options with main → sub grouping
