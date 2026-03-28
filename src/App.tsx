@@ -313,11 +313,17 @@ function AppContent() {
   }
 
   // ── CLIENT PORTAL ROUTES ──
-
-  // /portal-client-hl/dashboard → has session? show portal : redirect to login
-  if (currentPath === ROUTES.CLIENT_PORTAL) {
+  // Catch ALL /portal-client-hl* paths before admin routes
+  if (currentPath.startsWith('/portal-client-hl')) {
     const stored = getStoredClientSession();
+
+    // Has valid session → show portal (regardless of exact sub-path)
     if (stored) {
+      // If on login page, redirect to dashboard
+      if (currentPath === ROUTES.CLIENT_LOGIN) {
+        navigate(ROUTES.CLIENT_PORTAL);
+        return null;
+      }
       return (
         <ErrorBoundary>
           <ClientPortalProvider
@@ -334,15 +340,10 @@ function AppContent() {
         </ErrorBoundary>
       );
     }
-    navigate(ROUTES.CLIENT_LOGIN);
-    return null;
-  }
 
-  // /portal-client-hl → has session? go to portal : show OTP login
-  if (currentPath === ROUTES.CLIENT_LOGIN) {
-    const stored = getStoredClientSession();
-    if (stored) {
-      navigate(ROUTES.CLIENT_PORTAL);
+    // No session → show login
+    if (currentPath !== ROUTES.CLIENT_LOGIN) {
+      navigate(ROUTES.CLIENT_LOGIN);
       return null;
     }
     localStorage.removeItem('client_session');
