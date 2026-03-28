@@ -180,22 +180,11 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
             {/* Portal status + Invite button */}
             <div style={{ marginRight: 'auto' }}>
               {client.invitation_status === 'active' ? (
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-                    style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
-                    <CheckCircle size={16} />
-                    العميل نشط في البوابة
-                  </span>
-                  <button
-                    onClick={handleInviteClient}
-                    disabled={inviting}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{ background: 'transparent', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', opacity: inviting ? 0.5 : 1 }}
-                  >
-                    <Send size={14} />
-                    {inviting ? 'جاري الإرسال...' : 'إعادة إرسال'}
-                  </button>
-                </div>
+                <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                  style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
+                  <CheckCircle size={16} />
+                  العميل نشط في البوابة
+                </span>
               ) : client.invitation_status === 'pending' || client.invitation_status === 'invited' ? (
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
