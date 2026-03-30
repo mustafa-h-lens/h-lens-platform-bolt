@@ -45,8 +45,16 @@ interface FinancialData {
 
 interface TravelDoc {
   passport_number?: string;
+  passport_issuing_country?: string;
+  passport_issue_date?: string;
+  passport_expiry_date?: string;
+  passport_file?: string;
   visa_country?: string;
+  visa_type?: string;
+  visa_start_date?: string;
+  visa_expiry_date?: string;
   visa_file?: string;
+  visa_status?: string;
 }
 
 interface SelectedField {
@@ -353,22 +361,45 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
               </div>
             )}
           </div>
+          {travelDocs.length > 0 && travelDocs[0].passport_file && (
+            <div className="mt-4">
+              <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
+              {travelDocs[0].passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+              ) : (
+                <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
+                  className="text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                  عرض جواز السفر
+                </a>
+              )}
+            </div>
+          )}
           {travelDocs.length > 0 && travelDocs[0].visa_file && (
             <div className="mt-4">
               <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
-              <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
-                className="text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                عرض المستند
-              </a>
+              {travelDocs[0].visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+              ) : (
+                <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
+                  className="text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                  عرض المستند
+                </a>
+              )}
             </div>
           )}
         </Section>
 
         {/* Travel Info */}
-        {travelDocs.length > 0 && (
+        {travelDocs.length > 0 && (travelDocs[0].passport_number || travelDocs[0].visa_country) && (
           <Section title="بيانات السفر" icon={MapPin}>
-            <InfoRow label="رقم جواز السفر" value={travelDocs[0].passport_number} />
+            <InfoRow label="رقم جواز السفر" value={travelDocs[0].passport_number} dir="ltr" />
+            <InfoRow label="دولة إصدار الجواز" value={travelDocs[0].passport_issuing_country} />
+            <InfoRow label="تاريخ الإصدار" value={travelDocs[0].passport_issue_date} />
+            <InfoRow label="تاريخ الانتهاء" value={travelDocs[0].passport_expiry_date} />
             <InfoRow label="بلد التأشيرة" value={travelDocs[0].visa_country} />
+            <InfoRow label="نوع التأشيرة" value={travelDocs[0].visa_type} />
+            <InfoRow label="تاريخ بداية التأشيرة" value={travelDocs[0].visa_start_date} />
+            <InfoRow label="تاريخ انتهاء التأشيرة" value={travelDocs[0].visa_expiry_date} />
           </Section>
         )}
 
