@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -20,32 +20,48 @@ const typeClassMap: Record<ToastType, string> = {
 };
 
 const typeIconMap: Record<ToastType, React.ReactNode> = {
-  success: <CheckCircle size={20} />,
-  error: <XCircle size={20} />,
-  warning: <AlertCircle size={20} />,
-  info: <Info size={20} />,
+  success: <CheckCircle size={14} />,
+  error: <XCircle size={14} />,
+  warning: <AlertTriangle size={14} />,
+  info: <Info size={14} />,
 };
 
 export const Toast = ({ id, type, message, duration = 5000, onClose }: ToastProps) => {
+  const [visible, setVisible] = useState(false);
+  const [exiting, setExiting] = useState(false);
+
   useEffect(() => {
+    // Trigger entrance animation
+    requestAnimationFrame(() => setVisible(true));
+
     if (duration > 0) {
-      const timer = setTimeout(() => onClose(id), duration);
+      const timer = setTimeout(() => {
+        setExiting(true);
+        setTimeout(() => onClose(id), 300);
+      }, duration);
       return () => clearTimeout(timer);
     }
   }, [id, duration, onClose]);
 
+  const handleClose = () => {
+    setExiting(true);
+    setTimeout(() => onClose(id), 300);
+  };
+
   return (
-    <div className={`toast ${typeClassMap[type]}`} role="alert">
+    <div
+      className={`toast ${typeClassMap[type]}`}
+      role="alert"
+      style={{
+        opacity: visible && !exiting ? 1 : 0,
+        transform: visible && !exiting ? 'translateX(0)' : 'translateX(-20px)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      }}
+    >
       <span className="toast-ico">{typeIconMap[type]}</span>
-      <div style={{ flex: 1 }}>
-        <div className="toast-msg" dir="rtl">{message}</div>
-      </div>
-      <button
-        onClick={() => onClose(id)}
-        className="toast-close"
-        aria-label="إغلاق"
-      >
-        <X size={16} />
+      <span className="toast-msg">{message}</span>
+      <button onClick={handleClose} className="toast-x" aria-label="إغلاق">
+        <X size={14} />
       </button>
     </div>
   );
@@ -62,17 +78,31 @@ interface ToastContainerProps {
 }
 
 export const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
+  if (toasts.length === 0) return null;
+
   return createPortal(
-    <div className="toast-container" style={{ position: 'fixed', top: 16, left: 16, zIndex: 99999, display: 'flex', flexDirection: 'column', gap: 8 }} dir="ltr">
+    <div
+      style={{
+        position: 'fixed',
+        top: 16,
+        left: 16,
+        zIndex: 999999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        pointerEvents: 'none',
+      }}
+    >
       {toasts.map((toast) => (
-        <Toast
-          key={toast.id}
-          id={toast.id}
-          type={toast.type}
-          message={toast.message}
-          duration={toast.duration}
-          onClose={onClose}
-        />
+        <div key={toast.id} style={{ pointerEvents: 'auto' }}>
+          <Toast
+            id={toast.id}
+            type={toast.type}
+            message={toast.message}
+            duration={toast.duration}
+            onClose={onClose}
+          />
+        </div>
       ))}
     </div>,
     document.body
