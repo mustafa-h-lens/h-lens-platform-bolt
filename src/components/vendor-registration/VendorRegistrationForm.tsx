@@ -203,6 +203,10 @@ export const VendorRegistrationForm = () => {
         if (!formData.bank_id) errors.bank_id = 'اسم البنك مطلوب';
         if (!formData.account_name) errors.account_name = 'اسم صاحب الحساب مطلوب';
         if (!formData.iban) errors.iban = 'رقم الآيبان مطلوب';
+        else {
+          const ibanDigits = formData.iban.replace(/^SA/i, '').replace(/\D/g, '');
+          if (ibanDigits.length !== 22) errors.iban = 'رقم الآيبان يجب أن يكون 22 رقم بعد SA';
+        }
         break;
       case 6:
         if (formData.selected_fields.length === 0) errors.selected_fields = 'اختر مجال واحد على الأقل';
@@ -224,8 +228,20 @@ export const VendorRegistrationForm = () => {
       setCurrentStep(step);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
-      setValidationErrors(getStepErrors(currentStep));
+      const errs = getStepErrors(currentStep);
+      setValidationErrors(errs);
+      scrollToFirstError(errs);
     }
+  };
+
+  const scrollToFirstError = (errs: Record<string, string>) => {
+    setTimeout(() => {
+      const firstKey = Object.keys(errs)[0];
+      if (firstKey) {
+        const el = document.querySelector(`.field-error, [class*="has-error"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const nextStep = () => {
@@ -236,7 +252,9 @@ export const VendorRegistrationForm = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      setValidationErrors(getStepErrors(currentStep));
+      const errs = getStepErrors(currentStep);
+      setValidationErrors(errs);
+      scrollToFirstError(errs);
     }
   };
 

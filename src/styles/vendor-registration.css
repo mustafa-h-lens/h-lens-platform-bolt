@@ -79,16 +79,7 @@ body::after{display:none;
 .step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;cursor:pointer}
 /* Connector lines — LTR row with reversed items for RTL visual */
 .stepper-row{direction:ltr;flex-direction:row-reverse}
-.step::after{
-  content:'';position:absolute;top:16px;height:3px;
-  right:calc(50% + 18px);left:calc(-50% + 18px);
-  background:var(--border-subtle);z-index:0;border-radius:2px;
-}
-.step:nth-child(7)::after,
-.step:nth-child(7).done::after,
-.step.done + .step:nth-child(7)::after{display:none!important;content:none!important}
-.step.done::after{background:var(--success)}
-.step.active::after{background:linear-gradient(90deg, var(--success), var(--accent));}
+.step::after{display:none}
 .step-dot{
   width:36px;height:36px;border-radius:50%;border:2px solid var(--border-soft);
   background:var(--bg-card);display:flex;align-items:center;justify-content:center;
@@ -377,6 +368,7 @@ body::after{display:none;
   position:fixed;inset:0;z-index:200;
   display:flex;align-items:center;justify-content:center;
   flex-direction:column;overflow:hidden;
+  padding:16px;
   font-family:var(--font-main,'Cairo',sans-serif);
   color:#e2e8f0;direction:rtl;
 }
@@ -746,17 +738,60 @@ body::after{display:none;
 .reg-bg[data-theme="light"] .iban-wrap{background:rgba(0,0,0,0.02)}
 .reg-bg[data-theme="light"] .req{color:#dc2626}
 
-/* Responsive */
+/* ── Prevent iOS zoom on input focus (font-size < 16px triggers zoom) ── */
+@supports (-webkit-touch-callout: none) {
+  .reg-bg input, .reg-bg select, .reg-bg textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Responsive ── */
 @media(max-width:500px){
-  .page-wrap{padding:20px 12px 80px}
-  .form-card{padding:20px 16px}
-  .step-lbl{font-size:8px}
-  .step-dot{width:28px;height:28px;font-size:11px}
-  .step::after{top:13px;right:calc(50% + 14px);left:calc(-50% + 14px)}
+  .page-wrap{padding:90px 12px 80px}
+  .reg-topbar{padding:10px 14px}
+  .reg-topbar-logo img{height:40px}
+  .theme-toggle-btn{width:32px;height:32px;font-size:13px}
+  .form-card{padding:20px 14px}
+  .reg-header{margin-bottom:20px}
+  .reg-title{font-size:1.2rem}
+  .reg-subtitle{font-size:0.8rem}
+
+  /* Stepper compact */
+  .stepper-row{gap:0;justify-content:center}
+  .step-lbl{font-size:8px;max-width:48px;overflow:hidden;text-overflow:ellipsis}
+  .step-dot{width:30px;height:30px;font-size:11px}
+
   .vendor-type-grid{grid-template-columns:1fr}
   .price-inputs{grid-template-columns:1fr}
-  .phone-group{flex-direction:column}
-  .phone-code{width:100%}
-  .reg-title{font-size:1.35rem}
+
+  /* Phone: keep country code + input in same row */
+  .phone-group{flex-direction:row !important;gap:6px}
+  .phone-code{width:110px !important;flex-shrink:0}
+  .phone-number{flex:1;min-width:0}
+
   .city-grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+
+  /* Custom select dropdown: full width on mobile */
+  .custom-select .cs-dropdown{min-width:100%;right:0;left:0}
+
+  /* Success screen mobile */
+  .success-glass-card{
+    max-width:92vw;
+    padding:70px 18px 28px;
+    border-radius:20px;
+  }
+  .success-circle{
+    width:90px;height:90px;
+    margin:-45px auto 16px;
+  }
+  .success-circle svg{width:36px;height:36px}
+  .success-title{font-size:1.3rem}
+  .success-sub{font-size:0.85rem}
+  .success-info-card{padding:14px}
+  .success-note-card{padding:12px}
+  .success-btn{font-size:14px;padding:14px 20px}
+
+  /* Nav buttons */
+  .nav-buttons{gap:8px}
+  .nav-buttons .btn{min-width:0;flex:1;height:44px;font-size:13px}
 }
