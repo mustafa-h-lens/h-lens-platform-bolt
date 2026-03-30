@@ -342,42 +342,51 @@ export const VendorRegistrationForm = () => {
         status: 'pending_approval',
       };
 
-      // Try to insert vendor — if it fails, still show success for local testing
+      // Insert vendor into database
       let vendor: any = null;
-      try {
-        // Check for existing rejected vendor (re-registration)
-        const { data: existingVendor } = await supabase
-          .from('vendors')
-          .select('id, status')
-          .eq('phone', phone)
-          .maybeSingle();
+      // Check for existing rejected vendor (re-registration)
+      const { data: existingVendor, error: checkErr } = await supabase
+        .from('vendors')
+        .select('id, status')
+        .eq('phone', phone)
+        .maybeSingle();
 
-        if (existingVendor && existingVendor.status === 'rejected') {
-          const { data: updatedVendor } = await supabase
-            .from('vendors')
-            .update(vendorData)
-            .eq('id', existingVendor.id)
-            .select()
-            .single();
-          vendor = updatedVendor;
-          if (vendor) {
-            const deleteResults = await Promise.all([
-              supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id),
-              supabase.from('vendor_financial_data').delete().eq('vendor_id', vendor.id),
-              supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor.id),
-            ]);
-            deleteResults.forEach(({ error }) => { if (error) console.error('Delete error during re-registration:', error); });
-          }
-        } else {
-          const { data: newVendor } = await supabase
-            .from('vendors')
-            .insert([vendorData])
-            .select()
-            .single();
-          vendor = newVendor;
+      if (checkErr) console.error('Vendor check error:', checkErr);
+
+      if (existingVendor && existingVendor.status === 'rejected') {
+        const { data: updatedVendor, error: updateErr } = await supabase
+          .from('vendors')
+          .update(vendorData)
+          .eq('id', existingVendor.id)
+          .select()
+          .single();
+        if (updateErr) {
+          console.error('Vendor update error:', updateErr);
+          throw new Error('فشل تحديث بيانات المورد: ' + updateErr.message);
         }
-      } catch (vendorErr) {
-        console.warn('Vendor insert/update error (non-blocking):', vendorErr);
+        vendor = updatedVendor;
+        if (vendor) {
+          await Promise.all([
+            supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id),
+            supabase.from('vendor_financial_data').delete().eq('vendor_id', vendor.id),
+            supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor.id),
+          ]);
+        }
+      } else {
+        const { data: newVendor, error: insertErr } = await supabase
+          .from('vendors')
+          .insert([vendorData])
+          .select()
+          .single();
+        if (insertErr) {
+          console.error('Vendor insert error:', insertErr);
+          throw new Error('فشل تسجيل المورد: ' + insertErr.message);
+        }
+        vendor = newVendor;
+      }
+
+      if (!vendor?.id) {
+        throw new Error('فشل إنشاء سجل المورد');
       }
 
       // Secondary inserts — only if vendor was created
@@ -449,9 +458,7 @@ export const VendorRegistrationForm = () => {
       showSuccess('تم إرسال طلبك بنجاح');
     } catch (error: any) {
       console.error('Submit error:', error);
-      // Even on error — show success for local testing
-      setIsSubmitted(true);
-      showSuccess('تم إرسال طلبك بنجاح');
+      showError(error?.message || 'حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
     } finally {
       setIsSubmitting(false);
     }
