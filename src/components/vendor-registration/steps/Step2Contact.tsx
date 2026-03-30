@@ -185,6 +185,10 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
 
         {/* Other cities grid */}
         {formData.available_other_cities && (
+          <div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>
+              اختر حتى مدينتين ({(formData.other_cities || []).length}/2)
+            </div>
           <div className="city-grid">
             {otherCities.map(city => {
               const checked = formData.other_cities?.includes(city);
@@ -196,16 +200,18 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
                     const current = formData.other_cities || [];
                     if (checked) {
                       updateFormData({ other_cities: current.filter(c => c !== city) });
-                    } else {
+                    } else if (current.length < 2) {
                       updateFormData({ other_cities: [...current, city] });
                     }
                   }}
+                  style={{ opacity: !checked && (formData.other_cities || []).length >= 2 ? 0.4 : 1, cursor: !checked && (formData.other_cities || []).length >= 2 ? 'not-allowed' : 'pointer' }}
                 >
                   <span className="chip-check">{checked ? '✓' : ''}</span>
                   {city}
                 </div>
               );
             })}
+          </div>
           </div>
         )}
       </div>

@@ -51,6 +51,8 @@ export interface VendorFormData {
   account_name: string;
   iban: string;
   price_includes_tax: boolean;
+  company_name: string;
+  vat_number: string;
   portfolio_url: string;
   selected_fields: SelectedField[];
 }
@@ -102,6 +104,8 @@ export const VendorRegistrationForm = () => {
     account_name: '',
     iban: '',
     price_includes_tax: false,
+    company_name: '',
+    vat_number: '',
     portfolio_url: '',
     selected_fields: [],
   });
@@ -206,6 +210,11 @@ export const VendorRegistrationForm = () => {
         else {
           const ibanDigits = formData.iban.replace(/^SA/i, '').replace(/\D/g, '');
           if (ibanDigits.length !== 22) errors.iban = 'رقم الآيبان يجب أن يكون 22 رقم بعد SA';
+        }
+        if (formData.price_includes_tax) {
+          if (!formData.company_name) errors.company_name = 'اسم الشركة مطلوب عند تفعيل الضريبة';
+          if (!formData.vat_number) errors.vat_number = 'الرقم الضريبي مطلوب';
+          else if (formData.vat_number.length !== 15) errors.vat_number = 'الرقم الضريبي يجب أن يكون 15 رقم';
         }
         break;
       case 6:
@@ -394,6 +403,8 @@ export const VendorRegistrationForm = () => {
             beneficiary_name: formData.account_name,
             iban: formData.iban,
             price_includes_tax: formData.price_includes_tax,
+            company_name: formData.company_name || null,
+            vat_number: formData.vat_number || null,
           }]));
 
           if (formData.selected_fields?.length > 0) {

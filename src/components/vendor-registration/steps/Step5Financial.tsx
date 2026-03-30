@@ -178,9 +178,50 @@ export const Step5Financial = ({ formData, updateFormData, errors = {} }: Props)
         {/* VAT toggle */}
         <Toggle
           checked={!!formData.price_includes_tax}
-          onChange={(checked) => updateFormData({ price_includes_tax: checked })}
+          onChange={(checked) => {
+            updateFormData({ price_includes_tax: checked });
+            if (!checked) updateFormData({ company_name: '', vat_number: '' });
+          }}
           label="السعر يشمل ضريبة القيمة المضافة؟"
         />
+
+        {/* VAT fields — shown when VAT is enabled */}
+        {formData.price_includes_tax && (
+          <>
+            <div className="input-group">
+              <label className="input-label"><span className="req">*</span> اسم الشركة / المؤسسة</label>
+              <input
+                className="input"
+                type="text"
+                value={formData.company_name || ''}
+                onChange={(e) => updateFormData({ company_name: e.target.value })}
+                placeholder="اسم الشركة كما هو في السجل التجاري"
+              />
+              <FieldError msg={errors.company_name} />
+            </div>
+            <div className="input-group">
+              <label className="input-label"><span className="req">*</span> الرقم الضريبي</label>
+              <input
+                className="input"
+                type="text"
+                value={formData.vat_number || ''}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, '').slice(0, 15);
+                  updateFormData({ vat_number: digits });
+                }}
+                placeholder="3XXXXXXXXXX0003"
+                dir="ltr"
+                inputMode="numeric"
+                style={{ fontFamily: 'var(--font-mono)', textAlign: 'left', letterSpacing: '0.05em' }}
+                maxLength={15}
+              />
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, direction: 'ltr', textAlign: 'left' }}>
+                {(formData.vat_number || '').length} / 15
+              </div>
+              <FieldError msg={errors.vat_number} />
+            </div>
+          </>
+        )}
       </div>
     </>
   );
