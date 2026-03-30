@@ -419,25 +419,48 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
         if (authError) throw authError;
         if (!authData.user) throw new Error('فشل في إنشاء المستخدم');
 
-        // Check if user already exists (signUp returns user with empty identities)
+        // If identities is empty the email already exists in auth — check if users table record is missing
         if (authData.user.identities && authData.user.identities.length === 0) {
-          throw new Error('هذا البريد الإلكتروني مسجل مسبقاً');
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', formData.email)
+            .maybeSingle();
+
+          if (existingUser) {
+            throw new Error('هذا البريد الإلكتروني مسجل مسبقاً');
+          }
+
+          // Orphaned auth user — create the missing users table record
+          const { error: userError } = await supabase
+            .from('users')
+            .insert({
+              id: authData.user.id,
+              email: formData.email,
+              full_name: formData.full_name,
+              username: formData.username || null,
+              phone: formData.phone || null,
+              role: legacyRole,
+              role_id: formData.role_id,
+            });
+
+          if (userError) throw userError;
+        } else {
+          // Create user record in users table
+          const { error: userError } = await supabase
+            .from('users')
+            .insert({
+              id: authData.user.id,
+              email: formData.email,
+              full_name: formData.full_name,
+              username: formData.username || null,
+              phone: formData.phone || null,
+              role: legacyRole,
+              role_id: formData.role_id,
+            });
+
+          if (userError) throw userError;
         }
-
-        // Create user record in users table
-        const { error: userError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: formData.email,
-            full_name: formData.full_name,
-            username: formData.username || null,
-            phone: formData.phone || null,
-            role: legacyRole,
-            role_id: formData.role_id,
-          });
-
-        if (userError) throw userError;
       }
 
       onSuccess();
