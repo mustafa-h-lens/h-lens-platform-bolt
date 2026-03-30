@@ -622,7 +622,6 @@ export const NewAdminDashboard = () => {
                 </div>
                 <ProjectsList
                   onSelectProject={setSelectedProjectId}
-                  onCreateProject={() => setShowCreateProjectModal(true)}
                   onLoadProjects={(loadFn) => setReloadProjectsCallback(() => loadFn)}
                   limit={5}
                 />

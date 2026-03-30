@@ -78,8 +78,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    // Record last login
+    if (data.user) {
+      supabase.from('users').update({ last_login: new Date().toISOString() }).eq('id', data.user.id).then(() => {});
+    }
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: 'super_admin' | 'project_manager' | 'client') => {

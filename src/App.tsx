@@ -33,6 +33,9 @@ const ClientAuth = lazy(() => import('./components/client/ClientAuth'));
 const ClientPortal = lazy(() =>
   import('./components/client/ClientPortal').then(m => ({ default: m.ClientPortal }))
 );
+const LandingPage = lazy(() =>
+  import('./components/landing/LandingPage').then(m => ({ default: m.LandingPage }))
+);
 const TermsAndConditions = lazy(() =>
   import('./components/legal/TermsAndConditions').then(m => ({ default: m.TermsAndConditions }))
 );
@@ -210,8 +213,7 @@ function AppContent() {
     // 2. User is authenticated (for admin/client routes) OR it's a vendor route
     // 3. Current path is a login page or root
     const isLoginPage = currentPathname === ROUTES.ADMIN_LOGIN ||
-                        currentPathname === ROUTES.VENDOR_LOGIN ||
-                        currentPathname === '/';
+                        currentPathname === ROUTES.VENDOR_LOGIN;
 
     if (lastVisitedPage && isLoginPage) {
       const storedVendorSession = getStoredVendorSession();
@@ -266,6 +268,10 @@ function AppContent() {
   );
 
   // ── PUBLIC ROUTES ──
+
+  if (currentPath === '/') {
+    return <Suspense fallback={null}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
+  }
 
   if (currentPath === ROUTES.VENDOR_REGISTRATION) {
     return <ErrorBoundary><VendorRegistrationForm /></ErrorBoundary>;

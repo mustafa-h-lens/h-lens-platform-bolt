@@ -123,35 +123,49 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: Ven
         </button>
       </div>
 
-      {/* Vendor Header Card */}
-      <div className="card" style={{ cursor: 'default', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {/* Vendor Header */}
+      <div className="dash-welcome" style={{ marginBottom: 20, padding: '28px 32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 }}>
+          {/* Top row: Avatar + Name + Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {vendor.profile_image ? (
-              <div className="avatar av-xl" style={{ overflow: 'hidden' }}>
+              <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--border-soft)', flexShrink: 0 }}>
                 <img src={vendor.profile_image} alt={vendor.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ) : (
-              <div className="avatar av-xl" style={{ background: vColor.bg, color: vColor.color, fontSize: 22 }}>
+              <div className="avatar av-xl" style={{ width: 72, height: 72, fontSize: 22, background: vColor.bg, color: vColor.color, border: '3px solid var(--border-soft)', flexShrink: 0 }}>
                 {vendor.full_name.substring(0, 2)}
               </div>
             )}
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)' }}>{vendor.full_name}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
-                {[vendor.primary_field, vendor.primary_city, vendor.nationality].filter(Boolean).join(' · ') || 'مورد'}
-              </div>
-              {vendor.email && (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, direction: 'ltr', textAlign: 'right' }}>{vendor.email}</div>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{vendor.full_name}</div>
             <span className={statusBadge.className}>
               <span className="badge-dot" style={{ background: vendor.status === 'active' ? 'var(--success)' : vendor.status === 'blocked' ? 'var(--danger)' : 'var(--warning)' }} />
               {statusBadge.label}
             </span>
-            <button className="btn btn-secondary btn-sm"><Pencil size={13} /> تعديل</button>
+          </div>
+
+          {/* Info pills */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {vendor.nationality && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }}>
+                {vendor.nationality}
+              </span>
+            )}
+            {vendor.primary_city && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }}>
+                📍 {vendor.primary_city}
+              </span>
+            )}
+            {vendor.email && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }} dir="ltr">
+                @ {vendor.email}
+              </span>
+            )}
+            {vendor.primary_field && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }}>
+                ⚙ {vendor.primary_field}
+              </span>
+            )}
           </div>
         </div>
       </div>

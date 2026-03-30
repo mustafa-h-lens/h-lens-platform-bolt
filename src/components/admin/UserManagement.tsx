@@ -156,7 +156,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
   const filteredUsers = users.filter(u => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
-    return u.full_name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s) || (u.username && u.username.toLowerCase().includes(s));
+    return u.full_name.toLowerCase().includes(s) || u.email.toLowerCase().includes(s);
   });
 
   const activeCount = users.filter(u => u.is_active).length;
@@ -254,8 +254,8 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
                   <tr>
                     <th>الاسم</th>
                     <th>البريد الإلكتروني</th>
-                    <th>اسم المستخدم</th>
                     <th>الدور</th>
+                    <th>آخر دخول</th>
                     <th>الحالة</th>
                     <th>الإجراءات</th>
                   </tr>
@@ -267,8 +267,12 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
                       <tr key={user.id}>
                         <td><span className="td-primary">{user.full_name}</span></td>
                         <td style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">{user.email}</td>
-                        <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{user.username || '-'}</td>
                         <td><span className={roleBadge.cls}>{roleBadge.label}</span></td>
+                        <td style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                          {(user as any).last_login
+                            ? new Date((user as any).last_login).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                            : '-'}
+                        </td>
                         <td>
                           {user.is_active ? (
                             <span className="badge badge-green">
