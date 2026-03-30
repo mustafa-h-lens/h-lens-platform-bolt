@@ -51,14 +51,16 @@ function getEmailTemplate(
     /* Default: dark — white logos */
     .logo-w { display: block !important; }
     .logo-b { display: none !important; }
-    /* Light mode: blue logos + force white button text */
+    /* Light mode: blue logos on light background */
     @media (prefers-color-scheme: light) {
       .logo-w { display: none !important; }
       .logo-b { display: block !important; }
+      .hdr { background-color: #ffffff !important; }
+      .ftr { background-color: #f4f6fb !important; }
     }
-    /* Also target via Gmail/Apple dark mode selectors */
-    [data-ogsc] .logo-w { display: none !important; }
-    [data-ogsc] .logo-b { display: block !important; }
+    /* Dark mode override for Gmail/Outlook */
+    [data-ogsc] .logo-w { display: block !important; }
+    [data-ogsc] .logo-b { display: none !important; }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad { padding: 20px 16px !important; }

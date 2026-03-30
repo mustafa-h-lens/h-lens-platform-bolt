@@ -111,17 +111,21 @@ function wrapTemplate(content: string, title: string): string {
       .et { color: #f0f4ff !important; }
       .es { color: rgba(200,215,255,0.6) !important; }
     }
-    /* Logo defaults — dark is default */
+    /* Logo defaults — dark is default (white logo on dark bg) */
     .logo-light { display: none !important; }
     .logo-footer-light { display: none !important; }
     .logo-dark { display: block !important; }
     .logo-footer-dark { display: block !important; }
 
     @media (prefers-color-scheme: light) {
+      /* Switch to blue logo on light background */
       .logo-dark { display: none !important; }
       .logo-light { display: block !important; }
       .logo-footer-dark { display: none !important; }
       .logo-footer-light { display: block !important; }
+      /* Light mode header/footer backgrounds */
+      .eh { background-color: #ffffff !important; }
+      .ef { background-color: #f4f6fb !important; }
     }
     @media (prefers-color-scheme: dark) {
       .logo-light { display: none !important; }
