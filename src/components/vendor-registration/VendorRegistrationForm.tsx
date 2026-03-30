@@ -425,9 +425,13 @@ export const VendorRegistrationForm = () => {
             performed_by: null,
           }]));
 
-          await Promise.allSettled(secondaryOps);
+          const results = await Promise.allSettled(secondaryOps);
+          results.forEach((r, i) => {
+            if (r.status === 'rejected') console.error(`Secondary op ${i} rejected:`, r.reason);
+            else if (r.value && (r.value as any).error) console.error(`Secondary op ${i} error:`, (r.value as any).error);
+          });
         } catch (secondaryError) {
-          console.warn('Secondary inserts error (non-blocking):', secondaryError);
+          console.error('Secondary inserts error:', secondaryError);
         }
       }
 

@@ -27,6 +27,7 @@ interface VendorData {
   id_number?: string;
   id_image?: string;
   profile_image?: string;
+  portfolio_url?: string;
   status: VendorStatus;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,8 @@ interface FinancialData {
   account_name?: string;
   iban?: string;
   price_includes_tax?: boolean;
+  company_name?: string;
+  vat_number?: string;
   banks?: { name_ar?: string; name_en?: string };
 }
 
@@ -95,6 +98,10 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
       ]);
 
       if (vendorRes.error) throw vendorRes.error;
+      if (financialRes.error) console.error('Financial fetch error:', financialRes.error);
+      if (travelRes.error) console.error('Travel fetch error:', travelRes.error);
+      if (fieldsRes.error) console.error('Fields fetch error:', fieldsRes.error);
+      if (logRes.error) console.error('Log fetch error:', logRes.error);
       setVendor(vendorRes.data);
       setCapturedUpdatedAt(vendorRes.data.updated_at);
       setFinancial(financialRes.data);
@@ -319,6 +326,15 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
           {vendor.available_other_cities && vendor.other_cities && vendor.other_cities.length > 0 && (
             <InfoRow label="مدن أخرى" value={vendor.other_cities.join('، ')} />
           )}
+          {vendor.portfolio_url && (
+            <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
+              <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>البورتفوليو</span>
+              <a href={vendor.portfolio_url} target="_blank" rel="noopener noreferrer"
+                className="text-sm font-medium underline" style={{ color: 'var(--color-primary)' }} dir="ltr">
+                {vendor.portfolio_url}
+              </a>
+            </div>
+          )}
         </Section>
 
         {/* ID & Profile Images */}
@@ -363,6 +379,8 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
             <InfoRow label="اسم الحساب" value={financial.account_name} />
             <InfoRow label="IBAN" value={financial.iban} dir="ltr" />
             <InfoRow label="الأسعار تشمل ضريبة" value={financial.price_includes_tax ? 'نعم' : 'لا'} />
+            {financial.company_name && <InfoRow label="اسم الشركة" value={financial.company_name} />}
+            {financial.vat_number && <InfoRow label="الرقم الضريبي" value={financial.vat_number} dir="ltr" />}
           </Section>
         )}
 
