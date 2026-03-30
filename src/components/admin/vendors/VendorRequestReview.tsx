@@ -320,132 +320,156 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
         </div>
       )}
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Personal Info */}
-        <Section title="البيانات الشخصية" icon={User}>
-          <InfoRow label="الاسم الكامل" value={vendor.full_name} />
-          <InfoRow label="الجنسية" value={vendor.nationality} />
-          <InfoRow label="نوع المورد" value={vendor.vendor_type === 'company' ? 'شركة' : 'فرد'} />
-          <InfoRow label="رقم الهوية" value={vendor.id_number} />
-          <InfoRow label="البريد الإلكتروني" value={vendor.email} dir="ltr" />
-          <InfoRow label="رقم الجوال" value={vendor.phone ? toEnglishNumbers(vendor.phone) : undefined} dir="ltr" />
-          <InfoRow label="المدينة الأساسية" value={vendor.primary_city} />
-          {vendor.available_other_cities && vendor.other_cities && vendor.other_cities.length > 0 && (
-            <InfoRow label="مدن أخرى" value={vendor.other_cities.join('، ')} />
-          )}
-          {vendor.portfolio_url && (
-            <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
-              <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>البورتفوليو</span>
-              <a href={vendor.portfolio_url} target="_blank" rel="noopener noreferrer"
-                className="text-sm font-medium underline" style={{ color: 'var(--color-primary)' }} dir="ltr">
-                {vendor.portfolio_url}
-              </a>
-            </div>
-          )}
-        </Section>
+      {/* Content: 3-column grid for first row, then full-width sections */}
+      <div className="space-y-6">
 
-        {/* ID & Profile Images */}
-        <Section title="المستندات" icon={FileText}>
-          <div className="grid grid-cols-2 gap-4">
-            {vendor.profile_image && (
-              <div>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>
-                <img src={vendor.profile_image} alt="صورة شخصية" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+        {/* Row 1: Identity | Contact | Files */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 1. Identity */}
+          <Section title="بيانات الهوية" icon={User}>
+            <InfoRow label="الاسم الكامل" value={vendor.full_name} />
+            <InfoRow label="الجنسية" value={vendor.nationality} />
+            <InfoRow label="نوع المورد" value={vendor.vendor_type === 'company' ? 'شركة' : 'فرد'} />
+            <InfoRow label="رقم الهوية" value={vendor.id_number} dir="ltr" />
+          </Section>
+
+          {/* 2. Contact */}
+          <Section title="بيانات التواصل" icon={Phone}>
+            <InfoRow label="البريد الإلكتروني" value={vendor.email} dir="ltr" />
+            <InfoRow label="رقم الجوال" value={vendor.phone ? toEnglishNumbers(vendor.phone) : undefined} dir="ltr" />
+            <InfoRow label="المدينة الأساسية" value={vendor.primary_city} />
+            {vendor.available_other_cities && vendor.other_cities && vendor.other_cities.length > 0 && (
+              <InfoRow label="مدن أخرى" value={vendor.other_cities.join('، ')} />
+            )}
+            {vendor.portfolio_url && (
+              <div className="flex items-start justify-between py-2" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>البورتفوليو</span>
+                <a href={vendor.portfolio_url} target="_blank" rel="noopener noreferrer"
+                  className="text-sm font-medium underline text-left max-w-[60%] break-all" style={{ color: 'var(--color-primary)' }} dir="ltr">
+                  {vendor.portfolio_url}
+                </a>
               </div>
             )}
-            {vendor.id_image && (
-              <div>
-                <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>صورة الهوية</p>
-                <img src={vendor.id_image} alt="صورة الهوية" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-              </div>
-            )}
-          </div>
-          {travelDocs.length > 0 && travelDocs[0].passport_file && (
-            <div className="mt-4">
-              <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
-              {travelDocs[0].passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-              ) : (
-                <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
-                  className="text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                  عرض جواز السفر
-                </a>
-              )}
-            </div>
-          )}
-          {travelDocs.length > 0 && travelDocs[0].visa_file && (
-            <div className="mt-4">
-              <p className="text-xs font-medium mb-2" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
-              {travelDocs[0].visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-32 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-              ) : (
-                <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
-                  className="text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                  عرض المستند
-                </a>
-              )}
-            </div>
-          )}
-        </Section>
-
-        {/* Travel Info */}
-        {travelDocs.length > 0 && (travelDocs[0].passport_number || travelDocs[0].visa_country) && (
-          <Section title="بيانات السفر" icon={MapPin}>
-            <InfoRow label="رقم جواز السفر" value={travelDocs[0].passport_number} dir="ltr" />
-            <InfoRow label="دولة إصدار الجواز" value={travelDocs[0].passport_issuing_country} />
-            <InfoRow label="تاريخ الإصدار" value={travelDocs[0].passport_issue_date} />
-            <InfoRow label="تاريخ الانتهاء" value={travelDocs[0].passport_expiry_date} />
-            <InfoRow label="بلد التأشيرة" value={travelDocs[0].visa_country} />
-            <InfoRow label="نوع التأشيرة" value={travelDocs[0].visa_type} />
-            <InfoRow label="تاريخ بداية التأشيرة" value={travelDocs[0].visa_start_date} />
-            <InfoRow label="تاريخ انتهاء التأشيرة" value={travelDocs[0].visa_expiry_date} />
           </Section>
-        )}
 
-        {/* Financial */}
-        {financial && (
-          <Section title="البيانات المالية" icon={CreditCard}>
-            <InfoRow label="البنك" value={financial.banks?.name_ar || financial.banks?.name_en} />
-            <InfoRow label="اسم الحساب" value={financial.account_name} />
-            <InfoRow label="IBAN" value={financial.iban} dir="ltr" />
-            <InfoRow label="الأسعار تشمل ضريبة" value={financial.price_includes_tax ? 'نعم' : 'لا'} />
-            {financial.company_name && <InfoRow label="اسم الشركة" value={financial.company_name} />}
-            {financial.vat_number && <InfoRow label="الرقم الضريبي" value={financial.vat_number} dir="ltr" />}
-          </Section>
-        )}
-
-        {/* Fields & Rates */}
-        {selectedFields.length > 0 && (
-          <Section title="المجالات والأسعار" icon={Briefcase}>
-            <div className="space-y-2">
-              {selectedFields.map((field, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
-                  <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                    {field.vendor_fields?.name_ar || field.field_id}
-                  </span>
-                  <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-                    {toEnglishNumbers(field.rate_from?.toString() || '0')} - {toEnglishNumbers(field.rate_to?.toString() || '0')} {field.currency}
-                  </span>
+          {/* 3. Files */}
+          <Section title="الملفات والمستندات" icon={FileText}>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {vendor.profile_image && (
+                <div>
+                  <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>
+                  <img src={vendor.profile_image} alt="صورة شخصية" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
                 </div>
-              ))}
+              )}
+              {vendor.id_image && (
+                <div>
+                  <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>صورة الهوية</p>
+                  <img src={vendor.id_image} alt="صورة الهوية" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                </div>
+              )}
             </div>
+            {travelDocs.length > 0 && travelDocs[0].passport_file && (
+              <div className="mb-3">
+                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
+                {travelDocs[0].passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                  <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                ) : (
+                  <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                    <FileText size={14} /> عرض جواز السفر
+                  </a>
+                )}
+              </div>
+            )}
+            {travelDocs.length > 0 && travelDocs[0].visa_file && (
+              <div>
+                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
+                {travelDocs[0].visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                  <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                ) : (
+                  <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                    <FileText size={14} /> عرض مستند التأشيرة
+                  </a>
+                )}
+              </div>
+            )}
+            {!vendor.profile_image && !vendor.id_image && !(travelDocs[0]?.passport_file) && !(travelDocs[0]?.visa_file) && (
+              <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لا توجد ملفات مرفوعة</p>
+            )}
           </Section>
-        )}
+        </div>
 
-        {/* Approval History */}
+        {/* Row 2: Travel Docs | Financial | Service & Rates */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 4. Travel Documents */}
+          <Section title="وثائق السفر" icon={MapPin}>
+            {travelDocs.length > 0 && (travelDocs[0].passport_number || travelDocs[0].visa_country) ? (
+              <>
+                <InfoRow label="رقم جواز السفر" value={travelDocs[0].passport_number} dir="ltr" />
+                <InfoRow label="دولة إصدار الجواز" value={travelDocs[0].passport_issuing_country} />
+                <InfoRow label="تاريخ الإصدار" value={travelDocs[0].passport_issue_date} />
+                <InfoRow label="تاريخ انتهاء الجواز" value={travelDocs[0].passport_expiry_date} />
+                <InfoRow label="بلد التأشيرة" value={travelDocs[0].visa_country} />
+                <InfoRow label="نوع التأشيرة" value={travelDocs[0].visa_type} />
+                <InfoRow label="تاريخ بداية التأشيرة" value={travelDocs[0].visa_start_date} />
+                <InfoRow label="تاريخ انتهاء التأشيرة" value={travelDocs[0].visa_expiry_date} />
+              </>
+            ) : (
+              <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم إدخال بيانات سفر</p>
+            )}
+          </Section>
+
+          {/* 5. Financial */}
+          <Section title="البيانات المالية" icon={CreditCard}>
+            {financial ? (
+              <>
+                <InfoRow label="البنك" value={financial.banks?.name_ar || financial.banks?.name_en} />
+                <InfoRow label="اسم الحساب" value={financial.account_name} />
+                <InfoRow label="IBAN" value={financial.iban} dir="ltr" />
+                <InfoRow label="الأسعار تشمل ضريبة" value={financial.price_includes_tax ? 'نعم' : 'لا'} />
+                {financial.company_name && <InfoRow label="اسم الشركة" value={financial.company_name} />}
+                {financial.vat_number && <InfoRow label="الرقم الضريبي" value={financial.vat_number} dir="ltr" />}
+              </>
+            ) : (
+              <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لا توجد بيانات مالية</p>
+            )}
+          </Section>
+
+          {/* 6. Fields & Rates */}
+          <Section title="المجالات والأسعار" icon={Briefcase}>
+            {selectedFields.length > 0 ? (
+              <div className="space-y-2">
+                {selectedFields.map((field, i) => (
+                  <div key={i} className="flex items-center justify-between p-2.5 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+                    <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                      {field.vendor_fields?.name_ar || field.field_id}
+                    </span>
+                    <span className="text-sm tabular-nums" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+                      {toEnglishNumbers(field.rate_from?.toString() || '0')} – {toEnglishNumbers(field.rate_to?.toString() || '0')} {field.currency}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم تحديد مجالات</p>
+            )}
+          </Section>
+        </div>
+
+        {/* Row 3: Approval History (full width) */}
         {approvalLog.length > 0 && (
           <Section title="سجل المراجعة" icon={Clock}>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {approvalLog.map((entry) => {
                 const actionInfo = getLogActionLabel(entry.action);
                 return (
                   <div key={entry.id} className="flex gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
-                    <div className="w-2 h-2 rounded-full mt-2 flex-shrink-0" style={{ backgroundColor: actionInfo.color }} />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
+                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: actionInfo.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-medium" style={{ color: actionInfo.color }}>{actionInfo.label}</span>
-                        <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{formatDate(entry.created_at)}</span>
+                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>{formatDate(entry.created_at)}</span>
                       </div>
                       {entry.reason && (
                         <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>{entry.reason}</p>

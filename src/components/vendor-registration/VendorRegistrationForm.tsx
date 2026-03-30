@@ -395,12 +395,11 @@ export const VendorRegistrationForm = () => {
             }]));
           }
 
-          let bankName = (formData as any).bank_name_display || formData.bank_id;
           secondaryOps.push(supabase.from('vendor_financial_data').insert([{
             vendor_id: vendor.id,
             payment_method: 'bank_transfer',
-            bank_name: bankName,
-            beneficiary_name: formData.account_name,
+            bank_id: formData.bank_id || null,
+            account_name: formData.account_name,
             iban: formData.iban,
             price_includes_tax: formData.price_includes_tax,
             company_name: formData.company_name || null,
