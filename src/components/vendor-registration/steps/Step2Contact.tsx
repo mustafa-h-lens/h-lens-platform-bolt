@@ -36,7 +36,8 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const FALLBACK_CITIES = ['الرياض','جدة','مكة المكرمة','المدينة المنورة','الدمام','الخبر','الظهران','الطائف','تبوك','بريدة','عنيزة','حائل','خميس مشيط','أبها','نجران','جازان','ينبع','الجبيل','القطيف','الأحساء','حفر الباطن','الخرج','سكاكا','عرعر','الباحة','العلا','رابغ','بيشة'];
+  const PRIORITY_CITIES = ['الرياض', 'جدة', 'الدمام'];
+  const FALLBACK_CITIES = ['الرياض','جدة','الدمام','مكة المكرمة','المدينة المنورة','الخبر','الظهران','الطائف','تبوك','بريدة','عنيزة','حائل','خميس مشيط','أبها','نجران','جازان','ينبع','الجبيل','القطيف','الأحساء','حفر الباطن','الخرج','سكاكا','عرعر','الباحة','العلا','رابغ','بيشة'];
 
   const fetchCities = async () => {
     const { data } = await supabase
@@ -45,7 +46,10 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
       .eq('is_active', true)
       .order('name');
     if (data && data.length > 0) {
-      setCities(data.map(c => c.name));
+      const names = data.map(c => c.name);
+      const priority = PRIORITY_CITIES.filter(c => names.includes(c));
+      const rest = names.filter(c => !PRIORITY_CITIES.includes(c));
+      setCities([...priority, ...rest]);
     } else {
       setCities(FALLBACK_CITIES);
     }

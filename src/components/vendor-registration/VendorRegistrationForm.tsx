@@ -117,9 +117,10 @@ export const VendorRegistrationForm = () => {
   }, []);
 
   useEffect(() => {
+    if (isSubmitting) return;
     const timeout = setTimeout(saveDraft, 2000);
     return () => clearTimeout(timeout);
-  }, [formData, currentStep]);
+  }, [formData, currentStep, isSubmitting]);
 
   const loadDraft = async () => {
     try {
@@ -418,13 +419,13 @@ export const VendorRegistrationForm = () => {
             ));
           }
 
-          secondaryOps.push(supabase.from('vendor_approval_log').insert([{
+          const results = await Promise.allSettled(secondaryOps);
+
+          supabase.from('vendor_approval_log').insert([{
             vendor_id: vendor.id,
             action: 'submitted',
             performed_by: null,
-          }]));
-
-          const results = await Promise.allSettled(secondaryOps);
+          }]).then(() => {}).catch(console.error);
           results.forEach((r, i) => {
             if (r.status === 'rejected') console.error(`Secondary op ${i} rejected:`, r.reason);
             else if (r.value && (r.value as any).error) console.error(`Secondary op ${i} error:`, (r.value as any).error);
