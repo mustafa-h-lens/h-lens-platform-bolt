@@ -93,7 +93,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [activeSubTab, setActiveSubTab] = useState<'all' | 'pending'>('all');
+  const [activeSubTab, setActiveSubTab] = useState<'all' | 'pending'>(initialTab === 'pending' ? 'pending' : 'all');
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingRefreshTrigger, setPendingRefreshTrigger] = useState(0);
   const [reviewVendorId, setReviewVendorId] = useState<string | null>(null);
@@ -114,6 +114,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   useEffect(() => { fetchVendors(); fetchPendingCount(); }, [page, pageSize]);
   useEffect(() => { setPage(0); }, [searchTerm, filters]);
   useEffect(() => { loadVendorStats(); }, []);
+  useEffect(() => { if (initialTab === 'pending') setActiveSubTab('pending'); }, [initialTab]);
   useEffect(() => {
     const handleClick = () => setOpenDropdown(null);
     document.addEventListener('click', handleClick);

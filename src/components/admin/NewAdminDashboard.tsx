@@ -586,7 +586,7 @@ export const NewAdminDashboard = () => {
                     </span>
                   </div>
                   {pendingItems.pendingVendors > 0 && (
-                    <div className="dash-alert-item" onClick={() => handleNavigation('vendors')} style={{ cursor: 'pointer' }}>
+                    <div className="dash-alert-item" onClick={() => { setCurrentPage('vendors'); setSelectedVendorId(null); setActiveSubTab('pending'); }} style={{ cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
                         <div className="card-icon ci-amber" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}><Users size={14} /></div>
                         <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{pendingItems.pendingVendors} طلب تسجيل مورد بانتظار المراجعة</span>
