@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
 import { Plus, CreditCard as Edit2, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import type { User, Client, Role } from '../../types/database';
@@ -404,63 +403,29 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
 
         if (error) throw error;
       } else {
-        // Use a separate client so we don't replace the admin session
-        const anonClient = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY,
-          { auth: { persistSession: false, autoRefreshToken: false } }
-        );
-        const { data: authData, error: authError } = await anonClient.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: { data: { full_name: formData.full_name } },
-        });
-
-        if (authError) throw authError;
-        if (!authData.user) throw new Error('فشل في إنشاء المستخدم');
-
-        // If identities is empty the email already exists in auth — check if users table record is missing
-        if (authData.user.identities && authData.user.identities.length === 0) {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', formData.email)
-            .maybeSingle();
-
-          if (existingUser) {
-            throw new Error('هذا البريد الإلكتروني مسجل مسبقاً');
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.access_token}`,
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password,
+              full_name: formData.full_name,
+              username: formData.username || null,
+              phone: formData.phone || null,
+              role: legacyRole,
+              role_id: formData.role_id,
+            }),
           }
+        );
 
-          // Orphaned auth user — create the missing users table record
-          const { error: userError } = await supabase
-            .from('users')
-            .insert({
-              id: authData.user.id,
-              email: formData.email,
-              full_name: formData.full_name,
-              username: formData.username || null,
-              phone: formData.phone || null,
-              role: legacyRole,
-              role_id: formData.role_id,
-            });
-
-          if (userError) throw userError;
-        } else {
-          // Create user record in users table
-          const { error: userError } = await supabase
-            .from('users')
-            .insert({
-              id: authData.user.id,
-              email: formData.email,
-              full_name: formData.full_name,
-              username: formData.username || null,
-              phone: formData.phone || null,
-              role: legacyRole,
-              role_id: formData.role_id,
-            });
-
-          if (userError) throw userError;
-        }
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'فشل في إنشاء المستخدم');
       }
 
       onSuccess();
