@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
-import { Plus, Edit2, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import type { User, Client, Role } from '../../types/database';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -326,6 +326,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
 
           {showModal && (
             <UserModal
+              key={editingUser?.id ?? 'new'}
               user={editingUser}
               clients={clients}
               roles={roles}
