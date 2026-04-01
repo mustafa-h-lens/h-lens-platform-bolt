@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, X, Search, CheckCircle, BadgeDollarSign } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
@@ -35,6 +35,7 @@ interface Expense {
   amount_remaining: number;
   due_date: string | null;
   status: string;
+  approval_status: string;
   notes: string | null;
   invoice_file_url: string | null;
   created_at: string;
@@ -184,6 +185,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           amount_paid,
           amount_remaining,
           status,
+          approval_status,
           due_date,
           category,
           project_item_id,
@@ -229,6 +231,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         amount_remaining: item.amount_remaining ?? item.amount_total,
         due_date: item.due_date,
         status: item.status,
+        approval_status: item.approval_status || 'draft',
         notes: item.notes || null,
         invoice_file_url: item.invoice_file_url || null,
         created_at: item.created_at,
@@ -315,30 +318,27 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     return category;
   };
 
-  // Derived status with overdue detection
-  const deriveStatus = (expense: Expense): string => {
-    if (expense.status === 'paid') return 'paid';
-    if (expense.amount_paid > 0 && expense.amount_paid < expense.amount) return 'partial';
-    if (expense.due_date && new Date(expense.due_date) < new Date() && expense.amount_paid === 0) return 'overdue';
-    if (expense.status === 'overdue') return 'overdue';
-    return 'pending';
-  };
-
-  const getStatusLabel = (status: string) => {
+  const getApprovalStatusLabel = (status: string) => {
     switch (status) {
       case 'paid': return 'مدفوع';
-      case 'partial': return 'جزئي';
-      case 'overdue': return 'متأخر';
-      default: return 'معلق';
+      case 'approved': return 'معتمد';
+      default: return 'مسودة';
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getApprovalStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'var(--color-success)';
-      case 'partial': return 'var(--color-warning)';
-      case 'overdue': return 'var(--color-danger)';
+      case 'approved': return '#2563eb';
       default: return 'var(--color-text-secondary)';
+    }
+  };
+
+  const getApprovalStatusBg = (status: string) => {
+    switch (status) {
+      case 'paid': return 'color-mix(in srgb, var(--color-success) 12%, transparent)';
+      case 'approved': return '#eff6ff';
+      default: return 'var(--color-background-hover)';
     }
   };
 
@@ -346,7 +346,6 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
   const totalPaid = expenses.reduce((sum, e) => sum + e.amount_paid, 0);
   const totalRemaining = expenses.reduce((sum, e) => sum + e.amount_remaining, 0);
-  const overdueCount = expenses.filter(e => deriveStatus(e) === 'overdue').length;
   const paidPercentage = totalExpenses > 0 ? (totalPaid / totalExpenses) * 100 : 0;
 
   // Toggle row expansion
@@ -558,6 +557,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       const newPaid = paymentExpense.amount_paid + amount;
       const newRemaining = paymentExpense.amount - newPaid;
       const newStatus = newRemaining <= 0 ? 'paid' : newPaid > 0 ? 'partial' : 'pending';
+      const newApprovalStatus = newRemaining <= 0 ? 'paid' : paymentExpense.approval_status;
 
       const { error: updateError } = await supabase
         .from('vendor_invoices')
@@ -565,6 +565,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           amount_paid: newPaid,
           amount_remaining: Math.max(0, newRemaining),
           status: newStatus,
+          approval_status: newApprovalStatus,
         })
         .eq('id', paymentExpense.id);
 
@@ -578,6 +579,33 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       showError(`حدث خطأ أثناء تسجيل الدفعة: ${error?.message || error?.code || ''}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Change expense approval status
+  const [changingApprovalStatus, setChangingApprovalStatus] = useState<string | null>(null);
+
+  const changeApprovalStatus = async (expenseId: string, newStatus: 'approved' | 'paid') => {
+    setChangingApprovalStatus(expenseId);
+    try {
+      const { error } = await supabase
+        .from('vendor_invoices')
+        .update({ approval_status: newStatus })
+        .eq('id', expenseId);
+
+      if (error) throw error;
+
+      const labels: Record<string, string> = {
+        approved: 'تم اعتماد المصروف',
+        paid: 'تم تحديد المصروف كمدفوع',
+      };
+      showSuccess(labels[newStatus]);
+      loadExpenses();
+    } catch (error) {
+      console.error('Error changing approval status:', error);
+      showError('حدث خطأ أثناء تحديث حالة المصروف');
+    } finally {
+      setChangingApprovalStatus(null);
     }
   };
 
@@ -697,7 +725,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             {expenses.length}
           </p>
           <p className="text-xs mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-            {expenses.filter(e => deriveStatus(e) === 'paid').length} مدفوع · {expenses.filter(e => deriveStatus(e) === 'partial').length} جزئي · {expenses.filter(e => deriveStatus(e) === 'pending' || deriveStatus(e) === 'overdue').length} معلق
+            {expenses.filter(e => e.approval_status === 'paid').length} مدفوع · {expenses.filter(e => e.approval_status === 'approved').length} معتمد · {expenses.filter(e => e.approval_status === 'draft').length} مسودة
           </p>
         </div>
       </div>
@@ -749,7 +777,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
               </thead>
               <tbody>
                 {expenses.map((expense, index) => {
-                  const status = deriveStatus(expense);
+                  const approvalStatus = expense.approval_status || 'draft';
                   const isExpanded = expandedRows.has(expense.id);
                   return (
                     <>
@@ -797,10 +825,14 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                         </td>
                         <td className="px-4 py-3">
                           <span
-                            className="px-3 py-1 rounded-full text-xs font-medium"
-                            style={{ backgroundColor: getStatusColor(status), color: '#ffffff' }}
+                            className="px-3 py-1 rounded-full text-xs font-semibold"
+                            style={{
+                              backgroundColor: getApprovalStatusBg(approvalStatus),
+                              color: getApprovalStatusColor(approvalStatus),
+                              border: `1px solid ${getApprovalStatusColor(approvalStatus)}33`,
+                            }}
                           >
-                            {getStatusLabel(status)}
+                            {getApprovalStatusLabel(approvalStatus)}
                           </span>
                         </td>
                         <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
@@ -822,11 +854,33 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
-                            {status !== 'paid' && (
+                            {approvalStatus === 'draft' && (
+                              <button
+                                onClick={() => changeApprovalStatus(expense.id, 'approved')}
+                                disabled={changingApprovalStatus === expense.id}
+                                className="p-1.5 rounded transition-colors hover:bg-black/5 disabled:opacity-50"
+                                style={{ color: '#2563eb' }}
+                                title="اعتماد المصروف"
+                              >
+                                <CheckCircle size={16} />
+                              </button>
+                            )}
+                            {approvalStatus === 'approved' && (
+                              <button
+                                onClick={() => changeApprovalStatus(expense.id, 'paid')}
+                                disabled={changingApprovalStatus === expense.id}
+                                className="p-1.5 rounded transition-colors hover:bg-black/5 disabled:opacity-50"
+                                style={{ color: 'var(--color-success)' }}
+                                title="تحديد كمدفوع"
+                              >
+                                <BadgeDollarSign size={16} />
+                              </button>
+                            )}
+                            {approvalStatus !== 'paid' && (
                               <button
                                 onClick={() => openPaymentModal(expense)}
                                 className="p-1.5 rounded transition-colors hover:bg-black/5"
-                                style={{ color: 'var(--color-success)' }}
+                                style={{ color: 'var(--color-text-secondary)' }}
                                 title="تسجيل دفعة"
                               >
                                 <CreditCard size={16} />
