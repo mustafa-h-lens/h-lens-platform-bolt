@@ -21,8 +21,10 @@ interface Payment {
 
 interface Expense {
   id: string;
-  vendor_id: string;
+  vendor_id: string | null;
   vendor_name: string;
+  expense_type: string;
+  expense_description: string | null;
   category: string | null;
   project_item_id: string | null;
   project_item_name: string | null;
@@ -36,6 +38,14 @@ interface Expense {
   created_at: string;
   payments: Payment[];
 }
+
+const EXPENSE_TYPES = [
+  { id: 'vendor', label: 'مورد', desc: 'مصروف مرتبط بمورد', icon: '👤' },
+  { id: 'purchases', label: 'مشتريات', desc: 'معدات، مواد، مستلزمات', icon: '🛒' },
+  { id: 'services', label: 'خدمات', desc: 'شحن، طباعة، تموين', icon: '🔧' },
+  { id: 'rent', label: 'إيجار', desc: 'إيجار موقع، استوديو، معدات', icon: '🏢' },
+  { id: 'other', label: 'أخرى', desc: 'مصروفات متنوعة', icon: '📋' },
+] as const;
 
 interface SimpleProjectItem {
   id: string;
@@ -85,6 +95,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
   // Expense form state
   const [expenseForm, setExpenseForm] = useState({
+    expense_type: '',
+    expense_description: '',
     vendor_id: '',
     category: '',
     project_item_id: '',
@@ -163,6 +175,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         .select(`
           id,
           vendor_id,
+          expense_type,
+          expense_description,
           amount_total,
           amount_paid,
           amount_remaining,
@@ -199,7 +213,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
       const mapped = (data || []).map((item: any) => ({
         id: item.id,
-        vendor_id: item.vendor_id,
+        vendor_id: item.vendor_id || null,
+        expense_type: item.expense_type || 'vendor',
+        expense_description: item.expense_description || null,
         vendor_name: item.vendors?.full_name || '',
         category: item.category || null,
         project_item_id: item.project_item_id || null,
@@ -368,7 +384,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   // Open add modal
   const openAddModal = () => {
     setEditingExpense(null);
-    setExpenseForm({ vendor_id: '', category: '', project_item_id: '', amount: '', due_date: '', notes: '' });
+    setExpenseForm({ expense_type: '', expense_description: '', vendor_id: '', category: '', project_item_id: '', amount: '', due_date: '', notes: '' });
     setSelectedFile(null);
     setVendorSearch('');
     setVendorDropdownOpen(false);
@@ -381,7 +397,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const openEditModal = (expense: Expense) => {
     setEditingExpense(expense);
     setExpenseForm({
-      vendor_id: expense.vendor_id,
+      expense_type: expense.expense_type || 'vendor',
+      expense_description: expense.expense_description || '',
+      vendor_id: expense.vendor_id || '',
       category: expense.category || '',
       project_item_id: expense.project_item_id || '',
       amount: String(expense.amount),
@@ -411,8 +429,17 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   // Submit expense (add or edit)
   const handleExpenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!expenseForm.vendor_id || !expenseForm.amount) {
-      showError('يرجى ملء جميع الحقول المطلوبة');
+    const isVendor = expenseForm.expense_type === 'vendor';
+    if (isVendor && !expenseForm.vendor_id) {
+      showError('يرجى اختيار المورد');
+      return;
+    }
+    if (!isVendor && !expenseForm.expense_description?.trim()) {
+      showError('يرجى إدخال وصف المصروف');
+      return;
+    }
+    if (!expenseForm.amount) {
+      showError('يرجى إدخال المبلغ');
       return;
     }
 
@@ -443,7 +470,10 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         const { error } = await supabase
           .from('vendor_invoices')
           .update({
-            category: expenseForm.category || null,
+            expense_type: expenseForm.expense_type,
+            expense_description: !isVendor ? expenseForm.expense_description || null : null,
+            vendor_id: isVendor ? expenseForm.vendor_id : null,
+            category: isVendor ? (expenseForm.category || null) : null,
             project_item_id: expenseForm.project_item_id || null,
             amount_total: amount,
             amount_remaining: amount - editingExpense.amount_paid,
@@ -460,9 +490,11 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         const { error } = await supabase
           .from('vendor_invoices')
           .insert({
-            vendor_id: expenseForm.vendor_id,
+            expense_type: expenseForm.expense_type,
+            expense_description: !isVendor ? expenseForm.expense_description || null : null,
+            vendor_id: isVendor ? expenseForm.vendor_id : null,
             project_id: projectId,
-            category: expenseForm.category || null,
+            category: isVendor ? (expenseForm.category || null) : null,
             project_item_id: expenseForm.project_item_id || null,
             amount_total: amount,
             amount_remaining: amount,
@@ -661,7 +693,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
               >
                 <tr>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}></th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>النوع</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد / الوصف</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>الدور</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>البند</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المبلغ</th>
@@ -697,11 +730,17 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                             </button>
                           )}
                         </td>
+                        <td className="px-4 py-3">
+                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-card)', border: '1px solid var(--border-soft)' }}>
+                            {EXPENSE_TYPES.find(t => t.id === expense.expense_type)?.icon || '📋'}{' '}
+                            {EXPENSE_TYPES.find(t => t.id === expense.expense_type)?.label || expense.expense_type}
+                          </span>
+                        </td>
                         <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                          {expense.vendor_name}
+                          {expense.expense_type === 'vendor' ? expense.vendor_name : (expense.expense_description || '-')}
                         </td>
                         <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                          {getCategoryLabel(expense.category)}
+                          {expense.expense_type === 'vendor' ? getCategoryLabel(expense.category) : '-'}
                         </td>
                         <td className="px-4 py-3 text-sm" style={{ color: expense.project_item_name ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
                           {expense.project_item_name || '-'}
@@ -848,383 +887,284 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           title={editingExpense ? 'تعديل مصروف' : 'إضافة مصروف جديد'}
         >
           <form onSubmit={handleExpenseSubmit} className="space-y-4">
-            {/* Vendor select with search */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                المورد <span className="text-red-500">*</span>
-              </label>
-              {editingExpense ? (
-                <div
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text-primary)',
-                    opacity: 0.6,
-                  }}
-                >
-                  {vendors.find(v => v.id === expenseForm.vendor_id)?.full_name || 'غير معروف'}
-                </div>
-              ) : (
-                <div ref={vendorDropdownRef} className="relative">
-                  <div className="relative">
-                    <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
-                    <input
-                      type="text"
-                      value={vendorSearch}
-                      onChange={(e) => { setVendorSearch(e.target.value); setVendorDropdownOpen(true); }}
-                      onFocus={() => setVendorDropdownOpen(true)}
-                      placeholder="ابحث عن مورد..."
-                      className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                      style={{
-                        backgroundColor: 'var(--color-surface)',
-                        borderColor: expenseForm.vendor_id ? 'var(--color-primary)' : 'var(--color-border)',
-                        color: 'var(--color-text-primary)',
-                      }}
-                    />
-                    {expenseForm.vendor_id && (
-                      <button
-                        type="button"
-                        onClick={() => { setExpenseForm(prev => ({ ...prev, vendor_id: '', category: '', amount: '' })); setVendorSearch(''); }}
-                        className="absolute left-3 top-1/2 -translate-y-1/2"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                  {vendorDropdownOpen && (
+            {/* Step 1: Expense Type Selector */}
+            {!editingExpense && (
+              <div>
+                <label className="block text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                  نوع المصروف <span className="text-red-500">*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8 }}>
+                  {EXPENSE_TYPES.map(type => (
                     <div
-                      className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}
+                      key={type.id}
+                      onClick={() => setExpenseForm(prev => ({ ...prev, expense_type: type.id, vendor_id: '', category: '', expense_description: '' }))}
+                      style={{
+                        padding: '14px 12px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+                        border: `2px solid ${expenseForm.expense_type === type.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                        background: expenseForm.expense_type === type.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'var(--color-surface)',
+                        transition: 'all 0.2s',
+                      }}
                     >
-                      <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
-                        {(() => {
-                          const projectVendorIds = new Set(expenses.map(e => e.vendor_id));
-                          const filtered = vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch));
-                          const projectVendors = filtered.filter(v => projectVendorIds.has(v.id));
-                          const otherVendors = filtered.filter(v => !projectVendorIds.has(v.id));
+                      <div style={{ fontSize: 24, marginBottom: 4 }}>{type.icon}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-primary)' }}>{type.label}</div>
+                      <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>{type.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                          if (filtered.length === 0) {
-                            return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
-                          }
+            {/* Show editing type badge */}
+            {editingExpense && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: 18 }}>{EXPENSE_TYPES.find(t => t.id === expenseForm.expense_type)?.icon || '📋'}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  {EXPENSE_TYPES.find(t => t.id === expenseForm.expense_type)?.label || expenseForm.expense_type}
+                </span>
+              </div>
+            )}
 
-                          const renderVendorBtn = (vendor: Vendor) => (
-                            <button
-                              key={vendor.id}
-                              type="button"
-                              onClick={() => handleVendorSelect(vendor.id)}
-                              className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
-                              style={{
-                                color: expenseForm.vendor_id === vendor.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                                backgroundColor: expenseForm.vendor_id === vendor.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
-                              }}
-                              onMouseEnter={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
-                              onMouseLeave={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                            >
-                              <span className="font-medium text-sm">{vendor.full_name}</span>
-                              {vendor.primary_field && (
-                                <span className="text-xs opacity-50">{vendor.primary_field}</span>
-                              )}
-                            </button>
-                          );
+            {/* Conditional form based on type */}
+            {expenseForm.expense_type && (
+              <>
+                {/* ── VENDOR TYPE: full existing flow ── */}
+                {expenseForm.expense_type === 'vendor' && (
+                  <>
+                    {/* Vendor select with search */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        المورد <span className="text-red-500">*</span>
+                      </label>
+                      {editingExpense ? (
+                        <div className="w-full px-4 py-2 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', opacity: 0.6 }}>
+                          {vendors.find(v => v.id === expenseForm.vendor_id)?.full_name || 'غير معروف'}
+                        </div>
+                      ) : (
+                        <div ref={vendorDropdownRef} className="relative">
+                          <div className="relative">
+                            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                            <input
+                              type="text" value={vendorSearch}
+                              onChange={(e) => { setVendorSearch(e.target.value); setVendorDropdownOpen(true); }}
+                              onFocus={() => setVendorDropdownOpen(true)}
+                              placeholder="ابحث عن مورد..."
+                              className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                              style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.vendor_id ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                            />
+                            {expenseForm.vendor_id && (
+                              <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, vendor_id: '', category: '', amount: '' })); setVendorSearch(''); }}
+                                className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {vendorDropdownOpen && (
+                            <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}>
+                              <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
+                                {(() => {
+                                  const projectVendorIds = new Set(expenses.map(e => e.vendor_id).filter(Boolean));
+                                  const filtered = vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch));
+                                  const projectVendors = filtered.filter(v => projectVendorIds.has(v.id));
+                                  const otherVendors = filtered.filter(v => !projectVendorIds.has(v.id));
+                                  if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                                  const renderVendorBtn = (vendor: Vendor) => (
+                                    <button key={vendor.id} type="button" onClick={() => handleVendorSelect(vendor.id)}
+                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                      style={{ color: expenseForm.vendor_id === vendor.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.vendor_id === vendor.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                      onMouseEnter={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                      onMouseLeave={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                      <span className="font-medium text-sm">{vendor.full_name}</span>
+                                      {vendor.primary_field && <span className="text-xs opacity-50">{vendor.primary_field}</span>}
+                                    </button>
+                                  );
+                                  return (<>
+                                    {projectVendors.length > 0 && (<>
+                                      <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 6%, transparent)' }}>موردي المشروع</div>
+                                      {projectVendors.map(renderVendorBtn)}
+                                    </>)}
+                                    {otherVendors.length > 0 && (<>
+                                      <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>جميع الموردين</div>
+                                      {otherVendors.map(renderVendorBtn)}
+                                    </>)}
+                                  </>);
+                                })()}
+                              </div>
+                            </div>
+                          )}
+                          <input type="text" value={expenseForm.vendor_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
+                        </div>
+                      )}
+                    </div>
 
+                    {/* Category select with search */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>الدور / التصنيف</label>
+                      <div ref={categoryDropdownRef} className="relative">
+                        <div className="relative">
+                          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                          <input type="text" value={categorySearch}
+                            onChange={e => { setCategorySearch(e.target.value); setCategoryDropdownOpen(true); }}
+                            onFocus={() => setCategoryDropdownOpen(true)}
+                            placeholder="ابحث بالعربي أو الإنجليزي..."
+                            className="w-full pr-10 pl-8 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                            style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.category ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }} />
+                          {expenseForm.category && (
+                            <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, category: '' })); setCategorySearch(''); }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}><X size={14} /></button>
+                          )}
+                        </div>
+                        {categoryDropdownOpen && (() => {
+                          const q = categorySearch.toLowerCase();
+                          const selectedVendor = vendors.find(v => v.id === expenseForm.vendor_id);
+                          const vendorFieldIds = new Set((selectedVendor?.selected_fields || []).map(f => f.field_id));
+                          const allChildren = parentFields.flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
+                          const filtered = allChildren.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q) || c.parent_name_ar.includes(q) || (c.parent_name_en || '').toLowerCase().includes(q));
+                          const vendorFields_ = filtered.filter(c => vendorFieldIds.has(c.id));
+                          const otherFields = filtered.filter(c => !vendorFieldIds.has(c.id));
                           return (
-                            <>
-                              {projectVendors.length > 0 && (
-                                <>
-                                  <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 6%, transparent)' }}>
-                                    موردي المشروع
-                                  </div>
-                                  {projectVendors.map(renderVendorBtn)}
-                                </>
-                              )}
-                              {otherVendors.length > 0 && (
-                                <>
-                                  <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
-                                    جميع الموردين
-                                  </div>
-                                  {otherVendors.map(renderVendorBtn)}
-                                </>
-                              )}
-                            </>
+                            <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 280 }}>
+                              <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+                                {vendorFields_.length > 0 && (<>
+                                  <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}>خدمات المورد المسجلة</div>
+                                  {vendorFields_.map(c => (
+                                    <button key={c.id} type="button"
+                                      onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
+                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                      style={{ color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                      onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                      onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                      <span className="text-sm font-medium">{c.name_ar} — <span className="opacity-60">{c.name_en || ''}</span></span>
+                                      <span className="text-xs opacity-40">{c.parent_name_ar}</span>
+                                    </button>
+                                  ))}
+                                </>)}
+                                {otherFields.length > 0 && (<>
+                                  {vendorFields_.length > 0 && <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>جميع التصنيفات</div>}
+                                  {otherFields.map(c => (
+                                    <button key={c.id} type="button"
+                                      onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
+                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                      style={{ color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                      onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                      onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                      <span className="text-sm">{c.name_ar} — <span className="opacity-50">{c.name_en || ''}</span></span>
+                                      <span className="text-xs opacity-40">{c.parent_name_ar}</span>
+                                    </button>
+                                  ))}
+                                </>)}
+                                {filtered.length === 0 && <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>}
+                              </div>
+                            </div>
                           );
                         })()}
                       </div>
                     </div>
+                  </>
+                )}
+
+                {/* ── NON-VENDOR TYPES: simpler form ── */}
+                {expenseForm.expense_type !== 'vendor' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                      وصف المصروف <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={expenseForm.expense_description}
+                      onChange={(e) => setExpenseForm({ ...expenseForm, expense_description: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                      placeholder="مثال: شراء معدات تصوير، إيجار استوديو..."
+                      required
+                    />
+                  </div>
+                )}
+
+                {/* ── SHARED FIELDS (all types) ── */}
+
+                {/* Project Item */}
+                {projectItems.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>البند</label>
+                    <select value={expenseForm.project_item_id} onChange={(e) => setExpenseForm({ ...expenseForm, project_item_id: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}>
+                      <option value="">بدون بند</option>
+                      {projectItems.map(item => <option key={item.id} value={item.id}>{item.name} ({formatCurrency(item.total_price, currency)})</option>)}
+                    </select>
+                  </div>
+                )}
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                    المبلغ ({currency}) <span className="text-red-500">*</span>
+                  </label>
+                  <input type="text" inputMode="decimal" value={expenseForm.amount}
+                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                    placeholder="0" required dir="ltr" />
+                  {editingExpense && editingExpense.amount_paid > 0 && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                      الحد الأدنى: {formatCurrency(editingExpense.amount_paid, currency)} (المبلغ المدفوع)
+                    </p>
                   )}
-                  {/* Hidden required input for form validation */}
-                  <input type="text" value={expenseForm.vendor_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
                 </div>
-              )}
-            </div>
 
-            {/* Category select with search */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                الدور / التصنيف
-              </label>
-              <div ref={categoryDropdownRef} className="relative">
-                <div className="relative">
-                  <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
-                  <input
-                    type="text"
-                    value={categorySearch}
-                    onChange={e => { setCategorySearch(e.target.value); setCategoryDropdownOpen(true); }}
-                    onFocus={() => setCategoryDropdownOpen(true)}
-                    placeholder="ابحث بالعربي أو الإنجليزي... Search role"
-                    className="w-full pr-10 pl-8 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                    style={{
-                      backgroundColor: 'var(--color-surface)',
-                      borderColor: expenseForm.category ? 'var(--color-primary)' : 'var(--color-border)',
-                      color: 'var(--color-text-primary)',
-                    }}
-                  />
-                  {expenseForm.category && (
-                    <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, category: '' })); setCategorySearch(''); }}
-                      className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
-                      <X size={14} />
-                    </button>
-                  )}
+                {/* Due date */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الاستحقاق</label>
+                  <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }} />
                 </div>
-                {categoryDropdownOpen && (() => {
-                  const q = categorySearch.toLowerCase();
-                  const selectedVendor = vendors.find(v => v.id === expenseForm.vendor_id);
-                  const vendorFieldIds = new Set((selectedVendor?.selected_fields || []).map(f => f.field_id));
 
-                  // Build flat list of all children fields
-                  const allChildren = parentFields.flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>ملاحظات</label>
+                  <textarea value={expenseForm.notes} onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 resize-none"
+                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                    rows={2} placeholder="ملاحظات إضافية..." />
+                </div>
 
-                  // Filter by search
-                  const filtered = allChildren.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q) || c.parent_name_ar.includes(q) || (c.parent_name_en || '').toLowerCase().includes(q));
-
-                  // Split: vendor's fields first, then rest
-                  const vendorFields_ = filtered.filter(c => vendorFieldIds.has(c.id));
-                  const otherFields = filtered.filter(c => !vendorFieldIds.has(c.id));
-
-                  return (
-                    <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 280 }}>
-                      <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
-                        {/* Vendor's registered fields */}
-                        {vendorFields_.length > 0 && (
-                          <>
-                            <div className="px-3 py-1.5 text-xs font-bold" style={{ color: 'var(--color-primary)', backgroundColor: 'color-mix(in srgb, var(--color-primary) 5%, transparent)' }}>
-                              خدمات المورد المسجلة
-                            </div>
-                            {vendorFields_.map((c, i) => {
-                              const isMain = selectedVendor?.selected_fields?.[0]?.field_id === c.id;
-                              return (
-                                <button key={c.id} type="button"
-                                  onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
-                                  className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
-                                  style={{
-                                    color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                                    backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
-                                  }}
-                                  onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
-                                  onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                                >
-                                  <span className="text-sm font-medium">
-                                    {c.name_ar} — <span className="opacity-60">{c.name_en || ''}</span>
-                                    {isMain && <span className="text-xs mr-2 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-600 font-bold">رئيسي</span>}
-                                  </span>
-                                  <span className="text-xs opacity-40">{c.parent_name_ar}</span>
-                                </button>
-                              );
-                            })}
-                          </>
-                        )}
-
-                        {/* Other fields */}
-                        {otherFields.length > 0 && (
-                          <>
-                            {vendorFields_.length > 0 && (
-                              <div className="px-3 py-1.5 text-xs font-bold border-t" style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
-                                جميع التصنيفات
-                              </div>
-                            )}
-                            {otherFields.map(c => (
-                              <button key={c.id} type="button"
-                                onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
-                                className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
-                                style={{
-                                  color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
-                                  backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent',
-                                }}
-                                onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
-                                onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}
-                              >
-                                <span className="text-sm">{c.name_ar} — <span className="opacity-50">{c.name_en || ''}</span></span>
-                                <span className="text-xs opacity-40">{c.parent_name_ar}</span>
-                              </button>
-                            ))}
-                          </>
-                        )}
-
-                        {filtered.length === 0 && (
-                          <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>
-                        )}
-                      </div>
+                {/* Invoice file */}
+                <div>
+                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>ملف / فاتورة</label>
+                  <input ref={fileInputRef} type="file" className="hidden" accept="application/pdf,image/jpeg,image/png"
+                    onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFile(file); }} />
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors"
+                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+                    <Upload size={18} />
+                    {selectedFile ? selectedFile.name : editingExpense?.invoice_file_url ? 'استبدال الملف الحالي' : 'اضغط لاختيار ملف'}
+                  </button>
+                  {selectedFile && (
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs" style={{ color: 'var(--color-success)' }}>تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</p>
+                      <button type="button" onClick={() => setSelectedFile(null)} className="text-xs" style={{ color: 'var(--color-danger)' }}><X size={14} /></button>
                     </div>
-                  );
-                })()}
-              </div>
-            </div>
+                  )}
+                  {!selectedFile && editingExpense?.invoice_file_url && (
+                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>ملف فاتورة موجود بالفعل</p>
+                  )}
+                </div>
 
-            {/* Project Item (البند) */}
-            {projectItems.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                  البند
-                </label>
-                <select
-                  value={expenseForm.project_item_id}
-                  onChange={(e) => setExpenseForm({ ...expenseForm, project_item_id: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text-primary)',
-                  }}
-                >
-                  <option value="">بدون بند</option>
-                  {projectItems.map(item => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} ({formatCurrency(item.total_price, currency)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Amount */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                المبلغ ({currency}) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={expenseForm.amount}
-                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-                placeholder="0"
-                required
-                dir="ltr"
-              />
-              {editingExpense && editingExpense.amount_paid > 0 && (
-                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-                  الحد الأدنى: {formatCurrency(editingExpense.amount_paid, currency)} (المبلغ المدفوع)
-                </p>
-              )}
-            </div>
-
-            {/* Due date */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                تاريخ الاستحقاق
-              </label>
-              <input
-                type="date"
-                value={expenseForm.due_date}
-                onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                ملاحظات
-              </label>
-              <textarea
-                value={expenseForm.notes}
-                onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2 resize-none"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-                rows={2}
-                placeholder="ملاحظات إضافية..."
-              />
-            </div>
-
-            {/* Invoice file upload */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                فاتورة (PDF)
-              </label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept="application/pdf,image/jpeg,image/png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) setSelectedFile(file);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-secondary)',
-                }}
-              >
-                <Upload size={18} />
-                {selectedFile ? selectedFile.name : editingExpense?.invoice_file_url ? 'استبدال الملف الحالي' : 'اضغط لاختيار ملف'}
-              </button>
-              {selectedFile && (
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs" style={{ color: 'var(--color-success)' }}>
-                    تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                  </p>
-                  <button type="button" onClick={() => setSelectedFile(null)} className="text-xs" style={{ color: 'var(--color-danger)' }}>
-                    <X size={14} />
+                {/* Actions */}
+                <div className="flex gap-3 pt-4">
+                  <button type="button" onClick={() => setShowExpenseModal(false)}
+                    className="flex-1 px-4 py-2 rounded-lg font-medium transition-all"
+                    style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-secondary)' }}>إلغاء</button>
+                  <button type="submit" disabled={saving}
+                    className="flex-1 px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
+                    style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}>
+                    {saving ? 'جاري الحفظ...' : editingExpense ? 'تحديث' : 'حفظ'}
                   </button>
                 </div>
-              )}
-              {!selectedFile && editingExpense?.invoice_file_url && (
-                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-                  ملف فاتورة موجود بالفعل
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => setShowExpenseModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all"
-                style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-secondary)' }}
-              >
-                إلغاء
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex-1 px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50"
-                style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
-              >
-                {saving ? 'جاري الحفظ...' : editingExpense ? 'تحديث' : 'حفظ'}
-              </button>
-            </div>
+              </>
+            )}
           </form>
         </Modal>
       )}

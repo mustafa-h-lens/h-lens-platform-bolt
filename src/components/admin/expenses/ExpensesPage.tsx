@@ -8,7 +8,9 @@ import type { VendorField } from '../../../types/database';
 
 interface ExpenseRow {
   id: string;
-  vendor_id: string;
+  vendor_id: string | null;
+  expense_type: string;
+  expense_description: string | null;
   client_name: string;
   client_image: string | null;
   vendor_name: string;
@@ -119,6 +121,8 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         .select(`
           id,
           vendor_id,
+          expense_type,
+          expense_description,
           project_id,
           amount_total,
           amount_paid,
@@ -203,7 +207,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   const mapData = (data: any[]): ExpenseRow[] =>
     data.map((item) => ({
       id: item.id,
-      vendor_id: item.vendor_id || '',
+      vendor_id: item.vendor_id || null,
+      expense_type: item.expense_type || 'vendor',
+      expense_description: item.expense_description || null,
       client_name: item.projects?.clients?.name || '-',
       client_image: item.projects?.clients?.client_image || null,
       vendor_name: item.vendors?.full_name || '',
@@ -571,7 +577,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           <table>
             <thead>
               <tr>
-                <th>المورد</th>
+                <th>المورد / الوصف</th>
                 <th>العميل</th>
                 <th>المشروع</th>
                 <th>مدير المشروع</th>
@@ -594,7 +600,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                     style={{ cursor: 'pointer' }}
                     onClick={() => onViewProject?.(expense.project_id)}
                   >
-                    <td><span className="td-primary">{expense.vendor_name}</span></td>
+                    <td><span className="td-primary">{expense.expense_type === 'vendor' ? expense.vendor_name : expense.expense_description || '-'}</span></td>
                     <td>
                       <div className="user-row">
                         <div className="client-logo" style={{ width: 28, height: 28 }}>
