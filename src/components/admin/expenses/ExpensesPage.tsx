@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { DollarSign, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Calendar, Users, Receipt, Wallet, CreditCard, RotateCcw, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { DollarSign, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Calendar, Users, Receipt, Wallet, CreditCard, RotateCcw, CheckCircle, Clock, Loader2, Download } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
@@ -24,6 +24,7 @@ interface ExpenseRow {
   amount_paid: number;
   amount_remaining: number;
   status: string;
+  approval_status: string;
   due_date: string | null;
   project_item_name: string | null;
   currency: string;
@@ -65,6 +66,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   const [filterProject, setFilterProject] = useState<string[]>([]);
   const [filterManager, setFilterManager] = useState<string[]>([]);
   const [filterVendor, setFilterVendor] = useState<string[]>([]);
+  const [filterApproval, setFilterApproval] = useState<string[]>([]);
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -84,7 +86,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   // Reset page on filter change
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]);
+  }, [searchTerm, filterProject, filterManager, filterVendor, filterApproval, filterDateFrom, filterDateTo]);
 
   // Close date picker on outside click
   useEffect(() => {
@@ -169,6 +171,22 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
     return category;
   };
 
+  const getApprovalStatusLabel = (status: string) => {
+    switch (status) {
+      case 'paid': return 'مدفوع';
+      case 'approved': return 'معتمد';
+      default: return 'مسودة';
+    }
+  };
+
+  const getApprovalBadgeStyle = (status: string): React.CSSProperties => {
+    switch (status) {
+      case 'paid': return { background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' };
+      case 'approved': return { background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' };
+      default: return { background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-soft)' };
+    }
+  };
+
   const loadAllExpenses = async () => {
     try {
       setLoading(true);
@@ -186,6 +204,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           amount_paid,
           amount_remaining,
           status,
+          approval_status,
           due_date,
           category,
           project_item_id,
@@ -280,6 +299,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       amount_paid: item.amount_paid ?? 0,
       amount_remaining: item.amount_remaining ?? item.amount_total,
       status: item.status,
+      approval_status: item.approval_status || 'draft',
       due_date: item.due_date,
       currency: item.projects?.currency || 'SAR',
       created_at: item.created_at || '',
@@ -318,7 +338,13 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
     [expenses]
   );
 
-  const hasActiveFilters = searchTerm || filterProject.length > 0 || filterManager.length > 0 || filterVendor.length > 0 || filterDateFrom || filterDateTo;
+  const approvalOptions = [
+    { value: 'draft', label: 'مسودة' },
+    { value: 'approved', label: 'معتمد' },
+    { value: 'paid', label: 'مدفوع' },
+  ];
+
+  const hasActiveFilters = searchTerm || filterProject.length > 0 || filterManager.length > 0 || filterVendor.length > 0 || filterApproval.length > 0 || filterDateFrom || filterDateTo;
 
   const dateRangeLabel = useMemo(() => {
     if (filterDateFrom && filterDateTo) return `${filterDateFrom} — ${filterDateTo}`;
@@ -332,6 +358,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
     setFilterProject([]);
     setFilterManager([]);
     setFilterVendor([]);
+    setFilterApproval([]);
     setFilterDateFrom('');
     setFilterDateTo('');
   };
@@ -346,11 +373,12 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       if (filterProject.length > 0 && !filterProject.includes(e.project_id)) return false;
       if (filterManager.length > 0 && !filterManager.includes(e.project_manager_name)) return false;
       if (filterVendor.length > 0 && !filterVendor.includes(e.vendor_name)) return false;
+      if (filterApproval.length > 0 && !filterApproval.includes(e.approval_status)) return false;
       if (filterDateFrom && e.due_date && e.due_date < filterDateFrom) return false;
       if (filterDateTo && e.due_date && e.due_date > filterDateTo) return false;
       return true;
     }),
-    [expenses, searchTerm, filterProject, filterManager, filterVendor, filterDateFrom, filterDateTo]
+    [expenses, searchTerm, filterProject, filterManager, filterVendor, filterApproval, filterDateFrom, filterDateTo]
   );
 
   const totalAll = filteredExpenses.reduce((s, e) => s + e.amount, 0);
@@ -361,10 +389,11 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   const vendorSummaries = useMemo<VendorSummary[]>(() => {
     const map = new Map<string, VendorSummary>();
     filteredExpenses.forEach(e => {
-      if (!map.has(e.vendor_id)) {
-        map.set(e.vendor_id, {
-          vendor_id: e.vendor_id,
-          vendor_name: e.vendor_name,
+      const key = e.vendor_id || e.vendor_name || 'other';
+      if (!map.has(key)) {
+        map.set(key, {
+          vendor_id: key,
+          vendor_name: e.vendor_name || (e.expense_description || '-'),
           project_count: 0,
           invoice_count: 0,
           total_amount: 0,
@@ -374,7 +403,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           projects: [],
         });
       }
-      const v = map.get(e.vendor_id)!;
+      const v = map.get(key)!;
       v.invoice_count += 1;
       v.total_amount += e.amount;
       v.total_paid += e.amount_paid;
@@ -395,6 +424,59 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   }, [filteredExpenses]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Export filtered expenses as CSV
+  const exportExpensesCSV = () => {
+    const headers = ['المورد / الوصف', 'العميل', 'المشروع', 'مدير المشروع', 'الدور', 'البند', 'المبلغ', 'المدفوع', 'المتبقي', 'حالة الاعتماد', 'الاستحقاق'];
+    const rows = filteredExpenses.map(e => [
+      e.expense_type === 'vendor' ? e.vendor_name : (e.expense_description || '-'),
+      e.client_name,
+      e.project_name,
+      e.project_manager_name,
+      getCategoryLabel(e.category),
+      e.project_item_name || '-',
+      e.amount.toFixed(2),
+      e.amount_paid.toFixed(2),
+      e.amount_remaining.toFixed(2),
+      getApprovalStatusLabel(e.approval_status),
+      e.due_date || '-',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export vendor summary as CSV
+  const exportVendorsCSV = () => {
+    const headers = ['المورد', 'المشاريع', 'الفواتير', 'الإجمالي', 'المدفوع', 'المتبقي', 'نسبة السداد'];
+    const rows = vendorSummaries.map(v => {
+      const pct = v.total_amount > 0 ? Math.round((v.total_paid / v.total_amount) * 100) : 0;
+      return [v.vendor_name, v.project_count, v.invoice_count, v.total_amount.toFixed(2), v.total_paid.toFixed(2), v.total_remaining.toFixed(2), `${pct}%`];
+    });
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vendors_summary_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return <div className="dash-empty" style={{ height: 384 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
@@ -454,6 +536,14 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       {/* ═══ VENDOR SUMMARY TAB ═══ */}
       {activeTab === 'vendors' && (
         <>
+          {/* Export toolbar */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportVendorsCSV}>
+              <Download size={13} />
+              تصدير CSV
+            </button>
+          </div>
+
           {vendorSummaries.length === 0 ? (
             <div className="dash-empty" style={{ height: 200 }}>
               <Users size={48} style={{ color: 'var(--text-muted)', opacity: 0.3, marginBottom: 12 }} />
@@ -504,24 +594,41 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={8} style={{ background: 'var(--bg-overlay)', padding: 0 }}>
-                              <div style={{ padding: '12px 24px' }}>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>تفصيل المشاريع</div>
-                                <table style={{ width: '100%' }}>
+                            <td colSpan={8} style={{ padding: 0, background: 'var(--bg-overlay)' }}>
+                              <div style={{ padding: '0 0 0 0' }}>
+                                <div style={{ padding: '8px 24px 4px', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.03em', textTransform: 'uppercase' }}>
+                                  تفصيل المشاريع
+                                </div>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                  <thead>
+                                    <tr style={{ background: 'var(--bg-surface)' }}>
+                                      <th style={{ padding: '6px 24px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)' }}>المشروع</th>
+                                      <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)' }}>الإجمالي</th>
+                                      <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)' }}>المدفوع</th>
+                                      <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)' }}>المتبقي</th>
+                                      <th style={{ padding: '6px 16px', textAlign: 'right', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-soft)', width: 100 }}>التقدم</th>
+                                    </tr>
+                                  </thead>
                                   <tbody>
                                     {v.projects.map((p, pi) => {
                                       const pp = p.amount > 0 ? Math.round((p.paid / p.amount) * 100) : 0;
                                       return (
                                         <tr key={pi} style={{ borderBottom: pi < v.projects.length - 1 ? '1px solid var(--border-soft)' : 'none' }}>
-                                          <td style={{ padding: '8px 0', fontSize: 13, color: 'var(--text-primary)' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Receipt size={12} style={{ color: 'var(--accent-lighter)' }} /> {p.name}</span>
+                                          <td style={{ padding: '10px 24px', fontSize: 13, color: 'var(--text-primary)' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                              <Receipt size={12} style={{ color: 'var(--accent-lighter)', flexShrink: 0 }} />
+                                              {p.name}
+                                            </span>
                                           </td>
-                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }} dir="ltr">{formatCurrency(p.amount, 'SAR')}</td>
-                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 500, color: 'var(--success-text)' }} dir="ltr">{formatCurrency(p.paid, 'SAR')}</td>
-                                          <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 700, color: p.amount - p.paid > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} dir="ltr">{formatCurrency(p.amount - p.paid, 'SAR')}</td>
-                                          <td style={{ padding: '8px 0', width: 80 }}>
-                                            <div style={{ width: '100%', height: 4, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
-                                              <div style={{ width: `${pp}%`, height: '100%', borderRadius: 99, background: pp === 100 ? 'var(--success)' : 'var(--accent)' }} />
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }} dir="ltr">{formatCurrency(p.amount, 'SAR')}</td>
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--success-text)' }} dir="ltr">{formatCurrency(p.paid, 'SAR')}</td>
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: p.amount - p.paid > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} dir="ltr">{formatCurrency(p.amount - p.paid, 'SAR')}</td>
+                                          <td style={{ padding: '10px 16px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                              <div style={{ flex: 1, height: 5, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
+                                                <div style={{ width: `${pp}%`, height: '100%', borderRadius: 99, background: pp === 100 ? 'var(--success)' : 'var(--accent)' }} />
+                                              </div>
+                                              <span style={{ fontSize: 11, fontWeight: 700, color: pp === 100 ? 'var(--success-text)' : 'var(--text-muted)', minWidth: 28, textAlign: 'left' }}>{pp}%</span>
                                             </div>
                                           </td>
                                         </tr>
@@ -671,6 +778,13 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           onToggle={v => toggleFilter('vendor', v)}
         />
 
+        <MultiSelectFilter
+          label="حالة الاعتماد"
+          options={approvalOptions}
+          selected={filterApproval}
+          onToggle={v => setFilterApproval(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+        />
+
         {/* Date Range */}
         <div style={{ position: 'relative' }} ref={datePickerRef}>
           <button
@@ -717,6 +831,14 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
             <RotateCcw size={13} /> إعادة تعيين
           </button>
         )}
+
+        {/* Export button */}
+        <div style={{ marginRight: 'auto' }}>
+          <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportExpensesCSV}>
+            <Download size={13} />
+            تصدير CSV
+          </button>
+        </div>
       </div>
 
       {/* Expenses Table */}
@@ -740,14 +862,13 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                 <th>المبلغ</th>
                 <th>المدفوع</th>
                 <th>المتبقي</th>
-                <th>الحالة</th>
+                <th>حالة الاعتماد</th>
                 <th>الاستحقاق</th>
               </tr>
             </thead>
             <tbody>
               {filteredExpenses.map((expense) => {
-                const status = deriveStatus(expense);
-                const badge = getStatusBadge(status);
+                const approvalStyle = getApprovalBadgeStyle(expense.approval_status);
                 return (
                   <tr
                     key={expense.id}
@@ -779,7 +900,11 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount, expense.currency)}</td>
                     <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_paid, expense.currency)}</td>
                     <td style={{ fontWeight: 600, color: expense.amount_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_remaining, expense.currency)}</td>
-                    <td><span className={badge.cls}>{badge.label}</span></td>
+                    <td>
+                      <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 99, fontWeight: 600, ...approvalStyle }}>
+                        {getApprovalStatusLabel(expense.approval_status)}
+                      </span>
+                    </td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }} dir="ltr">{expense.due_date ? formatDateArabic(expense.due_date) : '-'}</td>
                   </tr>
                 );
@@ -790,8 +915,12 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           {/* Footer total */}
           <div style={{ padding: 16, background: 'var(--accent)', borderRadius: '0 0 var(--radius-md) var(--radius-md)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>إجمالي المصروفات</span>
-              <span style={{ fontSize: 17, fontWeight: 700, color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{filteredExpenses.length} مصروف</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</strong></span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{formatCurrency(totalPaid, 'SAR')}</strong></span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</strong></span>
+              </div>
             </div>
           </div>
         </div>
@@ -806,7 +935,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
             {Array.from({ length: Math.min(totalPages, 3) }, (_, i) => (
               <button key={i} className={`pag-btn ${page === i ? 'active' : ''}`} onClick={() => setPage(i)}>{toEnglishNumbers((i + 1).toString())}</button>
             ))}
-            {totalPages > 3 && <button className="pag-btn" style={{ fontSize: 11, letterSpacing: 1 }}>...</button>}
+            {totalPages > 3 && <span className="pag-btn" style={{ fontSize: 11, letterSpacing: 1, cursor: 'default' }}>...</span>}
             {totalPages > 3 && <button className={`pag-btn ${page === totalPages - 1 ? 'active' : ''}`} onClick={() => setPage(totalPages - 1)}>{toEnglishNumbers(totalPages.toString())}</button>}
             <button className={`pag-btn ${page >= totalPages - 1 ? 'disabled' : ''}`} onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}><ChevronLeft size={15} /></button>
           </div>
