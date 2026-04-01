@@ -713,11 +713,6 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           <p className="text-2xl font-bold" style={{ color: totalRemaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
             {formatCurrency(totalRemaining, currency)}
           </p>
-          {overdueCount > 0 && (
-            <p className="text-xs mt-2" style={{ color: 'var(--color-danger)' }}>
-              {overdueCount} مصروف متأخر عن موعد الدفع
-            </p>
-          )}
         </div>
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>عدد المصروفات</p>
