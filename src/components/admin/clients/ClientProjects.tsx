@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, Calendar } from 'lucide-react';
+import { Search, Filter, Eye, Calendar, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import type { Project, Client } from '../../../types/database';
@@ -7,9 +7,10 @@ import type { Project, Client } from '../../../types/database';
 interface ClientProjectsProps {
   clientId: string;
   onViewProject: (projectId: string) => void;
+  onAddProject?: () => void;
 }
 
-export const ClientProjects = ({ clientId, onViewProject }: ClientProjectsProps) => {
+export const ClientProjects = ({ clientId, onViewProject, onAddProject }: ClientProjectsProps) => {
   const [client, setClient] = useState<Client | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
@@ -99,7 +100,7 @@ export const ClientProjects = ({ clientId, onViewProject }: ClientProjectsProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
             المشاريع ({formatNumber(projects.length)})
@@ -108,6 +109,16 @@ export const ClientProjects = ({ clientId, onViewProject }: ClientProjectsProps)
             عرض وإدارة جميع المشاريع
           </p>
         </div>
+        {onAddProject && (
+          <button
+            onClick={onAddProject}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={{ background: 'var(--color-primary)', color: '#fff' }}
+          >
+            <Plus size={16} />
+            إضافة مشروع
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">

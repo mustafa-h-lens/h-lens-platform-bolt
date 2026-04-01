@@ -468,7 +468,9 @@ export const NewAdminDashboard = () => {
                     setActiveSubTab(null);
                   }}
                   onViewProject={(projectId) => {
+                    setCurrentPage('projects');
                     setSelectedProjectId(projectId);
+                    setSelectedClientId(null);
                     setActiveSubTab(null);
                   }}
                   initialTab={activeSubTab}

@@ -182,15 +182,6 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
 
             {/* Action buttons */}
             <div style={{ marginRight: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
-              <button
-                onClick={() => setShowCreateProjectModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: 'var(--color-primary)', color: '#fff' }}
-              >
-                <Plus size={16} />
-                إضافة مشروع
-              </button>
-
               {client.invitation_status === 'active' ? (
                 <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                   style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
@@ -264,6 +255,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
                 onViewProject(projectId);
               }
             }}
+            onAddProject={() => setShowCreateProjectModal(true)}
           />
         )}
         {activeTab === 'purchase-orders' && <PurchaseOrdersTabEnhanced clientId={clientId} />}
