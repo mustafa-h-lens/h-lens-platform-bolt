@@ -5,7 +5,6 @@ const LAST_VISITED_PAGE_KEY = 'lastVisitedPage';
 
 // Pages to exclude from being saved as last visited
 const EXCLUDED_PATHS = [
-  '/admin',
   '/vendor/login',
   '/join',
 ];
@@ -41,13 +40,13 @@ export function parsePath(pathname: string): string[] {
 }
 
 // ── Last Visited Page Management ──────────────────────────────
-export function saveLastVisitedPage(pathname: string, search = '') {
+export function saveLastVisitedPage(pathname: string, search = '', hash = '') {
   // Don't save excluded paths (login pages, etc.)
   if (EXCLUDED_PATHS.some(excluded => pathname === excluded || pathname.startsWith(excluded))) {
     return;
   }
 
-  const fullPath = pathname + search;
+  const fullPath = pathname + search + hash;
   try {
     localStorage.setItem(LAST_VISITED_PAGE_KEY, fullPath);
   } catch (error) {
@@ -79,8 +78,20 @@ export function useRouteTracking() {
 
   useEffect(() => {
     const search = window.location.search;
-    saveLastVisitedPage(pathname, search);
+    const hash = window.location.hash;
+    saveLastVisitedPage(pathname, search, hash);
   }, [pathname]);
+
+  // Also track hash changes (admin dashboard uses hash for sub-navigation)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const search = window.location.search;
+      const hash = window.location.hash;
+      saveLastVisitedPage(window.location.pathname, search, hash);
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 }
 
 // ── Cross-Portal Navigation ───────────────────────────────────

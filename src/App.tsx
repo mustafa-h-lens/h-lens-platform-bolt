@@ -207,37 +207,39 @@ function AppContent() {
 
     const lastVisitedPage = getLastVisitedPage();
     const currentPathname = window.location.pathname;
+    const currentHash = window.location.hash;
 
-    // Only restore if:
-    // 1. We have a last visited page
-    // 2. User is authenticated (for admin/client routes) OR it's a vendor route
-    // 3. Current path is a login page or root
-    const isLoginPage = currentPathname === ROUTES.ADMIN_LOGIN ||
-                        currentPathname === ROUTES.VENDOR_LOGIN;
+    const storedVendorSession = getStoredVendorSession();
+    const storedClientSession = getStoredClientSession();
 
-    if (lastVisitedPage && isLoginPage) {
-      const storedVendorSession = getStoredVendorSession();
-      const storedClientSession = getStoredClientSession();
+    // ── Case 1: User just logged in and landed on a plain /admin (no hash)
+    //    Restore them to where they were before (which may include a hash)
+    const isPlainAdminRoot = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
+    if (isPlainAdminRoot && user && profile && lastVisitedPage && lastVisitedPage.startsWith('/admin')) {
+      navigate(lastVisitedPage);
+      setHasRestoredRoute(true);
+      return;
+    }
+
+    // ── Case 2: User just logged in to vendor portal
+    const isVendorLoginPage = currentPathname === ROUTES.VENDOR_LOGIN;
+    if (isVendorLoginPage && storedVendorSession && lastVisitedPage) {
       const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
-      const isClientPortalRoute = lastVisitedPage.startsWith('/client');
-      const isAdminRoute = lastVisitedPage.startsWith('/admin');
-
-      // Restore vendor route if vendor is logged in
-      if (isVendorRoute && storedVendorSession) {
+      if (isVendorRoute) {
         navigate(lastVisitedPage);
         setHasRestoredRoute(true);
         return;
       }
+    }
 
-      // Restore client portal route if client is logged in
-      if (isClientPortalRoute && storedClientSession) {
-        navigate(lastVisitedPage);
-        setHasRestoredRoute(true);
-        return;
-      }
-
-      // Restore admin route if user is logged in
-      if (isAdminRoute && user && profile) {
+    // ── Case 3: User refreshed on /admin with no hash but has a saved hash
+    //    (e.g., they refreshed and the browser strips the hash somehow)
+    //    More importantly: if they refresh on /admin#projects/xxx the admin
+    //    dashboard reads the hash directly — no action needed here.
+    //    But if they refresh on plain /admin, restore their last sub-page.
+    if (currentPathname === ROUTES.ADMIN_LOGIN && !currentHash && user && profile && lastVisitedPage) {
+      const savedHasHash = lastVisitedPage.includes('#');
+      if (savedHasHash && lastVisitedPage.startsWith('/admin')) {
         navigate(lastVisitedPage);
         setHasRestoredRoute(true);
         return;
