@@ -15,6 +15,7 @@ interface Payment {
   amount: number;
   payment_method: string;
   payment_date: string;
+  payment_status: string;
   notes: string | null;
   created_at: string;
 }
@@ -199,6 +200,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             amount,
             payment_method,
             payment_date,
+            payment_status,
             notes,
             created_at
           )
@@ -545,6 +547,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           payment_date: paymentForm.payment_date,
           notes: paymentForm.notes || null,
           created_by: user?.id,
+          payment_status: 'draft',
         });
 
       if (error) throw error;
@@ -573,6 +576,42 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       showError(`حدث خطأ أثناء تسجيل الدفعة: ${error?.message || error?.code || ''}`);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Change payment status
+  const [changingPaymentStatus, setChangingPaymentStatus] = useState<string | null>(null);
+
+  const changePaymentStatus = async (paymentId: string, newStatus: 'approved' | 'transferred') => {
+    setChangingPaymentStatus(paymentId);
+    try {
+      const updateData: Record<string, any> = { payment_status: newStatus };
+      if (newStatus === 'approved') {
+        updateData.approved_at = new Date().toISOString();
+        updateData.approved_by = user?.id;
+      } else if (newStatus === 'transferred') {
+        updateData.transferred_at = new Date().toISOString();
+        updateData.transferred_by = user?.id;
+      }
+
+      const { error } = await supabase
+        .from('expense_payments')
+        .update(updateData)
+        .eq('id', paymentId);
+
+      if (error) throw error;
+
+      const statusLabels: Record<string, string> = {
+        approved: 'تم اعتماد الدفعة للصرف',
+        transferred: 'تم تأكيد التحويل',
+      };
+      showSuccess(statusLabels[newStatus]);
+      loadExpenses();
+    } catch (error) {
+      console.error('Error changing payment status:', error);
+      showError('حدث خطأ أثناء تحديث حالة الدفعة');
+    } finally {
+      setChangingPaymentStatus(null);
     }
   };
 
@@ -813,7 +852,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                       {/* Expanded payments row */}
                       {isExpanded && (
                         <tr key={`${expense.id}-payments`} style={{ borderBottom: index < expenses.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}>
-                          <td colSpan={10} className="px-8 py-3" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+                          <td colSpan={12} className="px-8 py-3" style={{ backgroundColor: 'var(--color-background-hover)' }}>
                             <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                               سجل الدفعات ({expense.payments.length})
                             </p>
@@ -823,11 +862,20 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                   <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>المبلغ</th>
                                   <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>طريقة الدفع</th>
                                   <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الدفع</th>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>الحالة</th>
                                   <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>ملاحظات</th>
+                                  <th className="px-3 py-2 text-right text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>إجراء</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {expense.payments.map((payment) => (
+                                {expense.payments.map((payment) => {
+                                  const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
+                                    draft: { label: 'مسجّل', bg: 'var(--bg-card)', color: 'var(--text-muted)' },
+                                    approved: { label: 'معتمد للصرف', bg: 'var(--warning-bg)', color: 'var(--warning-text)' },
+                                    transferred: { label: 'تم التحويل', bg: 'var(--success-bg)', color: 'var(--success-text)' },
+                                  };
+                                  const st = statusConfig[payment.payment_status] || statusConfig.draft;
+                                  return (
                                   <tr key={payment.id} style={{ borderTop: '1px solid var(--color-border)' }}>
                                     <td className="px-3 py-2 text-sm font-medium" style={{ color: 'var(--color-success)' }} dir="ltr">
                                       {formatCurrency(payment.amount, currency)}
@@ -838,11 +886,44 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                     <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
                                       {formatDateArabic(payment.payment_date)}
                                     </td>
+                                    <td className="px-3 py-2">
+                                      <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: st.bg, color: st.color, fontWeight: 600, border: '1px solid currentColor', borderColor: 'transparent' }}>
+                                        {st.label}
+                                      </span>
+                                    </td>
                                     <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                                       {payment.notes || '-'}
                                     </td>
+                                    <td className="px-3 py-2">
+                                      <div style={{ display: 'flex', gap: 4 }}>
+                                        {payment.payment_status === 'draft' && (
+                                          <button
+                                            className="btn btn-sm"
+                                            style={{ fontSize: 11, padding: '3px 10px', background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)' }}
+                                            disabled={changingPaymentStatus === payment.id}
+                                            onClick={() => changePaymentStatus(payment.id, 'approved')}
+                                          >
+                                            {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
+                                          </button>
+                                        )}
+                                        {(payment.payment_status === 'draft' || payment.payment_status === 'approved') && (
+                                          <button
+                                            className="btn btn-sm"
+                                            style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
+                                            disabled={changingPaymentStatus === payment.id}
+                                            onClick={() => changePaymentStatus(payment.id, 'transferred')}
+                                          >
+                                            {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
+                                          </button>
+                                        )}
+                                        {payment.payment_status === 'transferred' && (
+                                          <span style={{ fontSize: 11, color: 'var(--success-text)' }}>✓</span>
+                                        )}
+                                      </div>
+                                    </td>
                                   </tr>
-                                ))}
+                                  );
+                                })}
                               </tbody>
                             </table>
                           </td>

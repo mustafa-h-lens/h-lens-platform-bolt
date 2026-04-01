@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { DollarSign, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Calendar, Users, Receipt, Wallet, CreditCard, RotateCcw } from 'lucide-react';
+import { DollarSign, ChevronLeft, ChevronRight, X, ChevronDown, ChevronUp, Calendar, Users, Receipt, Wallet, CreditCard, RotateCcw, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic, formatNumber } from '../../../lib/formatters';
@@ -44,11 +46,16 @@ interface ExpensesPageProps {
   onViewProject?: (projectId: string) => void;
 }
 export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
-  const [activeTab, setActiveTab] = useState<'expenses' | 'vendors'>('expenses');
+  const [activeTab, setActiveTab] = useState<'expenses' | 'vendors' | 'transfers'>('expenses');
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
+  const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
+  const [transfersLoading, setTransfersLoading] = useState(false);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const [page, setPage] = useState(0);
   const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
@@ -71,6 +78,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   useEffect(() => {
     loadAllExpenses();
     loadVendorFields();
+    loadPendingTransfers();
   }, [page]);
 
   // Reset page on filter change
@@ -101,6 +109,56 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
       setVendorFields(data || []);
     } catch (error) {
       console.error('Error loading vendor fields:', error);
+    }
+  };
+
+  const loadPendingTransfers = async () => {
+    setTransfersLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('expense_payments')
+        .select(`
+          id, amount, payment_method, payment_date, payment_status, notes, created_at,
+          created_by_user:users!expense_payments_created_by_fkey(full_name),
+          vendor_invoices!expense_payments_expense_id_fkey (
+            id, expense_type, expense_description,
+            vendors (full_name),
+            projects (name, currency)
+          )
+        `)
+        .eq('payment_status', 'approved')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPendingTransfers(data || []);
+    } catch (error) {
+      console.error('Error loading pending transfers:', error);
+      setPendingTransfers([]);
+    } finally {
+      setTransfersLoading(false);
+    }
+  };
+
+  const confirmTransfer = async (paymentId: string) => {
+    setConfirmingId(paymentId);
+    try {
+      const { error } = await supabase
+        .from('expense_payments')
+        .update({
+          payment_status: 'transferred',
+          transferred_at: new Date().toISOString(),
+          transferred_by: user?.id,
+        })
+        .eq('id', paymentId);
+
+      if (error) throw error;
+      showSuccess('تم تأكيد التحويل بنجاح');
+      loadPendingTransfers();
+    } catch (error) {
+      console.error('Error confirming transfer:', error);
+      showError('حدث خطأ أثناء تأكيد التحويل');
+    } finally {
+      setConfirmingId(null);
     }
   };
 
@@ -365,6 +423,13 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
             <span className="sb-badge" style={{ marginRight: 0 }}>{vendorSummaries.filter(v => v.total_remaining > 0).length}</span>
           )}
         </div>
+        <div className={`tab tab-blue ${activeTab === 'transfers' ? 'on' : ''}`} onClick={() => { setActiveTab('transfers'); loadPendingTransfers(); }} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Clock size={14} />
+          بانتظار التحويل
+          {pendingTransfers.length > 0 && (
+            <span className="sb-badge" style={{ marginRight: 0, background: 'var(--warning-bg)', color: 'var(--warning-text)' }}>{pendingTransfers.length}</span>
+          )}
+        </div>
       </div>
 
       {/* Stat Cards */}
@@ -488,6 +553,76 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
             </div>
           )}
         </>
+      )}
+
+      {/* ═══ TRANSFERS TAB ═══ */}
+      {activeTab === 'transfers' && (
+        <div>
+          {transfersLoading ? (
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>جاري التحميل...</div>
+          ) : pendingTransfers.length === 0 ? (
+            <div className="ds-card" style={{ textAlign: 'center', padding: 40 }}>
+              <CheckCircle size={40} style={{ color: 'var(--success)', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>لا توجد دفعات بانتظار التحويل</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>جميع الدفعات تم تحويلها</div>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المشروع</th>
+                    <th>المورد / الوصف</th>
+                    <th>المبلغ</th>
+                    <th>طريقة الدفع</th>
+                    <th>تاريخ الدفع</th>
+                    <th>سجّل بواسطة</th>
+                    <th>ملاحظات</th>
+                    <th>الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingTransfers.map((p: any) => {
+                    const inv = p.vendor_invoices;
+                    const cur = inv?.projects?.currency || 'SAR';
+                    const paymentMethodLabels: Record<string, string> = {
+                      bank_transfer: 'تحويل بنكي',
+                      cash: 'نقدي',
+                      cheque: 'شيك',
+                      credit_card: 'بطاقة ائتمان',
+                    };
+                    return (
+                      <tr key={p.id}>
+                        <td><span className="td-primary">{inv?.projects?.name || '-'}</span></td>
+                        <td>
+                          {inv?.expense_type === 'vendor'
+                            ? inv?.vendors?.full_name || '-'
+                            : inv?.expense_description || '-'}
+                        </td>
+                        <td dir="ltr" style={{ fontWeight: 600 }}>{formatCurrency(p.amount, cur)}</td>
+                        <td>{paymentMethodLabels[p.payment_method] || p.payment_method}</td>
+                        <td dir="ltr">{p.payment_date ? formatDateArabic(p.payment_date) : '-'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(p as any).created_by_user?.full_name || '-'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-muted)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.notes || '-'}</td>
+                        <td>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ gap: 4, fontSize: 12 }}
+                            disabled={confirmingId === p.id}
+                            onClick={() => confirmTransfer(p.id)}
+                          >
+                            {confirmingId === p.id ? <Loader2 size={13} className="spin" /> : <CheckCircle size={13} />}
+                            تأكيد التحويل
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {/* ═══ EXPENSES TAB ═══ */}
