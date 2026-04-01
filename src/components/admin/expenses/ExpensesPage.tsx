@@ -121,9 +121,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
           id, amount, payment_method, payment_date, payment_status, notes, created_at,
           created_by_user:users!expense_payments_created_by_fkey(full_name),
           vendor_invoices!expense_payments_expense_id_fkey (
-            id, expense_type, expense_description,
+            id, expense_type, expense_description, project_id,
             vendors (full_name),
-            projects (name, currency)
+            projects (name, currency, clients (name, client_image))
           )
         `)
         .eq('payment_status', 'approved')
@@ -571,6 +571,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
               <table>
                 <thead>
                   <tr>
+                    <th>العميل</th>
                     <th>المشروع</th>
                     <th>المورد / الوصف</th>
                     <th>المبلغ</th>
@@ -585,15 +586,33 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                   {pendingTransfers.map((p: any) => {
                     const inv = p.vendor_invoices;
                     const cur = inv?.projects?.currency || 'SAR';
+                    const clientName = inv?.projects?.clients?.name || '-';
+                    const clientImg = inv?.projects?.clients?.client_image;
+                    const projectId = inv?.project_id;
                     const paymentMethodLabels: Record<string, string> = {
                       bank_transfer: 'تحويل بنكي',
                       cash: 'نقدي',
                       cheque: 'شيك',
+                      check: 'شيك',
                       credit_card: 'بطاقة ائتمان',
                     };
                     return (
                       <tr key={p.id}>
-                        <td><span className="td-primary">{inv?.projects?.name || '-'}</span></td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {clientImg
+                              ? <img src={clientImg} alt="" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                              : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 10, fontWeight: 700, color: '#fff' }}>{clientName[0] || '?'}</div>
+                            }
+                            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{clientName}</span>
+                          </div>
+                        </td>
+                        <td>
+                          {projectId && onViewProject
+                            ? <button className="td-primary" style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }} onClick={() => onViewProject(projectId)}>{inv?.projects?.name || '-'}</button>
+                            : <span className="td-primary">{inv?.projects?.name || '-'}</span>
+                          }
+                        </td>
                         <td>
                           {inv?.expense_type === 'vendor'
                             ? inv?.vendors?.full_name || '-'

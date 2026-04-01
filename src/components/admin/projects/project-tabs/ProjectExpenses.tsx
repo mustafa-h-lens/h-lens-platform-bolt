@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
@@ -906,7 +906,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                             {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
                                           </button>
                                         )}
-                                        {(payment.payment_status === 'draft' || payment.payment_status === 'approved') && (
+                                        {payment.payment_status === 'approved' && (
                                           <button
                                             className="btn btn-sm"
                                             style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
@@ -947,6 +947,130 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           </div>
         </div>
       )}
+
+      {/* Payment Log Section */}
+      {(() => {
+        const allPayments = expenses.flatMap(exp =>
+          exp.payments.map(p => ({
+            ...p,
+            expenseName: exp.expense_type === 'vendor' ? exp.vendor_name : (exp.expense_description || '-'),
+            expenseType: exp.expense_type,
+          }))
+        ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        if (allPayments.length === 0) return null;
+
+        const draftCount = allPayments.filter(p => p.payment_status === 'draft').length;
+        const approvedCount = allPayments.filter(p => p.payment_status === 'approved').length;
+
+        const paymentStatusConfig: Record<string, { label: string; bg: string; color: string; border: string }> = {
+          draft: { label: 'مسجّل', bg: 'var(--bg-card)', color: 'var(--text-secondary)', border: 'var(--border-soft)' },
+          approved: { label: 'معتمد للصرف', bg: 'var(--warning-bg)', color: 'var(--warning-text)', border: 'var(--warning-border)' },
+          transferred: { label: 'تم التحويل', bg: 'var(--success-bg)', color: 'var(--success-text)', border: 'var(--success-border)' },
+        };
+
+        return (
+          <div className="rounded-lg border overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-sm)' }}>
+            {/* Section header */}
+            <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--color-table-border)', backgroundColor: 'var(--color-table-header)' }}>
+              <div className="flex items-center gap-3">
+                <CreditCard size={16} style={{ color: 'var(--color-primary)' }} />
+                <span className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>سجل الدفعات</span>
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-card)', border: '1px solid var(--border-soft)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  {allPayments.length}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {draftCount > 0 && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-card)', border: '1px solid var(--border-soft)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    {draftCount} مسجّل
+                  </span>
+                )}
+                {approvedCount > 0 && (
+                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', color: 'var(--warning-text)', fontWeight: 600 }}>
+                    {approvedCount} بانتظار التحويل
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead style={{ backgroundColor: 'var(--color-table-header)', borderBottom: '1px solid var(--color-table-border)' }}>
+                  <tr>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>المورد / الوصف</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>المبلغ</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>طريقة الدفع</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الدفع</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>الحالة</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>ملاحظات</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold" style={{ color: 'var(--color-text-secondary)' }}>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allPayments.map((payment, idx) => {
+                    const st = paymentStatusConfig[payment.payment_status] || paymentStatusConfig.draft;
+                    return (
+                      <tr
+                        key={payment.id}
+                        style={{ borderBottom: idx < allPayments.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}
+                      >
+                        <td className="px-4 py-3 text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                          {payment.expenseName}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'var(--color-success)' }} dir="ltr">
+                          {formatCurrency(payment.amount, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                          {PAYMENT_METHODS[payment.payment_method as keyof typeof PAYMENT_METHODS] || payment.payment_method}
+                        </td>
+                        <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
+                          {formatDateArabic(payment.payment_date)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 99, background: st.bg, color: st.color, fontWeight: 600, border: `1px solid ${st.border}` }}>
+                            {st.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {payment.notes || '-'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            {payment.payment_status === 'draft' && (
+                              <button
+                                className="btn btn-sm"
+                                style={{ fontSize: 11, padding: '3px 10px', background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)' }}
+                                disabled={changingPaymentStatus === payment.id}
+                                onClick={() => changePaymentStatus(payment.id, 'approved')}
+                              >
+                                {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
+                              </button>
+                            )}
+                            {payment.payment_status === 'approved' && (
+                              <button
+                                className="btn btn-sm"
+                                style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
+                                disabled={changingPaymentStatus === payment.id}
+                                onClick={() => changePaymentStatus(payment.id, 'transferred')}
+                              >
+                                {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
+                              </button>
+                            )}
+                            {payment.payment_status === 'transferred' && (
+                              <span style={{ fontSize: 13, color: 'var(--success-text)' }}>✓ مكتمل</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Delete Confirmation */}
       <ConfirmationModal
