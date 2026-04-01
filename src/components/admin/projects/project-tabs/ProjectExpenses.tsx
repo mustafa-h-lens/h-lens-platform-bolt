@@ -908,20 +908,21 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                             {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
                                           </button>
                                         )}
-                                        {payment.payment_status === 'approved' && isSuperAdmin && (
-                                          <button
-                                            className="btn btn-sm"
-                                            style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
-                                            disabled={changingPaymentStatus === payment.id}
-                                            onClick={() => changePaymentStatus(payment.id, 'transferred')}
-                                          >
-                                            {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
-                                          </button>
-                                        )}
-                                        {payment.payment_status === 'approved' && !isSuperAdmin && (
-                                          <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
-                                            بانتظار التحويل
-                                          </span>
+                                        {payment.payment_status === 'approved' && (
+                                          isSuperAdmin ? (
+                                            <button
+                                              className="btn btn-sm"
+                                              style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
+                                              disabled={changingPaymentStatus === payment.id}
+                                              onClick={() => changePaymentStatus(payment.id, 'transferred')}
+                                            >
+                                              {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
+                                            </button>
+                                          ) : (
+                                            <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
+                                              بانتظار التحويل
+                                            </span>
+                                          )
                                         )}
                                         {payment.payment_status === 'transferred' && (
                                           <span style={{ fontSize: 11, color: 'var(--success-text)' }}>✓</span>
@@ -1054,20 +1055,21 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                 {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
                               </button>
                             )}
-                            {payment.payment_status === 'approved' && isSuperAdmin && (
-                              <button
-                                className="btn btn-sm"
-                                style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
-                                disabled={changingPaymentStatus === payment.id}
-                                onClick={() => changePaymentStatus(payment.id, 'transferred')}
-                              >
-                                {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
-                              </button>
-                            )}
-                            {payment.payment_status === 'approved' && !isSuperAdmin && (
-                              <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
-                                بانتظار التحويل
-                              </span>
+                            {payment.payment_status === 'approved' && (
+                              isSuperAdmin ? (
+                                <button
+                                  className="btn btn-sm"
+                                  style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
+                                  disabled={changingPaymentStatus === payment.id}
+                                  onClick={() => changePaymentStatus(payment.id, 'transferred')}
+                                >
+                                  {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
+                                </button>
+                              ) : (
+                                <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
+                                  بانتظار التحويل
+                                </span>
+                              )
                             )}
                             {payment.payment_status === 'transferred' && (
                               <span style={{ fontSize: 13, color: 'var(--success-text)' }}>✓ مكتمل</span>
