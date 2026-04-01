@@ -7,6 +7,7 @@ const LAST_VISITED_PAGE_KEY = 'lastVisitedPage';
 const EXCLUDED_PATHS = [
   '/vendor/login',
   '/join',
+  '/',
 ];
 
 // ── navigate ──────────────────────────────────────────────────

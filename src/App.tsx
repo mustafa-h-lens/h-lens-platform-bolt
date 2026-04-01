@@ -209,40 +209,17 @@ function AppContent() {
     const currentPathname = window.location.pathname;
     const currentHash = window.location.hash;
 
-    const storedVendorSession = getStoredVendorSession();
-    const storedClientSession = getStoredClientSession();
+    // Only restore if we are on plain /admin with no hash and the user is authenticated.
+    // The admin dashboard reads hashes directly on mount, so we only need to act when
+    // there is NO hash yet (plain /admin) but a deeper page was saved.
+    const onPlainAdmin = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
 
-    // ── Case 1: User just logged in and landed on a plain /admin (no hash)
-    //    Restore them to where they were before (which may include a hash)
-    const isPlainAdminRoot = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
-    if (isPlainAdminRoot && user && profile && lastVisitedPage && lastVisitedPage.startsWith('/admin')) {
-      navigate(lastVisitedPage);
-      setHasRestoredRoute(true);
-      return;
-    }
-
-    // ── Case 2: User just logged in to vendor portal
-    const isVendorLoginPage = currentPathname === ROUTES.VENDOR_LOGIN;
-    if (isVendorLoginPage && storedVendorSession && lastVisitedPage) {
-      const isVendorRoute = lastVisitedPage.startsWith('/vendor') && !lastVisitedPage.includes('login');
-      if (isVendorRoute) {
-        navigate(lastVisitedPage);
-        setHasRestoredRoute(true);
-        return;
-      }
-    }
-
-    // ── Case 3: User refreshed on /admin with no hash but has a saved hash
-    //    (e.g., they refreshed and the browser strips the hash somehow)
-    //    More importantly: if they refresh on /admin#projects/xxx the admin
-    //    dashboard reads the hash directly — no action needed here.
-    //    But if they refresh on plain /admin, restore their last sub-page.
-    if (currentPathname === ROUTES.ADMIN_LOGIN && !currentHash && user && profile && lastVisitedPage) {
-      const savedHasHash = lastVisitedPage.includes('#');
-      if (savedHasHash && lastVisitedPage.startsWith('/admin')) {
-        navigate(lastVisitedPage);
-        setHasRestoredRoute(true);
-        return;
+    if (onPlainAdmin && user && profile && lastVisitedPage) {
+      // Only restore genuine admin sub-pages (must start with /admin# to have a hash)
+      const isDeepAdminPage = lastVisitedPage.startsWith('/admin#') || lastVisitedPage.startsWith('/admin/');
+      if (isDeepAdminPage) {
+        window.history.replaceState({}, '', lastVisitedPage);
+        // Don't dispatch popstate — NewAdminDashboard reads the hash on mount via parseHash()
       }
     }
 
