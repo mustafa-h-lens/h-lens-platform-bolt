@@ -38,15 +38,34 @@ interface Expense {
   approval_status: string;
   notes: string | null;
   invoice_file_url: string | null;
+  team_member_id: string | null;
+  team_member_name: string | null;
+  paid_by_user_id: string | null;
+  paid_by_user_name: string | null;
   created_at: string;
   payments: Payment[];
 }
 
+interface TeamEntity {
+  id: string;
+  name_ar: string;
+  name_en: string | null;
+  is_active: boolean;
+}
+
+interface TeamMember {
+  id: string;
+  full_name: string;
+  role: string | null;
+}
+
 const EXPENSE_TYPES = [
   { id: 'vendor', label: 'مورد', desc: 'مصروف مرتبط بمورد', icon: '👤' },
+  { id: 'business_trip', label: 'انتداب', desc: 'بدل سفر ومصاريف انتداب', icon: '✈️' },
+  { id: 'bonus', label: 'مكافأة', desc: 'مكافأة أداء أو حافز', icon: '🏆' },
   { id: 'purchases', label: 'مصاريف لوجيستية', desc: 'معدات، مواد، مستلزمات', icon: '🛒' },
-  { id: 'services', label: 'خدمات', desc: 'شحن، طباعة، تموين', icon: '🔧' },
   { id: 'rent', label: 'إيجار', desc: 'إيجار موقع، استوديو، معدات', icon: '🏢' },
+  { id: 'services', label: 'خدمات', desc: 'شحن، طباعة، تموين', icon: '🔧' },
   { id: 'other', label: 'أخرى', desc: 'مصروفات متنوعة', icon: '📋' },
 ] as const;
 
@@ -82,6 +101,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [projectItems, setProjectItems] = useState<SimpleProjectItem[]>([]);
+  const [teamEntities, setTeamEntities] = useState<TeamEntity[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   // UI state
@@ -107,6 +128,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     amount: '',
     due_date: '',
     notes: '',
+    team_member_id: '',
+    paid_by_user_id: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +139,12 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const [teamMemberSearch, setTeamMemberSearch] = useState('');
+  const [teamMemberDropdownOpen, setTeamMemberDropdownOpen] = useState(false);
+  const teamMemberDropdownRef = useRef<HTMLDivElement>(null);
+  const [paidBySearch, setPaidBySearch] = useState('');
+  const [paidByDropdownOpen, setPaidByDropdownOpen] = useState(false);
+  const paidByDropdownRef = useRef<HTMLDivElement>(null);
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
@@ -130,6 +159,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     const handleClickOutside = (e: MouseEvent) => {
       if (vendorDropdownRef.current && !vendorDropdownRef.current.contains(e.target as Node)) setVendorDropdownOpen(false);
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) setCategoryDropdownOpen(false);
+      if (teamMemberDropdownRef.current && !teamMemberDropdownRef.current.contains(e.target as Node)) setTeamMemberDropdownOpen(false);
+      if (paidByDropdownRef.current && !paidByDropdownRef.current.contains(e.target as Node)) setPaidByDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -166,6 +197,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     loadVendors();
     loadVendorFields();
     loadProjectItems();
+    loadTeamEntities();
+    loadTeamMembers();
   }, [projectId]);
 
   const loadExpenses = async () => {
@@ -191,6 +224,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           project_item_id,
           notes,
           invoice_file_url,
+          team_member_id,
+          paid_by_user_id,
           created_at,
           vendors (
             full_name,
@@ -198,6 +233,12 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           ),
           project_items (
             name
+          ),
+          team_members:users!team_member_id (
+            full_name
+          ),
+          paid_by_users:users!paid_by_user_id (
+            full_name
           ),
           expense_payments (
             id,
@@ -234,6 +275,10 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         approval_status: item.approval_status || 'draft',
         notes: item.notes || null,
         invoice_file_url: item.invoice_file_url || null,
+        team_member_id: item.team_member_id || null,
+        team_member_name: item.team_members?.full_name || null,
+        paid_by_user_id: item.paid_by_user_id || null,
+        paid_by_user_name: item.paid_by_users?.full_name || null,
         created_at: item.created_at,
         payments: (item.expense_payments || []).sort(
           (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -303,6 +348,36 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       setVendorFields(data || []);
     } catch (error) {
       console.error('Error loading vendor fields:', error);
+    }
+  };
+
+  const loadTeamEntities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('team_entities')
+        .select('id, name_ar, name_en, is_active')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setTeamEntities(data || []);
+    } catch (error) {
+      console.error('Error loading team entities:', error);
+    }
+  };
+
+  const loadTeamMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, full_name, role')
+        .eq('is_active', true)
+        .order('full_name', { ascending: true });
+
+      if (error) throw error;
+      setTeamMembers(data || []);
+    } catch (error) {
+      console.error('Error loading team members:', error);
     }
   };
 
@@ -387,12 +462,16 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   // Open add modal
   const openAddModal = () => {
     setEditingExpense(null);
-    setExpenseForm({ expense_type: '', expense_description: '', vendor_id: '', category: '', project_item_id: '', amount: '', due_date: '', notes: '' });
+    setExpenseForm({ expense_type: '', expense_description: '', vendor_id: '', category: '', project_item_id: '', amount: '', due_date: '', notes: '', team_member_id: '', paid_by_user_id: '' });
     setSelectedFile(null);
     setVendorSearch('');
     setVendorDropdownOpen(false);
     setCategorySearch('');
     setCategoryDropdownOpen(false);
+    setTeamMemberSearch('');
+    setTeamMemberDropdownOpen(false);
+    setPaidBySearch('');
+    setPaidByDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -408,12 +487,18 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       amount: String(expense.amount),
       due_date: expense.due_date || '',
       notes: expense.notes || '',
+      team_member_id: expense.team_member_id || '',
+      paid_by_user_id: expense.paid_by_user_id || '',
     });
     setSelectedFile(null);
     setVendorSearch(vendors.find(v => v.id === expense.vendor_id)?.full_name || '');
     setVendorDropdownOpen(false);
     setCategorySearch(getCategoryLabel(expense.category || null));
     setCategoryDropdownOpen(false);
+    setTeamMemberSearch(expense.team_member_name || '');
+    setTeamMemberDropdownOpen(false);
+    setPaidBySearch(expense.paid_by_user_name || '');
+    setPaidByDropdownOpen(false);
     setShowExpenseModal(true);
   };
 
@@ -433,11 +518,21 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const handleExpenseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const isVendor = expenseForm.expense_type === 'vendor';
+    const isBeneficiary = expenseForm.expense_type === 'business_trip' || expenseForm.expense_type === 'bonus';
+
     if (isVendor && !expenseForm.vendor_id) {
       showError('يرجى اختيار المورد');
       return;
     }
-    if (!isVendor && !expenseForm.expense_description?.trim()) {
+    if (isBeneficiary && !expenseForm.team_member_id) {
+      showError('يرجى اختيار المستفيد');
+      return;
+    }
+    if (isBeneficiary && !expenseForm.due_date) {
+      showError('يرجى اختيار التاريخ');
+      return;
+    }
+    if (!isVendor && !isBeneficiary && !expenseForm.expense_description?.trim()) {
       showError('يرجى إدخال وصف المصروف');
       return;
     }
@@ -470,42 +565,72 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
       if (editingExpense) {
         // Update existing expense
+        const updateData: Record<string, any> = {
+          expense_type: expenseForm.expense_type,
+          vendor_id: isVendor ? expenseForm.vendor_id : null,
+          category: isVendor ? (expenseForm.category || null) : null,
+          project_item_id: expenseForm.project_item_id || null,
+          amount_total: amount,
+          amount_remaining: amount - editingExpense.amount_paid,
+          due_date: expenseForm.due_date || null,
+          notes: expenseForm.notes || null,
+          invoice_file_url: fileUrl,
+        };
+
+        if (isVendor) {
+          updateData.expense_description = null;
+          updateData.team_member_id = null;
+          updateData.paid_by_user_id = null;
+        } else if (isBeneficiary) {
+          updateData.expense_description = expenseForm.expense_description || null;
+          updateData.team_member_id = expenseForm.team_member_id || null;
+          updateData.paid_by_user_id = null;
+        } else {
+          updateData.expense_description = expenseForm.expense_description || null;
+          updateData.team_member_id = null;
+          updateData.paid_by_user_id = expenseForm.paid_by_user_id || null;
+        }
+
         const { error } = await supabase
           .from('vendor_invoices')
-          .update({
-            expense_type: expenseForm.expense_type,
-            expense_description: !isVendor ? expenseForm.expense_description || null : null,
-            vendor_id: isVendor ? expenseForm.vendor_id : null,
-            category: isVendor ? (expenseForm.category || null) : null,
-            project_item_id: expenseForm.project_item_id || null,
-            amount_total: amount,
-            amount_remaining: amount - editingExpense.amount_paid,
-            due_date: expenseForm.due_date || null,
-            notes: expenseForm.notes || null,
-            invoice_file_url: fileUrl,
-          })
+          .update(updateData)
           .eq('id', editingExpense.id);
 
         if (error) throw error;
         showSuccess('تم تحديث المصروف بنجاح');
       } else {
         // Insert new expense
+        const insertData: Record<string, any> = {
+          expense_type: expenseForm.expense_type,
+          vendor_id: isVendor ? expenseForm.vendor_id : null,
+          project_id: projectId,
+          category: isVendor ? (expenseForm.category || null) : null,
+          project_item_id: expenseForm.project_item_id || null,
+          amount_total: amount,
+          amount_remaining: amount,
+          due_date: expenseForm.due_date || null,
+          notes: expenseForm.notes || null,
+          invoice_file_url: fileUrl,
+          status: 'pending',
+        };
+
+        if (isVendor) {
+          insertData.expense_description = null;
+          insertData.team_member_id = null;
+          insertData.paid_by_user_id = null;
+        } else if (isBeneficiary) {
+          insertData.expense_description = expenseForm.expense_description || null;
+          insertData.team_member_id = expenseForm.team_member_id || null;
+          insertData.paid_by_user_id = null;
+        } else {
+          insertData.expense_description = expenseForm.expense_description || null;
+          insertData.team_member_id = null;
+          insertData.paid_by_user_id = expenseForm.paid_by_user_id || null;
+        }
+
         const { error } = await supabase
           .from('vendor_invoices')
-          .insert({
-            expense_type: expenseForm.expense_type,
-            expense_description: !isVendor ? expenseForm.expense_description || null : null,
-            vendor_id: isVendor ? expenseForm.vendor_id : null,
-            project_id: projectId,
-            category: isVendor ? (expenseForm.category || null) : null,
-            project_item_id: expenseForm.project_item_id || null,
-            amount_total: amount,
-            amount_remaining: amount,
-            due_date: expenseForm.due_date || null,
-            notes: expenseForm.notes || null,
-            invoice_file_url: fileUrl,
-            status: 'pending',
-          });
+          .insert(insertData);
 
         if (error) throw error;
         showSuccess('تم إضافة المصروف بنجاح');
@@ -801,7 +926,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                          {expense.expense_type === 'vendor' ? expense.vendor_name : (expense.expense_description || '-')}
+                          {expense.expense_type === 'vendor' ? expense.vendor_name : (expense.team_member_name || expense.expense_description || '-')}
                         </td>
                         <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
                           {expense.expense_type === 'vendor' ? getCategoryLabel(expense.category) : '-'}
@@ -1331,8 +1456,72 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                   </>
                 )}
 
-                {/* ── NON-VENDOR TYPES: simpler form ── */}
-                {expenseForm.expense_type !== 'vendor' && (
+                {/* ── BUSINESS_TRIP / BONUS TYPES ── */}
+                {(expenseForm.expense_type === 'business_trip' || expenseForm.expense_type === 'bonus') && (
+                  <>
+                    {/* Team Member Picker */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                        المستفيد <span className="text-red-500">*</span>
+                      </label>
+                      {editingExpense ? (
+                        <div className="w-full px-4 py-2 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', opacity: 0.6 }}>
+                          {teamMembers.find(m => m.id === expenseForm.team_member_id)?.full_name || 'غير معروف'}
+                        </div>
+                      ) : (
+                        <div ref={teamMemberDropdownRef} className="relative">
+                          <div className="relative">
+                            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                            <input
+                              type="text" value={teamMemberSearch}
+                              onChange={(e) => { setTeamMemberSearch(e.target.value); setTeamMemberDropdownOpen(true); }}
+                              onFocus={() => setTeamMemberDropdownOpen(true)}
+                              placeholder="ابحث عن موظف..."
+                              className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                              style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.team_member_id ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                            />
+                            {expenseForm.team_member_id && (
+                              <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: '' })); setTeamMemberSearch(''); }}
+                                className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+                          {teamMemberDropdownOpen && (
+                            <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}>
+                              <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
+                                {(() => {
+                                  const q = teamMemberSearch.toLowerCase();
+                                  const filtered = teamMembers.filter(m => !q || m.full_name.toLowerCase().includes(q));
+                                  if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                                  return (
+                                    <>
+                                      {filtered.map(member => (
+                                        <button key={member.id} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: member.id })); setTeamMemberSearch(member.full_name); setTeamMemberDropdownOpen(false); }}
+                                          className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                          style={{ color: expenseForm.team_member_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.team_member_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                          onMouseEnter={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                          onMouseLeave={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                          <span className="font-medium text-sm">{member.full_name}</span>
+                                          {member.role && <span className="text-xs opacity-50">{member.role}</span>}
+                                        </button>
+                                      ))}
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          )}
+                          <input type="text" value={expenseForm.team_member_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* ── OTHER NON-VENDOR TYPES: simpler form ── */}
+                {expenseForm.expense_type !== 'vendor' && expenseForm.expense_type !== 'business_trip' && expenseForm.expense_type !== 'bonus' && (
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                       وصف المصروف <span className="text-red-500">*</span>
@@ -1346,6 +1535,61 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                       placeholder="مثال: شراء معدات تصوير، إيجار استوديو..."
                       required
                     />
+                  </div>
+                )}
+
+                {/* ── PAID BY FIELD (for purchases, rent, services, other) ── */}
+                {expenseForm.expense_type !== 'vendor' && expenseForm.expense_type !== 'business_trip' && expenseForm.expense_type !== 'bonus' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                      دُفع بواسطة (عهدة)
+                    </label>
+                    <div ref={paidByDropdownRef} className="relative">
+                      <div className="relative">
+                        <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                        <input
+                          type="text" value={paidBySearch}
+                          onChange={(e) => { setPaidBySearch(e.target.value); setPaidByDropdownOpen(true); }}
+                          onFocus={() => setPaidByDropdownOpen(true)}
+                          placeholder="ابحث عن موظف..."
+                          className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                          style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.paid_by_user_id ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                        />
+                        {expenseForm.paid_by_user_id && (
+                          <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, paid_by_user_id: '' })); setPaidBySearch(''); }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                      {paidByDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}>
+                          <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
+                            {(() => {
+                              const q = paidBySearch.toLowerCase();
+                              const filtered = teamMembers.filter(m => !q || m.full_name.toLowerCase().includes(q));
+                              if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                              return (
+                                <>
+                                  {filtered.map(member => (
+                                    <button key={member.id} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, paid_by_user_id: member.id })); setPaidBySearch(member.full_name); setPaidByDropdownOpen(false); }}
+                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                      style={{ color: expenseForm.paid_by_user_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.paid_by_user_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                      onMouseEnter={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                      onMouseLeave={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                      <span className="font-medium text-sm">{member.full_name}</span>
+                                      {member.role && <span className="text-xs opacity-50">{member.role}</span>}
+                                    </button>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                      <input type="text" value={expenseForm.paid_by_user_id} className="sr-only" tabIndex={-1} onChange={() => {}} />
+                    </div>
                   </div>
                 )}
 
@@ -1381,13 +1625,28 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                   )}
                 </div>
 
-                {/* Due date */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الاستحقاق</label>
-                  <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }} />
-                </div>
+                {/* Date field for business_trip/bonus */}
+                {(expenseForm.expense_type === 'business_trip' || expenseForm.expense_type === 'bonus') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                      التاريخ <span className="text-red-500">*</span>
+                    </label>
+                    <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                      required />
+                  </div>
+                )}
+
+                {/* Due date for other types */}
+                {expenseForm.expense_type !== 'business_trip' && expenseForm.expense_type !== 'bonus' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الاستحقاق</label>
+                    <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }} />
+                  </div>
+                )}
 
                 {/* Notes */}
                 <div>

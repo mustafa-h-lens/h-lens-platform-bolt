@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Tag, FileText, Building2, Shield, ChevronDown } from 'lucide-react';
+import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Tag, FileText, Building2, Shield, ChevronDown, Briefcase } from 'lucide-react';
 import { ServiceItemsCatalog } from '../ServiceItemsCatalog';
 import { ItemCategoriesManagement } from '../projects/ItemCategoriesManagement';
 import { ProjectStatusSettings } from './ProjectStatusSettings';
@@ -11,8 +11,9 @@ import { POSettings } from './POSettings';
 import { TermsSettings } from './TermsSettings';
 import { PrivacySettings } from './PrivacySettings';
 import { BanksSettings } from './BanksSettings';
+import { SectorsSettings } from './SectorsSettings';
 import { ClientDocumentTypesSettings } from './ClientDocumentTypesSettings';
-type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks';
+type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'sectors';
 
 interface SubTab {
   id: TabId;
@@ -68,6 +69,7 @@ const tabGroups: TabGroup[] = [
     color: '#059669',
     tabs: [
       { id: 'banks', label: 'إدارة البنوك', icon: Building2, component: BanksSettings },
+      { id: 'sectors', label: 'إدارة القطاعات', icon: Briefcase, component: SectorsSettings },
       { id: 'purchase-orders', label: 'إعدادات أوامر الشراء', icon: ShoppingCart, component: POSettings }
     ]
   },

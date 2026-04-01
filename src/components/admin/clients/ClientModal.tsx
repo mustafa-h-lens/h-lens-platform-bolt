@@ -22,6 +22,13 @@ interface ClientModalProps {
   onSuccess: () => void;
 }
 
+interface Sector {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  is_active: boolean;
+}
+
 export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) => {
   const { user } = useAuth();
   const { showError } = useNotification();
@@ -33,9 +40,14 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [sendInvite, setSendInvite] = useState(!client); // Default ON for new clients
+  const [sectors, setSectors] = useState<Sector[]>([]);
   const [formData, setFormData] = useState({
     name: '', code: '', email: '', phone: '', address: '', notes: '', client_image: '', website: '', city: '', sector: '',
   });
+
+  useEffect(() => {
+    fetchSectors();
+  }, []);
 
   useEffect(() => {
     if (client) {
@@ -49,6 +61,21 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
       setContacts(client.contacts || []);
     }
   }, [client]);
+
+  const fetchSectors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sectors')
+        .select('id, name_ar, name_en, is_active')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setSectors(data || []);
+    } catch (error) {
+      console.error('Error fetching sectors:', error);
+    }
+  };
 
   const addContact = () => {
     setContacts([...contacts, { id: crypto.randomUUID(), name: '', phone: '', email: '', role: 'مسؤول التواصل' }]);
@@ -234,7 +261,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
                 <label className="input-label">القطاع</label>
                 <select className="input select" value={formData.sector} onChange={e => setFormData({ ...formData, sector: e.target.value })}>
                   <option value="">اختر القطاع</option>
-                  <option>تقنية</option><option>تصميم</option><option>تسويق</option><option>عقارات</option><option>تعليم</option><option>صحة</option><option>سياحة</option><option>أخرى</option>
+                  {sectors.map(sector => <option key={sector.id} value={sector.name_ar}>{sector.name_ar}</option>)}
                 </select>
               </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, CreditCard, Eye, Download, Send, XCircle, Banknote } from 'lucide-react';
+import { Plus, CreditCard, Eye, EyeOff, Download, Send, XCircle, Banknote, ChevronDown } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { CreateInvoiceModal } from '../../invoices/CreateInvoiceModal';
@@ -61,6 +61,22 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
 
   // Cancel confirmation state
   const [cancelInvoice, setCancelInvoice] = useState<Invoice | null>(null);
+
+  // Status dropdown state
+  const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
+
+  // Hide amounts state
+  const [hideAmounts, setHideAmounts] = useState(false);
+  const masked = (value: string) => hideAmounts ? '••••••' : value;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = () => setStatusDropdown(null);
+    if (statusDropdown) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [statusDropdown]);
 
   useEffect(() => {
     loadInvoices();
@@ -177,6 +193,31 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
     }
   };
 
+  const handleStatusChange = async (invoice: Invoice, newStatus: string) => {
+    if (newStatus === 'cancelled') {
+      setCancelInvoice(invoice);
+      setStatusDropdown(null);
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ status: newStatus })
+        .eq('id', invoice.id);
+      if (error) throw error;
+      const statusLabels: Record<string, string> = { draft: 'مسودة', sent: 'مرسلة', paid: 'مدفوعة', overdue: 'متأخرة' };
+      showSuccess(`تم تغيير الحالة إلى ${statusLabels[newStatus] || newStatus}`);
+      setStatusDropdown(null);
+      loadInvoices();
+      if (selectedInvoice?.id === invoice.id) {
+        setSelectedInvoice({ ...invoice, status: newStatus });
+      }
+    } catch (error) {
+      console.error('Error changing status:', error);
+      showError('حدث خطأ أثناء تغيير الحالة');
+    }
+  };
+
   // --- Payment handlers ---
 
   const openPaymentModal = (invoice: Invoice) => {
@@ -262,6 +303,17 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
 
   return (
     <div className="space-y-6">
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button
+          onClick={() => setHideAmounts(!hideAmounts)}
+          className="btn btn-ghost"
+          style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, color: 'var(--text-muted, #94a3b8)' }}
+        >
+          {hideAmounts ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+          {hideAmounts ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
+        </button>
+      </div>
+
       <div className="flex items-center justify-end">
         <button
           onClick={() => setShowCreateModal(true)}
@@ -329,11 +381,11 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
                   <div className="text-left">
                     <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">المبلغ الإجمالي</div>
                     <div className="text-xl font-bold text-[#0A2A66] dark:text-[#47A1FF]" dir="ltr">
-                      {formatCurrency(invoice.total_amount, invoice.currency)}
+                      {masked(formatCurrency(invoice.total_amount, invoice.currency))}
                     </div>
                     {invoice.paid_amount > 0 && (
                       <div className="text-xs text-slate-600 dark:text-slate-400 mt-1" dir="ltr">
-                        مدفوع: {formatCurrency(invoice.paid_amount, invoice.currency)}
+                        مدفوع: {masked(formatCurrency(invoice.paid_amount, invoice.currency))}
                       </div>
                     )}
                   </div>
@@ -368,26 +420,46 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
                     </button>
                   )}
 
-                  {canSend && (
-                    <button
-                      onClick={() => handleSendInvoice(invoice)}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-[#0A2A66] dark:text-[#47A1FF]
-                        rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-all text-sm font-medium"
-                    >
-                      <Send className="w-4 h-4" />
-                      <span>إرسال</span>
-                    </button>
-                  )}
-
-                  {canCancel && (
-                    <button
-                      onClick={() => setCancelInvoice(invoice)}
-                      className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400
-                        rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-all text-sm font-medium"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      <span>إلغاء</span>
-                    </button>
+                  {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setStatusDropdown(statusDropdown === invoice.id ? null : invoice.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300
+                          rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-all text-sm font-medium"
+                      >
+                        <span>تغيير الحالة</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      {statusDropdown === invoice.id && (
+                        <div
+                          style={{
+                            position: 'absolute', top: '100%', left: 0, marginTop: 4, minWidth: 160,
+                            background: 'var(--bg-elevated, #fff)', border: '1px solid var(--border-primary, #e2e8f0)',
+                            borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 50, overflow: 'hidden',
+                          }}
+                          dir="rtl"
+                        >
+                          {Object.entries(INVOICE_STATUSES)
+                            .filter(([key]) => key !== invoice.status)
+                            .map(([key, val]) => (
+                              <button
+                                key={key}
+                                onClick={() => handleStatusChange(invoice, key)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '10px 16px',
+                                  fontSize: 13, fontWeight: 500, border: 'none', background: 'transparent', cursor: 'pointer',
+                                  color: 'var(--text-primary, #1e293b)', textAlign: 'right',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover, #f1f5f9)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: val.color, flexShrink: 0 }} />
+                                {val.label}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

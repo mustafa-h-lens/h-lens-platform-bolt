@@ -388,12 +388,12 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   // Vendor summary aggregation
   const vendorSummaries = useMemo<VendorSummary[]>(() => {
     const map = new Map<string, VendorSummary>();
-    filteredExpenses.forEach(e => {
-      const key = e.vendor_id || e.vendor_name || 'other';
+    filteredExpenses.filter(e => e.vendor_id).forEach(e => {
+      const key = e.vendor_id!;
       if (!map.has(key)) {
         map.set(key, {
           vendor_id: key,
-          vendor_name: e.vendor_name || (e.expense_description || '-'),
+          vendor_name: e.vendor_name || '-',
           project_count: 0,
           invoice_count: 0,
           total_amount: 0,

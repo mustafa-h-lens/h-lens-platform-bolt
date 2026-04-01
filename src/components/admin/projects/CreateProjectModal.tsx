@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Search, X, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { Modal } from '../../shared/Modal';
+import { ClientModal } from '../clients/ClientModal';
 
 interface Client {
   id: string;
@@ -17,16 +19,23 @@ interface User {
 interface CreateProjectModalProps {
   onClose: () => void;
   onSuccess: () => void;
+  preSelectedClientId?: string;
+  preSelectedClientName?: string;
+  onProjectCreated?: () => void;
 }
 
-export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalProps) => {
+export const CreateProjectModal = ({ onClose, onSuccess, preSelectedClientId, preSelectedClientName, onProjectCreated }: CreateProjectModalProps) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
   const [clients, setClients] = useState<Client[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientDropdownOpen, setClientDropdownOpen] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
-    client_id: '',
+    client_id: preSelectedClientId || '',
     name: '',
     description: '',
     project_mode: 'STANDARD',
@@ -44,6 +53,20 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
     loadUsers();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
+        setClientDropdownOpen(false);
+      }
+    };
+    if (clientDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [clientDropdownOpen]);
+
   const loadClients = async () => {
     const { data } = await supabase
       .from('clients')
@@ -60,6 +83,20 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
       .eq('is_active', true)
       .order('full_name');
     setUsers(data || []);
+  };
+
+  const handleClientSelect = (clientId: string) => {
+    setFormData({ ...formData, client_id: clientId });
+    setClientDropdownOpen(false);
+    setClientSearch('');
+  };
+
+  const handleClientCreated = async () => {
+    // Reload clients and close the modal
+    await loadClients();
+    setShowClientModal(false);
+    // The newly created client should be auto-selected
+    // We'll handle this in the ClientModal's onSuccess callback
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,6 +128,7 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
       if (error) throw error;
 
       showSuccess('تم إنشاء المشروع بنجاح');
+      onProjectCreated?.();
       onSuccess();
     } catch (error: any) {
       console.error('Error creating project:', error);
@@ -120,21 +158,123 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="مشروع جديد" maxWidth="2xl">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <>
+      <Modal isOpen={true} onClose={onClose} title="مشروع جديد" maxWidth="2xl">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Searchable Client Dropdown */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">العميل</label>
-            <select
-              value={formData.client_id}
-              onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">اختر العميل</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>{client.name}</option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              العميل <span className="text-red-500">*</span>
+            </label>
+            <div ref={clientDropdownRef} className="relative">
+              <div className="relative">
+                <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                <input
+                  type="text"
+                  value={clientSearch || (formData.client_id && clients.find(c => c.id === formData.client_id)?.name) || ''}
+                  onChange={(e) => {
+                    setClientSearch(e.target.value);
+                    setClientDropdownOpen(true);
+                  }}
+                  onFocus={() => setClientDropdownOpen(true)}
+                  placeholder="ابحث عن عميل..."
+                  className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: formData.client_id ? 'var(--color-primary)' : 'var(--color-border)',
+                    color: 'var(--color-text-primary)',
+                  }}
+                  required
+                />
+                {formData.client_id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, client_id: '' });
+                      setClientSearch('');
+                    }}
+                    className="absolute left-3 top-1/2 -translate-y-1/2"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {clientDropdownOpen && (
+                <div
+                  className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden"
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    maxHeight: 240,
+                  }}
+                >
+                  <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
+                    {(() => {
+                      const filtered = clients.filter(
+                        c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase())
+                      );
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>
+                            لا توجد نتائج
+                          </div>
+                        );
+                      }
+
+                      return filtered.map(client => (
+                        <button
+                          key={client.id}
+                          type="button"
+                          onClick={() => handleClientSelect(client.id)}
+                          className="w-full text-right px-4 py-2.5 transition-colors"
+                          style={{
+                            color: formData.client_id === client.id ? 'var(--color-primary)' : 'var(--color-text-primary)',
+                            backgroundColor:
+                              formData.client_id === client.id
+                                ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)'
+                                : 'transparent',
+                          }}
+                          onMouseEnter={e => {
+                            if (formData.client_id !== client.id) {
+                              e.currentTarget.style.backgroundColor = 'var(--color-background-hover)';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (formData.client_id !== client.id) {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        >
+                          <span className="font-medium text-sm">{client.name}</span>
+                        </button>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* Add new client button */}
+                  <div
+                    className="border-t p-2"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowClientModal(true)}
+                      className="w-full flex items-center justify-end gap-2 px-3 py-2 rounded text-sm font-medium transition-all"
+                      style={{
+                        color: 'var(--color-primary)',
+                        backgroundColor: 'transparent',
+                      }}
+                    >
+                      <Plus size={14} />
+                      عميل جديد
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
@@ -247,5 +387,26 @@ export const CreateProjectModal = ({ onClose, onSuccess }: CreateProjectModalPro
         </div>
       </form>
     </Modal>
+
+    {showClientModal && (
+      <ClientModal
+        client={null}
+        onClose={() => setShowClientModal(false)}
+        onSuccess={async () => {
+          await loadClients();
+          const newClients = await supabase
+            .from('clients')
+            .select('id, name')
+            .order('name');
+          if (newClients.data && newClients.data.length > 0) {
+            const latestClient = newClients.data[newClients.data.length - 1];
+            setFormData({ ...formData, client_id: latestClient.id });
+            setClientSearch('');
+            setShowClientModal(false);
+          }
+        }}
+      />
+    )}
+    </>
   );
 };

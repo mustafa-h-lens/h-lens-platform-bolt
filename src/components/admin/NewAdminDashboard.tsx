@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { supabase } from '../../lib/supabaseClient';
-import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft } from 'lucide-react';
+import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft, EyeOff, Eye } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
 import { ProjectsList } from './projects/ProjectsList';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../lib/formatters';
@@ -124,6 +124,8 @@ export const NewAdminDashboard = () => {
   const [pendingItems, setPendingItems] = useState<PendingItems>({ pendingVendors: 0, unpaidInvoices: 0, unpaidAmount: 0, overdueInvoices: 0 });
   const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
+  const [hideAmounts, setHideAmounts] = useState(false);
+  const masked = (value: string) => hideAmounts ? '••••••' : value;
 
   // Sync hash to URL whenever navigation state changes
   useEffect(() => {
@@ -533,12 +535,24 @@ export const NewAdminDashboard = () => {
                 </div>
               </div>
 
+              {/* ═══ TOGGLE BUTTON ═══ */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                <button
+                  onClick={() => setHideAmounts(!hideAmounts)}
+                  className="btn btn-ghost"
+                  style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}
+                >
+                  {hideAmounts ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {hideAmounts ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
+                </button>
+              </div>
+
               {/* ═══ STAT CARDS ═══ */}
               <div className="stats-grid" style={{ marginTop: 20 }}>
                 <div className="stat-card sc-blue">
                   <div className="stat-icon-box"><Wallet size={18} /></div>
                   <div className="stat-sub">الإيرادات</div>
-                  <div className="stat-val" dir="ltr">{formatCurrency(stats.totalRevenue)}</div>
+                  <div className="stat-val" dir="ltr">{masked(formatCurrency(stats.totalRevenue))}</div>
                   <div style={{ fontSize: 12, color: 'var(--sc-blue-label)', marginTop: 4 }}>المحصّل</div>
                 </div>
                 <div className="stat-card sc-green">
@@ -599,7 +613,7 @@ export const NewAdminDashboard = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
                         <div className="card-icon ci-red" style={{ width: 32, height: 32, borderRadius: 'var(--radius-sm)' }}><Receipt size={14} /></div>
                         <div>
-                          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{pendingItems.unpaidInvoices} فاتورة غير مسددة بقيمة {formatCurrency(pendingItems.unpaidAmount, 'SAR')}</span>
+                          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{pendingItems.unpaidInvoices} فاتورة غير مسددة بقيمة {masked(formatCurrency(pendingItems.unpaidAmount, 'SAR'))}</span>
                           {pendingItems.overdueInvoices > 0 && (
                             <div style={{ fontSize: 11, color: 'var(--danger-text)', marginTop: 2 }}>منها {pendingItems.overdueInvoices} متأخرة</div>
                           )}
@@ -650,7 +664,7 @@ export const NewAdminDashboard = () => {
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{inv.client_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>#{inv.invoice_number} · منذ {daysSince(inv.created_at)} يوم</div>
                           </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--warning-text)' }} dir="ltr">{formatCurrency(inv.total_amount - inv.paid_amount, inv.currency)}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--warning-text)' }} dir="ltr">{masked(formatCurrency(inv.total_amount - inv.paid_amount, inv.currency))}</div>
                         </div>
                       ))}
                     </div>

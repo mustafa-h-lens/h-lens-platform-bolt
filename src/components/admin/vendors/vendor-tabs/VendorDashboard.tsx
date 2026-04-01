@@ -25,7 +25,7 @@ export const VendorDashboard = ({ vendorId }: VendorDashboardProps) => {
 
   const fetchStats = async () => {
     try {
-      const { data: invoices, error } = await supabase.from('vendor_invoices').select('*').eq('vendor_id', vendorId);
+      const { data: invoices, error } = await supabase.from('vendor_invoices').select('*').eq('vendor_id', vendorId).order('created_at', { ascending: false });
       if (error) throw error;
       const projectIds = new Set(invoices?.map(inv => inv.project_id) || []);
       const clientIds = new Set(invoices?.map(inv => inv.client_id) || []);

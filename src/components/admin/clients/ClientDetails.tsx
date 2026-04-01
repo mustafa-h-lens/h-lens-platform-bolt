@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User, Send, CheckCircle } from 'lucide-react';
+import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User, Send, CheckCircle, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { PurchaseOrdersTabEnhanced } from './client-tabs/PurchaseOrdersTabEnhanced';
 import { ProductionTasksTab } from './client-tabs/ProductionTasksTab';
 import { ClientDocuments } from './client-tabs/ClientDocuments';
 import { ClientProjects } from './ClientProjects';
+import { CreateProjectModal } from '../projects/CreateProjectModal';
 
 interface Client {
   id: string;
@@ -39,6 +40,8 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
   const { showSuccess, showError } = useNotification();
   const [client, setClient] = useState<Client | null>(null);
   const [inviting, setInviting] = useState(false);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [projectsRefreshKey, setProjectsRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<TabType>(
     initialTab && VALID_TAB_IDS.includes(initialTab) ? initialTab as TabType : 'projects'
   );
@@ -177,8 +180,17 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
               )}
             </div>
 
-            {/* Portal status + Invite button */}
-            <div style={{ marginRight: 'auto' }}>
+            {/* Action buttons */}
+            <div style={{ marginRight: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
+              <button
+                onClick={() => setShowCreateProjectModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: 'var(--color-primary)', color: '#fff' }}
+              >
+                <Plus size={16} />
+                إضافة مشروع
+              </button>
+
               {client.invitation_status === 'active' ? (
                 <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
                   style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
@@ -245,6 +257,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
       <div className="max-w-7xl mx-auto px-6 py-8">
         {activeTab === 'projects' && (
           <ClientProjects
+            key={projectsRefreshKey}
             clientId={clientId}
             onViewProject={(projectId) => {
               if (onViewProject) {
@@ -257,6 +270,23 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
         {activeTab === 'production-tasks' && <ProductionTasksTab clientId={clientId} />}
         {activeTab === 'documents' && <ClientDocuments clientId={clientId} />}
       </div>
+
+      {showCreateProjectModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateProjectModal(false)}
+          onSuccess={() => {
+            setShowCreateProjectModal(false);
+            // Trigger refresh of projects table by incrementing key
+            setProjectsRefreshKey(prev => prev + 1);
+          }}
+          preSelectedClientId={clientId}
+          preSelectedClientName={client?.name}
+          onProjectCreated={() => {
+            // Callback to refresh the projects list
+            setProjectsRefreshKey(prev => prev + 1);
+          }}
+        />
+      )}
     </div>
   );
 };
