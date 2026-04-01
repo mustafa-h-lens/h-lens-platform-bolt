@@ -44,7 +44,7 @@ interface Expense {
 
 const EXPENSE_TYPES = [
   { id: 'vendor', label: 'مورد', desc: 'مصروف مرتبط بمورد', icon: '👤' },
-  { id: 'purchases', label: 'مشتريات', desc: 'معدات، مواد، مستلزمات', icon: '🛒' },
+  { id: 'purchases', label: 'مصاريف لوجيستية', desc: 'معدات، مواد، مستلزمات', icon: '🛒' },
   { id: 'services', label: 'خدمات', desc: 'شحن، طباعة، تموين', icon: '🔧' },
   { id: 'rent', label: 'إيجار', desc: 'إيجار موقع، استوديو، معدات', icon: '🏢' },
   { id: 'other', label: 'أخرى', desc: 'مصروفات متنوعة', icon: '📋' },
