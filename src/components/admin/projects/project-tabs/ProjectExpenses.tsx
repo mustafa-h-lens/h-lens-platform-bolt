@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, CreditCard as Edit2, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, Download, X, Search } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
@@ -7,6 +7,7 @@ import { Modal } from '../../../shared/Modal';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { usePermissions } from '../../../../contexts/PermissionsContext';
 import { PAYMENT_METHODS } from '../../../../types/database';
 import type { VendorField } from '../../../../types/database';
 
@@ -92,6 +93,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [saving, setSaving] = useState(false);
 
   const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const { showSuccess, showError } = useNotification();
 
   // Expense form state
@@ -836,7 +838,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                               style={{ color: 'var(--color-primary)' }}
                               title="تعديل"
                             >
-                              <Edit2 size={16} />
+                              <Pencil size={16} />
                             </button>
                             <button
                               onClick={() => setDeleteExpenseId(expense.id)}
@@ -906,7 +908,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                             {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
                                           </button>
                                         )}
-                                        {payment.payment_status === 'approved' && (
+                                        {payment.payment_status === 'approved' && isSuperAdmin && (
                                           <button
                                             className="btn btn-sm"
                                             style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
@@ -915,6 +917,11 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                           >
                                             {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
                                           </button>
+                                        )}
+                                        {payment.payment_status === 'approved' && !isSuperAdmin && (
+                                          <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
+                                            بانتظار التحويل
+                                          </span>
                                         )}
                                         {payment.payment_status === 'transferred' && (
                                           <span style={{ fontSize: 11, color: 'var(--success-text)' }}>✓</span>
@@ -1047,7 +1054,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                 {changingPaymentStatus === payment.id ? '...' : 'اعتماد للصرف'}
                               </button>
                             )}
-                            {payment.payment_status === 'approved' && (
+                            {payment.payment_status === 'approved' && isSuperAdmin && (
                               <button
                                 className="btn btn-sm"
                                 style={{ fontSize: 11, padding: '3px 10px', background: 'var(--success-bg)', color: 'var(--success-text)', border: '1px solid var(--success-border)' }}
@@ -1056,6 +1063,11 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                               >
                                 {changingPaymentStatus === payment.id ? '...' : 'تأكيد التحويل'}
                               </button>
+                            )}
+                            {payment.payment_status === 'approved' && !isSuperAdmin && (
+                              <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 99, background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)', fontWeight: 600 }}>
+                                بانتظار التحويل
+                              </span>
                             )}
                             {payment.payment_status === 'transferred' && (
                               <span style={{ fontSize: 13, color: 'var(--success-text)' }}>✓ مكتمل</span>
