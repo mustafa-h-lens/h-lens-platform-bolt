@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Eye, Calendar, Plus } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
+import { useHideAmounts } from '../../../contexts/HideAmountsContext';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../../lib/formatters';
 import type { Project, Client } from '../../../types/database';
 
@@ -11,6 +12,7 @@ interface ClientProjectsProps {
 }
 
 export const ClientProjects = ({ clientId, onViewProject, onAddProject }: ClientProjectsProps) => {
+  const { masked } = useHideAmounts();
   const [client, setClient] = useState<Client | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
@@ -209,7 +211,7 @@ export const ClientProjects = ({ clientId, onViewProject, onAddProject }: Client
                       </td>
                       <td className="px-6 py-4">{getStatusBadge(project.status)}</td>
                       <td className="px-6 py-4 text-slate-800 dark:text-slate-100 font-medium" style={{ direction: 'ltr', textAlign: 'right' }}>
-                        {formatCurrency(project.total_price, project.currency)}
+                        {masked(formatCurrency(project.total_price, project.currency))}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm" style={{ direction: 'ltr', textAlign: 'right' }}>
@@ -255,7 +257,7 @@ export const ClientProjects = ({ clientId, onViewProject, onAddProject }: Client
                   <div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">إجمالي المبلغ</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-300" style={{ direction: 'ltr', textAlign: 'right' }}>
-                      {formatCurrency(project.total_price, project.currency)}
+                      {masked(formatCurrency(project.total_price, project.currency))}
                     </p>
                   </div>
                   <div>

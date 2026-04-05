@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
 import { supabase } from '../../lib/supabaseClient';
-import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft, EyeOff, Eye } from 'lucide-react';
+import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
 import { ProjectsList } from './projects/ProjectsList';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../lib/formatters';
+import { useHideAmounts } from '../../contexts/HideAmountsContext';
 
 // Lazy-loaded section components
 const UserManagement = lazy(() => import('./UserManagement').then(m => ({ default: m.UserManagement })));
@@ -124,8 +125,7 @@ export const NewAdminDashboard = () => {
   const [pendingItems, setPendingItems] = useState<PendingItems>({ pendingVendors: 0, unpaidInvoices: 0, unpaidAmount: 0, overdueInvoices: 0 });
   const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
-  const [hideAmounts, setHideAmounts] = useState(false);
-  const masked = (value: string) => hideAmounts ? '••••••' : value;
+  const { masked } = useHideAmounts();
 
   // Sync hash to URL whenever navigation state changes
   useEffect(() => {
@@ -535,18 +535,6 @@ export const NewAdminDashboard = () => {
                   </div>
                   <div className="dash-welcome-icon"><Sparkles size={28} /></div>
                 </div>
-              </div>
-
-              {/* ═══ TOGGLE BUTTON ═══ */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-                <button
-                  onClick={() => setHideAmounts(!hideAmounts)}
-                  className="btn btn-ghost"
-                  style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}
-                >
-                  {hideAmounts ? <Eye size={14} /> : <EyeOff size={14} />}
-                  {hideAmounts ? 'إظهار المبالغ' : 'إخفاء المبالغ'}
-                </button>
               </div>
 
               {/* ═══ STAT CARDS ═══ */}

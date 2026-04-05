@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileT
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
+import { useHideAmounts } from '../../../../contexts/HideAmountsContext';
 import { Modal } from '../../../shared/Modal';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { useNotification } from '../../../../contexts/NotificationContext';
@@ -97,6 +98,7 @@ interface ProjectExpensesProps {
 }
 
 export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) => {
+  const { masked } = useHideAmounts();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
@@ -822,7 +824,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المدفوع</p>
           <p className="text-2xl font-bold" style={{ color: 'var(--color-success)' }} dir="ltr">
-            {formatCurrency(totalPaid, currency)}
+            {masked(formatCurrency(totalPaid, currency))}
           </p>
           {totalExpenses > 0 && (
             <div className="mt-2">
@@ -836,7 +838,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
           <p className="text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>المتبقي للدفع</p>
           <p className="text-2xl font-bold" style={{ color: totalRemaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
-            {formatCurrency(totalRemaining, currency)}
+            {masked(formatCurrency(totalRemaining, currency))}
           </p>
         </div>
         <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
@@ -935,13 +937,13 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           {expense.project_item_name || '-'}
                         </td>
                         <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">
-                          {formatCurrency(expense.amount, currency)}
+                          {masked(formatCurrency(expense.amount, currency))}
                         </td>
                         <td className="px-4 py-3 font-semibold" style={{ color: 'var(--color-success)' }} dir="ltr">
-                          {formatCurrency(expense.amount_paid, currency)}
+                          {masked(formatCurrency(expense.amount_paid, currency))}
                         </td>
                         <td className="px-4 py-3 font-semibold" style={{ color: expense.amount_remaining > 0 ? '#f97316' : 'var(--color-success)' }} dir="ltr">
-                          {formatCurrency(expense.amount_remaining, currency)}
+                          {masked(formatCurrency(expense.amount_remaining, currency))}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -1054,7 +1056,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                                   return (
                                   <tr key={payment.id} style={{ borderTop: '1px solid var(--color-border)' }}>
                                     <td className="px-3 py-2 text-sm font-medium" style={{ color: 'var(--color-success)' }} dir="ltr">
-                                      {formatCurrency(payment.amount, currency)}
+                                      {masked(formatCurrency(payment.amount, currency))}
                                     </td>
                                     <td className="px-3 py-2 text-sm" style={{ color: 'var(--color-text-primary)' }}>
                                       {PAYMENT_METHODS[payment.payment_method] || payment.payment_method}
@@ -1123,7 +1125,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             <div className="flex items-center justify-between">
               <span className="text-lg font-bold text-white">إجمالي تكاليف الفريق</span>
               <span className="text-xl font-bold text-white" dir="ltr">
-                {formatCurrency(totalExpenses, currency)}
+                {masked(formatCurrency(totalExpenses, currency))}
               </span>
             </div>
           </div>
@@ -1201,7 +1203,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           {payment.expenseName}
                         </td>
                         <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'var(--color-success)' }} dir="ltr">
-                          {formatCurrency(payment.amount, currency)}
+                          {masked(formatCurrency(payment.amount, currency))}
                         </td>
                         <td className="px-4 py-3 text-sm" style={{ color: 'var(--color-text-primary)' }}>
                           {PAYMENT_METHODS[payment.payment_method as keyof typeof PAYMENT_METHODS] || payment.payment_method}
@@ -1713,15 +1715,15 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                 </div>
                 <div dir="ltr" className="text-right">
                   <span style={{ color: 'var(--color-text-secondary)' }}>الإجمالي: </span>
-                  <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{formatCurrency(paymentExpense.amount, currency)}</span>
+                  <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{masked(formatCurrency(paymentExpense.amount, currency))}</span>
                 </div>
                 <div dir="ltr" className="text-right">
                   <span style={{ color: 'var(--color-text-secondary)' }}>المدفوع: </span>
-                  <span className="font-medium" style={{ color: 'var(--color-success)' }}>{formatCurrency(paymentExpense.amount_paid, currency)}</span>
+                  <span className="font-medium" style={{ color: 'var(--color-success)' }}>{masked(formatCurrency(paymentExpense.amount_paid, currency))}</span>
                 </div>
                 <div dir="ltr" className="text-right">
                   <span style={{ color: 'var(--color-text-secondary)' }}>المتبقي: </span>
-                  <span className="font-medium" style={{ color: '#f97316' }}>{formatCurrency(paymentExpense.amount_remaining, currency)}</span>
+                  <span className="font-medium" style={{ color: '#f97316' }}>{masked(formatCurrency(paymentExpense.amount_remaining, currency))}</span>
                 </div>
               </div>
             </div>

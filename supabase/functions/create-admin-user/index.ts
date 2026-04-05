@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { email, password, full_name, username, phone, role_id, role } = await req.json();
+    const { email, password, full_name, username, phone, role_id, role, send_invite } = await req.json();
 
     if (!email || !password || !full_name || !role_id) {
       return new Response(JSON.stringify({ error: "Missing required fields" }), {
@@ -72,12 +72,27 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const { data: authData, error: authError } = await serviceClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name },
-    });
+    let authData;
+    let authError;
+
+    if (send_invite) {
+      // Send invite email — user gets a magic link to set up their account
+      const result = await serviceClient.auth.admin.inviteUserByEmail(email, {
+        data: { full_name },
+      });
+      authData = result.data;
+      authError = result.error;
+    } else {
+      // Create user directly with confirmed email (no invite)
+      const result = await serviceClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+      authData = result.data;
+      authError = result.error;
+    }
 
     if (authError) {
       return new Response(JSON.stringify({ error: authError.message }), {

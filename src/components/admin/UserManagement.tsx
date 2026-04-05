@@ -404,67 +404,40 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
 
         if (error) throw error;
       } else {
-        let created = false;
+        // Use separate Supabase client to avoid swapping admin session
+        const tempClient = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY,
+          { auth: { persistSession: false, autoRefreshToken: false } }
+        );
 
-        // Try Edge Function first
-        try {
-          const { data: { session } } = await supabase.auth.getSession();
-          const res = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin-user`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token}`,
-              },
-              body: JSON.stringify({
-                email: formData.email,
-                password: formData.password,
-                full_name: formData.full_name,
-                username: formData.username || null,
-                phone: formData.phone || null,
-                role: legacyRole,
-                role_id: formData.role_id,
-              }),
-            }
-          );
+        const { data: signUpData, error: signUpError } = await tempClient.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: { data: { full_name: formData.full_name } },
+        });
 
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.error || 'فشل في إنشاء المستخدم');
-          created = true;
-        } catch (edgeFnError) {
-          console.warn('Edge Function unavailable, using fallback:', edgeFnError);
+        if (signUpError) throw new Error(signUpError.message);
+
+        // Supabase returns user with empty identities if email already exists
+        if (!signUpData.user || (signUpData.user.identities && signUpData.user.identities.length === 0)) {
+          throw new Error('هذا البريد الإلكتروني مسجل بالفعل');
         }
 
-        // Fallback: use separate Supabase client to avoid session swap
-        if (!created) {
-          const tempClient = createClient(
-            import.meta.env.VITE_SUPABASE_URL,
-            import.meta.env.VITE_SUPABASE_ANON_KEY,
-            { auth: { persistSession: false, autoRefreshToken: false } }
-          );
+        const userId = signUpData.user.id;
 
-          const { data: signUpData, error: signUpError } = await tempClient.auth.signUp({
-            email: formData.email,
-            password: formData.password,
-            options: { data: { full_name: formData.full_name } },
-          });
+        // Insert profile — use upsert to handle race conditions with triggers
+        const { error: profileError } = await supabase.from('users').upsert({
+          id: userId,
+          email: formData.email,
+          full_name: formData.full_name,
+          username: formData.username || null,
+          phone: formData.phone || null,
+          role: legacyRole,
+          role_id: formData.role_id,
+        }, { onConflict: 'id' });
 
-          if (signUpError) throw new Error(signUpError.message);
-          if (!signUpData.user) throw new Error('فشل في إنشاء المستخدم');
-
-          const { error: profileError } = await supabase.from('users').insert({
-            id: signUpData.user.id,
-            email: formData.email,
-            full_name: formData.full_name,
-            username: formData.username || null,
-            phone: formData.phone || null,
-            role: legacyRole,
-            role_id: formData.role_id,
-          });
-
-          if (profileError) throw new Error(profileError.message);
-        }
+        if (profileError) throw new Error(profileError.message);
       }
 
       onSuccess();

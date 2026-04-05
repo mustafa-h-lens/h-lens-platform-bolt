@@ -6,6 +6,7 @@ import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic, formatNumber } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { useHideAmounts } from '../../../contexts/HideAmountsContext';
 import type { VendorField } from '../../../types/database';
 
 interface ExpenseRow {
@@ -47,6 +48,7 @@ interface ExpensesPageProps {
   onViewProject?: (projectId: string) => void;
 }
 export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
+  const { masked } = useHideAmounts();
   const [activeTab, setActiveTab] = useState<'expenses' | 'vendors' | 'transfers'>('expenses');
   const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
@@ -519,17 +521,17 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         <div className="stat-card sc-blue">
           <div className="stat-icon-box"><DollarSign size={18} /></div>
           <div className="stat-sub">إجمالي المصروفات</div>
-          <div className="stat-val" dir="ltr">{formatCurrency(totalAll, 'SAR')}</div>
+          <div className="stat-val" dir="ltr">{masked(formatCurrency(totalAll, 'SAR'))}</div>
         </div>
         <div className="stat-card sc-green">
           <div className="stat-icon-box"><Wallet size={18} /></div>
           <div className="stat-sub">المدفوع</div>
-          <div className="stat-val" dir="ltr">{formatCurrency(totalPaid, 'SAR')}</div>
+          <div className="stat-val" dir="ltr">{masked(formatCurrency(totalPaid, 'SAR'))}</div>
         </div>
         <div className="stat-card sc-amber">
           <div className="stat-icon-box"><CreditCard size={18} /></div>
           <div className="stat-sub">المتبقي</div>
-          <div className="stat-val" dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</div>
+          <div className="stat-val" dir="ltr">{masked(formatCurrency(totalRemaining, 'SAR'))}</div>
         </div>
       </div>
 
@@ -577,9 +579,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                           <td><span className="td-primary">{v.vendor_name}</span></td>
                           <td style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>{v.project_count}</td>
                           <td style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>{v.invoice_count}</td>
-                          <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_amount, 'SAR')}</td>
-                          <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_paid, 'SAR')}</td>
-                          <td style={{ fontWeight: 700, color: v.total_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(v.total_remaining, 'SAR')}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(v.total_amount, 'SAR'))}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(v.total_paid, 'SAR'))}</td>
+                          <td style={{ fontWeight: 700, color: v.total_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(v.total_remaining, 'SAR'))}</td>
                           <td>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
                               <div style={{ width: 64, height: 6, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
@@ -620,9 +622,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                                               {p.name}
                                             </span>
                                           </td>
-                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }} dir="ltr">{formatCurrency(p.amount, 'SAR')}</td>
-                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--success-text)' }} dir="ltr">{formatCurrency(p.paid, 'SAR')}</td>
-                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: p.amount - p.paid > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} dir="ltr">{formatCurrency(p.amount - p.paid, 'SAR')}</td>
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }} dir="ltr">{masked(formatCurrency(p.amount, 'SAR'))}</td>
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--success-text)' }} dir="ltr">{masked(formatCurrency(p.paid, 'SAR'))}</td>
+                                          <td style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, color: p.amount - p.paid > 0 ? 'var(--warning-text)' : 'var(--success-text)' }} dir="ltr">{masked(formatCurrency(p.amount - p.paid, 'SAR'))}</td>
                                           <td style={{ padding: '10px 16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                               <div style={{ flex: 1, height: 5, borderRadius: 99, background: 'var(--border-soft)', overflow: 'hidden' }}>
@@ -651,9 +653,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{vendorSummaries.length} مورد</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</strong></span>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{formatCurrency(totalPaid, 'SAR')}</strong></span>
-                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</strong></span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{masked(formatCurrency(totalAll, 'SAR'))}</strong></span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{masked(formatCurrency(totalPaid, 'SAR'))}</strong></span>
+                    <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{masked(formatCurrency(totalRemaining, 'SAR'))}</strong></span>
                   </div>
                 </div>
               </div>
@@ -725,7 +727,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                             ? inv?.vendors?.full_name || '-'
                             : inv?.expense_description || '-'}
                         </td>
-                        <td dir="ltr" style={{ fontWeight: 600 }}>{formatCurrency(p.amount, cur)}</td>
+                        <td dir="ltr" style={{ fontWeight: 600 }}>{masked(formatCurrency(p.amount, cur))}</td>
                         <td>{paymentMethodLabels[p.payment_method] || p.payment_method}</td>
                         <td dir="ltr">{p.payment_date ? formatDateArabic(p.payment_date) : '-'}</td>
                         <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{(p as any).created_by_user?.full_name || '-'}</td>
@@ -897,9 +899,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{expense.project_manager_name}</td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{getCategoryLabel(expense.category)}</td>
                     <td style={{ color: expense.project_item_name ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: 13 }}>{expense.project_item_name || '-'}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount, expense.currency)}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_paid, expense.currency)}</td>
-                    <td style={{ fontWeight: 600, color: expense.amount_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{formatCurrency(expense.amount_remaining, expense.currency)}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(expense.amount, expense.currency))}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--success-text)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(expense.amount_paid, expense.currency))}</td>
+                    <td style={{ fontWeight: 600, color: expense.amount_remaining > 0 ? 'var(--warning-text)' : 'var(--success-text)', fontSize: 13 }} dir="ltr">{masked(formatCurrency(expense.amount_remaining, expense.currency))}</td>
                     <td>
                       <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 99, fontWeight: 600, ...approvalStyle }}>
                         {getApprovalStatusLabel(expense.approval_status)}
@@ -917,9 +919,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{filteredExpenses.length} مصروف</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{formatCurrency(totalAll, 'SAR')}</strong></span>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{formatCurrency(totalPaid, 'SAR')}</strong></span>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{formatCurrency(totalRemaining, 'SAR')}</strong></span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>الإجمالي: <strong style={{ color: '#fff' }} dir="ltr">{masked(formatCurrency(totalAll, 'SAR'))}</strong></span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المدفوع: <strong style={{ color: '#86efac' }} dir="ltr">{masked(formatCurrency(totalPaid, 'SAR'))}</strong></span>
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)' }}>المتبقي: <strong style={{ color: '#fdba74' }} dir="ltr">{masked(formatCurrency(totalRemaining, 'SAR'))}</strong></span>
               </div>
             </div>
           </div>
