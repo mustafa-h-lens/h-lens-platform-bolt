@@ -5,6 +5,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import { VendorProvider } from './contexts/VendorContext';
 import { ClientPortalProvider } from './contexts/ClientPortalContext';
+import { HideAmountsProvider } from './contexts/HideAmountsContext';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage } from './lib/router';
 import { supabase } from './lib/supabaseClient';
@@ -381,6 +382,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <PermissionsProvider>
+        <HideAmountsProvider>
         <NotificationProvider>
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
@@ -388,6 +390,7 @@ function App() {
             </Suspense>
           </ErrorBoundary>
         </NotificationProvider>
+        </HideAmountsProvider>
         </PermissionsProvider>
       </AuthProvider>
     </ThemeProvider>
