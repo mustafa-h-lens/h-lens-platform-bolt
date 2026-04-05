@@ -76,10 +76,14 @@ export interface FinancialData {
   id?: string;
   payment_method: 'bank_transfer' | 'cash' | 'other';
   price_includes_tax: boolean;
+  bank_id: string;
   bank_name: string;
   beneficiary_name: string;
+  account_name: string;
   iban: string;
   account_number: string;
+  company_name: string;
+  vat_number: string;
 }
 
 export interface Bank {

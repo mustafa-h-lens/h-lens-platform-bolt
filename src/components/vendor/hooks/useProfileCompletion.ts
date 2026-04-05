@@ -27,7 +27,7 @@ export function useProfileCompletion(): ProfileCompletion {
       const [finRes, svcRes] = await Promise.all([
         supabase
           .from('vendor_financial_data')
-          .select('bank_name, iban')
+          .select('bank_id, bank_name, iban')
           .eq('vendor_id', vendor.id)
           .maybeSingle(),
         supabase
@@ -36,7 +36,7 @@ export function useProfileCompletion(): ProfileCompletion {
           .eq('vendor_id', vendor.id),
       ]);
 
-      setHasFinancial(!!(finRes.data?.bank_name && finRes.data?.iban));
+      setHasFinancial(!!((finRes.data?.bank_id || finRes.data?.bank_name) && finRes.data?.iban));
       setHasServices((svcRes.count ?? 0) > 0);
       setLoading(false);
     };

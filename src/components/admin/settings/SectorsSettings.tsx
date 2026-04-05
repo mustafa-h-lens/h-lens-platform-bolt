@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../../contexts/ThemeContext';
-import { getTheme, borderRadius, fontSize } from '../../../theme/tokens';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { Briefcase, Plus, Edit2, Trash2, Check, X, Loader2 } from 'lucide-react';
-import { Button, Input } from '../../ui';
 
 interface Sector {
   id: string;
   name_ar: string;
   name_en: string;
   is_active: boolean;
+  display_order?: number;
 }
 
 export const SectorsSettings: React.FC = () => {
-  const { isDarkMode } = useTheme();
-  const theme = getTheme(isDarkMode);
-  const { showNotification } = useNotification();
+  const { showSuccess, showError } = useNotification();
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,7 +20,6 @@ export const SectorsSettings: React.FC = () => {
   const [editSector, setEditSector] = useState({ name_ar: '', name_en: '' });
   const [isAdding, setIsAdding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [successAnimation, setSuccessAnimation] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSectors();
@@ -41,7 +36,7 @@ export const SectorsSettings: React.FC = () => {
       setSectors(data || []);
     } catch (error) {
       console.error('Error fetching sectors:', error);
-      showNotification('حدث خطأ أثناء تحميل القطاعات', 'error');
+      showError('حدث خطأ أثناء تحميل القطاعات');
     } finally {
       setLoading(false);
     }
@@ -49,10 +44,9 @@ export const SectorsSettings: React.FC = () => {
 
   const handleAdd = async () => {
     if (!newSector.name_ar.trim() || !newSector.name_en.trim()) {
-      showNotification('يرجى إدخال اسم القطاع بالعربية والإنجليزية', 'error');
+      showError('يرجى إدخال اسم القطاع بالعربية والإنجليزية');
       return;
     }
-
     if (isSaving) return;
 
     try {
@@ -64,17 +58,13 @@ export const SectorsSettings: React.FC = () => {
         .single();
 
       if (error) throw error;
-
-      setSectors(prev => [...prev, data].sort((a, b) => a.display_order - b.display_order));
-
-      showNotification('تم إضافة القطاع بنجاح', 'success');
-      setSuccessAnimation('add');
-      setTimeout(() => setSuccessAnimation(null), 600);
+      setSectors(prev => [...prev, data]);
+      showSuccess('تم إضافة القطاع بنجاح');
       setNewSector({ name_ar: '', name_en: '' });
       setIsAdding(false);
     } catch (error) {
       console.error('Error adding sector:', error);
-      showNotification('حدث خطأ أثناء إضافة القطاع', 'error');
+      showError('حدث خطأ أثناء إضافة القطاع');
     } finally {
       setIsSaving(false);
     }
@@ -82,37 +72,28 @@ export const SectorsSettings: React.FC = () => {
 
   const handleEdit = async (id: string) => {
     if (!editSector.name_ar.trim() || !editSector.name_en.trim()) {
-      showNotification('يرجى إدخال اسم القطاع بالعربية والإنجليزية', 'error');
+      showError('يرجى إدخال اسم القطاع بالعربية والإنجليزية');
       return;
     }
-
     if (isSaving) return;
 
     try {
       setIsSaving(true);
       const { data, error } = await supabase
         .from('sectors')
-        .update({
-          name_ar: editSector.name_ar,
-          name_en: editSector.name_en,
-          updated_at: new Date().toISOString()
-        })
+        .update({ name_ar: editSector.name_ar, name_en: editSector.name_en })
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-
-      setSectors(prev => prev.map(sector => sector.id === id ? data : sector).sort((a, b) => a.display_order - b.display_order));
-
-      showNotification('تم تحديث القطاع بنجاح', 'success');
-      setSuccessAnimation(id);
-      setTimeout(() => setSuccessAnimation(null), 600);
+      setSectors(prev => prev.map(s => s.id === id ? data : s));
+      showSuccess('تم تحديث القطاع بنجاح');
       setEditingId(null);
       setEditSector({ name_ar: '', name_en: '' });
     } catch (error) {
       console.error('Error updating sector:', error);
-      showNotification('حدث خطأ أثناء تحديث القطاع', 'error');
+      showError('حدث خطأ أثناء تحديث القطاع');
     } finally {
       setIsSaving(false);
     }
@@ -122,19 +103,13 @@ export const SectorsSettings: React.FC = () => {
     if (!confirm('هل أنت متأكد من حذف هذا القطاع؟')) return;
 
     try {
-      const { error } = await supabase
-        .from('sectors')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await supabase.from('sectors').delete().eq('id', id);
       if (error) throw error;
-
-      setSectors(prev => prev.filter(sector => sector.id !== id));
-
-      showNotification('تم حذف القطاع بنجاح', 'success');
+      setSectors(prev => prev.filter(s => s.id !== id));
+      showSuccess('تم حذف القطاع بنجاح');
     } catch (error) {
       console.error('Error deleting sector:', error);
-      showNotification('حدث خطأ أثناء حذف القطاع', 'error');
+      showError('حدث خطأ أثناء حذف القطاع');
     }
   };
 
@@ -148,13 +123,11 @@ export const SectorsSettings: React.FC = () => {
         .single();
 
       if (error) throw error;
-
-      setSectors(prev => prev.map(sector => sector.id === id ? data : sector));
-
-      showNotification(`تم ${!isActive ? 'تفعيل' : 'إلغاء تفعيل'} القطاع بنجاح`, 'success');
+      setSectors(prev => prev.map(s => s.id === id ? data : s));
+      showSuccess(`تم ${!isActive ? 'تفعيل' : 'إلغاء تفعيل'} القطاع بنجاح`);
     } catch (error) {
       console.error('Error toggling sector:', error);
-      showNotification('حدث خطأ أثناء تحديث حالة القطاع', 'error');
+      showError('حدث خطأ أثناء تحديث حالة القطاع');
     }
   };
 
@@ -168,246 +141,120 @@ export const SectorsSettings: React.FC = () => {
     setEditSector({ name_ar: '', name_en: '' });
   };
 
-  const containerStyles: React.CSSProperties = {
-    backgroundColor: theme.background.primary,
-    borderRadius: borderRadius.lg,
-    padding: '1.5rem',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  };
-
-  const headerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: '1.5rem',
-  };
-
-  const titleContainerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-  };
-
-  const titleStyles: React.CSSProperties = {
-    fontSize: fontSize.xl,
-    fontWeight: '600',
-    color: theme.text.primary,
-    margin: 0,
-  };
-
-  const tableStyles: React.CSSProperties = {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '1rem',
-  };
-
-  const thStyles: React.CSSProperties = {
-    padding: '0.75rem',
-    textAlign: 'right',
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: theme.text.secondary,
-    borderBottom: `2px solid ${theme.border.default}`,
-  };
-
-  const tdStyles: React.CSSProperties = {
-    padding: '0.75rem',
-    textAlign: 'right',
-    fontSize: fontSize.sm,
-    color: theme.text.primary,
-    borderBottom: `1px solid ${theme.border.default}`,
-  };
-
-  const badgeStyles = (isActive: boolean): React.CSSProperties => ({
-    display: 'inline-block',
-    padding: '0.25rem 0.75rem',
-    borderRadius: borderRadius.full,
-    fontSize: fontSize.xs,
-    fontWeight: '600',
-    backgroundColor: isActive ? theme.status.success.light : theme.status.warning.light,
-    color: isActive ? theme.status.success.main : theme.status.warning.main,
-  });
-
-  const actionButtonStyles: React.CSSProperties = {
-    padding: '0.375rem',
-    backgroundColor: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    borderRadius: borderRadius.DEFAULT,
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
-
-  const addFormStyles: React.CSSProperties = {
-    backgroundColor: theme.background.secondary,
-    padding: '1rem',
-    borderRadius: borderRadius.DEFAULT,
-    marginBottom: '1rem',
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr auto',
-    gap: '1rem',
-    alignItems: 'end',
-  };
-
   if (loading) {
     return (
-      <div style={containerStyles}>
-        <p style={{ color: theme.text.secondary }}>جاري تحميل القطاعات...</p>
+      <div className="ds-card" style={{ padding: 24 }}>
+        <p style={{ color: 'var(--text-muted)' }}>جاري تحميل القطاعات...</p>
       </div>
     );
   }
 
   return (
-    <div style={containerStyles}>
-      <div style={headerStyles}>
-        <div style={titleContainerStyles}>
-          <Briefcase size={24} color={theme.primary.main} />
-          <h2 style={titleStyles}>إدارة القطاعات</h2>
+    <div className="ds-card" style={{ padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Briefcase size={20} style={{ color: 'var(--accent)' }} />
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>إدارة القطاعات</h2>
         </div>
         {!isAdding && (
-          <Button onClick={() => setIsAdding(true)} size="sm">
-            <Plus size={16} />
+          <button className="btn btn-primary btn-sm" style={{ gap: 6 }} onClick={() => setIsAdding(true)}>
+            <Plus size={14} />
             إضافة قطاع
-          </Button>
+          </button>
         )}
       </div>
 
       {isAdding && (
-        <div style={addFormStyles}>
-          <Input
-            label="اسم القطاع بالعربية"
-            value={newSector.name_ar}
-            onChange={(e) => setNewSector({ ...newSector, name_ar: e.target.value })}
-            placeholder="مثال: تقنية"
-          />
-          <Input
-            label="اسم القطاع بالإنجليزية"
-            value={newSector.name_en}
-            onChange={(e) => setNewSector({ ...newSector, name_en: e.target.value })}
-            placeholder="Example: Technology"
-          />
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Button
-              onClick={handleAdd}
-              size="sm"
-              disabled={isSaving}
-              className={successAnimation === 'add' ? 'animate-success-flash' : ''}
-            >
-              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              {isSaving ? 'جاري الحفظ...' : 'حفظ'}
-            </Button>
-            <Button
-              onClick={() => {
-                setIsAdding(false);
-                setNewSector({ name_ar: '', name_en: '' });
-              }}
-              variant="outline"
-              size="sm"
-            >
-              <X size={16} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 12, padding: 16, background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-soft)', marginBottom: 16 }}>
+          <div className="input-group">
+            <label className="input-label">اسم القطاع بالعربية</label>
+            <input className="input" value={newSector.name_ar} onChange={e => setNewSector({ ...newSector, name_ar: e.target.value })} placeholder="مثال: تقنية" />
+          </div>
+          <div className="input-group">
+            <label className="input-label">اسم القطاع بالإنجليزية</label>
+            <input className="input" value={newSector.name_en} onChange={e => setNewSector({ ...newSector, name_en: e.target.value })} placeholder="Example: Technology" dir="ltr" />
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <button className="btn btn-primary btn-sm" onClick={handleAdd} disabled={isSaving} style={{ gap: 4 }}>
+              {isSaving ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
+              حفظ
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => { setIsAdding(false); setNewSector({ name_ar: '', name_en: '' }); }} style={{ gap: 4 }}>
+              <X size={14} />
               إلغاء
-            </Button>
+            </button>
           </div>
         </div>
       )}
 
-      <table style={tableStyles}>
-        <thead>
-          <tr>
-            <th style={thStyles}>الاسم بالعربية</th>
-            <th style={thStyles}>الاسم بالإنجليزية</th>
-            <th style={thStyles}>الحالة</th>
-            <th style={thStyles}>الإجراءات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {sectors.map((sector) => (
-            <tr key={sector.id}>
-              <td style={tdStyles}>
-                {editingId === sector.id ? (
-                  <Input
-                    value={editSector.name_ar}
-                    onChange={(e) => setEditSector({ ...editSector, name_ar: e.target.value })}
-                    fullWidth
-                  />
-                ) : (
-                  sector.name_ar
-                )}
-              </td>
-              <td style={tdStyles}>
-                {editingId === sector.id ? (
-                  <Input
-                    value={editSector.name_en}
-                    onChange={(e) => setEditSector({ ...editSector, name_en: e.target.value })}
-                    fullWidth
-                  />
-                ) : (
-                  sector.name_en
-                )}
-              </td>
-              <td style={tdStyles}>
-                <span style={badgeStyles(sector.is_active)}>
-                  {sector.is_active ? 'نشط' : 'غير نشط'}
-                </span>
-              </td>
-              <td style={tdStyles}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {editingId === sector.id ? (
-                    <>
-                      <button
-                        onClick={() => handleEdit(sector.id)}
-                        style={{ ...actionButtonStyles, color: theme.status.success.main }}
-                        title="حفظ"
-                        disabled={isSaving}
-                        className={successAnimation === sector.id ? 'animate-success-flash' : ''}
-                      >
-                        {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} />}
-                      </button>
-                      <button
-                        onClick={cancelEdit}
-                        style={{ ...actionButtonStyles, color: theme.text.secondary }}
-                        title="إلغاء"
-                      >
-                        <X size={18} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => startEdit(sector)}
-                        style={{ ...actionButtonStyles, color: theme.primary.main }}
-                        title="تعديل"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => toggleActive(sector.id, sector.is_active)}
-                        style={{ ...actionButtonStyles, color: theme.status.warning.main }}
-                        title={sector.is_active ? 'إلغاء التفعيل' : 'تفعيل'}
-                      >
-                        {sector.is_active ? <X size={18} /> : <Check size={18} />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(sector.id)}
-                        style={{ ...actionButtonStyles, color: theme.status.error.main }}
-                        title="حذف"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {sectors.length === 0 && (
-        <p style={{ textAlign: 'center', color: theme.text.secondary, padding: '2rem' }}>
-          لا توجد قطاعات مضافة حالياً
-        </p>
+      {sectors.length === 0 ? (
+        <div className="dash-empty" style={{ height: 120 }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد قطاعات مضافة حالياً</span>
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>الاسم بالعربية</th>
+                <th>الاسم بالإنجليزية</th>
+                <th style={{ textAlign: 'center' }}>الحالة</th>
+                <th style={{ textAlign: 'center' }}>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sectors.map(sector => (
+                <tr key={sector.id}>
+                  <td>
+                    {editingId === sector.id ? (
+                      <input className="input" value={editSector.name_ar} onChange={e => setEditSector({ ...editSector, name_ar: e.target.value })} style={{ maxWidth: 200 }} />
+                    ) : (
+                      <span className="td-primary">{sector.name_ar}</span>
+                    )}
+                  </td>
+                  <td dir="ltr" style={{ textAlign: 'right' }}>
+                    {editingId === sector.id ? (
+                      <input className="input" value={editSector.name_en} onChange={e => setEditSector({ ...editSector, name_en: e.target.value })} dir="ltr" style={{ maxWidth: 200 }} />
+                    ) : (
+                      sector.name_en
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <span className={`badge ${sector.is_active ? 'badge-green' : 'badge-gray'}`}>
+                      {sector.is_active ? 'نشط' : 'غير نشط'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                      {editingId === sector.id ? (
+                        <>
+                          <button className="btn btn-sm" style={{ padding: '4px 8px', background: 'var(--success-bg)', color: 'var(--success-text)' }} onClick={() => handleEdit(sector.id)} disabled={isSaving}>
+                            {isSaving ? <Loader2 size={14} className="spin" /> : <Check size={14} />}
+                          </button>
+                          <button className="btn btn-sm" style={{ padding: '4px 8px' }} onClick={cancelEdit}>
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="btn btn-sm" style={{ padding: '4px 8px', color: 'var(--accent)' }} onClick={() => startEdit(sector)} title="تعديل">
+                            <Edit2 size={14} />
+                          </button>
+                          <button className="btn btn-sm" style={{ padding: '4px 8px', color: 'var(--warning-text)' }} onClick={() => toggleActive(sector.id, sector.is_active)} title={sector.is_active ? 'إلغاء التفعيل' : 'تفعيل'}>
+                            {sector.is_active ? <X size={14} /> : <Check size={14} />}
+                          </button>
+                          <button className="btn btn-sm" style={{ padding: '4px 8px', color: 'var(--danger)' }} onClick={() => handleDelete(sector.id)} title="حذف">
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

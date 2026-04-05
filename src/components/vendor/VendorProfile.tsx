@@ -78,7 +78,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
 
   // Financial
-  const [financial, setFinancial] = useState<FinancialData>({ payment_method: 'bank_transfer', price_includes_tax: false, bank_name: '', beneficiary_name: '', iban: '', account_number: '' });
+  const [financial, setFinancial] = useState<FinancialData>({ payment_method: 'bank_transfer', price_includes_tax: false, bank_id: '', bank_name: '', beneficiary_name: '', account_name: '', iban: '', account_number: '', company_name: '', vat_number: '' });
   const [banks, setBanks] = useState<Bank[]>([]);
   const [savingFin, setSavingFin] = useState(false);
   const [savedFin, setSavedFin] = useState(false);
@@ -149,7 +149,15 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
     } catch (err) { console.error(err); }
     finally { setLoadingFields(false); }
   };
-  const fetchFinancial = async () => { const { data } = await supabase.from('vendor_financial_data').select('*').eq('vendor_id', vendor!.id).maybeSingle(); if (data) setFinancial(data); };
+  const fetchFinancial = async () => {
+    const { data } = await supabase.from('vendor_financial_data').select('*, banks:bank_id(name_ar)').eq('vendor_id', vendor!.id).maybeSingle();
+    if (data) {
+      // Resolve bank_id to bank_name if bank_name is empty
+      const bankName = data.bank_name || (data as any).banks?.name_ar || '';
+      const accountName = data.account_name || data.beneficiary_name || '';
+      setFinancial({ ...data, bank_name: bankName, beneficiary_name: accountName, account_name: accountName });
+    }
+  };
   const fetchPassport = async () => {
     const { data } = await supabase.from('vendor_travel_documents').select('passport_number').eq('vendor_id', vendor!.id).maybeSingle();
     if (data?.passport_number) setPassportNumber(data.passport_number);
