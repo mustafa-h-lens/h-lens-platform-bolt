@@ -124,7 +124,7 @@ export const Step1BasicIdentity = ({ formData, updateFormData, errors = {} }: Pr
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> الجنسية</label>
           <div className={`custom-select ${natOpen ? 'open' : ''} ${errors.nationality ? 'has-error' : ''}`} ref={natRef}>
-            <div className="cs-trigger" onClick={() => setNatOpen(!natOpen)}>
+            <div className="cs-trigger" tabIndex={0} onClick={() => setNatOpen(!natOpen)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setNatOpen(!natOpen); } }}>
               <span className={formData.nationality ? '' : 'cs-placeholder'}>
                 {formData.nationality || 'اختر الجنسية'}
               </span>

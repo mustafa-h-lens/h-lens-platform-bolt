@@ -75,7 +75,7 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
           <div className="phone-group">
             {/* Country code — custom select */}
             <div className={`custom-select phone-code ${phoneCodeOpen ? 'open' : ''}`} ref={phoneCodeRef}>
-              <div className="cs-trigger" onClick={() => setPhoneCodeOpen(!phoneCodeOpen)}>
+              <div className="cs-trigger" tabIndex={0} onClick={() => setPhoneCodeOpen(!phoneCodeOpen)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPhoneCodeOpen(!phoneCodeOpen); } }}>
                 <span>{currentCode ? `${currentCode.flag} ${currentCode.code}` : '+966 🇸🇦'}</span>
                 <span className="cs-chevron">&#9662;</span>
               </div>
@@ -142,7 +142,7 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> مدينة العمل الأساسية</label>
           <div className={`custom-select ${cityOpen ? 'open' : ''} ${errors.primary_city ? 'has-error' : ''}`} ref={cityRef}>
-            <div className="cs-trigger" onClick={() => setCityOpen(!cityOpen)}>
+            <div className="cs-trigger" tabIndex={0} onClick={() => setCityOpen(!cityOpen)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setCityOpen(!cityOpen); } }}>
               <span className={formData.primary_city ? '' : 'cs-placeholder'}>
                 {formData.primary_city || 'اختر المدينة'}
               </span>

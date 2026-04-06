@@ -100,7 +100,7 @@ export const Step5Financial = ({ formData, updateFormData, errors = {} }: Props)
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> اسم البنك</label>
           <div className={`custom-select ${bankOpen ? 'open' : ''}`} ref={bankRef}>
-            <div className="cs-trigger" onClick={() => !loading && setBankOpen(!bankOpen)}>
+            <div className="cs-trigger" tabIndex={0} onClick={() => !loading && setBankOpen(!bankOpen)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!loading) setBankOpen(!bankOpen); } }}>
               <span className={selectedBank ? '' : 'cs-placeholder'}>
                 {selectedBank ? selectedBank.name_ar : 'اختر البنك'}
               </span>

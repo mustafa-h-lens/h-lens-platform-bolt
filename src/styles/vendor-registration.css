@@ -585,6 +585,7 @@ body::after{display:none;
   cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .2s;
 }
 .custom-select .cs-trigger:hover{border-color:var(--border-medium);background:var(--bg-input-hover)}
+.custom-select .cs-trigger:focus{outline:none;border-color:rgba(37,99,235,0.55);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
 .custom-select.open .cs-trigger{border-color:rgba(37,99,235,0.55);background:var(--bg-input-focus);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
 .custom-select .cs-placeholder{color:var(--text-muted)}
 .custom-select .cs-chevron{color:var(--text-muted);transition:transform .2s;font-size:16px}
