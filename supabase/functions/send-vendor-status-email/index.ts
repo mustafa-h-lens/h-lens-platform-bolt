@@ -60,13 +60,18 @@ function baseFooter(): string {
   <tr>
     <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
       <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-      <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.6;" />
-      <div style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
+      <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.7;display:none;" />
+      <div class="footer-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
         <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
         <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
         <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
       </div>
-      <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+      <div class="footer-links-light" style="display:none;margin-top:12px;font-size:11px;color:#64748b;line-height:2;">
+        <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+        <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+        <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+      </div>
+      <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">هاف لينس &copy; 2026 — جميع الحقوق محفوظة</p>
     </td>
   </tr>`;
 }
@@ -123,6 +128,8 @@ function wrapTemplate(content: string, title: string): string {
       .logo-light { display: block !important; }
       .logo-footer-dark { display: none !important; }
       .logo-footer-light { display: block !important; }
+      .footer-links-dark { display: none !important; }
+      .footer-links-light { display: block !important; }
       /* Light mode header/footer backgrounds */
       .eh { background-color: #ffffff !important; }
       .ef { background-color: #f4f6fb !important; }
@@ -223,7 +230,7 @@ function buildRegistrationReceived(
     <tr>
       <td style="padding:32px 32px 0;color:#f0f4ff;">
         <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">شكراً لتسجيلك في منصة Half Lens. تم استلام طلبك بنجاح وهو الآن قيد المراجعة من قبل فريقنا.</p>
+        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">شكراً لتسجيلك في منصة هاف لينس. تم استلام طلبك بنجاح وهو الآن قيد المراجعة من قبل فريقنا.</p>
       </td>
     </tr>
     <tr>
@@ -259,7 +266,7 @@ function buildApproved(
       <td style="padding:32px 32px 0;text-align:center;color:#f0f4ff;">
         <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);line-height:64px;font-size:28px;margin-bottom:20px;">&#10003;</div>
         <p style="font-size:20px;font-weight:700;color:#f0f4ff;margin:0 0 12px;">تم اعتماد حسابك!</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، يسعدنا إبلاغك بأن حسابك على منصة Half Lens قد تم اعتماده بنجاح.</p>
+        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، يسعدنا إبلاغك بأن حسابك على منصة هاف لينس قد تم اعتماده بنجاح.</p>
       </td>
     </tr>
     <tr>

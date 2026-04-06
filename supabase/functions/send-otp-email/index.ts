@@ -57,6 +57,8 @@ function getEmailTemplate(
       .logo-b { display: block !important; }
       .hdr { background-color: #ffffff !important; }
       .ftr { background-color: #f4f6fb !important; }
+      .ftr-links-dark { display: none !important; }
+      .ftr-links-light { display: block !important; }
     }
     /* Dark mode override for Gmail/Outlook */
     [data-ogsc] .logo-w { display: block !important; }
@@ -97,7 +99,7 @@ function getEmailTemplate(
           <tr>
             <td class="pad" style="padding:32px 32px 0;">
               <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-              <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة Half Lens. استخدم الرمز التالي:</p>
+              <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة هاف لينس. استخدم الرمز التالي:</p>
             </td>
           </tr>
 
@@ -155,7 +157,7 @@ function getEmailTemplate(
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);border-radius:10px;">
                 <tr>
                   <td style="padding:14px 18px;font-size:12px;color:#fbbf24;line-height:1.7;">
-                    &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق Half Lens لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
+                    &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق هاف لينس لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
                   </td>
                 </tr>
               </table>
@@ -180,13 +182,18 @@ function getEmailTemplate(
           <tr>
             <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
               <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;display:none;" />
-              <div style="margin-top:12px;font-size:11px;color:#3b82f6;line-height:2;">
+              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;display:none;opacity:0.7;" />
+              <div class="ftr-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
+                <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+                <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+              </div>
+              <div class="ftr-links-light" style="display:none;margin-top:12px;font-size:11px;line-height:2;">
                 <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
                 <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <p style="font-size:10px;color:rgba(200,215,255,0.3);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p style="font-size:10px;color:rgba(200,215,255,0.3);margin:8px 0 0;">هاف لينس &copy; 2026 — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 
