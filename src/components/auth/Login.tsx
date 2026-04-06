@@ -16,8 +16,16 @@ export const Login = () => {
     setLoading(true);
     try {
       await signIn(email, password);
-    } catch (err) {
-      setError('فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور');
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('Email not confirmed')) {
+        setError('لم يتم تأكيد البريد الإلكتروني. يرجى التواصل مع المسؤول.');
+      } else if (msg.includes('Invalid login credentials')) {
+        setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+      } else {
+        setError('فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور');
+      }
+      console.error('Login error:', msg);
     } finally {
       setLoading(false);
     }

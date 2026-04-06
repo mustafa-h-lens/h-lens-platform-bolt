@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
-import { Plus, CreditCard as Edit2, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import type { User, Client, Role } from '../../types/database';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -294,7 +294,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
                               style={{ color: 'var(--accent-lighter)', padding: 6 }}
                               title="تعديل"
                             >
-                              <Edit2 size={14} />
+                              <Pencil size={14} />
                             </button>
                             <button
                               className="btn btn-ghost btn-sm"

@@ -69,6 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) throw error;
+      if (!data) {
+        console.warn('[Auth] No profile row found for user:', userId, '— user may need to be added to users table');
+      }
       setProfile(data);
     } catch (error) {
       console.error('[Auth] Error fetching profile:', error);

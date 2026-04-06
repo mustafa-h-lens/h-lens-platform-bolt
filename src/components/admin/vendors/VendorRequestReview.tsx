@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, CheckCircle, XCircle, CreditCard as Edit3, Clock, User, Phone, MapPin, Briefcase, CreditCard, FileText, Loader2 } from 'lucide-react';
+import { ArrowRight, CheckCircle, XCircle, Pencil, Clock, User, Phone, MapPin, Briefcase, CreditCard, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
@@ -314,7 +314,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
             className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white transition-all hover:opacity-90 disabled:opacity-50"
             style={{ backgroundColor: '#f59e0b' }}
           >
-            {actionLoading === 'revision_requested' ? <Loader2 size={16} className="animate-spin" /> : <Edit3 size={16} />}
+            {actionLoading === 'revision_requested' ? <Loader2 size={16} className="animate-spin" /> : <Pencil size={16} />}
             طلب تعديلات
           </button>
         </div>
