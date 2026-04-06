@@ -1,20 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Save, Edit2 } from 'lucide-react';
+import { Save, Pencil } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
 
-interface FinancialData {
+interface Bank {
   id: string;
-  vendor_id: string;
-  payment_method: 'bank_transfer' | 'cash' | 'other';
-  price_includes_tax: boolean;
-  bank_name?: string;
-  beneficiary_name?: string;
-  iban?: string;
-  account_number?: string;
-  created_at: string;
-  updated_at: string;
+  name_ar: string;
+  name_en: string | null;
 }
 
 interface VendorFinancialDataProps {
@@ -23,18 +16,19 @@ interface VendorFinancialDataProps {
 
 export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
   const { showSuccess, showError } = useNotification();
-  const [financialData, setFinancialData] = useState<FinancialData | null>(null);
+  const [rawData, setRawData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [banksList, setBanksList] = useState<string[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
 
   const [formData, setFormData] = useState({
     payment_method: 'bank_transfer' as 'bank_transfer' | 'cash' | 'other',
     price_includes_tax: false,
-    bank_name: '',
-    beneficiary_name: '',
+    bank_id: '',
+    account_name: '',
     iban: '',
-    account_number: '',
+    company_name: '',
+    vat_number: '',
   });
 
   useEffect(() => {
@@ -46,10 +40,10 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
     try {
       const { data } = await supabase
         .from('banks')
-        .select('name_ar')
+        .select('id, name_ar, name_en')
         .eq('is_active', true)
         .order('name_ar');
-      if (data) setBanksList(data.map(b => b.name_ar));
+      if (data) setBanks(data);
     } catch (error) {
       console.error('Error fetching banks:', error);
     }
@@ -59,21 +53,25 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
     try {
       const { data, error } = await supabase
         .from('vendor_financial_data')
-        .select('*')
+        .select('*, banks:bank_id(name_ar, name_en)')
         .eq('vendor_id', vendorId)
         .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        setFinancialData(data);
+        setRawData(data);
+        // Handle both old (bank_name) and new (bank_id) column formats
+        const bankId = data.bank_id || '';
+        const accountName = data.account_name || data.beneficiary_name || '';
         setFormData({
-          payment_method: data.payment_method,
-          price_includes_tax: data.price_includes_tax,
-          bank_name: data.bank_name || '',
-          beneficiary_name: data.beneficiary_name || '',
+          payment_method: data.payment_method || 'bank_transfer',
+          price_includes_tax: data.price_includes_tax || false,
+          bank_id: bankId,
+          account_name: accountName,
           iban: data.iban || '',
-          account_number: data.account_number || '',
+          company_name: data.company_name || '',
+          vat_number: data.vat_number || '',
         });
       }
     } catch (error) {
@@ -88,32 +86,26 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
       const saveData = {
         payment_method: formData.payment_method,
         price_includes_tax: formData.price_includes_tax,
-        bank_name: formData.bank_name.trim() || null,
-        beneficiary_name: formData.beneficiary_name.trim() || null,
+        bank_id: formData.bank_id || null,
+        account_name: formData.account_name.trim() || null,
         iban: formData.iban.trim() || null,
-        account_number: formData.account_number.trim() || null,
+        company_name: formData.price_includes_tax ? (formData.company_name.trim() || null) : null,
+        vat_number: formData.price_includes_tax ? (formData.vat_number.trim() || null) : null,
+        // Also update old columns for backward compatibility
+        bank_name: formData.bank_id ? (banks.find(b => b.id === formData.bank_id)?.name_ar || null) : null,
+        beneficiary_name: formData.account_name.trim() || null,
       };
 
-      if (financialData) {
+      if (rawData?.id) {
         const { error } = await supabase
           .from('vendor_financial_data')
-          .update({
-            ...saveData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', financialData.id);
-
+          .update({ ...saveData, updated_at: new Date().toISOString() })
+          .eq('id', rawData.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('vendor_financial_data')
-          .insert([
-            {
-              vendor_id: vendorId,
-              ...saveData,
-            },
-          ]);
-
+          .insert([{ vendor_id: vendorId, ...saveData }]);
         if (error) throw error;
       }
 
@@ -127,18 +119,23 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
   };
 
   const handleCancel = () => {
-    if (financialData) {
+    if (rawData) {
       setFormData({
-        payment_method: financialData.payment_method,
-        price_includes_tax: financialData.price_includes_tax,
-        bank_name: financialData.bank_name || '',
-        beneficiary_name: financialData.beneficiary_name || '',
-        iban: financialData.iban || '',
-        account_number: financialData.account_number || '',
+        payment_method: rawData.payment_method || 'bank_transfer',
+        price_includes_tax: rawData.price_includes_tax || false,
+        bank_id: rawData.bank_id || '',
+        account_name: rawData.account_name || rawData.beneficiary_name || '',
+        iban: rawData.iban || '',
+        company_name: rawData.company_name || '',
+        vat_number: rawData.vat_number || '',
       });
     }
     setIsEditing(false);
   };
+
+  // Resolve display bank name from bank_id or old bank_name column
+  const displayBankName = rawData?.banks?.name_ar || rawData?.bank_name || '-';
+  const displayAccountName = rawData?.account_name || rawData?.beneficiary_name || '-';
 
   if (loading) {
     return <div className="dash-empty" style={{ height: 256 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
@@ -150,8 +147,8 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
         <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>البيانات المالية</h2>
         {!isEditing && (
           <button className="btn btn-primary btn-sm" onClick={() => setIsEditing(true)} style={{ gap: 6 }}>
-            <Edit2 size={13} />
-            {financialData ? 'تعديل' : 'إضافة'}
+            <Pencil size={13} />
+            {rawData ? 'تعديل' : 'إضافة'}
           </button>
         )}
       </div>
@@ -159,30 +156,32 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
       {isEditing ? (
         <div className="card" style={{ cursor: 'default' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div className="input-group">
-              <label className="input-label">طريقة الدفع</label>
-              <select
-                className="input"
-                value={formData.payment_method}
-                onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
-                dir="rtl"
-              >
-                <option value="bank_transfer">تحويل بنكي</option>
-                <option value="cash">نقدي</option>
-                <option value="other">أخرى</option>
-              </select>
-            </div>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">طريقة الدفع</label>
+                <select
+                  className="input"
+                  value={formData.payment_method}
+                  onChange={(e) => setFormData({ ...formData, payment_method: e.target.value as any })}
+                  dir="rtl"
+                >
+                  <option value="bank_transfer">تحويل بنكي</option>
+                  <option value="cash">نقدي</option>
+                  <option value="other">أخرى</option>
+                </select>
+              </div>
 
-            <div className="input-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  className="tbl-check"
-                  checked={formData.price_includes_tax}
-                  onChange={(e) => setFormData({ ...formData, price_includes_tax: e.target.checked })}
-                />
-                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>السعر يشمل الضريبة</span>
-              </label>
+              <div className="input-group" style={{ display: 'flex', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginTop: 24 }}>
+                  <input
+                    type="checkbox"
+                    className="tbl-check"
+                    checked={formData.price_includes_tax}
+                    onChange={(e) => setFormData({ ...formData, price_includes_tax: e.target.checked })}
+                  />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>الأسعار تشمل الضريبة</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -194,30 +193,30 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
                   <label className="input-label">اسم البنك</label>
                   <select
                     className="input"
-                    value={formData.bank_name}
-                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                    value={formData.bank_id}
+                    onChange={(e) => setFormData({ ...formData, bank_id: e.target.value })}
                     dir="rtl"
                   >
                     <option value="">اختر بنك</option>
-                    {banksList.map((bank) => (
-                      <option key={bank} value={bank}>{bank}</option>
+                    {banks.map((bank) => (
+                      <option key={bank.id} value={bank.id}>{bank.name_ar}</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="input-group">
-                  <label className="input-label">اسم المستفيد</label>
+                  <label className="input-label">اسم صاحب الحساب</label>
                   <input
                     type="text"
                     className="input"
-                    value={formData.beneficiary_name}
-                    onChange={(e) => setFormData({ ...formData, beneficiary_name: e.target.value })}
+                    value={formData.account_name}
+                    onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
                     dir="rtl"
                     placeholder="الاسم كما يظهر في الحساب البنكي"
                   />
                 </div>
 
-                <div className="input-group">
+                <div className="input-group" style={{ gridColumn: 'span 2' }}>
                   <label className="input-label">رقم الآيبان (IBAN)</label>
                   <input
                     type="text"
@@ -230,16 +229,35 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
                     style={{ fontFamily: 'monospace' }}
                   />
                 </div>
+              </div>
+            </div>
+          )}
 
+          {formData.price_includes_tax && (
+            <div style={{ borderTop: '1px solid var(--border-soft)', marginTop: 20, paddingTop: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>بيانات الضريبة</h3>
+              <div className="form-grid">
                 <div className="input-group">
-                  <label className="input-label">رقم الحساب (اختياري)</label>
+                  <label className="input-label">اسم الشركة</label>
                   <input
                     type="text"
                     className="input"
-                    value={formData.account_number}
-                    onChange={(e) => setFormData({ ...formData, account_number: toEnglishNumbers(e.target.value) })}
+                    value={formData.company_name}
+                    onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                    dir="rtl"
+                    placeholder="اسم الشركة المسجلة"
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">الرقم الضريبي</label>
+                  <input
+                    type="text"
+                    className="input"
+                    value={formData.vat_number}
+                    onChange={(e) => setFormData({ ...formData, vat_number: toEnglishNumbers(e.target.value) })}
                     dir="ltr"
-                    placeholder="رقم الحساب"
+                    placeholder="15 رقم"
+                    maxLength={15}
                     style={{ fontFamily: 'monospace' }}
                   />
                 </div>
@@ -257,58 +275,61 @@ export const VendorFinancialData = ({ vendorId }: VendorFinancialDataProps) => {
             </button>
           </div>
         </div>
-      ) : financialData ? (
+      ) : rawData ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card" style={{ cursor: 'default' }}>
             <div className="form-grid">
               <div>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>طريقة الدفع</p>
                 <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {financialData.payment_method === 'bank_transfer' && 'تحويل بنكي'}
-                  {financialData.payment_method === 'cash' && 'نقدي'}
-                  {financialData.payment_method === 'other' && 'أخرى'}
+                  {rawData.payment_method === 'bank_transfer' && 'تحويل بنكي'}
+                  {rawData.payment_method === 'cash' && 'نقدي'}
+                  {rawData.payment_method === 'other' && 'أخرى'}
                 </p>
               </div>
-
               <div>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>السعر</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الضريبة</p>
                 <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {financialData.price_includes_tax ? 'يشمل الضريبة' : 'لا يشمل الضريبة'}
+                  {rawData.price_includes_tax ? 'الأسعار تشمل الضريبة' : 'لا تشمل الضريبة'}
                 </p>
               </div>
             </div>
           </div>
 
-          {financialData.payment_method === 'bank_transfer' && (
+          {rawData.payment_method === 'bank_transfer' && (
             <div className="card" style={{ cursor: 'default' }}>
               <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>البيانات البنكية</h3>
-
               <div className="form-grid">
                 <div>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم البنك</p>
-                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{financialData.bank_name || '-'}</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{displayBankName}</p>
                 </div>
-
                 <div>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم المستفيد</p>
-                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{financialData.beneficiary_name || '-'}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم صاحب الحساب</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{displayAccountName}</p>
                 </div>
-
                 <div style={{ gridColumn: 'span 2' }}>
                   <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>رقم الآيبان (IBAN)</p>
                   <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }} dir="ltr">
-                    {financialData.iban || '-'}
+                    {rawData.iban || '-'}
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
 
-                {financialData.account_number && (
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>رقم الحساب</p>
-                    <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }} dir="ltr">
-                      {financialData.account_number}
-                    </p>
-                  </div>
-                )}
+          {rawData.price_includes_tax && (rawData.company_name || rawData.vat_number) && (
+            <div className="card" style={{ cursor: 'default' }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 16 }}>بيانات الضريبة</h3>
+              <div className="form-grid">
+                <div>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>اسم الشركة</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{rawData.company_name || '-'}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>الرقم الضريبي</p>
+                  <p style={{ color: 'var(--text-primary)', fontWeight: 500, fontFamily: 'monospace' }} dir="ltr">{rawData.vat_number || '-'}</p>
+                </div>
               </div>
             </div>
           )}
