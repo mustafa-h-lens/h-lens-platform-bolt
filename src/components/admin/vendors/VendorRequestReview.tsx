@@ -35,7 +35,9 @@ interface VendorData {
 
 interface FinancialData {
   bank_id?: string;
+  bank_name?: string;
   account_name?: string;
+  beneficiary_name?: string;
   iban?: string;
   price_includes_tax?: boolean;
   company_name?: string;
@@ -404,28 +406,40 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 4. Travel Documents */}
           <Section title="وثائق السفر" icon={MapPin}>
-            {travelDocs.length > 0 && (travelDocs[0].passport_number || travelDocs[0].visa_country) ? (
-              <>
-                <InfoRow label="رقم جواز السفر" value={travelDocs[0].passport_number} dir="ltr" />
-                <InfoRow label="دولة إصدار الجواز" value={travelDocs[0].passport_issuing_country} />
-                <InfoRow label="تاريخ الإصدار" value={travelDocs[0].passport_issue_date} />
-                <InfoRow label="تاريخ انتهاء الجواز" value={travelDocs[0].passport_expiry_date} />
-                <InfoRow label="بلد التأشيرة" value={travelDocs[0].visa_country} />
-                <InfoRow label="نوع التأشيرة" value={travelDocs[0].visa_type} />
-                <InfoRow label="تاريخ بداية التأشيرة" value={travelDocs[0].visa_start_date} />
-                <InfoRow label="تاريخ انتهاء التأشيرة" value={travelDocs[0].visa_expiry_date} />
-              </>
-            ) : (
-              <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم إدخال بيانات سفر</p>
-            )}
+            {(() => {
+              const passportDoc = travelDocs.find(d => d.passport_number || d.passport_issuing_country || d.passport_expiry_date);
+              const visaDoc = travelDocs.find(d => d.visa_country || d.visa_type);
+              const hasAny = passportDoc || visaDoc;
+              if (!hasAny) return <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم إدخال بيانات سفر</p>;
+              return (
+                <>
+                  {passportDoc && (
+                    <>
+                      <InfoRow label="رقم جواز السفر" value={passportDoc.passport_number} dir="ltr" />
+                      <InfoRow label="دولة إصدار الجواز" value={passportDoc.passport_issuing_country} />
+                      <InfoRow label="تاريخ الإصدار" value={passportDoc.passport_issue_date} />
+                      <InfoRow label="تاريخ انتهاء الجواز" value={passportDoc.passport_expiry_date} />
+                    </>
+                  )}
+                  {visaDoc && (
+                    <>
+                      <InfoRow label="بلد التأشيرة" value={visaDoc.visa_country} />
+                      <InfoRow label="نوع التأشيرة" value={visaDoc.visa_type} />
+                      <InfoRow label="تاريخ بداية التأشيرة" value={visaDoc.visa_start_date} />
+                      <InfoRow label="تاريخ انتهاء التأشيرة" value={visaDoc.visa_expiry_date} />
+                    </>
+                  )}
+                </>
+              );
+            })()}
           </Section>
 
           {/* 5. Financial */}
           <Section title="البيانات المالية" icon={CreditCard}>
             {financial ? (
               <>
-                <InfoRow label="البنك" value={financial.banks?.name_ar || financial.banks?.name_en} />
-                <InfoRow label="اسم الحساب" value={financial.account_name} />
+                <InfoRow label="البنك" value={financial.banks?.name_ar || financial.banks?.name_en || (financial as any).bank_name} />
+                <InfoRow label="اسم الحساب" value={financial.account_name || (financial as any).beneficiary_name} />
                 <InfoRow label="IBAN" value={financial.iban} dir="ltr" />
                 <InfoRow label="الأسعار تشمل ضريبة" value={financial.price_includes_tax ? 'نعم' : 'لا'} />
                 {financial.company_name && <InfoRow label="اسم الشركة" value={financial.company_name} />}
