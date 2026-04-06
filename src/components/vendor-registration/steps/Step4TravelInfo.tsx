@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 
 interface Props {
@@ -32,9 +32,29 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
     return [];
   });
 
-  const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(
-    formData.passport_file_url ? { url: formData.passport_file_url, name: 'passport', size: '' } : null
-  );
+  const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(null);
+
+  // Restore passport preview from File object or URL on mount
+  useEffect(() => {
+    if (formData.passport_file) {
+      const sizeStr = (formData.passport_file.size / 1024).toFixed(0) + ' KB';
+      const url = URL.createObjectURL(formData.passport_file);
+      setPassportPreview({ url, name: formData.passport_file.name, size: sizeStr });
+      return () => URL.revokeObjectURL(url);
+    } else if (formData.passport_file_url) {
+      setPassportPreview({ url: formData.passport_file_url, name: 'passport', size: '' });
+    }
+  }, []);
+
+  // Restore visa file previews from File objects on mount
+  useEffect(() => {
+    if (formData.visa_file && visas.length > 0 && !visas[0].doc) {
+      const sizeStr = (formData.visa_file.size / 1024).toFixed(0) + ' KB';
+      const url = URL.createObjectURL(formData.visa_file);
+      setVisas(prev => prev.map((v, i) => i === 0 ? { ...v, doc: { url, name: formData.visa_file!.name, size: sizeStr } } : v));
+      return () => URL.revokeObjectURL(url);
+    }
+  }, []);
 
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const passportFileRef = useRef<HTMLInputElement | null>(null);

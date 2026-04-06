@@ -254,17 +254,57 @@ export const VendorRegistrationForm = () => {
     }, 100);
   };
 
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setValidationErrors({});
-      if (currentStep < TOTAL_STEPS) {
-        setCurrentStep(prev => prev + 1);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } else {
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+
+  const nextStep = async () => {
+    if (!validateStep(currentStep)) {
       const errs = getStepErrors(currentStep);
       setValidationErrors(errs);
       scrollToFirstError(errs);
+      return;
+    }
+
+    // Async duplicate check on Step 2 before proceeding
+    if (currentStep === 2) {
+      setCheckingDuplicate(true);
+      try {
+        const phone = `${formData.country_code}${formData.phone}`;
+        const { data: phoneVendor } = await supabase
+          .from('vendors')
+          .select('id, status')
+          .eq('phone', phone)
+          .maybeSingle();
+
+        if (phoneVendor && phoneVendor.status !== 'rejected') {
+          setValidationErrors({ phone: 'رقم الجوال مسجل بالفعل' });
+          scrollToFirstError({ phone: '' });
+          return;
+        }
+
+        if (formData.email) {
+          const { data: emailVendor } = await supabase
+            .from('vendors')
+            .select('id, status')
+            .eq('email', formData.email)
+            .maybeSingle();
+
+          if (emailVendor && emailVendor.status !== 'rejected') {
+            setValidationErrors({ email: 'البريد الإلكتروني مسجل بالفعل. إذا كنت قد تقدمت سابقاً، يرجى انتظار مراجعة طلبك.' });
+            scrollToFirstError({ email: '' });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Duplicate check error:', err);
+      } finally {
+        setCheckingDuplicate(false);
+      }
+    }
+
+    setValidationErrors({});
+    if (currentStep < TOTAL_STEPS) {
+      setCurrentStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -343,6 +383,7 @@ export const VendorRegistrationForm = () => {
 
       // Step 1: Insert/update vendor as 'draft' so RLS allows secondary inserts
       let vendor: any = null;
+      // Check for existing vendor by phone
       const { data: existingVendor, error: checkErr } = await supabase
         .from('vendors')
         .select('id, status')
@@ -351,10 +392,25 @@ export const VendorRegistrationForm = () => {
 
       if (checkErr) console.error('Vendor check error:', checkErr);
 
+      // Check for existing vendor by email (unique constraint)
+      if (!existingVendor && formData.email) {
+        const { data: emailVendor } = await supabase
+          .from('vendors')
+          .select('id, status')
+          .eq('email', formData.email)
+          .maybeSingle();
+
+        if (emailVendor) {
+          if (emailVendor.status === 'pending_approval' || emailVendor.status === 'active') {
+            throw new Error('هذا البريد الإلكتروني مسجل بالفعل. إذا كنت قد تقدمت سابقاً، يرجى انتظار مراجعة طلبك.');
+          }
+        }
+      }
+
       if (existingVendor && existingVendor.status === 'rejected') {
         const { data: updatedVendor, error: updateErr } = await supabase
           .from('vendors')
-          .update({ ...vendorBaseData, status: 'draft' })
+          .update({ ...vendorBaseData, status: 'pending_approval' })
           .eq('id', existingVendor.id)
           .select()
           .single();
@@ -374,11 +430,14 @@ export const VendorRegistrationForm = () => {
       } else {
         const { data: newVendor, error: insertErr } = await supabase
           .from('vendors')
-          .insert([{ ...vendorBaseData, status: 'draft' }])
+          .insert([{ ...vendorBaseData, status: 'pending_approval' }])
           .select()
           .single();
         if (insertErr) {
           console.error('Vendor insert error:', insertErr);
+          if (insertErr.message?.includes('vendors_email_unique')) {
+            throw new Error('هذا البريد الإلكتروني مسجل بالفعل. إذا كنت قد تقدمت سابقاً، يرجى انتظار مراجعة طلبك.');
+          }
           throw new Error('فشل تسجيل المورد: ' + insertErr.message);
         }
         vendor = newVendor;
@@ -390,36 +449,36 @@ export const VendorRegistrationForm = () => {
 
       // Step 2: Insert secondary data while vendor is 'draft' (RLS allows anon inserts for draft vendors)
       try {
-        const secondaryOps: Promise<any>[] = [];
+        // Always insert financial data (required step in registration)
+        const finResult = await supabase.from('vendor_financial_data').insert([{
+          vendor_id: vendor.id,
+          payment_method: 'bank_transfer',
+          bank_id: formData.bank_id || null,
+          account_name: formData.account_name || null,
+          iban: formData.iban || null,
+          price_includes_tax: formData.price_includes_tax,
+          company_name: formData.company_name || null,
+          vat_number: formData.vat_number || null,
+        }]);
+        if (finResult.error) console.error('Financial data insert error:', finResult.error);
 
+        // Travel documents (optional)
         const hasTravelData = formData.passport_number || passportFileUrl || visaFileUrl || formData.visa_country;
         if (hasTravelData) {
-          secondaryOps.push(supabase.from('vendor_travel_documents').insert([{
+          const travelResult = await supabase.from('vendor_travel_documents').insert([{
             vendor_id: vendor.id,
             document_type: 'passport',
             passport_number: formData.passport_number || null,
             passport_file: passportFileUrl || null,
             visa_country: formData.visa_country || null,
             visa_file: visaFileUrl || null,
-          }]));
+          }]);
+          if (travelResult.error) console.error('Travel docs insert error:', travelResult.error);
         }
 
-        const hasFinancialData = formData.bank_id || formData.account_name || formData.iban || formData.vat_number;
-        if (hasFinancialData) {
-          secondaryOps.push(supabase.from('vendor_financial_data').insert([{
-            vendor_id: vendor.id,
-            payment_method: 'bank_transfer',
-            bank_id: formData.bank_id || null,
-            account_name: formData.account_name || null,
-            iban: formData.iban || null,
-            price_includes_tax: formData.price_includes_tax,
-            company_name: formData.company_name || null,
-            vat_number: formData.vat_number || null,
-          }]));
-        }
-
+        // Selected fields (required step)
         if (formData.selected_fields?.length > 0) {
-          secondaryOps.push(supabase.from('vendor_selected_fields').insert(
+          const fieldsResult = await supabase.from('vendor_selected_fields').insert(
             formData.selected_fields.map(field => ({
               vendor_id: vendor.id,
               field_id: field.field_id,
@@ -427,27 +486,11 @@ export const VendorRegistrationForm = () => {
               rate_to: parseFloat(field.rate_to) || 0,
               currency: 'SAR',
             }))
-          ));
+          );
+          if (fieldsResult.error) console.error('Selected fields insert error:', fieldsResult.error);
         }
-
-        const results = await Promise.allSettled(secondaryOps);
-        results.forEach((r, i) => {
-          if (r.status === 'rejected') console.error(`Secondary op ${i} rejected:`, r.reason);
-          else if (r.value && (r.value as any).error) console.error(`Secondary op ${i} error:`, (r.value as any).error);
-        });
       } catch (secondaryError) {
         console.error('Secondary inserts error:', secondaryError);
-      }
-
-      // Step 3: Promote vendor to pending_approval
-      const { error: promoteErr } = await supabase
-        .from('vendors')
-        .update({ status: 'pending_approval' })
-        .eq('id', vendor.id);
-
-      if (promoteErr) {
-        console.error('Vendor promote error:', promoteErr);
-        throw new Error('فشل إرسال الطلب: ' + promoteErr.message);
       }
 
       // Log submission (fire-and-forget)
@@ -571,8 +614,9 @@ export const VendorRegistrationForm = () => {
                     className="btn btn-primary"
                     onClick={nextStep}
                     type="button"
+                    disabled={checkingDuplicate}
                   >
-                    التالي
+                    {checkingDuplicate ? 'جاري التحقق...' : 'التالي'}
                   </button>
                 )}
               </div>

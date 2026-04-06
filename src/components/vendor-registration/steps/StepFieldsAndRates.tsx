@@ -175,12 +175,12 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
                   <div className="pricing-input-group">
                     <label>من (ر.س)</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       className="input"
                       value={field.rate_from}
-                      onChange={(e) => updateRate(field.field_id, 'rate_from', e.target.value)}
+                      onChange={(e) => updateRate(field.field_id, 'rate_from', e.target.value.replace(/[^\d.]/g, ''))}
                       placeholder="500"
-                      min="0"
                       dir="ltr"
                       style={{ fontFamily: 'var(--font-mono)' }}
                       onClick={(e) => e.stopPropagation()}
@@ -189,12 +189,12 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
                   <div className="pricing-input-group">
                     <label>إلى (ر.س)</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       className="input"
                       value={field.rate_to}
-                      onChange={(e) => updateRate(field.field_id, 'rate_to', e.target.value)}
+                      onChange={(e) => updateRate(field.field_id, 'rate_to', e.target.value.replace(/[^\d.]/g, ''))}
                       placeholder="2000"
-                      min="0"
                       dir="ltr"
                       style={{ fontFamily: 'var(--font-mono)' }}
                       onClick={(e) => e.stopPropagation()}

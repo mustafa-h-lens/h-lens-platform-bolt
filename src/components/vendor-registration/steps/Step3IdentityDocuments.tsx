@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 
 interface Props {
@@ -14,12 +14,31 @@ const FieldError = ({ msg }: { msg?: string }) => msg ? (
 export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }: Props) => {
   const [idDragging, setIdDragging] = useState(false);
   const [profileDragging, setProfileDragging] = useState(false);
-  const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(
-    formData.id_image_url ? { url: formData.id_image_url, name: 'صورة الهوية', size: '' } : null
-  );
-  const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(
-    formData.profile_image_url ? { url: formData.profile_image_url, name: 'الصورة الشخصية', size: '' } : null
-  );
+  const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(null);
+  const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
+
+  // Restore previews from File objects or URLs when component mounts
+  useEffect(() => {
+    if (formData.id_image) {
+      const sizeStr = (formData.id_image.size / 1024).toFixed(0) + ' KB';
+      const url = URL.createObjectURL(formData.id_image);
+      setIdPreview({ url, name: formData.id_image.name, size: sizeStr });
+      return () => URL.revokeObjectURL(url);
+    } else if (formData.id_image_url) {
+      setIdPreview({ url: formData.id_image_url, name: 'صورة الهوية', size: '' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (formData.profile_image) {
+      const sizeStr = (formData.profile_image.size / 1024).toFixed(0) + ' KB';
+      const url = URL.createObjectURL(formData.profile_image);
+      setProfilePreview({ url, name: formData.profile_image.name, size: sizeStr });
+      return () => URL.revokeObjectURL(url);
+    } else if (formData.profile_image_url) {
+      setProfilePreview({ url: formData.profile_image_url, name: 'الصورة الشخصية', size: '' });
+    }
+  }, []);
 
   const idInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);

@@ -72,7 +72,7 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
         {/* Phone */}
         <div className="input-group">
           <label className="input-label"><span className="req">*</span> رقم الجوال</label>
-          <div className="phone-group">
+          <div className="phone-group" dir="ltr">
             {/* Country code — custom select */}
             <div className={`custom-select phone-code ${phoneCodeOpen ? 'open' : ''}`} ref={phoneCodeRef}>
               <div className="cs-trigger" tabIndex={0} onClick={() => setPhoneCodeOpen(!phoneCodeOpen)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPhoneCodeOpen(!phoneCodeOpen); } }}>
