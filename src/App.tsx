@@ -348,6 +348,10 @@ function AppContent() {
     currentPath.startsWith('/admin');
 
   if (!isAdminPath) {
+    // Don't redirect public paths to admin — show landing page as fallback
+    if (currentPath === '/' || currentPath === '') {
+      return <Suspense fallback={null}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
+    }
     navigate(ROUTES.ADMIN_LOGIN);
     return null;
   }
