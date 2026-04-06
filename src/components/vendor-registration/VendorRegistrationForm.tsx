@@ -325,7 +325,7 @@ export const VendorRegistrationForm = () => {
         console.warn('File uploads had errors (non-blocking):', uploadErr);
       }
 
-      const vendorData = {
+      const vendorBaseData = {
         full_name: formData.full_name,
         phone,
         email: formData.email || null,
@@ -339,12 +339,10 @@ export const VendorRegistrationForm = () => {
         id_image: idImageUrl,
         profile_image: profileImageUrl,
         portfolio_url: formData.portfolio_url || null,
-        status: 'pending_approval',
       };
 
-      // Insert vendor into database
+      // Step 1: Insert/update vendor as 'draft' so RLS allows secondary inserts
       let vendor: any = null;
-      // Check for existing rejected vendor (re-registration)
       const { data: existingVendor, error: checkErr } = await supabase
         .from('vendors')
         .select('id, status')
@@ -356,7 +354,7 @@ export const VendorRegistrationForm = () => {
       if (existingVendor && existingVendor.status === 'rejected') {
         const { data: updatedVendor, error: updateErr } = await supabase
           .from('vendors')
-          .update(vendorData)
+          .update({ ...vendorBaseData, status: 'draft' })
           .eq('id', existingVendor.id)
           .select()
           .single();
@@ -365,6 +363,7 @@ export const VendorRegistrationForm = () => {
           throw new Error('فشل تحديث بيانات المورد: ' + updateErr.message);
         }
         vendor = updatedVendor;
+        // Clear old secondary data before re-inserting
         if (vendor) {
           await Promise.all([
             supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id),
@@ -375,7 +374,7 @@ export const VendorRegistrationForm = () => {
       } else {
         const { data: newVendor, error: insertErr } = await supabase
           .from('vendors')
-          .insert([vendorData])
+          .insert([{ ...vendorBaseData, status: 'draft' }])
           .select()
           .single();
         if (insertErr) {
@@ -389,70 +388,82 @@ export const VendorRegistrationForm = () => {
         throw new Error('فشل إنشاء سجل المورد');
       }
 
-      // Secondary inserts — only if vendor was created
-      if (vendor?.id) {
-        try {
-          const secondaryOps = [];
+      // Step 2: Insert secondary data while vendor is 'draft' (RLS allows anon inserts for draft vendors)
+      try {
+        const secondaryOps: Promise<any>[] = [];
 
-          if (formData.passport_number || passportFileUrl || visaFileUrl) {
-            secondaryOps.push(supabase.from('vendor_travel_documents').insert([{
-              vendor_id: vendor.id,
-              document_type: 'visa',
-              passport_number: formData.passport_number,
-              passport_file: passportFileUrl,
-              visa_country: formData.visa_country,
-              visa_file: visaFileUrl,
-            }]));
-          }
+        const hasTravelData = formData.passport_number || passportFileUrl || visaFileUrl || formData.visa_country;
+        if (hasTravelData) {
+          secondaryOps.push(supabase.from('vendor_travel_documents').insert([{
+            vendor_id: vendor.id,
+            document_type: 'passport',
+            passport_number: formData.passport_number || null,
+            passport_file: passportFileUrl || null,
+            visa_country: formData.visa_country || null,
+            visa_file: visaFileUrl || null,
+          }]));
+        }
 
+        const hasFinancialData = formData.bank_id || formData.account_name || formData.iban || formData.vat_number;
+        if (hasFinancialData) {
           secondaryOps.push(supabase.from('vendor_financial_data').insert([{
             vendor_id: vendor.id,
             payment_method: 'bank_transfer',
             bank_id: formData.bank_id || null,
-            account_name: formData.account_name,
-            iban: formData.iban,
+            account_name: formData.account_name || null,
+            iban: formData.iban || null,
             price_includes_tax: formData.price_includes_tax,
             company_name: formData.company_name || null,
             vat_number: formData.vat_number || null,
           }]));
-
-          if (formData.selected_fields?.length > 0) {
-            secondaryOps.push(supabase.from('vendor_selected_fields').insert(
-              formData.selected_fields.map(field => ({
-                vendor_id: vendor.id,
-                field_id: field.field_id,
-                rate_from: parseFloat(field.rate_from) || 0,
-                rate_to: parseFloat(field.rate_to) || 0,
-                currency: 'SAR',
-              }))
-            ));
-          }
-
-          const results = await Promise.allSettled(secondaryOps);
-
-          supabase.from('vendor_approval_log').insert([{
-            vendor_id: vendor.id,
-            action: 'submitted',
-            performed_by: null,
-          }]).then(() => {}).catch(console.error);
-          results.forEach((r, i) => {
-            if (r.status === 'rejected') console.error(`Secondary op ${i} rejected:`, r.reason);
-            else if (r.value && (r.value as any).error) console.error(`Secondary op ${i} error:`, (r.value as any).error);
-          });
-        } catch (secondaryError) {
-          console.error('Secondary inserts error:', secondaryError);
         }
+
+        if (formData.selected_fields?.length > 0) {
+          secondaryOps.push(supabase.from('vendor_selected_fields').insert(
+            formData.selected_fields.map(field => ({
+              vendor_id: vendor.id,
+              field_id: field.field_id,
+              rate_from: parseFloat(field.rate_from) || 0,
+              rate_to: parseFloat(field.rate_to) || 0,
+              currency: 'SAR',
+            }))
+          ));
+        }
+
+        const results = await Promise.allSettled(secondaryOps);
+        results.forEach((r, i) => {
+          if (r.status === 'rejected') console.error(`Secondary op ${i} rejected:`, r.reason);
+          else if (r.value && (r.value as any).error) console.error(`Secondary op ${i} error:`, (r.value as any).error);
+        });
+      } catch (secondaryError) {
+        console.error('Secondary inserts error:', secondaryError);
       }
+
+      // Step 3: Promote vendor to pending_approval
+      const { error: promoteErr } = await supabase
+        .from('vendors')
+        .update({ status: 'pending_approval' })
+        .eq('id', vendor.id);
+
+      if (promoteErr) {
+        console.error('Vendor promote error:', promoteErr);
+        throw new Error('فشل إرسال الطلب: ' + promoteErr.message);
+      }
+
+      // Log submission (fire-and-forget)
+      supabase.from('vendor_approval_log').insert([{
+        vendor_id: vendor.id,
+        action: 'submitted',
+        performed_by: null,
+      }]).then(() => {}).catch(console.error);
 
       // Clean up draft (fire-and-forget)
       supabase.from('vendor_registration_drafts').delete().eq('session_id', sessionId).then(() => {}).catch(console.error);
 
-      // Emails (fire-and-forget, don't await)
-      if (vendor?.id) {
-        supabase.functions.invoke('send-vendor-status-email', {
-          body: { vendor_id: vendor.id, email_type: 'registration_received' },
-        }).catch(() => {});
-      }
+      // Send registration email (fire-and-forget)
+      supabase.functions.invoke('send-vendor-status-email', {
+        body: { vendor_id: vendor.id, email_type: 'registration_received' },
+      }).catch(() => {});
 
       setIsSubmitted(true);
       showSuccess('تم إرسال طلبك بنجاح');
