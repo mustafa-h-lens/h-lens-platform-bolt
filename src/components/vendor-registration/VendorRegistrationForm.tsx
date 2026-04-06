@@ -450,10 +450,12 @@ export const VendorRegistrationForm = () => {
       // Step 2: Insert secondary data while vendor is 'draft' (RLS allows anon inserts for draft vendors)
       try {
         // Always insert financial data (required step in registration)
+        const isValidUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+        const bankId = formData.bank_id && isValidUuid(formData.bank_id) ? formData.bank_id : null;
         const finResult = await supabase.from('vendor_financial_data').insert([{
           vendor_id: vendor.id,
           payment_method: 'bank_transfer',
-          bank_id: formData.bank_id || null,
+          bank_id: bankId,
           account_name: formData.account_name || null,
           iban: formData.iban || null,
           price_includes_tax: formData.price_includes_tax,
