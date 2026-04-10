@@ -447,7 +447,7 @@ export const VendorRegistrationForm = () => {
         throw new Error('فشل إنشاء سجل المورد');
       }
 
-      // Step 2: Insert secondary data while vendor is 'draft' (RLS allows anon inserts for draft vendors)
+      // Step 2: Insert secondary data (RLS allows anon inserts for draft/pending_approval vendors)
       try {
         // Always insert financial data (required step in registration)
         const isValidUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);

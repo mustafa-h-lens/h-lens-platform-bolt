@@ -140,20 +140,40 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Optimistic lock check
-      const { data: updated, error: updateError } = await supabase
+      // Optimistic lock: fresh-read then compare
+      const { data: freshVendor } = await supabase
         .from('vendors')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .select('updated_at')
         .eq('id', vendorId)
-        .eq('updated_at', capturedUpdatedAt)
-        .select()
         .single();
 
-      if (updateError || !updated) {
+      if (freshVendor && freshVendor.updated_at !== capturedUpdatedAt) {
         showError('تم تعديل بيانات هذا المورد منذ فتح الصفحة. يرجى تحديث الصفحة والمراجعة مرة أخرى.');
         await fetchAllData();
         return;
       }
+
+      const newUpdatedAt = new Date().toISOString();
+      const { data: updated, error: updateError } = await supabase
+        .from('vendors')
+        .update({ status: newStatus, updated_at: newUpdatedAt })
+        .eq('id', vendorId)
+        .select('id, status, updated_at');
+
+      if (updateError) {
+        console.error('Vendor update error:', updateError);
+        showError('حدث خطأ أثناء تحديث حالة المورد');
+        return;
+      }
+
+      if (!updated || updated.length === 0) {
+        console.error('Vendor update returned 0 rows — likely RLS blocking');
+        showError('ليس لديك صلاحية لتحديث حالة هذا المورد');
+        return;
+      }
+
+      // Update captured timestamp so subsequent actions on same page work
+      setCapturedUpdatedAt(updated[0].updated_at);
 
       // Log the action
       await supabase.from('vendor_approval_log').insert([{
@@ -356,7 +376,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
 
           {/* 3. Files */}
           <Section title="الملفات والمستندات" icon={FileText}>
-            <div className="grid grid-cols-2 gap-3 mb-3">
+            <div className="grid grid-cols-2 gap-3">
               {vendor.profile_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>
@@ -370,33 +390,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                 </div>
               )}
             </div>
-            {travelDocs.length > 0 && travelDocs[0].passport_file && (
-              <div className="mb-3">
-                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
-                {travelDocs[0].passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                  <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-                ) : (
-                  <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                    <FileText size={14} /> عرض جواز السفر
-                  </a>
-                )}
-              </div>
-            )}
-            {travelDocs.length > 0 && travelDocs[0].visa_file && (
-              <div>
-                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
-                {travelDocs[0].visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                  <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-                ) : (
-                  <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                    <FileText size={14} /> عرض مستند التأشيرة
-                  </a>
-                )}
-              </div>
-            )}
-            {!vendor.profile_image && !vendor.id_image && !(travelDocs[0]?.passport_file) && !(travelDocs[0]?.visa_file) && (
+            {!vendor.profile_image && !vendor.id_image && (
               <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لا توجد ملفات مرفوعة</p>
             )}
           </Section>
@@ -409,7 +403,9 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
             {(() => {
               const passportDoc = travelDocs.find(d => d.passport_number || d.passport_issuing_country || d.passport_expiry_date);
               const visaDoc = travelDocs.find(d => d.visa_country || d.visa_type);
-              const hasAny = passportDoc || visaDoc;
+              const hasPassportFile = travelDocs.length > 0 && travelDocs[0].passport_file;
+              const hasVisaFile = travelDocs.length > 0 && travelDocs[0].visa_file;
+              const hasAny = passportDoc || visaDoc || hasPassportFile || hasVisaFile;
               if (!hasAny) return <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم إدخال بيانات سفر</p>;
               return (
                 <>
@@ -421,6 +417,19 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                       <InfoRow label="تاريخ انتهاء الجواز" value={passportDoc.passport_expiry_date} />
                     </>
                   )}
+                  {hasPassportFile && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
+                      {travelDocs[0].passport_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                      ) : (
+                        <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                          <FileText size={14} /> عرض جواز السفر
+                        </a>
+                      )}
+                    </div>
+                  )}
                   {visaDoc && (
                     <>
                       <InfoRow label="بلد التأشيرة" value={visaDoc.visa_country} />
@@ -428,6 +437,19 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                       <InfoRow label="تاريخ بداية التأشيرة" value={visaDoc.visa_start_date} />
                       <InfoRow label="تاريخ انتهاء التأشيرة" value={visaDoc.visa_expiry_date} />
                     </>
+                  )}
+                  {hasVisaFile && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
+                      {travelDocs[0].visa_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                      ) : (
+                        <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                          <FileText size={14} /> عرض مستند التأشيرة
+                        </a>
+                      )}
+                    </div>
                   )}
                 </>
               );

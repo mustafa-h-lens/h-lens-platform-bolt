@@ -409,7 +409,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       )}
 
       {showDeleteConfirm && (
-        <ConfirmationModal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="تأكيد حذف الموردين" message={`هل أنت متأكد من حذف ${selectedVendors.size} مورد؟ هذا الإجراء لا يمكن التراجع عنه.`} confirmText="حذف" cancelText="إلغاء" isDestructive={true} isLoading={deleting} />
+        <ConfirmationModal isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="تأكيد حذف الموردين" message={`هل أنت متأكد من حذف ${selectedVendors.size} مورد؟ هذا الإجراء لا يمكن التراجع عنه.`} confirmText="حذف" cancelText="إلغاء" type="danger" />
       )}
     </div>
   );
