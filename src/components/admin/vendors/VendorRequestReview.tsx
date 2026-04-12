@@ -374,7 +374,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
             )}
           </Section>
 
-          {/* 3. Files */}
+          {/* 3. Files (profile + ID only) */}
           <Section title="الملفات والمستندات" icon={FileText}>
             <div className="grid grid-cols-2 gap-3">
               {vendor.profile_image && (
@@ -398,7 +398,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
 
         {/* Row 2: Travel Docs | Financial | Service & Rates */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 4. Travel Documents */}
+          {/* 4. Travel Documents — text data + images together */}
           <Section title="وثائق السفر" icon={MapPin}>
             {(() => {
               const passportDoc = travelDocs.find(d => d.passport_number || d.passport_issuing_country || d.passport_expiry_date);
@@ -417,19 +417,6 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                       <InfoRow label="تاريخ انتهاء الجواز" value={passportDoc.passport_expiry_date} />
                     </>
                   )}
-                  {hasPassportFile && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
-                      {travelDocs[0].passport_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-                      ) : (
-                        <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                          <FileText size={14} /> عرض جواز السفر
-                        </a>
-                      )}
-                    </div>
-                  )}
                   {visaDoc && (
                     <>
                       <InfoRow label="بلد التأشيرة" value={visaDoc.visa_country} />
@@ -438,16 +425,33 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                       <InfoRow label="تاريخ انتهاء التأشيرة" value={visaDoc.visa_expiry_date} />
                     </>
                   )}
-                  {hasVisaFile && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
-                      {travelDocs[0].visa_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
-                      ) : (
-                        <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
-                          <FileText size={14} /> عرض مستند التأشيرة
-                        </a>
+                  {(hasPassportFile || hasVisaFile) && (
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      {hasPassportFile && (
+                        <div>
+                          <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
+                          {travelDocs[0].passport_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                          ) : (
+                            <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                              <FileText size={14} /> عرض جواز السفر
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {hasVisaFile && (
+                        <div>
+                          <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
+                          {travelDocs[0].visa_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                          ) : (
+                            <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
+                              <FileText size={14} /> عرض مستند التأشيرة
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}

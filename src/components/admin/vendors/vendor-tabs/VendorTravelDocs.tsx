@@ -23,6 +23,29 @@ interface TravelDocument {
   updated_at: string;
 }
 
+interface UploadedTravelFile {
+  id: string;
+  document_type: string;
+  file_url: string;
+  file_name: string;
+  created_at: string;
+}
+
+const TRAVEL_DOC_TYPES = ['passport', 'visa', 'travel', 'visa_usa', 'visa_uk', 'visa_schengen', 'visa_japan'];
+
+const getTravelDocLabel = (type: string): string => {
+  const labels: Record<string, string> = {
+    passport: 'جواز السفر',
+    visa: 'تأشيرة',
+    travel: 'وثيقة سفر',
+    visa_usa: 'تأشيرة أمريكا',
+    visa_uk: 'تأشيرة بريطانيا',
+    visa_schengen: 'تأشيرة شنغن',
+    visa_japan: 'تأشيرة اليابان',
+  };
+  return labels[type] || type;
+};
+
 interface VendorTravelDocsProps {
   vendorId: string;
 }
@@ -60,6 +83,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
     visa_file: '',
   });
 
+  const [uploadedTravelFiles, setUploadedTravelFiles] = useState<UploadedTravelFile[]>([]);
   const [uploadingPassport, setUploadingPassport] = useState(false);
   const [uploadingVisa, setUploadingVisa] = useState(false);
   const passportFileRef = useRef<HTMLInputElement>(null);
@@ -100,18 +124,28 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
 
   const fetchDocuments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('vendor_travel_documents')
-        .select('*')
-        .eq('vendor_id', vendorId);
+      const [travelResult, docsResult] = await Promise.all([
+        supabase
+          .from('vendor_travel_documents')
+          .select('*')
+          .eq('vendor_id', vendorId),
+        supabase
+          .from('vendor_documents')
+          .select('id, document_type, file_url, file_name, created_at')
+          .eq('vendor_id', vendorId)
+          .in('document_type', TRAVEL_DOC_TYPES)
+          .order('created_at', { ascending: false }),
+      ]);
 
-      if (error) throw error;
+      if (travelResult.error) throw travelResult.error;
 
+      const data = travelResult.data;
       const passport = data?.find(doc => doc.document_type === 'passport');
       const visas = data?.filter(doc => doc.document_type === 'visa') || [];
 
       setPassportDoc(passport || null);
       setVisaDocs(visas);
+      setUploadedTravelFiles(docsResult.data || []);
 
       if (passport) {
         setPassportForm({
@@ -597,6 +631,36 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
           )
         )}
       </div>
+
+      {/* Uploaded Travel Files from vendor_documents */}
+      {uploadedTravelFiles.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>ملفات السفر المرفوعة</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {uploadedTravelFiles.map((doc) => (
+              <div key={doc.id} className="card" style={{ cursor: 'default', padding: 12 }}>
+                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
+                  {getTravelDocLabel(doc.document_type)}
+                </p>
+                {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                  <img
+                    src={doc.file_url}
+                    alt={doc.file_name}
+                    className="w-full h-32 object-cover rounded-lg border cursor-pointer"
+                    style={{ borderColor: 'var(--color-border)' }}
+                    onClick={() => window.open(doc.file_url, '_blank')}
+                  />
+                ) : (
+                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--accent-lighter)' }}>
+                    <FileText size={14} /> {doc.file_name}
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

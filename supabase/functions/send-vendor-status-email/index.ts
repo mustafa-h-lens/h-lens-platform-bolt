@@ -549,8 +549,9 @@ Deno.serve(async (req: Request) => {
       day: "numeric",
     });
 
-    const loginUrl = Deno.env.get("VENDOR_LOGIN_URL") || `${supabaseUrl.replace('.supabase.co', '')}/vendor-login`;
-    const adminUrl = Deno.env.get("ADMIN_URL") || `${supabaseUrl.replace('.supabase.co', '')}/#vendors`;
+    const siteUrl = Deno.env.get("SITE_URL") || "https://platform.h-lens.co";
+    const loginUrl = Deno.env.get("VENDOR_LOGIN_URL") || `${siteUrl}/vendor-login`;
+    const adminUrl = Deno.env.get("ADMIN_URL") || `${siteUrl}/#vendors`;
 
     // Build email based on type
     let emailContent: { subject: string; html: string };

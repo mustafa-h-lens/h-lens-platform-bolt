@@ -43,6 +43,7 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
           uploader:users!uploaded_by(full_name)
         `)
         .eq('vendor_id', vendorId)
+        .not('document_type', 'in', '("passport","visa_usa","visa_uk","visa_schengen","visa_japan")')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
