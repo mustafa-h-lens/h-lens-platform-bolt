@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, Upload, FileText, X, Search, CheckCircle, BadgeDollarSign } from 'lucide-react';
+import { Plus, Pencil, Trash2, CreditCard, ChevronDown, ChevronUp, FileText, X, Search, CheckCircle, BadgeDollarSign, Rows3 } from 'lucide-react';
+import { BulkExpenseModal } from './BulkExpenseModal';
+import { DatePicker } from '../../../ui/DatePicker';
+import { FileUploader } from '../../../ui/FileUploader';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
@@ -11,6 +14,7 @@ import { useAuth } from '../../../../contexts/AuthContext';
 import { usePermissions } from '../../../../contexts/PermissionsContext';
 import { PAYMENT_METHODS } from '../../../../types/database';
 import type { VendorField } from '../../../../types/database';
+import { matchesQuery } from '../../../../lib/arabicSearch';
 
 interface Payment {
   id: string;
@@ -115,6 +119,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   const [paymentExpense, setPaymentExpense] = useState<Expense | null>(null);
   const [deleteExpenseId, setDeleteExpenseId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const { user } = useAuth();
   const { isSuperAdmin } = usePermissions();
@@ -134,7 +141,6 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     paid_by_user_id: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [vendorSearch, setVendorSearch] = useState('');
   const [vendorDropdownOpen, setVendorDropdownOpen] = useState(false);
   const vendorDropdownRef = useRef<HTMLDivElement>(null);
@@ -298,8 +304,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     try {
       const { data, error } = await supabase
         .from('vendors')
-        .select('id, full_name, primary_field')
-        .eq('status', 'active')
+        .select('id, full_name, primary_field, status')
+        .not('status', 'in', '(rejected,blocked)')
         .order('full_name');
 
       if (error) throw error;
@@ -373,14 +379,34 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       const { data, error } = await supabase
         .from('users')
         .select('id, full_name, role')
-        .eq('is_active', true)
-        .order('full_name', { ascending: true });
+        .eq('is_active', true);
 
       if (error) throw error;
-      setTeamMembers(data || []);
+      // Sort: super_admin → project_manager → accountant → client → other
+      const priority: Record<string, number> = {
+        super_admin: 0,
+        project_manager: 1,
+        accountant: 2,
+        client: 3,
+      };
+      const sorted = (data || []).slice().sort((a, b) => {
+        const pa = priority[a.role as string] ?? 99;
+        const pb = priority[b.role as string] ?? 99;
+        if (pa !== pb) return pa - pb;
+        return (a.full_name || '').localeCompare(b.full_name || '', 'ar');
+      });
+      setTeamMembers(sorted);
     } catch (error) {
       console.error('Error loading team members:', error);
     }
+  };
+
+  // Group team members by role for display with section labels
+  const groupTeamMembers = (members: TeamMember[]) => {
+    const pms = members.filter(m => m.role === 'project_manager' || m.role === 'super_admin');
+    const accountants = members.filter(m => m.role === 'accountant');
+    const others = members.filter(m => m.role !== 'project_manager' && m.role !== 'super_admin' && m.role !== 'accountant');
+    return { pms, accountants, others };
   };
 
   // Get grouped fields: parent categories with their children
@@ -497,7 +523,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     setVendorDropdownOpen(false);
     setCategorySearch(getCategoryLabel(expense.category || null));
     setCategoryDropdownOpen(false);
-    setTeamMemberSearch(expense.team_member_name || '');
+    setTeamMemberSearch(expense.team_member_name || expense.vendor_name || '');
     setTeamMemberDropdownOpen(false);
     setPaidBySearch(expense.paid_by_user_name || '');
     setPaidByDropdownOpen(false);
@@ -526,12 +552,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
       showError('يرجى اختيار المورد');
       return;
     }
-    if (isBeneficiary && !expenseForm.team_member_id) {
+    if (isBeneficiary && !expenseForm.team_member_id && !expenseForm.vendor_id) {
       showError('يرجى اختيار المستفيد');
-      return;
-    }
-    if (isBeneficiary && !expenseForm.due_date) {
-      showError('يرجى اختيار التاريخ');
       return;
     }
     if (!isVendor && !isBeneficiary && !expenseForm.expense_description?.trim()) {
@@ -569,8 +591,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         // Update existing expense
         const updateData: Record<string, any> = {
           expense_type: expenseForm.expense_type,
-          vendor_id: isVendor ? expenseForm.vendor_id : null,
-          category: isVendor ? (expenseForm.category || null) : null,
+          vendor_id: expenseForm.vendor_id || null,
+          category: (isVendor || isBeneficiary) ? (expenseForm.category || null) : null,
           project_item_id: expenseForm.project_item_id || null,
           amount_total: amount,
           amount_remaining: amount - editingExpense.amount_paid,
@@ -586,6 +608,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         } else if (isBeneficiary) {
           updateData.expense_description = expenseForm.expense_description || null;
           updateData.team_member_id = expenseForm.team_member_id || null;
+          updateData.vendor_id = expenseForm.vendor_id || null;
           updateData.paid_by_user_id = null;
         } else {
           updateData.expense_description = expenseForm.expense_description || null;
@@ -604,9 +627,9 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         // Insert new expense
         const insertData: Record<string, any> = {
           expense_type: expenseForm.expense_type,
-          vendor_id: isVendor ? expenseForm.vendor_id : null,
+          vendor_id: expenseForm.vendor_id || null,
           project_id: projectId,
-          category: isVendor ? (expenseForm.category || null) : null,
+          category: (isVendor || isBeneficiary) ? (expenseForm.category || null) : null,
           project_item_id: expenseForm.project_item_id || null,
           amount_total: amount,
           amount_remaining: amount,
@@ -623,6 +646,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         } else if (isBeneficiary) {
           insertData.expense_description = expenseForm.expense_description || null;
           insertData.team_member_id = expenseForm.team_member_id || null;
+          insertData.vendor_id = expenseForm.vendor_id || null;
           insertData.paid_by_user_id = null;
         } else {
           insertData.expense_description = expenseForm.expense_description || null;
@@ -736,6 +760,47 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     }
   };
 
+  // Bulk approve selected draft expenses
+  const bulkApproveSelected = async () => {
+    const draftIds = expenses
+      .filter(e => selectedIds.has(e.id) && (e.approval_status || 'draft') === 'draft')
+      .map(e => e.id);
+    if (draftIds.length === 0) {
+      showError('لا توجد مصروفات قابلة للاعتماد ضمن المحدد');
+      return;
+    }
+    setBulkApproving(true);
+    try {
+      const { error } = await supabase
+        .from('vendor_invoices')
+        .update({ approval_status: 'approved' })
+        .in('id', draftIds);
+      if (error) throw error;
+      showSuccess(`تم اعتماد ${draftIds.length} مصروف`);
+      setSelectedIds(new Set());
+      loadExpenses();
+    } catch (error: any) {
+      console.error('Error bulk approving expenses:', error);
+      showError(error.message || 'حدث خطأ أثناء اعتماد المصروفات');
+    } finally {
+      setBulkApproving(false);
+    }
+  };
+
+  const toggleSelectExpense = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllDrafts = () => {
+    const draftIds = expenses.filter(e => (e.approval_status || 'draft') === 'draft').map(e => e.id);
+    const allSelected = draftIds.length > 0 && draftIds.every(id => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(draftIds));
+  };
+
   // Change payment status
   const [changingPaymentStatus, setChangingPaymentStatus] = useState<string | null>(null);
 
@@ -808,7 +873,15 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={() => setShowBulkModal(true)}
+          className="btn btn-secondary"
+          style={{ gap: 6 }}
+        >
+          <Rows3 size={16} />
+          إضافة بالجملة
+        </button>
         <button
           onClick={openAddModal}
           className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
@@ -852,6 +925,40 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         </div>
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div
+          className="flex items-center justify-between px-4 py-3 rounded-lg border"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-primary) 6%, transparent)',
+            borderColor: 'color-mix(in srgb, var(--color-primary) 20%, transparent)',
+          }}
+        >
+          <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+            تم تحديد {selectedIds.size} مصروف
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={bulkApproveSelected}
+              disabled={bulkApproving}
+              className="btn btn-sm"
+              style={{ background: '#2563eb', color: '#fff', gap: 6 }}
+            >
+              <CheckCircle size={14} />
+              {bulkApproving ? 'جاري الاعتماد...' : 'اعتماد المصروفات المحددة'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="btn btn-secondary btn-sm"
+            >
+              إلغاء التحديد
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Expenses Table */}
       {expenses.length === 0 ? (
         <div
@@ -883,6 +990,24 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                 }}
               >
                 <tr>
+                  <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}>
+                    {(() => {
+                      const draftIds = expenses.filter(e => (e.approval_status || 'draft') === 'draft').map(e => e.id);
+                      const allSelected = draftIds.length > 0 && draftIds.every(id => selectedIds.has(id));
+                      const someSelected = draftIds.some(id => selectedIds.has(id));
+                      return (
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                          onChange={toggleSelectAllDrafts}
+                          disabled={draftIds.length === 0}
+                          title="تحديد الكل (مسودات)"
+                          style={{ cursor: draftIds.length === 0 ? 'not-allowed' : 'pointer' }}
+                        />
+                      );
+                    })()}
+                  </th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)', width: '32px' }}></th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>النوع</th>
                   <th className="px-4 py-3 text-right text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>المورد / الوصف</th>
@@ -907,8 +1032,20 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                         key={expense.id}
                         style={{
                           borderBottom: (isExpanded || index < expenses.length - 1) ? '1px solid var(--color-table-border)' : 'none',
+                          backgroundColor: selectedIds.has(expense.id) ? 'color-mix(in srgb, var(--color-primary) 5%, transparent)' : undefined,
                         }}
                       >
+                        {/* Bulk select checkbox */}
+                        <td className="px-4 py-3">
+                          {approvalStatus === 'draft' && (
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(expense.id)}
+                              onChange={() => toggleSelectExpense(expense.id)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          )}
+                        </td>
                         {/* Expand toggle */}
                         <td className="px-4 py-3">
                           {expense.payments.length > 0 && (
@@ -928,10 +1065,14 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           </span>
                         </td>
                         <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                          {expense.expense_type === 'vendor' ? expense.vendor_name : (expense.team_member_name || expense.expense_description || '-')}
+                          {expense.expense_type === 'vendor'
+                            ? expense.vendor_name
+                            : (expense.team_member_name || expense.vendor_name || expense.expense_description || '-')}
                         </td>
                         <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                          {expense.expense_type === 'vendor' ? getCategoryLabel(expense.category) : '-'}
+                          {(expense.expense_type === 'vendor' || expense.expense_type === 'business_trip' || expense.expense_type === 'bonus')
+                            ? getCategoryLabel(expense.category)
+                            : '-'}
                         </td>
                         <td className="px-4 py-3 text-sm" style={{ color: expense.project_item_name ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
                           {expense.project_item_name || '-'}
@@ -1030,7 +1171,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                       {/* Expanded payments row */}
                       {isExpanded && (
                         <tr key={`${expense.id}-payments`} style={{ borderBottom: index < expenses.length - 1 ? '1px solid var(--color-table-border)' : 'none' }}>
-                          <td colSpan={12} className="px-8 py-3" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+                          <td colSpan={13} className="px-8 py-3" style={{ backgroundColor: 'var(--color-background-hover)' }}>
                             <p className="text-sm font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>
                               سجل الدفعات ({expense.payments.length})
                             </p>
@@ -1359,7 +1500,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                               <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
                                 {(() => {
                                   const projectVendorIds = new Set(expenses.map(e => e.vendor_id).filter(Boolean));
-                                  const filtered = vendors.filter(v => !vendorSearch || v.full_name.includes(vendorSearch) || (v.primary_field || '').includes(vendorSearch));
+                                  const filtered = vendors.filter(v => matchesQuery(vendorSearch, v.full_name, v.primary_field));
                                   const projectVendors = filtered.filter(v => projectVendorIds.has(v.id));
                                   const otherVendors = filtered.filter(v => !projectVendorIds.has(v.id));
                                   if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
@@ -1410,11 +1551,12 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           )}
                         </div>
                         {categoryDropdownOpen && (() => {
-                          const q = categorySearch.toLowerCase();
                           const selectedVendor = vendors.find(v => v.id === expenseForm.vendor_id);
                           const vendorFieldIds = new Set((selectedVendor?.selected_fields || []).map(f => f.field_id));
-                          const allChildren = parentFields.flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
-                          const filtered = allChildren.filter(c => !q || c.name_ar.includes(q) || (c.name_en || '').toLowerCase().includes(q) || c.parent_name_ar.includes(q) || (c.parent_name_en || '').toLowerCase().includes(q));
+                          const allChildren = parentFields
+                            .filter(p => p.name_ar !== 'فريق العمل الداخلي')
+                            .flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
+                          const filtered = allChildren.filter(c => matchesQuery(categorySearch, c.name_ar, c.name_en, c.parent_name_ar, c.parent_name_en));
                           const vendorFields_ = filtered.filter(c => vendorFieldIds.has(c.id));
                           const otherFields = filtered.filter(c => !vendorFieldIds.has(c.id));
                           return (
@@ -1466,11 +1608,6 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                       <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                         المستفيد <span className="text-red-500">*</span>
                       </label>
-                      {editingExpense ? (
-                        <div className="w-full px-4 py-2 rounded-lg border" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', opacity: 0.6 }}>
-                          {teamMembers.find(m => m.id === expenseForm.team_member_id)?.full_name || 'غير معروف'}
-                        </div>
-                      ) : (
                         <div ref={teamMemberDropdownRef} className="relative">
                           <div className="relative">
                             <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
@@ -1480,10 +1617,10 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                               onFocus={() => setTeamMemberDropdownOpen(true)}
                               placeholder="ابحث عن موظف..."
                               className="w-full pr-10 pl-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                              style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.team_member_id ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }}
+                              style={{ backgroundColor: 'var(--color-surface)', borderColor: (expenseForm.team_member_id || expenseForm.vendor_id) ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }}
                             />
-                            {expenseForm.team_member_id && (
-                              <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: '' })); setTeamMemberSearch(''); }}
+                            {(expenseForm.team_member_id || expenseForm.vendor_id) && (
+                              <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: '', vendor_id: '' })); setTeamMemberSearch(''); }}
                                 className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}>
                                 <X size={14} />
                               </button>
@@ -1494,30 +1631,104 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                               style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}>
                               <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
                                 {(() => {
-                                  const q = teamMemberSearch.toLowerCase();
-                                  const filtered = teamMembers.filter(m => !q || m.full_name.toLowerCase().includes(q));
-                                  if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                                  const filteredMembers = teamMembers.filter(m => matchesQuery(teamMemberSearch, m.full_name, m.role));
+                                  const filteredVendors = vendors.filter(v => matchesQuery(teamMemberSearch, v.full_name, v.primary_field));
+                                  const { pms, accountants, others } = groupTeamMembers(filteredMembers);
+                                  if (filteredMembers.length === 0 && filteredVendors.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                                  const renderMember = (member: TeamMember) => (
+                                    <button key={`u-${member.id}`} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: member.id, vendor_id: '' })); setTeamMemberSearch(member.full_name); setTeamMemberDropdownOpen(false); }}
+                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                      style={{ color: expenseForm.team_member_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.team_member_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                      onMouseEnter={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                      onMouseLeave={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                      <span className="font-medium text-sm">{member.full_name}</span>
+                                      {member.role && <span className="text-xs opacity-50">{member.role}</span>}
+                                    </button>
+                                  );
+                                  const sectionLabel = (text: string, highlight: boolean) => (
+                                    <div className={highlight ? 'px-3 py-1.5 text-xs font-bold' : 'px-3 py-1.5 text-xs font-bold border-t'}
+                                      style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: highlight ? 'color-mix(in srgb, var(--color-primary) 6%, transparent)' : 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
+                                      {text}
+                                    </div>
+                                  );
                                   return (
                                     <>
-                                      {filtered.map(member => (
-                                        <button key={member.id} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: member.id })); setTeamMemberSearch(member.full_name); setTeamMemberDropdownOpen(false); }}
-                                          className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
-                                          style={{ color: expenseForm.team_member_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.team_member_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
-                                          onMouseEnter={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
-                                          onMouseLeave={e => { if (expenseForm.team_member_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                                          <span className="font-medium text-sm">{member.full_name}</span>
-                                          {member.role && <span className="text-xs opacity-50">{member.role}</span>}
-                                        </button>
-                                      ))}
+                                      {pms.length > 0 && (<>
+                                        {sectionLabel('مديري المشاريع', true)}
+                                        {pms.map(renderMember)}
+                                      </>)}
+                                      {accountants.length > 0 && (<>
+                                        {sectionLabel('المحاسبين', pms.length === 0)}
+                                        {accountants.map(renderMember)}
+                                      </>)}
+                                      {others.length > 0 && (<>
+                                        {sectionLabel('باقي الفريق', pms.length === 0 && accountants.length === 0)}
+                                        {others.map(renderMember)}
+                                      </>)}
+                                      {filteredVendors.length > 0 && (<>
+                                        {sectionLabel('الموردين', filteredMembers.length === 0)}
+                                        {filteredVendors.map(vendor => (
+                                          <button key={`v-${vendor.id}`} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, team_member_id: '', vendor_id: vendor.id })); setTeamMemberSearch(vendor.full_name); setTeamMemberDropdownOpen(false); }}
+                                            className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                            style={{ color: expenseForm.vendor_id === vendor.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.vendor_id === vendor.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                            onMouseEnter={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                            onMouseLeave={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                            <span className="font-medium text-sm">{vendor.full_name}</span>
+                                            {vendor.primary_field && <span className="text-xs opacity-50">{vendor.primary_field}</span>}
+                                          </button>
+                                        ))}
+                                      </>)}
                                     </>
                                   );
                                 })()}
                               </div>
                             </div>
                           )}
-                          <input type="text" value={expenseForm.team_member_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
+                          <input type="text" value={expenseForm.team_member_id || expenseForm.vendor_id} required className="sr-only" tabIndex={-1} onChange={() => {}} />
                         </div>
-                      )}
+                    </div>
+
+                    {/* Role / Category picker for business_trip / bonus */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>الدور / التصنيف</label>
+                      <div ref={categoryDropdownRef} className="relative">
+                        <div className="relative">
+                          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                          <input type="text" value={categorySearch}
+                            onChange={e => { setCategorySearch(e.target.value); setCategoryDropdownOpen(true); }}
+                            onFocus={() => setCategoryDropdownOpen(true)}
+                            placeholder="ابحث بالعربي أو الإنجليزي..."
+                            className="w-full pr-10 pl-8 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                            style={{ backgroundColor: 'var(--color-surface)', borderColor: expenseForm.category ? 'var(--color-primary)' : 'var(--color-border)', color: 'var(--color-text-primary)' }} />
+                          {expenseForm.category && (
+                            <button type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, category: '' })); setCategorySearch(''); }}
+                              className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }}><X size={14} /></button>
+                          )}
+                        </div>
+                        {categoryDropdownOpen && (() => {
+                          const allChildren = parentFields.flatMap(p => getChildren(p.id).map(c => ({ ...c, parent_name_ar: p.name_ar, parent_name_en: p.name_en })));
+                          const filtered = allChildren.filter(c => matchesQuery(categorySearch, c.name_ar, c.name_en, c.parent_name_ar, c.parent_name_en));
+                          return (
+                            <div className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 280 }}>
+                              <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+                                {filtered.length === 0 ? (
+                                  <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>
+                                ) : filtered.map(c => (
+                                  <button key={c.id} type="button"
+                                    onClick={() => { setExpenseForm(prev => ({ ...prev, category: c.id })); setCategorySearch(`${c.name_ar} — ${c.name_en || ''}`); setCategoryDropdownOpen(false); }}
+                                    className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                    style={{ color: expenseForm.category === c.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.category === c.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                    onMouseEnter={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                    onMouseLeave={e => { if (expenseForm.category !== c.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                    <span className="text-sm">{c.name_ar} — <span className="opacity-50">{c.name_en || ''}</span></span>
+                                    <span className="text-xs opacity-40">{c.parent_name_ar}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </>
                 )}
@@ -1569,21 +1780,53 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                           style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: 240 }}>
                           <div className="overflow-y-auto" style={{ maxHeight: 240 }}>
                             {(() => {
-                              const q = paidBySearch.toLowerCase();
-                              const filtered = teamMembers.filter(m => !q || m.full_name.toLowerCase().includes(q));
-                              if (filtered.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                              const filteredMembers = teamMembers.filter(m => matchesQuery(paidBySearch, m.full_name, m.role));
+                              const filteredVendors = vendors.filter(v => matchesQuery(paidBySearch, v.full_name, v.primary_field));
+                              const { pms, accountants, others } = groupTeamMembers(filteredMembers);
+                              if (filteredMembers.length === 0 && filteredVendors.length === 0) return <div className="px-4 py-3 text-sm text-center" style={{ color: 'var(--color-text-secondary)' }}>لا توجد نتائج</div>;
+                              const renderMember = (member: TeamMember) => (
+                                <button key={`u-${member.id}`} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, paid_by_user_id: member.id, vendor_id: '' })); setPaidBySearch(member.full_name); setPaidByDropdownOpen(false); }}
+                                  className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                  style={{ color: expenseForm.paid_by_user_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.paid_by_user_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                  onMouseEnter={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                  onMouseLeave={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                  <span className="font-medium text-sm">{member.full_name}</span>
+                                  {member.role && <span className="text-xs opacity-50">{member.role}</span>}
+                                </button>
+                              );
+                              const sectionLabel = (text: string, highlight: boolean) => (
+                                <div className={highlight ? 'px-3 py-1.5 text-xs font-bold' : 'px-3 py-1.5 text-xs font-bold border-t'}
+                                  style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: highlight ? 'color-mix(in srgb, var(--color-primary) 6%, transparent)' : 'color-mix(in srgb, var(--color-text-secondary) 5%, transparent)' }}>
+                                  {text}
+                                </div>
+                              );
                               return (
                                 <>
-                                  {filtered.map(member => (
-                                    <button key={member.id} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, paid_by_user_id: member.id })); setPaidBySearch(member.full_name); setPaidByDropdownOpen(false); }}
-                                      className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
-                                      style={{ color: expenseForm.paid_by_user_id === member.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.paid_by_user_id === member.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
-                                      onMouseEnter={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
-                                      onMouseLeave={e => { if (expenseForm.paid_by_user_id !== member.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
-                                      <span className="font-medium text-sm">{member.full_name}</span>
-                                      {member.role && <span className="text-xs opacity-50">{member.role}</span>}
-                                    </button>
-                                  ))}
+                                  {pms.length > 0 && (<>
+                                    {sectionLabel('مديري المشاريع', true)}
+                                    {pms.map(renderMember)}
+                                  </>)}
+                                  {accountants.length > 0 && (<>
+                                    {sectionLabel('المحاسبين', pms.length === 0)}
+                                    {accountants.map(renderMember)}
+                                  </>)}
+                                  {others.length > 0 && (<>
+                                    {sectionLabel('باقي الفريق', pms.length === 0 && accountants.length === 0)}
+                                    {others.map(renderMember)}
+                                  </>)}
+                                  {filteredVendors.length > 0 && (<>
+                                    {sectionLabel('الموردين', filteredMembers.length === 0)}
+                                    {filteredVendors.map(vendor => (
+                                      <button key={`v-${vendor.id}`} type="button" onClick={() => { setExpenseForm(prev => ({ ...prev, paid_by_user_id: '', vendor_id: vendor.id })); setPaidBySearch(vendor.full_name); setPaidByDropdownOpen(false); }}
+                                        className="w-full text-right px-4 py-2.5 transition-colors flex items-center justify-between"
+                                        style={{ color: expenseForm.vendor_id === vendor.id ? 'var(--color-primary)' : 'var(--color-text-primary)', backgroundColor: expenseForm.vendor_id === vendor.id ? 'color-mix(in srgb, var(--color-primary) 8%, transparent)' : 'transparent' }}
+                                        onMouseEnter={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'var(--color-background-hover)'; }}
+                                        onMouseLeave={e => { if (expenseForm.vendor_id !== vendor.id) e.currentTarget.style.backgroundColor = 'transparent'; }}>
+                                        <span className="font-medium text-sm">{vendor.full_name}</span>
+                                        {vendor.primary_field && <span className="text-xs opacity-50">{vendor.primary_field}</span>}
+                                      </button>
+                                    ))}
+                                  </>)}
                                 </>
                               );
                             })()}
@@ -1629,25 +1872,20 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
                 {/* Date field for business_trip/bonus */}
                 {(expenseForm.expense_type === 'business_trip' || expenseForm.expense_type === 'bonus') && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                      التاريخ <span className="text-red-500">*</span>
-                    </label>
-                    <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }}
-                      required />
-                  </div>
+                  <DatePicker
+                    label="التاريخ"
+                    value={expenseForm.due_date}
+                    onChange={(date) => setExpenseForm({ ...expenseForm, due_date: date })}
+                  />
                 )}
 
                 {/* Due date for other types */}
                 {expenseForm.expense_type !== 'business_trip' && expenseForm.expense_type !== 'bonus' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>تاريخ الاستحقاق</label>
-                    <input type="date" value={expenseForm.due_date} onChange={(e) => setExpenseForm({ ...expenseForm, due_date: e.target.value })}
-                      className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text-primary)' }} />
-                  </div>
+                  <DatePicker
+                    label="تاريخ الاستحقاق"
+                    value={expenseForm.due_date}
+                    onChange={(date) => setExpenseForm({ ...expenseForm, due_date: date })}
+                  />
                 )}
 
                 {/* Notes */}
@@ -1660,26 +1898,21 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                 </div>
 
                 {/* Invoice file */}
-                <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>ملف / فاتورة</label>
-                  <input ref={fileInputRef} type="file" className="hidden" accept="application/pdf,image/jpeg,image/png"
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) setSelectedFile(file); }} />
-                  <button type="button" onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed rounded-lg transition-colors"
-                    style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
-                    <Upload size={18} />
-                    {selectedFile ? selectedFile.name : editingExpense?.invoice_file_url ? 'استبدال الملف الحالي' : 'اضغط لاختيار ملف'}
-                  </button>
-                  {selectedFile && (
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs" style={{ color: 'var(--color-success)' }}>تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)</p>
-                      <button type="button" onClick={() => setSelectedFile(null)} className="text-xs" style={{ color: 'var(--color-danger)' }}><X size={14} /></button>
-                    </div>
-                  )}
-                  {!selectedFile && editingExpense?.invoice_file_url && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>ملف فاتورة موجود بالفعل</p>
-                  )}
-                </div>
+                <FileUploader
+                  label="ملف / فاتورة"
+                  hint={
+                    selectedFile
+                      ? `تم اختيار: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)`
+                      : editingExpense?.invoice_file_url
+                        ? 'ملف فاتورة موجود بالفعل'
+                        : undefined
+                  }
+                  value={selectedFile ? selectedFile.name : editingExpense?.invoice_file_url || ''}
+                  onChange={(url) => { if (!url) setSelectedFile(null); }}
+                  onFile={(file) => setSelectedFile(file)}
+                  accept="application/pdf,image/jpeg,image/png"
+                  preview="file"
+                />
 
                 {/* Actions */}
                 <div className="flex gap-3 pt-4">
@@ -1772,22 +2005,11 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
             </div>
 
             {/* Payment date */}
-            <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                تاريخ الدفع
-              </label>
-              <input
-                type="date"
-                value={paymentForm.payment_date}
-                onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                }}
-              />
-            </div>
+            <DatePicker
+              label="تاريخ الدفع"
+              value={paymentForm.payment_date}
+              onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date })}
+            />
 
             {/* Notes */}
             <div>
@@ -1830,6 +2052,17 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           </form>
         </Modal>
       )}
+
+      {/* Bulk Add Expenses Modal */}
+      <BulkExpenseModal
+        isOpen={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onSuccess={loadExpenses}
+        projectId={projectId}
+        currency={currency}
+        vendors={vendors}
+        vendorFields={vendorFields}
+      />
     </div>
   );
 };

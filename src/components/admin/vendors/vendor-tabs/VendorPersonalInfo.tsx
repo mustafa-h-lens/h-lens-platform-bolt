@@ -5,6 +5,7 @@ import { SearchableDropdown } from '../../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { getNationalityOptions } from '../../../../lib/countries';
+import { DatePicker } from '../../../ui/DatePicker';
 
 interface Vendor {
   id: string;
@@ -456,24 +457,30 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       </div>
 
       <div className="card" style={{ cursor: 'default' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 24, alignItems: 'start' }}>
           {/* Profile Image */}
-          <div className="input-group">
+          <div className="input-group" style={{ textAlign: 'center' }}>
             <label className="input-label">الصورة الشخصية</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              {formData.profile_image ? (
-                <img
-                  src={formData.profile_image}
-                  alt="Profile"
-                  style={{ width: 120, height: 120, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-soft)' }}
-                />
-              ) : (
-                <div className="avatar av-xl" style={{ width: 120, height: 120, fontSize: 36, background: 'var(--accent)', color: '#fff' }}>
-                  {formData.full_name.charAt(0)}
-                </div>
-              )}
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}
+              onDragOver={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); } : undefined}
+              onDrop={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); const file = e.dataTransfer.files[0]; if (file) { const dt = new DataTransfer(); dt.items.add(file); if (fileInputRef.current) { fileInputRef.current.files = dt.files; fileInputRef.current.dispatchEvent(new Event('change', { bubbles: true })); } } } : undefined}
+            >
+              <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-soft)', flexShrink: 0 }}>
+                {formData.profile_image ? (
+                  <img
+                    src={formData.profile_image}
+                    alt="Profile"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 36, fontWeight: 700, background: 'var(--accent)', color: '#fff' }}>
+                    {formData.full_name.charAt(0)}
+                  </div>
+                )}
+              </div>
               {isEditing && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -492,7 +499,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
                     {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
                   </button>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -500,20 +507,28 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
           {/* ID Image */}
           <div className="input-group">
             <label className="input-label">صورة الهوية الشخصية</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 12,
+                ...(isEditing ? { border: '2px dashed var(--border-soft)', borderRadius: 'var(--radius-md)', padding: 12, transition: 'border-color 0.2s' } : {}),
+              }}
+              onDragOver={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = 'var(--accent)'; } : undefined}
+              onDragLeave={isEditing ? (e) => { e.currentTarget.style.borderColor = 'var(--border-soft)'; } : undefined}
+              onDrop={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = 'var(--border-soft)'; const file = e.dataTransfer.files[0]; if (file) { const dt = new DataTransfer(); dt.items.add(file); if (idImageInputRef.current) { idImageInputRef.current.files = dt.files; idImageInputRef.current.dispatchEvent(new Event('change', { bubbles: true })); } } } : undefined}
+            >
               {formData.id_image ? (
                 <img
                   src={formData.id_image}
                   alt="ID"
-                  style={{ width: '100%', maxWidth: 280, maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
+                  style={{ width: '100%', maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
                 />
               ) : (
-                <div style={{ width: '100%', maxWidth: 280, height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
+                <div style={{ width: '100%', height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد صورة</span>
                 </div>
               )}
               {isEditing && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     ref={idImageInputRef}
                     type="file"
@@ -526,12 +541,12 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
                     className="btn btn-secondary btn-sm"
                     onClick={() => idImageInputRef.current?.click()}
                     disabled={uploadingIdImage}
-                    style={{ gap: 6 }}
+                    style={{ gap: 6, flex: 1 }}
                   >
                     <Upload size={14} />
                     {uploadingIdImage ? 'جاري الرفع...' : 'رفع صورة الهوية'}
                   </button>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
                 </div>
               )}
             </div>
@@ -540,20 +555,28 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
           {/* Vehicle Registration Image */}
           <div className="input-group">
             <label className="input-label">صورة استمارة السيارة</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              style={{
+                display: 'flex', flexDirection: 'column', gap: 12,
+                ...(isEditing ? { border: '2px dashed var(--border-soft)', borderRadius: 'var(--radius-md)', padding: 12, transition: 'border-color 0.2s' } : {}),
+              }}
+              onDragOver={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = 'var(--accent)'; } : undefined}
+              onDragLeave={isEditing ? (e) => { e.currentTarget.style.borderColor = 'var(--border-soft)'; } : undefined}
+              onDrop={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = 'var(--border-soft)'; const file = e.dataTransfer.files[0]; if (file) { const dt = new DataTransfer(); dt.items.add(file); if (vehicleRegImageInputRef.current) { vehicleRegImageInputRef.current.files = dt.files; vehicleRegImageInputRef.current.dispatchEvent(new Event('change', { bubbles: true })); } } } : undefined}
+            >
               {formData.vehicle_registration_image ? (
                 <img
                   src={formData.vehicle_registration_image}
                   alt="Vehicle Registration"
-                  style={{ width: '100%', maxWidth: 280, maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
+                  style={{ width: '100%', maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}
                 />
               ) : (
-                <div style={{ width: '100%', maxWidth: 280, height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
+                <div style={{ width: '100%', height: 120, borderRadius: 'var(--radius-md)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--border-soft)' }}>
                   <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد صورة</span>
                 </div>
               )}
               {isEditing && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     ref={vehicleRegImageInputRef}
                     type="file"
@@ -566,12 +589,12 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
                     className="btn btn-secondary btn-sm"
                     onClick={() => vehicleRegImageInputRef.current?.click()}
                     disabled={uploadingVehicleRegImage}
-                    style={{ gap: 6 }}
+                    style={{ gap: 6, flex: 1 }}
                   >
                     <Upload size={14} />
                     {uploadingVehicleRegImage ? 'جاري الرفع...' : 'رفع صورة الاستمارة'}
                   </button>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>JPG, PNG, WebP - حد أقصى 5MB</span>
                 </div>
               )}
             </div>
@@ -640,16 +663,24 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
             />
           </div>
 
-          <div className="input-group">
-            <label className="input-label">تاريخ انتهاء الهوية</label>
-            <input
-              type="date"
-              className="input"
+          {isEditing ? (
+            <DatePicker
+              label="تاريخ انتهاء الهوية"
               value={formData.id_expiry_date}
-              onChange={(e) => setFormData({ ...formData, id_expiry_date: e.target.value })}
-              disabled={!isEditing}
+              onChange={(date) => setFormData({ ...formData, id_expiry_date: date })}
             />
-          </div>
+          ) : (
+            <div className="input-group">
+              <label className="input-label">تاريخ انتهاء الهوية</label>
+              <input
+                type="text"
+                className="input"
+                value={formData.id_expiry_date}
+                disabled
+                dir="ltr"
+              />
+            </div>
+          )}
 
           <div className="input-group">
             <label className="input-label">رقم الاستمارة</label>

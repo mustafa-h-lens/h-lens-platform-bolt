@@ -33,6 +33,7 @@ interface VendorDetailsProps {
   onBack: () => void;
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
+  onViewProject?: (projectId: string) => void;
 }
 
 const VALID_VENDOR_TABS = ['dashboard', 'personal', 'travel', 'equipment', 'financial', 'invoices', 'documents'];
@@ -61,7 +62,7 @@ const getVendorColor = (id: string) => {
   return VENDOR_COLORS[Math.abs(hash) % VENDOR_COLORS.length];
 };
 
-export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: VendorDetailsProps) => {
+export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onViewProject }: VendorDetailsProps) => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(
@@ -195,7 +196,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange }: Ven
         {activeTab === 'travel' && <VendorTravelDocs vendorId={vendorId} />}
         {activeTab === 'equipment' && <VendorEquipment vendorId={vendorId} />}
         {activeTab === 'financial' && <VendorFinancialData vendorId={vendorId} />}
-        {activeTab === 'invoices' && <VendorInvoices vendorId={vendorId} />}
+        {activeTab === 'invoices' && <VendorInvoices vendorId={vendorId} onViewProject={onViewProject} />}
         {activeTab === 'documents' && <VendorDocuments vendorId={vendorId} />}
       </div>
     </div>

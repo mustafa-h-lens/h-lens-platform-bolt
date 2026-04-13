@@ -83,6 +83,9 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Image lightbox
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string } | null>(null);
+
   // Modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showRevisionModal, setShowRevisionModal] = useState(false);
@@ -234,14 +237,14 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
   };
 
   const getLogActionLabel = (action: string) => {
-    const labels: Record<string, { label: string; color: string }> = {
-      submitted: { label: 'تم التقديم', color: '#3b82f6' },
-      approved: { label: 'تمت الموافقة', color: '#22c55e' },
-      rejected: { label: 'تم الرفض', color: '#ef4444' },
-      revision_requested: { label: 'مطلوب تعديلات', color: '#f59e0b' },
-      resubmitted: { label: 'إعادة تقديم', color: '#8b5cf6' },
+    const labels: Record<string, { label: string; description: string; color: string }> = {
+      submitted: { label: 'تم التقديم', description: 'قام المورد بتقديم طلب التسجيل', color: '#3b82f6' },
+      approved: { label: 'تمت الموافقة', description: 'قام مدير النظام بالموافقة على الطلب', color: '#22c55e' },
+      rejected: { label: 'تم الرفض', description: 'قام مدير النظام برفض الطلب', color: '#ef4444' },
+      revision_requested: { label: 'مطلوب تعديلات', description: 'قام مدير النظام بطلب تعديلات', color: '#f59e0b' },
+      resubmitted: { label: 'إعادة تقديم', description: 'قام المورد بإعادة تقديم الطلب بعد التعديلات', color: '#8b5cf6' },
     };
-    return labels[action] || { label: action, color: '#64748b' };
+    return labels[action] || { label: action, description: action, color: '#64748b' };
   };
 
   if (loading) {
@@ -380,13 +383,23 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
               {vendor.profile_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>
-                  <img src={vendor.profile_image} alt="صورة شخصية" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                  <img
+                    src={vendor.profile_image} alt="صورة شخصية"
+                    className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ borderColor: 'var(--color-border)' }}
+                    onClick={() => setLightboxImage({ url: vendor.profile_image!, title: 'الصورة الشخصية' })}
+                  />
                 </div>
               )}
               {vendor.id_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>صورة الهوية</p>
-                  <img src={vendor.id_image} alt="صورة الهوية" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                  <img
+                    src={vendor.id_image} alt="صورة الهوية"
+                    className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ borderColor: 'var(--color-border)' }}
+                    onClick={() => setLightboxImage({ url: vendor.id_image!, title: 'صورة الهوية' })}
+                  />
                 </div>
               )}
             </div>
@@ -401,59 +414,58 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
           {/* 4. Travel Documents — text data + images together */}
           <Section title="وثائق السفر" icon={MapPin}>
             {(() => {
-              const passportDoc = travelDocs.find(d => d.passport_number || d.passport_issuing_country || d.passport_expiry_date);
-              const visaDoc = travelDocs.find(d => d.visa_country || d.visa_type);
-              const hasPassportFile = travelDocs.length > 0 && travelDocs[0].passport_file;
-              const hasVisaFile = travelDocs.length > 0 && travelDocs[0].visa_file;
-              const hasAny = passportDoc || visaDoc || hasPassportFile || hasVisaFile;
+              const passportDoc = travelDocs.find(d => d.passport_number || d.passport_issuing_country || d.passport_expiry_date || d.passport_file);
+              const visaDoc = travelDocs.find(d => d.visa_country || d.visa_type || d.visa_file);
+              const hasAny = passportDoc || visaDoc;
               if (!hasAny) return <p className="text-sm text-center py-4" style={{ color: 'var(--color-text-muted)' }}>لم يتم إدخال بيانات سفر</p>;
               return (
                 <>
                   {passportDoc && (
                     <>
                       <InfoRow label="رقم جواز السفر" value={passportDoc.passport_number} dir="ltr" />
-                      <InfoRow label="دولة إصدار الجواز" value={passportDoc.passport_issuing_country} />
-                      <InfoRow label="تاريخ الإصدار" value={passportDoc.passport_issue_date} />
-                      <InfoRow label="تاريخ انتهاء الجواز" value={passportDoc.passport_expiry_date} />
-                    </>
-                  )}
-                  {visaDoc && (
-                    <>
-                      <InfoRow label="بلد التأشيرة" value={visaDoc.visa_country} />
-                      <InfoRow label="نوع التأشيرة" value={visaDoc.visa_type} />
-                      <InfoRow label="تاريخ بداية التأشيرة" value={visaDoc.visa_start_date} />
-                      <InfoRow label="تاريخ انتهاء التأشيرة" value={visaDoc.visa_expiry_date} />
-                    </>
-                  )}
-                  {(hasPassportFile || hasVisaFile) && (
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      {hasPassportFile && (
-                        <div>
-                          <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>جواز السفر</p>
-                          {travelDocs[0].passport_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={travelDocs[0].passport_file} alt="جواز السفر" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                      <InfoRow label="بلد التأشيرة" value={passportDoc.passport_issuing_country} />
+                      {passportDoc.passport_file && (
+                        <div className="mt-2 mb-3">
+                          <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>صورة جواز السفر</p>
+                          {passportDoc.passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img
+                              src={passportDoc.passport_file} alt="جواز السفر"
+                              className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{ borderColor: 'var(--color-border)' }}
+                              onClick={() => setLightboxImage({ url: passportDoc.passport_file!, title: 'جواز السفر' })}
+                            />
                           ) : (
-                            <a href={travelDocs[0].passport_file} target="_blank" rel="noopener noreferrer"
+                            <a href={passportDoc.passport_file} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
                               <FileText size={14} /> عرض جواز السفر
                             </a>
                           )}
                         </div>
                       )}
-                      {hasVisaFile && (
-                        <div>
+                    </>
+                  )}
+                  {visaDoc && (
+                    <>
+                      <InfoRow label="بلد التأشيرة" value={visaDoc.visa_country} />
+                      {visaDoc.visa_file && (
+                        <div className="mt-2">
                           <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
-                          {travelDocs[0].visa_file!.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={travelDocs[0].visa_file} alt="التأشيرة" className="w-full h-28 object-cover rounded-lg border" style={{ borderColor: 'var(--color-border)' }} />
+                          {visaDoc.visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img
+                              src={visaDoc.visa_file} alt="التأشيرة"
+                              className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                              style={{ borderColor: 'var(--color-border)' }}
+                              onClick={() => setLightboxImage({ url: visaDoc.visa_file!, title: 'مستند التأشيرة' })}
+                            />
                           ) : (
-                            <a href={travelDocs[0].visa_file} target="_blank" rel="noopener noreferrer"
+                            <a href={visaDoc.visa_file} target="_blank" rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--color-primary)' }}>
                               <FileText size={14} /> عرض مستند التأشيرة
                             </a>
                           )}
                         </div>
                       )}
-                    </div>
+                    </>
                   )}
                 </>
               );
@@ -497,22 +509,47 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
           </Section>
         </div>
 
-        {/* Row 3: Approval History (full width) */}
+        {/* Row 3: Approval History Timeline (full width) */}
         {approvalLog.length > 0 && (
           <Section title="سجل المراجعة" icon={Clock}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {approvalLog.map((entry) => {
+            <div style={{ position: 'relative', paddingRight: 24 }}>
+              {/* Vertical line */}
+              <div style={{
+                position: 'absolute', right: 7, top: 8, bottom: 8, width: 2,
+                background: 'var(--color-border)', borderRadius: 1,
+              }} />
+              {approvalLog.map((entry, idx) => {
                 const actionInfo = getLogActionLabel(entry.action);
+                const isFirst = idx === 0;
                 return (
-                  <div key={entry.id} className="flex gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
-                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: actionInfo.color }} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium" style={{ color: actionInfo.color }}>{actionInfo.label}</span>
-                        <span className="text-xs flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>{formatDate(entry.created_at)}</span>
+                  <div key={entry.id} style={{ position: 'relative', paddingBottom: idx < approvalLog.length - 1 ? 24 : 0 }}>
+                    {/* Dot on the line */}
+                    <div style={{
+                      position: 'absolute', right: -24, top: 4,
+                      width: isFirst ? 16 : 12, height: isFirst ? 16 : 12,
+                      borderRadius: '50%', backgroundColor: actionInfo.color,
+                      border: `3px solid var(--color-surface)`,
+                      boxShadow: `0 0 0 2px ${actionInfo.color}33`,
+                      marginRight: isFirst ? -2 : 0,
+                    }} />
+                    {/* Content */}
+                    <div style={{
+                      padding: '12px 16px', borderRadius: 10,
+                      backgroundColor: isFirst ? `${actionInfo.color}08` : 'var(--color-background-hover)',
+                      border: isFirst ? `1px solid ${actionInfo.color}22` : '1px solid transparent',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: actionInfo.color }}>{actionInfo.label}</span>
+                        <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flexShrink: 0 }}>{formatDate(entry.created_at)}</span>
                       </div>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 2px 0' }}>
+                        {(actionInfo as any).description}
+                      </p>
                       {entry.reason && (
-                        <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>{entry.reason}</p>
+                        <div style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.7, margin: '6px 0 0 0', padding: '8px 12px', borderRadius: 8, background: 'var(--color-surface)', borderRight: `3px solid ${actionInfo.color}` }}>
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)', display: 'block', marginBottom: 2 }}>ملاحظات المدير:</span>
+                          {entry.reason}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -566,6 +603,59 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
           onConfirm={() => performAction('revision_requested', actionReason)}
           onClose={() => { setShowRevisionModal(false); setActionReason(''); }}
         />
+      )}
+
+      {/* Image Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setLightboxImage(null)}
+        >
+          <div
+            className="relative flex flex-col items-center"
+            style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Top bar */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', marginBottom: 16, padding: '0 4px',
+            }}>
+              <span style={{ color: '#fff', fontSize: 15, fontWeight: 600 }}>{lightboxImage.title}</span>
+              <button
+                onClick={() => setLightboxImage(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 8,
+                  padding: '8px 16px', color: '#fff', fontSize: 13, fontWeight: 500,
+                  cursor: 'pointer', transition: 'background 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.22)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+              >
+                إغلاق ✕
+              </button>
+            </div>
+            {/* Image */}
+            <div style={{
+              borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+            }}>
+              <img
+                src={lightboxImage.url}
+                alt={lightboxImage.title}
+                style={{
+                  display: 'block',
+                  maxWidth: '94vw',
+                  maxHeight: '88vh',
+                  minWidth: '60vw',
+                  objectFit: 'contain',
+                }}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

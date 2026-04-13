@@ -3,6 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
+import { useNotification } from '../../../../contexts/NotificationContext';
 
 interface Invoice {
   id: string;
@@ -26,9 +27,11 @@ interface Invoice {
 
 interface VendorInvoicesProps {
   vendorId: string;
+  onViewProject?: (projectId: string) => void;
 }
 
-export const VendorInvoices = ({ vendorId }: VendorInvoicesProps) => {
+export const VendorInvoices = ({ vendorId, onViewProject }: VendorInvoicesProps) => {
+  const { showError } = useNotification();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,8 +53,9 @@ export const VendorInvoices = ({ vendorId }: VendorInvoicesProps) => {
 
       if (error) throw error;
       setInvoices(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching invoices:', error);
+      showError(error.message || 'حدث خطأ أثناء تحميل الفواتير');
     } finally {
       setLoading(false);
     }
@@ -145,7 +149,12 @@ export const VendorInvoices = ({ vendorId }: VendorInvoicesProps) => {
                     </span>
                   </td>
                   <td>
-                    <button className="btn btn-ghost btn-sm" style={{ gap: 6, color: 'var(--accent-lighter)', fontSize: 12 }}>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ gap: 6, color: 'var(--accent-lighter)', fontSize: 12 }}
+                      onClick={() => onViewProject?.(invoice.project_id)}
+                      disabled={!onViewProject || !invoice.project_id}
+                    >
                       <ExternalLink size={13} />
                       عرض المشروع
                     </button>

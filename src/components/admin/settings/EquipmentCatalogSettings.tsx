@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Upload, Image as ImageIcon, Search, Filter, Package } from 'lucide-react';
+import { Modal } from '../../shared/Modal';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 
@@ -44,6 +45,8 @@ export const EquipmentCatalogSettings = () => {
   const [brandStats, setBrandStats] = useState<BrandStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -66,6 +69,7 @@ export const EquipmentCatalogSettings = () => {
     fetchCategories();
     fetchBrands();
     fetchCatalogItems();
+    fetchUsageCounts();
   }, []);
 
   useEffect(() => {
@@ -163,6 +167,24 @@ export const EquipmentCatalogSettings = () => {
       showError('فشل تحميل كتالوج المعدات');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsageCounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendor_equipment')
+        .select('catalog_item_id');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach(row => {
+        if (row.catalog_item_id) {
+          counts[row.catalog_item_id] = (counts[row.catalog_item_id] || 0) + 1;
+        }
+      });
+      setUsageCounts(counts);
+    } catch (error) {
+      console.error('Error fetching usage counts:', error);
     }
   };
 
@@ -300,15 +322,7 @@ export const EquipmentCatalogSettings = () => {
   };
 
   const handleEdit = (item: CatalogItem) => {
-    setEditingId(item.id);
-    setFormData({
-      brand_id: item.brand_id || '',
-      name: item.name,
-      name_en: item.name_en || '',
-      category_id: item.category_id || '',
-      image_url: item.image_url || '',
-      description: item.description || '',
-    });
+    openEditModal(item);
   };
 
   const handleUpdate = async () => {
@@ -387,313 +401,175 @@ export const EquipmentCatalogSettings = () => {
     );
   }
 
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+    setFormData({ brand_id: '', name: '', name_en: '', category_id: '', image_url: '', description: '' });
+  };
+
+  const openEditModal = (item: CatalogItem) => {
+    setEditingId(item.id);
+    setFormData({
+      brand_id: item.brand_id || '',
+      name: item.name,
+      name_en: item.name_en || '',
+      category_id: item.category_id || '',
+      image_url: item.image_url || '',
+      description: item.description || '',
+    });
+    setShowModal(true);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl p-6 text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
-        <h2 className="text-2xl font-bold mb-2">كتالوج المعدات</h2>
-        <p className="text-blue-50">إدارة المعدات المتاحة في النظام ({catalogItems.length} معدة)</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>كتالوج المعدات</h2>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>إدارة المعدات المتاحة في النظام — {catalogItems.length} معدة</p>
+        </div>
+        <button
+          className="btn btn-sm"
+          onClick={() => { setEditingId(null); setFormData({ brand_id: '', name: '', name_en: '', category_id: '', image_url: '', description: '' }); setShowModal(true); }}
+          style={{ gap: 6, flexShrink: 0, background: 'var(--accent)', color: '#fff' }}
+        >
+          <Plus size={15} /> إضافة معدة
+        </button>
       </div>
 
-      {/* إحصائيات العلامات التجارية */}
-      {brandStats.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Package className="w-5 h-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-slate-900">العلامات التجارية</h3>
-            <span className="text-sm text-slate-500">({brandStats.length} علامة)</span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-            {brandStats.map((brand) => (
-              <button
-                key={brand.id}
-                onClick={() => handleBrandFilterClick(brand.id)}
-                className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                  filters.selectedBrand === brand.id
-                    ? 'border-blue-500 bg-blue-50 shadow-md'
-                    : 'border-slate-200 bg-white hover:border-blue-300'
-                }`}
-              >
-                <div className="text-center">
-                  <div className="font-semibold text-slate-900 mb-1">{brand.name}</div>
-                  {brand.name_en && (
-                    <div className="text-xs text-slate-500 mb-2" dir="ltr">{brand.name_en}</div>
-                  )}
-                  <div className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-sm font-medium ${
-                    filters.selectedBrand === brand.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {brand.count} معدة
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+      {/* Search + Filters row */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ flex: '1 1 220px', position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            className="input"
+            value={filters.searchTerm}
+            onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
+            placeholder="ابحث عن معدة..."
+            style={{ paddingRight: 36, fontSize: 13 }}
+          />
         </div>
-      )}
-
-      {/* شريط الفلترة */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-blue-600" />
-          <h3 className="text-lg font-semibold text-slate-900">فلترة النتائج</h3>
-          {(filters.selectedBrand || filters.selectedCategory || filters.searchTerm || filters.showActive !== 'all') && (
-            <button
-              onClick={clearFilters}
-              className="mr-auto text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              إلغاء جميع الفلاتر
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              <Search className="w-4 h-4 inline-block ml-1" />
-              بحث
-            </label>
-            <input
-              type="text"
-              value={filters.searchTerm}
-              onChange={(e) => setFilters({ ...filters, searchTerm: e.target.value })}
-              placeholder="ابحث عن معدة..."
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              التصنيف
-            </label>
-            <select
-              value={filters.selectedCategory}
-              onChange={(e) => setFilters({ ...filters, selectedCategory: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع التصنيفات</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              العلامة التجارية
-            </label>
-            <select
-              value={filters.selectedBrand}
-              onChange={(e) => setFilters({ ...filters, selectedBrand: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">جميع العلامات</option>
-              {brandStats.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name} ({brand.count})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              الحالة
-            </label>
-            <select
-              value={filters.showActive}
-              onChange={(e) => setFilters({ ...filters, showActive: e.target.value as 'all' | 'active' | 'inactive' })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="all">الكل</option>
-              <option value="active">النشط فقط</option>
-              <option value="inactive">غير النشط فقط</option>
-            </select>
-          </div>
-        </div>
-
-        {filteredItems.length !== catalogItems.length && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              عرض {filteredItems.length} من أصل {catalogItems.length} معدة
-            </p>
-          </div>
+        <select
+          className="input"
+          value={filters.selectedCategory}
+          onChange={(e) => setFilters({ ...filters, selectedCategory: e.target.value })}
+          style={{ flex: '0 1 160px', fontSize: 13 }}
+        >
+          <option value="">جميع التصنيفات</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select
+          className="input"
+          value={filters.selectedBrand}
+          onChange={(e) => setFilters({ ...filters, selectedBrand: e.target.value })}
+          style={{ flex: '0 1 180px', fontSize: 13 }}
+        >
+          <option value="">جميع العلامات</option>
+          {brandStats.map((b) => <option key={b.id} value={b.id}>{b.name} ({b.count})</option>)}
+        </select>
+        <select
+          className="input"
+          value={filters.showActive}
+          onChange={(e) => setFilters({ ...filters, showActive: e.target.value as 'all' | 'active' | 'inactive' })}
+          style={{ flex: '0 1 120px', fontSize: 13 }}
+        >
+          <option value="all">الكل</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        {(filters.selectedBrand || filters.selectedCategory || filters.searchTerm || filters.showActive !== 'all') && (
+          <button className="btn btn-ghost btn-sm" onClick={clearFilters} style={{ color: 'var(--accent-lighter)', fontSize: 12 }}>
+            <X size={13} /> مسح الفلاتر
+          </button>
         )}
       </div>
 
-      {/* نموذج الإضافة/التعديل */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">
-          {editingId ? 'تعديل المعدة' : 'إضافة معدة جديدة'}
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              العلامة التجارية
-            </label>
-            <select
-              value={formData.brand_id}
-              onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">اختر العلامة التجارية</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>
-                  {brand.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              التصنيف
-            </label>
-            <select
-              value={formData.category_id}
-              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              dir="rtl"
-            >
-              <option value="">اختر التصنيف</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </div>
+      {filteredItems.length !== catalogItems.length && (
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+          عرض {filteredItems.length} من أصل {catalogItems.length} معدة
         </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              اسم الموديل بالعربية *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="مثال: A7 III"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              اسم الموديل بالإنجليزية (اختياري)
-            </label>
-            <input
-              type="text"
-              value={formData.name_en}
-              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Example: A7 III"
-              dir="ltr"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              صورة المعدة
-            </label>
-            <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingImage}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors disabled:opacity-50"
-              >
-                <Upload className="w-4 h-4" />
-                {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
-              </button>
-              {formData.image_url && (
-                <img
-                  src={formData.image_url}
-                  alt="Preview"
-                  className="w-10 h-10 rounded-lg object-cover border border-slate-200"
-                />
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <Modal isOpen={true} onClose={closeModal} title={editingId ? 'تعديل المعدة' : 'إضافة معدة جديدة'}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">العلامة التجارية</label>
+                <select className="input" value={formData.brand_id} onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}>
+                  <option value="">اختر العلامة التجارية</option>
+                  {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="input-label">التصنيف</label>
+                <select className="input" value={formData.category_id} onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}>
+                  <option value="">اختر التصنيف</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">اسم الموديل بالعربية <span className="req">*</span></label>
+                <input className="input" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="مثال: A7 III" />
+              </div>
+              <div className="input-group">
+                <label className="input-label">اسم الموديل بالإنجليزية</label>
+                <input className="input" value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} placeholder="Example: A7 III" dir="ltr" />
+              </div>
+            </div>
+            <div className="input-group">
+              <label className="input-label">صورة المعدة</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageUpload} style={{ display: 'none' }} />
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} style={{ gap: 6 }}>
+                  <Upload size={14} /> {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
+                </button>
+                {formData.image_url && (
+                  <img src={formData.image_url} alt="Preview" style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', objectFit: 'cover', border: '1px solid var(--border-soft)' }} />
+                )}
+              </div>
+            </div>
+            <div className="input-group">
+              <label className="input-label">وصف مختصر</label>
+              <textarea className="input" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={2} placeholder="وصف المعدة وميزاتها..." />
+            </div>
+            <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
+              {editingId ? (
+                <>
+                  <button className="btn btn-sm" onClick={async () => { await handleUpdate(); closeModal(); }} style={{ gap: 6, background: 'var(--accent)', color: '#fff' }}>
+                    <Save size={14} /> حفظ التغييرات
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={closeModal}>إلغاء</button>
+                </>
+              ) : (
+                <>
+                  <button className="btn btn-sm" onClick={async () => { await handleAdd(); closeModal(); }} style={{ gap: 6, background: 'var(--accent)', color: '#fff' }}>
+                    <Plus size={14} /> إضافة
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={closeModal}>إلغاء</button>
+                </>
               )}
             </div>
           </div>
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            وصف مختصر (اختياري)
-          </label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            rows={3}
-            placeholder="وصف المعدة وميزاتها..."
-          />
-        </div>
-
-        <div className="flex gap-3">
-          {editingId ? (
-            <>
-              <button
-                onClick={handleUpdate}
-                className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
-                style={{ backgroundColor: 'var(--color-primary)' }}
-              >
-                <Save className="w-4 h-4" />
-                حفظ التغييرات
-              </button>
-              <button
-                onClick={() => {
-                  setEditingId(null);
-                  setFormData({ brand_id: '', name: '', name_en: '', category_id: '', image_url: '', description: '' });
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
-              >
-                <X className="w-4 h-4" />
-                إلغاء
-              </button>
-            </>
-          ) : (
-            <button
-              onClick={handleAdd}
-              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all"
-              style={{ backgroundColor: 'var(--color-primary)' }}
-            >
-              <Plus className="w-4 h-4" />
-              إضافة معدة
-            </button>
-          )}
-        </div>
-      </div>
+        </Modal>
+      )}
 
       {/* قائمة المعدات */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-800">
+      <div className="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">الصورة</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">العلامة التجارية</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">الموديل</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">التصنيف</th>
-                <th className="px-6 py-4 text-right text-sm font-semibold text-slate-700">الوصف</th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">الحالة</th>
-                <th className="px-6 py-4 text-center text-sm font-semibold text-slate-700">الإجراءات</th>
+                <th>الصورة</th>
+                <th>العلامة التجارية</th>
+                <th>الموديل</th>
+                <th>التصنيف</th>
+                <th>الوصف</th>
+                <th>الاستخدام</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -740,6 +616,13 @@ export const EquipmentCatalogSettings = () => {
                       '-'
                     )}
                   </td>
+                  <td style={{ textAlign: 'center' }}>
+                    {usageCounts[item.id] ? (
+                      <span className="badge badge-blue">{usageCounts[item.id]} مورد</span>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>-</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-center">
                     <button
                       onClick={() => toggleActive(item.id, item.is_active)}
@@ -774,14 +657,13 @@ export const EquipmentCatalogSettings = () => {
               ))}
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                     {catalogItems.length === 0 ? 'لا توجد معدات في الكتالوج حالياً' : 'لا توجد نتائج مطابقة للفلاتر المحددة'}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
       </div>
     </div>
   );

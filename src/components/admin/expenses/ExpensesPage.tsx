@@ -32,6 +32,29 @@ interface ExpenseRow {
   created_at: string;
 }
 
+interface PendingTransfer {
+  id: string;
+  amount: number;
+  payment_method: string | null;
+  payment_date: string | null;
+  payment_status: string;
+  notes: string | null;
+  created_at: string;
+  created_by_user?: { full_name: string | null } | null;
+  vendor_invoices?: {
+    id: string;
+    expense_type: string | null;
+    expense_description: string | null;
+    project_id: string;
+    vendors?: { full_name: string | null } | null;
+    projects?: {
+      name: string;
+      currency: string;
+      clients?: { name: string; client_image: string | null } | null;
+    } | null;
+  } | null;
+}
+
 interface VendorSummary {
   vendor_id: string;
   vendor_name: string;
@@ -54,7 +77,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedVendor, setExpandedVendor] = useState<string | null>(null);
-  const [pendingTransfers, setPendingTransfers] = useState<any[]>([]);
+  const [pendingTransfers, setPendingTransfers] = useState<PendingTransfer[]>([]);
   const [transfersLoading, setTransfersLoading] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const { user } = useAuth();
@@ -111,8 +134,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
 
       if (error) throw error;
       setVendorFields(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading vendor fields:', error);
+      showError(error.message || 'حدث خطأ أثناء تحميل التصنيفات');
     }
   };
 
@@ -134,7 +158,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPendingTransfers(data || []);
+      setPendingTransfers((data || []) as unknown as PendingTransfer[]);
     } catch (error) {
       console.error('Error loading pending transfers:', error);
       setPendingTransfers([]);
@@ -276,8 +300,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
 
       setExpenses(mapData(data || []));
       setTotalCount(count || 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading expenses:', error);
+      showError(error.message || 'حدث خطأ أثناء تحميل المصروفات');
     } finally {
       setLoading(false);
     }
@@ -692,7 +717,7 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {pendingTransfers.map((p: any) => {
+                  {pendingTransfers.map((p) => {
                     const inv = p.vendor_invoices;
                     const cur = inv?.projects?.currency || 'SAR';
                     const clientName = inv?.projects?.clients?.name || '-';

@@ -189,6 +189,14 @@ export const NewAdminDashboard = () => {
     setCurrentPage('vendors');
   };
 
+  const handleViewProject = (projectId: string) => {
+    setSelectedProjectId(projectId);
+    setSelectedVendorId(null);
+    setSelectedClientId(null);
+    setActiveSubTab(null);
+    setCurrentPage('projects');
+  };
+
   const loadStats = async () => {
     try {
       const [projectsRes, clientsRes, invoicesRes] = await Promise.all([
@@ -344,6 +352,7 @@ export const NewAdminDashboard = () => {
                 onVendorSelect={setSelectedVendorId}
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
+                onViewProject={handleViewProject}
               />
             </Suspense>
           </main>

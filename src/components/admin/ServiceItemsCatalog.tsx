@@ -10,6 +10,7 @@ interface ServiceItemsCatalogProps {
 }
 
 export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
+  const { confirm, showError, showSuccess } = useNotification();
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -29,8 +30,9 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
 
       if (error) throw error;
       setItems(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading items:', error);
+      showError(error.message || 'حدث خطأ أثناء تحميل البنود');
     } finally {
       setLoading(false);
     }
@@ -42,7 +44,14 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
   );
 
   const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا البند؟')) return;
+    const ok = await confirm({
+      title: 'حذف البند',
+      message: 'هل أنت متأكد من حذف هذا البند؟',
+      confirmText: 'حذف',
+      cancelText: 'إلغاء',
+      type: 'danger',
+    });
+    if (!ok) return;
 
     try {
       const { error } = await supabase
@@ -51,9 +60,11 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
         .eq('id', id);
 
       if (error) throw error;
+      showSuccess('تم حذف البند بنجاح');
       loadItems();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting item:', error);
+      showError(error.message || 'حدث خطأ أثناء حذف البند');
     }
   };
 
@@ -85,7 +96,7 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
             <thead>
               <tr>
                 <th>البند (عربي)</th>
-                <th>البند (ENGLISH)</th>
+                <th>الوصف</th>
                 <th>التصنيف</th>
                 <th>السعر</th>
                 <th>الحالة</th>

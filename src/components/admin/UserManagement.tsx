@@ -389,7 +389,12 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
     try {
       // Determine the legacy role text from role_id
       const selectedRole = roles.find(r => r.id === formData.role_id);
-      const legacyRole = selectedRole?.is_system ? 'super_admin' : 'project_manager';
+      const roleName = (selectedRole?.name || '').toLowerCase();
+      const legacyRole = selectedRole?.is_system
+        ? 'super_admin'
+        : (roleName.includes('محاسب') || roleName.includes('accountant'))
+          ? 'accountant'
+          : 'project_manager';
 
       if (user) {
         const { error } = await supabase

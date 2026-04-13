@@ -194,19 +194,9 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     try {
       // ── CSV / XLSX export ──
       if (exportFormat === 'csv' || exportFormat === 'xlsx') {
-        const columns: { key: string; label: string }[] = [];
-        if (selectedFields.full_name) columns.push({ key: 'full_name', label: 'الاسم الثلاثي' });
-        if (selectedFields.phone) columns.push({ key: 'phone', label: 'رقم الجوال' });
-        if (selectedFields.email) columns.push({ key: 'email', label: 'البريد الإلكتروني' });
-        if (selectedFields.id_number) columns.push({ key: 'id_number', label: 'رقم الهوية' });
-        if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
-        if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
-        if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
-        if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
-        if (selectedFields.vehicle_registration_number) columns.push({ key: 'vehicle_registration_number', label: 'رقم الاستمارة' });
-        if (selectedFields.vehicle_brand) columns.push({ key: 'vehicle_brand', label: 'ماركة المركبة' });
-        if (selectedFields.vehicle_plate_number) columns.push({ key: 'vehicle_plate_number', label: 'رقم اللوحة' });
-        if (selectedFields.equipment) columns.push({ key: 'equipment', label: 'المعدات' });
+        const columns: { key: string; label: string }[] = fieldLabelsOrder
+          .filter(f => selectedFields[f.key] && f.key !== 'profile_image' && f.key !== 'id_image' && f.key !== 'vehicle_registration_image' && f.key !== 'equipment_images')
+          .map(f => ({ key: f.key, label: f.label }));
 
         const header = columns.map(c => c.label);
         const rows = vendors.map(v => columns.map(c => {
@@ -227,7 +217,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `vendors_export_${new Date().toISOString().split('T')[0]}.csv`;
+          a.download = `فريق هاف لينس_${new Date().toISOString().split('T')[0]}.csv`;
           a.click();
           URL.revokeObjectURL(url);
         } else {
@@ -237,7 +227,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
-          a.download = `vendors_export_${new Date().toISOString().split('T')[0]}.xls`;
+          a.download = `فريق هاف لينس_${new Date().toISOString().split('T')[0]}.xls`;
           a.click();
           URL.revokeObjectURL(url);
         }
@@ -303,7 +293,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
         }
       }
 
-      doc.save(`vendors_export_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`فريق هاف لينس_${new Date().toISOString().split('T')[0]}.pdf`);
       showSuccess('تم تصدير البيانات بنجاح');
       onSuccess();
     } catch (error) {
@@ -367,24 +357,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     `;
 
-    const columns: { key: keyof ExportFields; label: string }[] = [];
-    if (selectedFields.full_name) columns.push({ key: 'full_name', label: 'الاسم الثلاثي' });
-    if (selectedFields.id_image) columns.push({ key: 'id_image', label: 'صورة الهوية' });
-    if (selectedFields.vehicle_registration_image) columns.push({ key: 'vehicle_registration_image', label: 'صورة الاستمارة' });
-    if (selectedFields.profile_image) columns.push({ key: 'profile_image', label: 'الصورة الشخصية' });
-    if (selectedFields.phone) columns.push({ key: 'phone', label: 'رقم الجوال' });
-    if (selectedFields.id_number) columns.push({ key: 'id_number', label: 'رقم الهوية' });
-    if (selectedFields.vehicle_registration_number) columns.push({ key: 'vehicle_registration_number', label: 'رقم الاستمارة' });
-    if (selectedFields.vehicle_brand) columns.push({ key: 'vehicle_brand', label: 'ماركة المركبة' });
-    if (selectedFields.vehicle_plate_number) columns.push({ key: 'vehicle_plate_number', label: 'رقم اللوحة' });
-    if (selectedFields.equipment) columns.push({ key: 'equipment', label: 'المعدات' });
-    if (selectedFields.equipment_images) columns.push({ key: 'equipment_images', label: 'صور المعدات' });
-    if (selectedFields.email) columns.push({ key: 'email', label: 'البريد الإلكتروني' });
-    if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
-    if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
-    if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
-
-    if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
+    const columns: { key: keyof ExportFields; label: string }[] = fieldLabelsOrder.filter(f => selectedFields[f.key]);
 
     // Always show table header on every page
     const thead = document.createElement('thead');
@@ -627,24 +600,7 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
     thead.style.cssText = 'background: #3b82f6;';
     const headerRow = document.createElement('tr');
 
-    const columns: { key: keyof ExportFields; label: string }[] = [];
-    if (selectedFields.full_name) columns.push({ key: 'full_name', label: 'الاسم الثلاثي' });
-    if (selectedFields.id_image) columns.push({ key: 'id_image', label: 'صورة الهوية' });
-    if (selectedFields.vehicle_registration_image) columns.push({ key: 'vehicle_registration_image', label: 'صورة الاستمارة' });
-    if (selectedFields.profile_image) columns.push({ key: 'profile_image', label: 'الصورة الشخصية' });
-    if (selectedFields.phone) columns.push({ key: 'phone', label: 'رقم الجوال' });
-    if (selectedFields.id_number) columns.push({ key: 'id_number', label: 'رقم الهوية' });
-    if (selectedFields.vehicle_registration_number) columns.push({ key: 'vehicle_registration_number', label: 'رقم الاستمارة' });
-    if (selectedFields.vehicle_brand) columns.push({ key: 'vehicle_brand', label: 'ماركة المركبة' });
-    if (selectedFields.vehicle_plate_number) columns.push({ key: 'vehicle_plate_number', label: 'رقم اللوحة' });
-    if (selectedFields.equipment) columns.push({ key: 'equipment', label: 'المعدات' });
-    if (selectedFields.equipment_images) columns.push({ key: 'equipment_images', label: 'صور المعدات' });
-    if (selectedFields.email) columns.push({ key: 'email', label: 'البريد الإلكتروني' });
-    if (selectedFields.nationality) columns.push({ key: 'nationality', label: 'الجنسية' });
-    if (selectedFields.primary_field) columns.push({ key: 'primary_field', label: 'المجال الأساسي' });
-    if (selectedFields.primary_city) columns.push({ key: 'primary_city', label: 'المدينة' });
-
-    if (selectedFields.status) columns.push({ key: 'status', label: 'الحالة' });
+    const columns: { key: keyof ExportFields; label: string }[] = fieldLabelsOrder.filter(f => selectedFields[f.key]);
 
     columns.forEach(col => {
       const th = document.createElement('th');
@@ -797,14 +753,25 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
   const selectAllFields = () => setSelectedFields(Object.fromEntries(Object.keys(selectedFields).map(k => [k, true])) as ExportFields);
   const clearAllFields = () => setSelectedFields(Object.fromEntries(Object.keys(selectedFields).map(k => [k, false])) as ExportFields);
 
-  const fieldLabels: Record<keyof ExportFields, string> = {
-    full_name: 'اسم المورد', phone: 'رقم الهاتف', email: 'البريد الإلكتروني',
-    primary_field: 'التصنيف / الخدمة', nationality: 'الجنسية', primary_city: 'المدينة',
-    status: 'الحالة', id_number: 'رقم الهوية', profile_image: 'الصورة الشخصية',
-    id_image: 'صورة الهوية', vehicle_registration_number: 'رقم الاستمارة',
-    vehicle_brand: 'ماركة المركبة', vehicle_plate_number: 'رقم اللوحة',
-    vehicle_registration_image: 'صورة الاستمارة', equipment: 'المعدات', equipment_images: 'صور المعدات',
-  };
+  const fieldLabelsOrder: { key: keyof ExportFields; label: string }[] = [
+    { key: 'full_name', label: 'اسم المورد' },
+    { key: 'phone', label: 'رقم الهاتف' },
+    { key: 'email', label: 'البريد الإلكتروني' },
+    { key: 'primary_field', label: 'التصنيف / الخدمة' },
+    { key: 'nationality', label: 'الجنسية' },
+    { key: 'primary_city', label: 'المدينة' },
+    { key: 'status', label: 'الحالة' },
+    { key: 'id_number', label: 'رقم الهوية' },
+    { key: 'profile_image', label: 'الصورة الشخصية' },
+    { key: 'id_image', label: 'صورة الهوية' },
+    { key: 'vehicle_registration_number', label: 'رقم الاستمارة' },
+    { key: 'vehicle_brand', label: 'ماركة المركبة' },
+    { key: 'vehicle_plate_number', label: 'رقم اللوحة' },
+    { key: 'vehicle_registration_image', label: 'صورة الاستمارة' },
+    { key: 'equipment', label: 'المعدات' },
+    { key: 'equipment_images', label: 'صور المعدات' },
+  ];
+  const fieldLabels = Object.fromEntries(fieldLabelsOrder.map(f => [f.key, f.label])) as Record<keyof ExportFields, string>;
 
   const scopeCount = exportScope === 'all' ? vendors.length : exportScope === 'selected' ? 0 : vendors.length;
 
@@ -899,10 +866,10 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                {(Object.keys(fieldLabels) as (keyof ExportFields)[]).map(key => (
+                {fieldLabelsOrder.map(({ key, label }) => (
                   <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: 'var(--text-secondary)' }}>
                     <input type="checkbox" className="tbl-check" checked={selectedFields[key]} onChange={() => toggleField(key)} />
-                    <span>{fieldLabels[key]}</span>
+                    <span>{label}</span>
                   </label>
                 ))}
               </div>

@@ -41,6 +41,7 @@ interface VendorsPageProps {
   onVendorSelect?: (vendorId: string | null) => void;
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
+  onViewProject?: (projectId: string) => void;
 }
 
 const VENDOR_COLORS = [
@@ -79,7 +80,7 @@ const getFieldBadge = (field: string | undefined): string => {
   return map[field] || 'badge badge-gray';
 };
 
-export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange }: VendorsPageProps = {}) => {
+export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange, onViewProject }: VendorsPageProps = {}) => {
   const { showSuccess, showError } = useNotification();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -214,7 +215,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   if (selectedVendorId) {
     return (
       <Suspense fallback={<VendorLazyFallback />}>
-        <VendorDetails vendorId={selectedVendorId} onBack={() => { setSelectedVendorId(null); onVendorSelect?.(null); onTabChange?.(null); }} initialTab={initialTab} onTabChange={onTabChange} />
+        <VendorDetails vendorId={selectedVendorId} onBack={() => { setSelectedVendorId(null); onVendorSelect?.(null); onTabChange?.(null); fetchVendors(); }} initialTab={initialTab} onTabChange={onTabChange} onViewProject={onViewProject} />
       </Suspense>
     );
   }
