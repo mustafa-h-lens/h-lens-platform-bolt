@@ -14,6 +14,8 @@ interface ClientWithProjects extends Client {
 
 interface ClientsPageProps {
   onViewClient?: (clientId: string) => void;
+  initialShowAdd?: boolean;
+  onShowAddConsumed?: () => void;
 }
 
 const CLIENT_ICONS = [Users, UserCheck, UserPlus, HeartHandshake];
@@ -32,7 +34,7 @@ const getClientStyle = (id: string) => {
   return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length];
 };
 
-export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
+export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }: ClientsPageProps) => {
   const { showError } = useNotification();
   const [clients, setClients] = useState<ClientWithProjects[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,7 @@ export const ClientsPage = ({ onViewClient }: ClientsPageProps) => {
 
   useEffect(() => { loadClients(); }, [page, sortBy, pageSize]);
   useEffect(() => { setPage(0); }, [searchQuery, statusFilter]);
+  useEffect(() => { if (initialShowAdd) { setSelectedClient(null); setShowModal(true); onShowAddConsumed?.(); } }, [initialShowAdd]);
 
   useEffect(() => {
     const handleClick = () => setOpenDropdown(null);

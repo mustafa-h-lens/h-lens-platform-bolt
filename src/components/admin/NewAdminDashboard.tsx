@@ -114,6 +114,8 @@ export const NewAdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showAddVendor, setShowAddVendor] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
   const [reloadProjectsCallback, setReloadProjectsCallback] = useState<(() => void) | null>(null);
   const [stats, setStats] = useState<Stats>({
     totalProjects: 0,
@@ -353,6 +355,8 @@ export const NewAdminDashboard = () => {
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
                 onViewProject={handleViewProject}
+                initialShowAdd={showAddVendor}
+                onShowAddConsumed={() => setShowAddVendor(false)}
               />
             </Suspense>
           </main>
@@ -510,6 +514,8 @@ export const NewAdminDashboard = () => {
                 onViewClient={(clientId) => {
                   setSelectedClientId(clientId);
                 }}
+                initialShowAdd={showAddClient}
+                onShowAddConsumed={() => setShowAddClient(false)}
               />
             </Suspense>
           </main>
@@ -579,8 +585,8 @@ export const NewAdminDashboard = () => {
                 {[
                   { label: 'مشروع جديد', icon: <FolderOpen size={18} />, color: 'ci-blue', action: () => setShowCreateProjectModal(true) },
                   { label: 'فاتورة جديدة', icon: <CreditCard size={18} />, color: 'ci-green', action: () => { handleNavigation('expenses'); } },
-                  { label: 'مورد جديد', icon: <Users size={18} />, color: 'ci-amber', action: () => handleNavigation('vendors') },
-                  { label: 'عميل جديد', icon: <UserCheck size={18} />, color: 'ci-purple', action: () => handleNavigation('clients') },
+                  { label: 'مورد جديد', icon: <Users size={18} />, color: 'ci-amber', action: () => { setShowAddVendor(true); handleNavigation('vendors'); } },
+                  { label: 'عميل جديد', icon: <UserCheck size={18} />, color: 'ci-purple', action: () => { setShowAddClient(true); handleNavigation('clients'); } },
                 ].map((item, i) => (
                   <div key={i} className="dash-qa-item" style={{ cursor: 'pointer' }} onClick={item.action}>
                     <div className={`dash-qa-icon ${item.color}`}>{item.icon}<span className="dash-qa-plus">+</span></div>

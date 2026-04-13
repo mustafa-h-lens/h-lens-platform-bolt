@@ -11,7 +11,7 @@ export type VendorStatus =
 
 const VALID_TRANSITIONS: Record<VendorStatus, VendorStatus[]> = {
   pending_approval: ['active', 'rejected', 'revision_requested'],
-  revision_requested: ['pending_approval'],
+  revision_requested: ['pending_approval', 'revision_requested', 'active', 'rejected'],
   rejected: ['pending_approval'],
   active: ['inactive', 'blocked'],
   inactive: ['active', 'blocked'],

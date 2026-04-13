@@ -42,6 +42,8 @@ interface VendorsPageProps {
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
   onViewProject?: (projectId: string) => void;
+  initialShowAdd?: boolean;
+  onShowAddConsumed?: () => void;
 }
 
 const VENDOR_COLORS = [
@@ -80,7 +82,7 @@ const getFieldBadge = (field: string | undefined): string => {
   return map[field] || 'badge badge-gray';
 };
 
-export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange, onViewProject }: VendorsPageProps = {}) => {
+export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange, onViewProject, initialShowAdd, onShowAddConsumed }: VendorsPageProps = {}) => {
   const { showSuccess, showError } = useNotification();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,6 +118,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   useEffect(() => { setPage(0); }, [searchTerm, filters]);
   useEffect(() => { loadVendorStats(); }, []);
   useEffect(() => { if (initialTab === 'pending') setActiveSubTab('pending'); }, [initialTab]);
+  useEffect(() => { if (initialShowAdd) { setShowAddModal(true); onShowAddConsumed?.(); } }, [initialShowAdd]);
   useEffect(() => {
     const handleClick = () => setOpenDropdown(null);
     document.addEventListener('click', handleClick);

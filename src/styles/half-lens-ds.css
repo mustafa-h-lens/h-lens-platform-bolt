@@ -786,6 +786,7 @@ body {
   background-repeat: no-repeat; background-position: left 12px center;
   padding-left: 36px; cursor: pointer;
 }
+.select option { color: #1e293b; background: #ffffff; }
 
 textarea.input { height: auto; min-height: 90px; padding: 10px 14px; resize: vertical; line-height: 1.6; }
 
