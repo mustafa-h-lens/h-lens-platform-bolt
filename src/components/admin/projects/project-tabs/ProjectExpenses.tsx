@@ -463,7 +463,12 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
 
   // Upload invoice file
   const uploadFile = async (file: File): Promise<string | null> => {
-    const filePath = `projects/${projectId}/invoices/${Date.now()}_${file.name}`;
+    // Sanitize storage key — Supabase rejects non-ASCII, spaces, parens
+    const lastDot = file.name.lastIndexOf('.');
+    const ext = lastDot > -1 ? file.name.substring(lastDot) : '';
+    const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '');
+    const rand = Math.random().toString(36).substring(2, 10);
+    const filePath = `projects/${projectId}/invoices/${Date.now()}_${rand}${safeExt}`;
     const { error: uploadError } = await supabase.storage
       .from('vendor-images')
       .upload(filePath, file);
@@ -477,13 +482,18 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     return urlData.publicUrl;
   };
 
-  // Remove old file from storage
+  // Remove old file from storage (best-effort — never abort caller)
   const removeOldFile = async (fileUrl: string) => {
-    const bucketName = 'vendor-images';
-    const urlParts = fileUrl.split(`/storage/v1/object/public/${bucketName}/`);
-    if (urlParts.length === 2) {
-      const storagePath = decodeURIComponent(urlParts[1]);
-      await supabase.storage.from(bucketName).remove([storagePath]);
+    try {
+      const bucketName = 'vendor-images';
+      const urlParts = fileUrl.split(`/storage/v1/object/public/${bucketName}/`);
+      if (urlParts.length === 2) {
+        const storagePath = decodeURIComponent(urlParts[1]);
+        const { error } = await supabase.storage.from(bucketName).remove([storagePath]);
+        if (error) console.warn('Storage remove failed (continuing):', error);
+      }
+    } catch (e) {
+      console.warn('Storage remove threw (continuing):', e);
     }
   };
 
@@ -1058,8 +1068,8 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                             </button>
                           )}
                         </td>
-                        <td className="px-4 py-3">
-                          <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-card)', border: '1px solid var(--border-soft)' }}>
+                        <td className="px-4 py-3" style={{ whiteSpace: 'nowrap' }}>
+                          <span style={{ display: 'inline-block', fontSize: 11, padding: '2px 8px', borderRadius: 99, background: 'var(--bg-card)', border: '1px solid var(--border-soft)', whiteSpace: 'nowrap' }}>
                             {EXPENSE_TYPES.find(t => t.id === expense.expense_type)?.icon || '📋'}{' '}
                             {EXPENSE_TYPES.find(t => t.id === expense.expense_type)?.label || expense.expense_type}
                           </span>

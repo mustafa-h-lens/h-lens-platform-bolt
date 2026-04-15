@@ -124,12 +124,12 @@ export const BulkExpenseModal = ({ isOpen, onClose, onSuccess, projectId, curren
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={{ ...thStyle, width: '23%' }}>المورد *</th>
+                <th style={{ ...thStyle, width: '23%' }}>المورد <span style={{ color: '#ef4444' }}>*</span></th>
                 <th style={{ ...thStyle, width: '19%' }}>التصنيف</th>
                 {projectItems.length > 0 && (
                   <th style={{ ...thStyle, width: '19%' }}>البند</th>
                 )}
-                <th style={{ ...thStyle, width: '15%' }}>المبلغ *</th>
+                <th style={{ ...thStyle, width: '15%' }}>المبلغ <span style={{ color: '#ef4444' }}>*</span></th>
                 <th style={{ ...thStyle, width: '19%' }}>ملاحظات</th>
                 <th style={{ ...thStyle, width: '5%' }}></th>
               </tr>

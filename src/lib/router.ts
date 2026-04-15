@@ -3,12 +3,11 @@ import { useSyncExternalStore, useEffect } from 'react';
 // ── CONSTANTS ─────────────────────────────────────────────────
 const LAST_VISITED_PAGE_KEY = 'lastVisitedPage';
 
-// Pages to exclude from being saved as last visited
-const EXCLUDED_PATHS = [
-  '/vendor/login',
-  '/join',
-  '/',
-];
+// Pages to exclude from being saved as last visited.
+// Exact-match paths (won't persist as last-visited if user lands here).
+const EXCLUDED_EXACT_PATHS = ['/', '/join', '/vendor/login', '/client'];
+// Prefix paths (all sub-routes excluded too).
+const EXCLUDED_PREFIX_PATHS: string[] = [];
 
 // ── navigate ──────────────────────────────────────────────────
 export function navigate(path: string, replace = false) {
@@ -42,10 +41,9 @@ export function parsePath(pathname: string): string[] {
 
 // ── Last Visited Page Management ──────────────────────────────
 export function saveLastVisitedPage(pathname: string, search = '', hash = '') {
-  // Don't save excluded paths (login pages, etc.)
-  if (EXCLUDED_PATHS.some(excluded => pathname === excluded || pathname.startsWith(excluded))) {
-    return;
-  }
+  // Don't save excluded paths (login/landing pages, etc.)
+  if (EXCLUDED_EXACT_PATHS.includes(pathname)) return;
+  if (EXCLUDED_PREFIX_PATHS.some(prefix => pathname.startsWith(prefix))) return;
 
   const fullPath = pathname + search + hash;
   try {

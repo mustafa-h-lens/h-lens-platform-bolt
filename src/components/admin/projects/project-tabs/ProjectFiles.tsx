@@ -59,9 +59,11 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
     setUploading(true);
     try {
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage — sanitize key (non-ASCII/spaces/parens rejected)
       const fileExt = file.name.split('.').pop();
-      const filePath = `projects/${projectId}/${Date.now()}_${file.name}`;
+      const safeExt = (fileExt || '').replace(/[^a-zA-Z0-9]/g, '');
+      const rand = Math.random().toString(36).substring(2, 10);
+      const filePath = `projects/${projectId}/${Date.now()}_${rand}${safeExt ? '.' + safeExt : ''}`;
 
       const { error: uploadError } = await supabase.storage
         .from('project-files')
@@ -113,15 +115,20 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       const file = files.find(f => f.id === fileId);
       if (!file) throw new Error('الملف غير موجود');
 
-      // Extract storage path from the public URL
+      // Extract storage path from the public URL and remove (best-effort)
       const bucketName = 'project-files';
       const urlParts = file.file_url.split(`/storage/v1/object/public/${bucketName}/`);
       if (urlParts.length === 2) {
-        const storagePath = decodeURIComponent(urlParts[1]);
-        await supabase.storage.from(bucketName).remove([storagePath]);
+        try {
+          const storagePath = decodeURIComponent(urlParts[1]);
+          const { error: storageErr } = await supabase.storage.from(bucketName).remove([storagePath]);
+          if (storageErr) console.warn('Storage remove failed (continuing):', storageErr);
+        } catch (e) {
+          console.warn('Storage remove threw (continuing):', e);
+        }
       }
 
-      // Delete the DB record
+      // Delete the DB record — the user-facing source of truth
       const { error } = await supabase
         .from('project_files')
         .delete()
@@ -131,9 +138,9 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
       showSuccess('تم حذف الملف بنجاح');
       loadFiles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting file:', error);
-      showError('حدث خطأ أثناء حذف الملف');
+      showError(error?.message || 'حدث خطأ أثناء حذف الملف');
     } finally {
       setDeleteFileId(null);
     }

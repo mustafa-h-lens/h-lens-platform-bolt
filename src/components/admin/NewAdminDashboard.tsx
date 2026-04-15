@@ -100,16 +100,19 @@ export const NewAdminDashboard = () => {
   );
   const [activeSubTab, setActiveSubTab] = useState<string | null>(initialHash.tab);
 
-  // Redirect to dashboard AFTER permissions load if user lacks access to current page
+  // Redirect to dashboard AFTER permissions load if user lacks access to current page.
+  // Also wait for profile to load — otherwise a refresh can briefly see empty permissions
+  // and bounce the user off the page they were on.
   useEffect(() => {
-    if (!permissionsLoading && currentPage !== 'dashboard' && !hasAccess(currentPage as any)) {
+    if (permissionsLoading || !profile) return;
+    if (currentPage !== 'dashboard' && !hasAccess(currentPage as any)) {
       setCurrentPage('dashboard');
       setSelectedProjectId(null);
       setSelectedClientId(null);
       setSelectedVendorId(null);
       setActiveSubTab(null);
     }
-  }, [permissionsLoading]);
+  }, [permissionsLoading, profile, hasAccess, currentPage]);
   const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

@@ -63,7 +63,12 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
     if (!selectedFile) return null;
     setUploadingFile(true);
     try {
-      const filePath = `invoices/${project.id}/${Date.now()}_${selectedFile.name}`;
+      // Sanitize storage key — Supabase rejects non-ASCII, spaces, parens
+      const lastDot = selectedFile.name.lastIndexOf('.');
+      const ext = lastDot > -1 ? selectedFile.name.substring(lastDot) : '';
+      const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '');
+      const rand = Math.random().toString(36).substring(2, 10);
+      const filePath = `invoices/${project.id}/${Date.now()}_${rand}${safeExt}`;
       const { error: uploadError } = await supabase.storage
         .from('project-files')
         .upload(filePath, selectedFile);
@@ -108,9 +113,9 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
 
       if (error) throw error;
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating invoice:', error);
-      showError('حدث خطأ أثناء إنشاء الفاتورة');
+      showError(`حدث خطأ أثناء إنشاء الفاتورة: ${error?.message || ''}`);
     } finally {
       setLoading(false);
     }

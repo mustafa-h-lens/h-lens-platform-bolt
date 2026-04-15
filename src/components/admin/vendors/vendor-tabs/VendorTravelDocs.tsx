@@ -97,7 +97,12 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
   ) => {
     setUploading(true);
     try {
-      const filePath = `vendors/${vendorId}/${folder}/${Date.now()}_${file.name}`;
+      // Sanitize storage key — Supabase rejects non-ASCII, spaces, parens
+      const lastDot = file.name.lastIndexOf('.');
+      const ext = lastDot > -1 ? file.name.substring(lastDot) : '';
+      const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '');
+      const rand = Math.random().toString(36).substring(2, 10);
+      const filePath = `vendors/${vendorId}/${folder}/${Date.now()}_${rand}${safeExt}`;
       const { error: uploadError } = await supabase.storage
         .from('vendor-images')
         .upload(filePath, file);

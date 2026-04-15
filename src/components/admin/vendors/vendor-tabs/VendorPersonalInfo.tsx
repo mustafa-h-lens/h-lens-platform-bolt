@@ -263,9 +263,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       if (formData.profile_image) {
         const oldFileName = formData.profile_image.split('/').pop();
         if (oldFileName) {
-          await supabase.storage
-            .from('vendor-images')
-            .remove([oldFileName]);
+          try {
+            await supabase.storage.from('vendor-images').remove([oldFileName]);
+          } catch (e) { console.warn('old profile image remove failed:', e); }
         }
       }
 
@@ -295,9 +295,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       setFormData({ ...formData, profile_image: publicUrl });
       onUpdate();
       showSuccess('تم رفع الصورة بنجاح');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      showError('حدث خطأ أثناء رفع الصورة');
+      showError(error?.message || 'حدث خطأ أثناء رفع الصورة');
     } finally {
       setUploadingImage(false);
     }
@@ -326,9 +326,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       if (formData.id_image) {
         const oldFileName = formData.id_image.split('/').pop();
         if (oldFileName) {
-          await supabase.storage
-            .from('vendor-images')
-            .remove([oldFileName]);
+          try {
+            await supabase.storage.from('vendor-images').remove([oldFileName]);
+          } catch (e) { console.warn('old id image remove failed:', e); }
         }
       }
 
@@ -358,9 +358,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       setFormData({ ...formData, id_image: publicUrl });
       onUpdate();
       showSuccess('تم رفع صورة الهوية بنجاح');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading ID image:', error);
-      showError('حدث خطأ أثناء رفع صورة الهوية');
+      showError(error?.message || 'حدث خطأ أثناء رفع صورة الهوية');
     } finally {
       setUploadingIdImage(false);
     }
@@ -389,9 +389,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       if (formData.vehicle_registration_image) {
         const oldFileName = formData.vehicle_registration_image.split('/').pop();
         if (oldFileName) {
-          await supabase.storage
-            .from('vendor-images')
-            .remove([oldFileName]);
+          try {
+            await supabase.storage.from('vendor-images').remove([oldFileName]);
+          } catch (e) { console.warn('old vehicle image remove failed:', e); }
         }
       }
 
@@ -421,9 +421,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       setFormData({ ...formData, vehicle_registration_image: publicUrl });
       onUpdate();
       showSuccess('تم رفع صورة استمارة السيارة بنجاح');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading vehicle registration image:', error);
-      showError('حدث خطأ أثناء رفع صورة استمارة السيارة');
+      showError(error?.message || 'حدث خطأ أثناء رفع صورة استمارة السيارة');
     } finally {
       setUploadingVehicleRegImage(false);
     }

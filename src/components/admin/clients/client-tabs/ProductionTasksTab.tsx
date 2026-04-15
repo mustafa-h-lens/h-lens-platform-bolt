@@ -513,7 +513,7 @@ export const ProductionTasksTab = ({ clientId }: ProductionTasksTabProps) => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                اسم المهمة *
+                اسم المهمة <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="text"
@@ -550,7 +550,7 @@ export const ProductionTasksTab = ({ clientId }: ProductionTasksTabProps) => {
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                المبلغ (SAR) *
+                المبلغ (SAR) <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="number"
@@ -745,7 +745,7 @@ export const ProductionTasksTab = ({ clientId }: ProductionTasksTabProps) => {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                    اختر أمر الشراء *
+                    اختر أمر الشراء <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <select
                     value={allocationData.po_id}
@@ -771,7 +771,7 @@ export const ProductionTasksTab = ({ clientId }: ProductionTasksTabProps) => {
 
                 <div>
                   <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                    المبلغ المراد تخصيصه (SAR) *
+                    المبلغ المراد تخصيصه (SAR) <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"

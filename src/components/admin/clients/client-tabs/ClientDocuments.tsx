@@ -81,14 +81,18 @@ export const ClientDocuments = ({ clientId }: ClientDocumentsProps) => {
 
   const handleDelete = async (documentId: string) => {
     try {
+      // Best-effort storage removal — DB row is source of truth
       const doc = documents.find(d => d.id === documentId);
       if (doc?.file_url) {
-        const bucketName = 'client-documents';
-        const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
-        if (urlParts.length === 2) {
-          const storagePath = decodeURIComponent(urlParts[1]);
-          await supabase.storage.from(bucketName).remove([storagePath]);
-        }
+        try {
+          const bucketName = 'client-documents';
+          const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
+          if (urlParts.length === 2) {
+            const storagePath = decodeURIComponent(urlParts[1]);
+            const { error: storageErr } = await supabase.storage.from(bucketName).remove([storagePath]);
+            if (storageErr) console.warn('Storage remove failed (continuing):', storageErr);
+          }
+        } catch (e) { console.warn('Storage remove threw (continuing):', e); }
       }
 
       const { error } = await supabase
@@ -99,9 +103,9 @@ export const ClientDocuments = ({ clientId }: ClientDocumentsProps) => {
       if (error) throw error;
       showSuccess('تم حذف المستند بنجاح');
       fetchDocuments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting document:', error);
-      showError('حدث خطأ أثناء حذف المستند');
+      showError(error?.message || 'حدث خطأ أثناء حذف المستند');
     } finally {
       setDeleteDocId(null);
     }
@@ -360,8 +364,11 @@ const AddClientDocumentModal = ({ clientId, docTypes, onClose, onSuccess }: AddC
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Upload file
-      const filePath = `clients/${clientId}/documents/${Date.now()}_${selectedFile.name}`;
+      // Upload file — sanitize filename (Supabase storage rejects non-ASCII, spaces, parens)
+      const lastDot = selectedFile.name.lastIndexOf('.');
+      const ext = lastDot > -1 ? selectedFile.name.substring(lastDot) : '';
+      const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '');
+      const filePath = `clients/${clientId}/documents/${Date.now()}_${Math.random().toString(36).substring(2, 10)}${safeExt}`;
       const { error: uploadError } = await supabase.storage
         .from('client-documents')
         .upload(filePath, selectedFile);

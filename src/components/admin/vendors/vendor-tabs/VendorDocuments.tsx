@@ -57,15 +57,18 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
 
   const handleDelete = async (documentId: string) => {
     try {
-      // Find doc to delete from storage too
+      // Find doc to delete from storage too (best-effort — DB row is source of truth)
       const doc = documents.find(d => d.id === documentId);
       if (doc?.file_url) {
-        const bucketName = 'vendor-images';
-        const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
-        if (urlParts.length === 2) {
-          const storagePath = decodeURIComponent(urlParts[1]);
-          await supabase.storage.from(bucketName).remove([storagePath]);
-        }
+        try {
+          const bucketName = 'vendor-images';
+          const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
+          if (urlParts.length === 2) {
+            const storagePath = decodeURIComponent(urlParts[1]);
+            const { error: storageErr } = await supabase.storage.from(bucketName).remove([storagePath]);
+            if (storageErr) console.warn('Storage remove failed (continuing):', storageErr);
+          }
+        } catch (e) { console.warn('Storage remove threw (continuing):', e); }
       }
 
       const { error } = await supabase
@@ -76,9 +79,9 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
       if (error) throw error;
       showSuccess('تم حذف المستند بنجاح');
       fetchDocuments();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting document:', error);
-      showError('حدث خطأ أثناء حذف المستند');
+      showError(error?.message || 'حدث خطأ أثناء حذف المستند');
     } finally {
       setDeleteDocId(null);
     }

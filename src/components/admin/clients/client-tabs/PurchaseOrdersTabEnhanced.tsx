@@ -55,7 +55,14 @@ export const PurchaseOrdersTabEnhanced = ({
   useEffect(() => {
     if (showAddModal && !formData.po_number) {
       supabase.rpc('generate_po_number').then(({ data, error }) => {
-        if (data && !error) setFormData(prev => ({ ...prev, po_number: data }));
+        if (data && !error) {
+          setFormData(prev => ({ ...prev, po_number: data }));
+        } else {
+          // Fallback: timestamp-based number so the form never blocks on RPC failure
+          const fallback = `PO-${Date.now().toString().slice(-6)}`;
+          setFormData(prev => ({ ...prev, po_number: fallback }));
+          if (error) console.warn('generate_po_number RPC failed, using fallback:', error);
+        }
       });
     }
   }, [showAddModal]);
@@ -135,6 +142,7 @@ export const PurchaseOrdersTabEnhanced = ({
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
       const { error } = await supabase.from('purchase_orders').insert({
         client_id: clientId,
         po_number: formData.po_number,
@@ -146,6 +154,7 @@ export const PurchaseOrdersTabEnhanced = ({
         expiry_date: formData.expiry_date || null,
         status: 'active',
         notes: formData.notes || null,
+        created_by: user?.id,
       });
 
       if (error) throw error;
@@ -217,7 +226,7 @@ export const PurchaseOrdersTabEnhanced = ({
     try {
       const { data: tasksData, error: tasksError } = await supabase
         .from('production_tasks')
-        .select('*, task_po_allocations!inner(amount, po_id)')
+        .select('*, task_po_allocations!inner(allocated_amount, po_id)')
         .eq('task_po_allocations.po_id', order.id)
         .eq('client_id', clientId);
 
@@ -227,12 +236,15 @@ export const PurchaseOrdersTabEnhanced = ({
         ...new Set(tasksData?.map((t) => t.project_id).filter(Boolean)),
       ];
 
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .in('id', projectIds.length > 0 ? projectIds : ['null']);
-
-      if (projectsError) throw projectsError;
+      let projectsData: any[] = [];
+      if (projectIds.length > 0) {
+        const { data, error: projectsError } = await supabase
+          .from('projects')
+          .select('*')
+          .in('id', projectIds);
+        if (projectsError) throw projectsError;
+        projectsData = data || [];
+      }
 
       const projectsWithTasks = (projectsData || []).map((project) => {
         const projectTasks = tasksData?.filter((t) => t.project_id === project.id) || [];
@@ -240,7 +252,7 @@ export const PurchaseOrdersTabEnhanced = ({
           (sum: number, t: any) =>
             sum +
             (t.task_po_allocations?.reduce(
-              (s: number, a: any) => s + (a.amount || 0),
+              (s: number, a: any) => s + (a.allocated_amount || 0),
               0
             ) || 0),
           0
@@ -487,27 +499,40 @@ export const PurchaseOrdersTabEnhanced = ({
           title="إضافة أمر شراء جديد"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label
-                className="block text-sm font-medium mb-2"
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '10px 14px',
+                borderRadius: 10,
+                background: 'var(--color-surface)',
+                border: '1px dashed var(--color-border)',
+              }}
+            >
+              <span
+                className="text-sm font-medium"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
-                رقم أمر الشراء *
-              </label>
-              <input
-                type="text"
-                value={formData.po_number}
-                readOnly
-                className="w-full px-4 py-2 rounded-lg border"
+                رقم أمر الشراء
+              </span>
+              <span
                 style={{
-                  backgroundColor: 'var(--color-surface)',
-                  borderColor: 'var(--color-border)',
-                  color: 'var(--color-text-primary)',
-                  opacity: 0.7,
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: 0.5,
+                  color: '#60a5fa',
+                  background: 'rgba(96, 165, 250, 0.12)',
+                  border: '1px solid rgba(96, 165, 250, 0.3)',
+                  padding: '4px 10px',
+                  borderRadius: 8,
                 }}
-                placeholder="يتم التوليد تلقائياً..."
-                required
-              />
+                dir="ltr"
+              >
+                {formData.po_number || 'جاري التوليد…'}
+              </span>
             </div>
 
             <div>
@@ -515,7 +540,7 @@ export const PurchaseOrdersTabEnhanced = ({
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
-                عنوان أمر الشراء *
+                عنوان أمر الشراء <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="text"
@@ -560,7 +585,7 @@ export const PurchaseOrdersTabEnhanced = ({
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
-                القيمة الإجمالية (ريال) *
+                القيمة الإجمالية (ريال) <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <input
                 type="number"
@@ -736,7 +761,7 @@ export const PurchaseOrdersTabEnhanced = ({
                   </h3>
                   <div className="space-y-2">
                     {detailsData.tasks.map((task) => {
-                      const taskAllocation = task.task_po_allocations?.[0]?.amount || 0;
+                      const taskAllocation = task.task_po_allocations?.[0]?.allocated_amount || 0;
                       return (
                         <div
                           key={task.id}

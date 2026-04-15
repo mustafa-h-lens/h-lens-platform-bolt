@@ -199,7 +199,7 @@ export function VendorEquipment() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, position: 'relative', zIndex: 1 }}>
             <div>
-              <FieldLabel>اسم المعدة *</FieldLabel>
+              <FieldLabel>اسم المعدة <span style={{ color: '#ef4444' }}>*</span></FieldLabel>
               <TextInput value={suggForm.name} onChange={(e: any) => setSuggForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: كاميرا Sony FX6" />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>

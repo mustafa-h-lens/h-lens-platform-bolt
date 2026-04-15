@@ -69,13 +69,20 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
   const [hideAmounts, setHideAmounts] = useState(false);
   const masked = (value: string) => hideAmounts ? '••••••' : value;
 
-  // Close dropdown on outside click
+  // Close dropdown on outside click (only when click target is truly outside the dropdown)
   useEffect(() => {
-    const handleClickOutside = () => setStatusDropdown(null);
-    if (statusDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
+    if (!statusDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('[data-status-dropdown]')) return;
+      setStatusDropdown(null);
+    };
+    // Defer attaching so the click that opened the dropdown doesn't immediately close it
+    const timer = setTimeout(() => document.addEventListener('click', handleClickOutside), 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleClickOutside);
+    };
   }, [statusDropdown]);
 
   useEffect(() => {
@@ -212,9 +219,9 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
       if (selectedInvoice?.id === invoice.id) {
         setSelectedInvoice({ ...invoice, status: newStatus });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error changing status:', error);
-      showError('حدث خطأ أثناء تغيير الحالة');
+      showError(`حدث خطأ أثناء تغيير الحالة: ${error?.message || ''}`);
     }
   };
 
@@ -421,7 +428,7 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
                   )}
 
                   {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative' }} data-status-dropdown>
                       <button
                         onClick={() => setStatusDropdown(statusDropdown === invoice.id ? null : invoice.id)}
                         className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300

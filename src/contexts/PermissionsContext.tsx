@@ -25,13 +25,21 @@ export const usePermissions = () => {
 const SUPER_ADMIN_ROLE_ID = '00000000-0000-0000-0000-000000000001';
 
 export const PermissionsProvider = ({ children }: { children: ReactNode }) => {
-  const { profile } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [roleName, setRoleName] = useState<string | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadPermissions = useCallback(async () => {
+    // Wait for auth to finish hydrating — otherwise we may briefly see no profile
+    // during a refresh and erroneously mark loading=false with empty permissions,
+    // causing downstream consumers to force a redirect.
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!profile) {
       setPermissions({});
       setRoleName(null);
@@ -102,7 +110,7 @@ export const PermissionsProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false);
     }
-  }, [profile]);
+  }, [profile, authLoading]);
 
   useEffect(() => {
     loadPermissions();

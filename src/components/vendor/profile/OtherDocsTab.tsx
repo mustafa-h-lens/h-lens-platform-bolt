@@ -52,7 +52,7 @@ export function OtherDocsTab({ otherDocs, uploadingDoc, docType, setDocType, doc
 
       {docType === 'other' && (
         <div style={{ marginBottom: 12, animation: 'fadeUp .2s ease' }}>
-          <FieldLabel>اسم المستند *</FieldLabel>
+          <FieldLabel>اسم المستند <span style={{ color: '#ef4444' }}>*</span></FieldLabel>
           <TextInput value={customName} onChange={(e: any) => setCustomName(e.target.value)} placeholder="مثال: شهادة تدريب، رخصة قيادة..." />
         </div>
       )}

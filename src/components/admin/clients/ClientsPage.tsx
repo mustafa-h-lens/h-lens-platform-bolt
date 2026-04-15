@@ -4,6 +4,7 @@ import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ClientModal } from './ClientModal';
+import { CreateProjectModal } from '../projects/CreateProjectModal';
 import { formatNumber, formatDateArabic } from '../../../lib/formatters';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import type { Client } from '../../../types/database';
@@ -48,6 +49,7 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
   const [totalCount, setTotalCount] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, active: 0, newThisQuarter: 0, retention: 0 });
+  const [projectModalClient, setProjectModalClient] = useState<Client | null>(null);
 
   useEffect(() => { loadClients(); }, [page, sortBy, pageSize]);
   useEffect(() => { setPage(0); }, [searchQuery, statusFilter]);
@@ -302,7 +304,7 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
                         <div className="actions-dropdown show">
                           <button className="dd-item" onClick={() => { onViewClient?.(client.id); setOpenDropdown(null); }}><Eye size={15} /> عرض التفاصيل</button>
                           <button className="dd-item" onClick={() => { setSelectedClient(client); setShowModal(true); setOpenDropdown(null); }}><Pencil size={15} /> تعديل العميل</button>
-                          <button className="dd-item"><FolderPlus size={15} /> إضافة مشروع</button>
+                          <button className="dd-item" onClick={() => { setProjectModalClient(client); setOpenDropdown(null); }}><FolderPlus size={15} /> إضافة مشروع</button>
                           <div className="dd-sep" />
                           <button className="dd-item dd-danger" onClick={() => { handleDelete(client); setOpenDropdown(null); }}><Trash2 size={15} /> حذف العميل</button>
                         </div>
@@ -340,6 +342,15 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
           client={selectedClient}
           onClose={() => { setShowModal(false); setSelectedClient(null); }}
           onSuccess={loadClients}
+        />
+      )}
+
+      {projectModalClient && (
+        <CreateProjectModal
+          onClose={() => setProjectModalClient(null)}
+          onSuccess={() => { setProjectModalClient(null); loadClients(); }}
+          preSelectedClientId={projectModalClient.id}
+          preSelectedClientName={projectModalClient.name}
         />
       )}
     </div>

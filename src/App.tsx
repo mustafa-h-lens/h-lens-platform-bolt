@@ -202,7 +202,7 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePathChange);
   }, []);
 
-  // Restore last visited page on initial load
+  // Restore last visited page on initial load (any portal, not just admin)
   useEffect(() => {
     if (hasRestoredRoute || loading) return;
 
@@ -210,18 +210,61 @@ function AppContent() {
     const currentPathname = window.location.pathname;
     const currentHash = window.location.hash;
 
-    // Only restore if we are on plain /admin with no hash and the user is authenticated.
-    // The admin dashboard reads hashes directly on mount, so we only need to act when
-    // there is NO hash yet (plain /admin) but a deeper page was saved.
-    const onPlainAdmin = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
+    if (!lastVisitedPage || lastVisitedPage === currentPathname + window.location.search + currentHash) {
+      setHasRestoredRoute(true);
+      return;
+    }
 
-    if (onPlainAdmin && user && profile && lastVisitedPage) {
-      // Only restore genuine admin sub-pages (must start with /admin# to have a hash)
+    // Parse the saved page into pathname + hash parts
+    let savedPathname = lastVisitedPage;
+    let savedHash = '';
+    const hashIdx = lastVisitedPage.indexOf('#');
+    if (hashIdx !== -1) {
+      savedPathname = lastVisitedPage.slice(0, hashIdx);
+      savedHash = lastVisitedPage.slice(hashIdx);
+    }
+
+    // Case 1: plain /admin with no hash — restore deep admin page if authenticated
+    const onPlainAdmin = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
+    if (onPlainAdmin && user && profile) {
       const isDeepAdminPage = lastVisitedPage.startsWith('/admin#') || lastVisitedPage.startsWith('/admin/');
       if (isDeepAdminPage) {
         window.history.replaceState({}, '', lastVisitedPage);
-        // Don't dispatch popstate — NewAdminDashboard reads the hash on mount via parseHash()
+        // NewAdminDashboard reads hash on mount via parseHash()
       }
+      setHasRestoredRoute(true);
+      return;
+    }
+
+    // Case 2: on landing (/) with a saved deep page — restore if the matching session exists
+    if (currentPathname === '/' && !currentHash) {
+      if (savedPathname.startsWith('/admin') && user && profile) {
+        window.history.replaceState({}, '', lastVisitedPage);
+        setCurrentPath(savedPathname);
+      } else if (savedPathname.startsWith('/vendor') && getStoredVendorSession()) {
+        window.history.replaceState({}, '', lastVisitedPage);
+        setCurrentPath(savedPathname);
+      } else if (savedPathname.startsWith('/client') && getStoredClientSession()) {
+        window.history.replaceState({}, '', lastVisitedPage);
+        setCurrentPath(savedPathname);
+      }
+      setHasRestoredRoute(true);
+      return;
+    }
+
+    // Case 3: on a portal root without hash — restore the saved sub-page/hash of that portal
+    const onVendorRoot = currentPathname === ROUTES.VENDOR_PORTAL && !currentHash;
+    if (onVendorRoot && savedPathname === ROUTES.VENDOR_PORTAL && savedHash && getStoredVendorSession()) {
+      window.history.replaceState({}, '', lastVisitedPage);
+      setHasRestoredRoute(true);
+      return;
+    }
+
+    const onClientRoot = currentPathname === ROUTES.CLIENT_PORTAL && !currentHash;
+    if (onClientRoot && savedPathname === ROUTES.CLIENT_PORTAL && savedHash && getStoredClientSession()) {
+      window.history.replaceState({}, '', lastVisitedPage);
+      setHasRestoredRoute(true);
+      return;
     }
 
     setHasRestoredRoute(true);
