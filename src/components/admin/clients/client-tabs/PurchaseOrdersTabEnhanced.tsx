@@ -52,6 +52,14 @@ export const PurchaseOrdersTabEnhanced = ({
     loadSettings();
   }, [clientId]);
 
+  useEffect(() => {
+    if (showAddModal && !formData.po_number) {
+      supabase.rpc('generate_po_number').then(({ data, error }) => {
+        if (data && !error) setFormData(prev => ({ ...prev, po_number: data }));
+      });
+    }
+  }, [showAddModal]);
+
   const loadSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -489,16 +497,15 @@ export const PurchaseOrdersTabEnhanced = ({
               <input
                 type="text"
                 value={formData.po_number}
-                onChange={(e) =>
-                  setFormData({ ...formData, po_number: e.target.value })
-                }
+                readOnly
                 className="w-full px-4 py-2 rounded-lg border"
                 style={{
                   backgroundColor: 'var(--color-surface)',
                   borderColor: 'var(--color-border)',
                   color: 'var(--color-text-primary)',
+                  opacity: 0.7,
                 }}
-                placeholder="مثال: PO-2024-001"
+                placeholder="يتم التوليد تلقائياً..."
                 required
               />
             </div>

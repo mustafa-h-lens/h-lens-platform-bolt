@@ -2062,6 +2062,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
         currency={currency}
         vendors={vendors}
         vendorFields={vendorFields}
+        projectItems={projectItems}
       />
     </div>
   );

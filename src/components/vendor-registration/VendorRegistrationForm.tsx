@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
@@ -77,7 +77,13 @@ export const VendorRegistrationForm = () => {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId] = useState(() => {
+    const stored = localStorage.getItem('vendor_reg_session_id');
+    if (stored) return stored;
+    const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('vendor_reg_session_id', newId);
+    return newId;
+  });
   const [formData, setFormData] = useState<VendorFormData>({
     full_name: '',
     nationality: '',
@@ -110,9 +116,12 @@ export const VendorRegistrationForm = () => {
     selected_fields: [],
   });
 
+  const saveDraftRef = useRef(saveDraft);
+  useEffect(() => { saveDraftRef.current = saveDraft; });
+
   useEffect(() => {
     loadDraft();
-    const interval = setInterval(saveDraft, 30000);
+    const interval = setInterval(() => saveDraftRef.current(), 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -504,6 +513,7 @@ export const VendorRegistrationForm = () => {
 
       // Clean up draft (fire-and-forget)
       supabase.from('vendor_registration_drafts').delete().eq('session_id', sessionId).then(() => {}).catch(console.error);
+      localStorage.removeItem('vendor_reg_session_id');
 
       // Send registration email (fire-and-forget)
       supabase.functions.invoke('send-vendor-status-email', {

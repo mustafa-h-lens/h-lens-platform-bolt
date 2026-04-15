@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabaseClient';
 
 interface SupplierLoginProps {
   onOTPSent: (email: string, otpCode?: string) => void;
@@ -19,6 +20,22 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
     if (!email || !email.includes('@')) { setError('يرجى إدخال بريد إلكتروني صالح'); return; }
     setLoading(true);
     try {
+      // Auto-unblock expired blocks, then check block status
+      await supabase.rpc('auto_unblock_expired_vendors').catch(() => {});
+      const { data: vendorRow } = await supabase
+        .from('vendors')
+        .select('status, block_reason, blocked_until')
+        .ilike('email', email.trim())
+        .maybeSingle();
+      if (vendorRow?.status === 'blocked') {
+        const untilTxt = vendorRow.blocked_until
+          ? ` حتى ${new Date(vendorRow.blocked_until).toLocaleDateString('ar-SA')}`
+          : ' (حظر دائم)';
+        const reasonTxt = vendorRow.block_reason ? `\nالسبب: ${vendorRow.block_reason}` : '';
+        setError(`تم حظر حسابك${untilTxt}.${reasonTxt}\nيرجى التواصل مع الإدارة للمزيد من المعلومات.`);
+        setLoading(false);
+        return;
+      }
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
         method: 'POST',
@@ -103,7 +120,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
 
               {error && (
                 <div className="sl-error">
-                  <p>{error}</p>
+                  <p style={{ whiteSpace: 'pre-line' }}>{error}</p>
                 </div>
               )}
 

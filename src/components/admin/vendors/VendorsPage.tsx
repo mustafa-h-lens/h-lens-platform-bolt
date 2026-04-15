@@ -34,6 +34,8 @@ interface Vendor {
   estimated_cost?: number;
   status: string;
   created_at: string;
+  blocked_until?: string | null;
+  block_reason?: string | null;
 }
 
 interface VendorsPageProps {
@@ -101,6 +103,8 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [pendingRefreshTrigger, setPendingRefreshTrigger] = useState(0);
   const [reviewVendorId, setReviewVendorId] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [blockVendor, setBlockVendor] = useState<Vendor | null>(null);
+  const [showBulkBlock, setShowBulkBlock] = useState(false);
 
   const [filters, setFilters] = useState({
     nationality: [] as string[], primary_city: [] as string[],
@@ -144,6 +148,8 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
   const fetchVendors = async () => {
     try {
+      // Auto-unblock any vendors whose blocked_until has passed
+      await supabase.rpc('auto_unblock_expired_vendors');
       const from = page * pageSize;
       const to = from + pageSize - 1;
       const { data, error, count } = await supabase
@@ -309,6 +315,9 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
                 <button className="btn btn-sm" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }} onClick={() => setShowDeleteConfirm(true)}>
                   <Trash2 size={13} /> حذف المحدد ({toEnglishNumbers(selectedVendors.size.toString())})
                 </button>
+                <button className="btn btn-sm" style={{ background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)' }} onClick={() => setShowBulkBlock(true)}>
+                  <Ban size={13} /> حظر المحدد ({toEnglishNumbers(selectedVendors.size.toString())})
+                </button>
               </>
             )}
           </div>
@@ -373,7 +382,15 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
                               <button className="dd-item" onClick={() => { setSelectedVendorId(vendor.id); onVendorSelect?.(vendor.id); setOpenDropdown(null); }}><Eye size={15} /> عرض التفاصيل</button>
                               <button className="dd-item"><Pencil size={15} /> تعديل</button>
                               <div className="dd-sep" />
-                              <button className="dd-item dd-danger"><Ban size={15} /> تعليق</button>
+                              {vendor.status === 'blocked' ? (
+                                <button className="dd-item" onClick={async () => {
+                                  setOpenDropdown(null);
+                                  const { error } = await supabase.from('vendors').update({ status: 'active', blocked_until: null, block_reason: null }).eq('id', vendor.id);
+                                  if (error) showError('فشل رفع الحظر'); else { showSuccess('تم رفع الحظر عن المورد'); fetchVendors(); }
+                                }}><RotateCcw size={15} /> رفع الحظر</button>
+                              ) : (
+                                <button className="dd-item dd-danger" onClick={() => { setBlockVendor(vendor); setOpenDropdown(null); }}><Ban size={15} /> حظر</button>
+                              )}
                             </div>
                           )}
                         </td>
@@ -410,6 +427,24 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
         <Suspense fallback={<VendorLazyFallback />}>
           <VendorExportModal vendors={selectedVendors.size > 0 ? vendors.filter(v => selectedVendors.has(v.id)) : filteredVendors} onClose={() => setShowExportModal(false)} onSuccess={() => { setShowExportModal(false); setSelectedVendors(new Set()); }} />
         </Suspense>
+      )}
+
+      {blockVendor && (
+        <BlockVendorModal
+          vendorIds={[blockVendor.id]}
+          vendorLabel={blockVendor.full_name}
+          onClose={() => setBlockVendor(null)}
+          onSuccess={() => { setBlockVendor(null); fetchVendors(); }}
+        />
+      )}
+
+      {showBulkBlock && selectedVendors.size > 0 && (
+        <BlockVendorModal
+          vendorIds={Array.from(selectedVendors)}
+          vendorLabel={`${toEnglishNumbers(selectedVendors.size.toString())} مورد محدد`}
+          onClose={() => setShowBulkBlock(false)}
+          onSuccess={() => { setShowBulkBlock(false); setSelectedVendors(new Set()); fetchVendors(); }}
+        />
       )}
 
       {showDeleteConfirm && (
@@ -584,6 +619,114 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
             <button type="button" className="btn btn-secondary" onClick={onClose}>إلغاء</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? 'جاري الإضافة...' : <><Plus size={15} /> إضافة المورد</>}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ═══════════════════ BLOCK VENDOR MODAL ═══════════════════
+interface BlockVendorModalProps {
+  vendorIds: string[];
+  vendorLabel: string;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const BlockVendorModal = ({ vendorIds, vendorLabel, onClose, onSuccess }: BlockVendorModalProps) => {
+  const { showSuccess, showError } = useNotification();
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'permanent' | 'period'>('period');
+  const [days, setDays] = useState<number>(7);
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const blockedUntil = mode === 'period'
+        ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+      const { error } = await supabase.from('vendors').update({
+        status: 'blocked',
+        blocked_until: blockedUntil,
+        block_reason: reason.trim() || null,
+      }).in('id', vendorIds);
+      if (error) throw error;
+      const countLabel = vendorIds.length > 1 ? `${toEnglishNumbers(vendorIds.length.toString())} مورد` : 'المورد';
+      showSuccess(mode === 'period' ? `تم حظر ${countLabel} لمدة ${toEnglishNumbers(days.toString())} يوم` : `تم حظر ${countLabel} بشكل دائم`);
+      onSuccess();
+    } catch (err: any) {
+      console.error('Block vendor error:', err);
+      showError(err.message || 'حدث خطأ أثناء حظر المورد');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return createPortal(
+    <div className="modal-overlay show" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-ttl" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Ban size={18} style={{ color: 'var(--danger-text)' }} /> حظر المورد
+            </div>
+            <div className="modal-sub">{vendorLabel}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}><X size={16} /></button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="input-group">
+              <label className="input-label">نوع الحظر <span className="req">*</span></label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: mode === 'period' ? 'var(--accent-glow)' : 'transparent' }}>
+                  <input type="radio" name="blockMode" checked={mode === 'period'} onChange={() => setMode('period')} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>حظر لفترة محددة</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>يتم رفع الحظر تلقائياً بعد انتهاء المدة</div>
+                  </div>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', background: mode === 'permanent' ? 'var(--accent-glow)' : 'transparent' }}>
+                  <input type="radio" name="blockMode" checked={mode === 'permanent'} onChange={() => setMode('permanent')} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>حظر دائم</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>يظل المورد محظوراً حتى يتم رفع الحظر يدوياً</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {mode === 'period' && (
+              <div className="input-group">
+                <label className="input-label">مدة الحظر (بالأيام) <span className="req">*</span></label>
+                <input type="number" className="input" min={1} max={365} value={days} onChange={e => setDays(Math.max(1, parseInt(e.target.value) || 1))} dir="ltr" required />
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                  سيتم رفع الحظر تلقائياً في: {toEnglishNumbers(new Date(Date.now() + days * 24 * 60 * 60 * 1000).toLocaleDateString('ar-SA'))}
+                </div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                  {[3, 7, 14, 30, 90].map(d => (
+                    <button key={d} type="button" className="btn btn-ghost btn-sm" style={{ fontSize: 12, background: days === d ? 'var(--accent-glow)' : undefined }} onClick={() => setDays(d)}>
+                      {toEnglishNumbers(d.toString())} يوم
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="input-group">
+              <label className="input-label">سبب الحظر <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>(سيظهر للمورد عند محاولة تسجيل الدخول)</span></label>
+              <textarea className="input" value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: مخالفة شروط الخدمة، عدم الالتزام بالمواعيد..." style={{ minHeight: 70 }} />
+            </div>
+          </div>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>إلغاء</button>
+            <button type="submit" className="btn btn-danger" disabled={loading}>
+              {loading ? 'جاري الحظر...' : <><Ban size={15} /> تأكيد الحظر</>}
             </button>
           </div>
         </form>

@@ -56,7 +56,8 @@ interface VendorEquipment {
   name: string;
   vendor_id: string;
   quantity: number;
-  image?: string;
+  image?: string | null;
+  catalog_item?: { image_url?: string | null } | null;
 }
 
 const STORAGE_KEY = 'vendor_export_preferences';
@@ -111,11 +112,15 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
       const vendorIds = vendors.map(v => v.id);
       const { data } = await supabase
         .from('vendor_equipment')
-        .select('vendor_id, name, id, quantity, image')
+        .select('vendor_id, name, id, quantity, image, catalog_item:equipment_catalog(image_url)')
         .in('vendor_id', vendorIds);
 
       if (data) {
-        const grouped = data.reduce((acc, item) => {
+        const normalized = data.map(item => ({
+          ...item,
+          image: item.image || item.catalog_item?.image_url || null,
+        }));
+        const grouped = normalized.reduce((acc, item) => {
           if (!acc[item.vendor_id]) {
             acc[item.vendor_id] = [];
           }

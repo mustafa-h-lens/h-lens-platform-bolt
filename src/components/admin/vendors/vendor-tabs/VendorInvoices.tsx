@@ -18,7 +18,6 @@ interface Invoice {
   created_at: string;
   project?: {
     name: string;
-    field?: string;
   };
   client?: {
     name: string;
@@ -45,7 +44,7 @@ export const VendorInvoices = ({ vendorId, onViewProject }: VendorInvoicesProps)
         .from('vendor_invoices')
         .select(`
           *,
-          project:projects(name, field),
+          project:projects(name),
           client:clients(name)
         `)
         .eq('vendor_id', vendorId)
@@ -98,7 +97,6 @@ export const VendorInvoices = ({ vendorId, onViewProject }: VendorInvoicesProps)
               <tr>
                 <th>المشروع</th>
                 <th>العميل</th>
-                <th>المجال</th>
                 <th>الإجمالي</th>
                 <th>المدفوع</th>
                 <th>المتبقي</th>
@@ -118,11 +116,6 @@ export const VendorInvoices = ({ vendorId, onViewProject }: VendorInvoicesProps)
                   <td>
                     <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
                       {invoice.client?.name || 'غير محدد'}
-                    </span>
-                  </td>
-                  <td>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                      {invoice.project?.field || '-'}
                     </span>
                   </td>
                   <td>

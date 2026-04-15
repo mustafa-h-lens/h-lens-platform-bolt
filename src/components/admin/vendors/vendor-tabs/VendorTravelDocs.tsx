@@ -138,6 +138,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
       ]);
 
       if (travelResult.error) throw travelResult.error;
+      if (docsResult.error) console.error('Error fetching vendor_documents:', docsResult.error);
 
       const data = travelResult.data;
       const passport = data?.find(doc => doc.document_type === 'passport');
@@ -426,24 +427,53 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ الانتهاء</p>
                 <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{passportDoc.passport_expiry_date || '-'}</p>
               </div>
-              {passportDoc.passport_file && (
+              {(passportDoc.passport_file || uploadedTravelFiles.filter(f => f.document_type === 'passport').length > 0) && (
                 <div style={{ gridColumn: 'span 2' }}>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملف المرفق</p>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => window.open(passportDoc.passport_file, '_blank')}
-                    style={{ gap: 6, color: 'var(--accent-lighter)' }}
-                  >
-                    <FileText size={14} />
-                    عرض الملف
-                  </button>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملفات المرفقة</p>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    {passportDoc.passport_file && (
+                      <div style={{ width: 140 }}>
+                        {passportDoc.passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img src={passportDoc.passport_file} alt="جواز السفر" style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(passportDoc.passport_file, '_blank')} />
+                        ) : (
+                          <button className="btn btn-ghost btn-sm" onClick={() => window.open(passportDoc.passport_file, '_blank')} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
+                        )}
+                      </div>
+                    )}
+                    {uploadedTravelFiles.filter(f => f.document_type === 'passport').map(doc => (
+                      <div key={doc.id} style={{ width: 140 }}>
+                        {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(doc.file_url, '_blank')} />
+                        ) : (
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           </div>
         ) : (
-          <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 32 }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لم يتم إضافة بيانات جواز السفر بعد</p>
+          <div className="card" style={{ cursor: 'default', padding: uploadedTravelFiles.filter(f => f.document_type === 'passport').length > 0 ? 16 : 32, textAlign: uploadedTravelFiles.filter(f => f.document_type === 'passport').length > 0 ? 'right' : 'center' }}>
+            {uploadedTravelFiles.filter(f => f.document_type === 'passport').length > 0 ? (
+              <>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملفات المرفقة</p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  {uploadedTravelFiles.filter(f => f.document_type === 'passport').map(doc => (
+                    <div key={doc.id} style={{ width: 140 }}>
+                      {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                        <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(doc.file_url, '_blank')} />
+                      ) : (
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لم يتم إضافة بيانات جواز السفر بعد</p>
+            )}
           </div>
         )}
       </div>
@@ -624,43 +654,32 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
             ))}
           </div>
         ) : (
-          !addingVisa && (
+          !addingVisa && uploadedTravelFiles.filter(f => f.document_type !== 'passport').length === 0 && (
             <div className="card" style={{ cursor: 'default', textAlign: 'center', padding: 32 }}>
               <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>لم يتم إضافة فيزا بعد</p>
             </div>
           )
         )}
-      </div>
 
-      {/* Uploaded Travel Files from vendor_documents */}
-      {uploadedTravelFiles.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>ملفات السفر المرفوعة</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
-            {uploadedTravelFiles.map((doc) => (
-              <div key={doc.id} className="card" style={{ cursor: 'default', padding: 12 }}>
-                <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                  {getTravelDocLabel(doc.document_type)}
-                </p>
-                {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                  <img
-                    src={doc.file_url}
-                    alt={doc.file_name}
-                    className="w-full h-32 object-cover rounded-lg border cursor-pointer"
-                    style={{ borderColor: 'var(--color-border)' }}
-                    onClick={() => window.open(doc.file_url, '_blank')}
-                  />
-                ) : (
-                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm underline" style={{ color: 'var(--accent-lighter)' }}>
-                    <FileText size={14} /> {doc.file_name}
-                  </a>
-                )}
-              </div>
-            ))}
+        {/* Visa files uploaded by vendor */}
+        {uploadedTravelFiles.filter(f => f.document_type !== 'passport').length > 0 && (
+          <div className="card" style={{ cursor: 'default', padding: 16 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>ملفات تأشيرات مرفوعة من المورد</p>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {uploadedTravelFiles.filter(f => f.document_type !== 'passport').map(doc => (
+                <div key={doc.id} style={{ width: 160, textAlign: 'center' }}>
+                  {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                    <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer', marginBottom: 4 }} onClick={() => window.open(doc.file_url, '_blank')} />
+                  ) : (
+                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
+                  )}
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{getTravelDocLabel(doc.document_type)}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

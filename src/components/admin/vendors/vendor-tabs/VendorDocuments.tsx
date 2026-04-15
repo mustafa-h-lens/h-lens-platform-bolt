@@ -60,7 +60,7 @@ export const VendorDocuments = ({ vendorId }: VendorDocumentsProps) => {
       // Find doc to delete from storage too
       const doc = documents.find(d => d.id === documentId);
       if (doc?.file_url) {
-        const bucketName = 'vendor-documents';
+        const bucketName = 'vendor-images';
         const urlParts = doc.file_url.split(`/storage/v1/object/public/${bucketName}/`);
         if (urlParts.length === 2) {
           const storagePath = decodeURIComponent(urlParts[1]);
@@ -250,16 +250,19 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Upload file to storage
-      const filePath = `vendors/${vendorId}/documents/${Date.now()}_${selectedFile.name}`;
+      // Upload file to storage — sanitize name (Supabase rejects non-ASCII, spaces, parens)
+      const lastDot = selectedFile.name.lastIndexOf('.');
+      const ext = lastDot > -1 ? selectedFile.name.substring(lastDot) : '';
+      const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '');
+      const filePath = `vendors/${vendorId}/documents/${Date.now()}_${Math.random().toString(36).substring(2, 10)}${safeExt}`;
       const { error: uploadError } = await supabase.storage
-        .from('vendor-documents')
+        .from('vendor-images')
         .upload(filePath, selectedFile);
 
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('vendor-documents')
+        .from('vendor-images')
         .getPublicUrl(filePath);
 
       // Save record
