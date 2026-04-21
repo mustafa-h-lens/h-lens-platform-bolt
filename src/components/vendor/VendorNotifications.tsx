@@ -216,9 +216,9 @@ export function VendorNotifications() {
               padding: '5px 12px', borderRadius: 8, cursor: 'pointer',
               fontFamily: 'Tajawal, sans-serif', fontSize: '0.78rem',
               fontWeight: filter === f.k ? 700 : 400, transition: 'all 0.15s',
-              background: filter === f.k ? 'rgba(37,99,235,0.12)' : 'rgba(255,255,255,0.03)',
-              border: `1px solid ${filter === f.k ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.07)'}`,
-              color: filter === f.k ? '#3b82f6' : 'rgba(255,255,255,0.35)',
+              background: filter === f.k ? 'rgba(37,99,235,0.12)' : 'var(--bg-card, rgba(255,255,255,0.03))',
+              border: `1px solid ${filter === f.k ? 'rgba(59,130,246,0.3)' : 'var(--border-soft, rgba(255,255,255,0.07))'}`,
+              color: filter === f.k ? '#3b82f6' : 'var(--text-secondary, rgba(255,255,255,0.35))',
             }}>
             {f.l}
           </button>
@@ -238,11 +238,11 @@ export function VendorNotifications() {
                 key={n.id}
                 style={{
                   padding: '0.875rem 1rem',
-                  borderBottom: idx < filtered.length - 1 ? `1px solid ${'rgba(255,255,255,0.07)'}` : 'none',
+                  borderBottom: idx < filtered.length - 1 ? '1px solid var(--border-soft, rgba(255,255,255,0.07))' : 'none',
                   display: 'flex', alignItems: 'flex-start', gap: 12,
                   transition: 'background 0.14s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card-hover, rgba(255,255,255,0.03))')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <div style={{
@@ -254,14 +254,14 @@ export function VendorNotifications() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{n.title}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary, rgba(255,255,255,0.85))' }}>{n.title}</span>
                     <span style={{
                       fontSize: '0.6rem', padding: '1px 6px', borderRadius: 4,
                       background: `${config.color}12`, color: config.color, fontWeight: 600,
                     }}>{config.label}</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.35)' }}>{n.description}</div>
-                  <div style={{ fontSize: '0.67rem', color: 'rgba(255,255,255,0.35)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted, rgba(255,255,255,0.35))' }}>{n.description}</div>
+                  <div style={{ fontSize: '0.67rem', color: 'var(--text-muted, rgba(255,255,255,0.35))', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Clock size={10} /> {timeAgo(n.created_at)}
                   </div>
                 </div>
