@@ -187,11 +187,6 @@
   /* Cards */
   .vp-card{border-radius:12px}
 
-  /* Stat cards: number top-left, icon top-right on mobile */
-  .vp-stat-inner{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}
-  .vp-stat-icon{order:2;margin-bottom:0!important}
-  .vp-stat-value{order:1;margin-bottom:0!important}
-
   /* No hover effects on touch */
   .sc:hover{transform:none!important}
 
