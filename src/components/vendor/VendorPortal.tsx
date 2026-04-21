@@ -55,6 +55,7 @@ export const VendorPortal = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [pendingNav, setPendingNav] = useState<VendorPage | null>(null);
 
+  const [notifCount, setNotifCount] = useState(0);
   const markDirty = useCallback(() => setIsDirty(true), []);
   const clearDirty = useCallback(() => setIsDirty(false), []);
 
@@ -79,6 +80,28 @@ export const VendorPortal = () => {
       if (data?.[0]?.vendor_fields) setPrimaryService((data[0].vendor_fields as any).name_ar || '');
     })();
   }, [vendor?.id]);
+
+  // Fetch unread notification count (items from last 7 days)
+  useEffect(() => {
+    if (!vendor?.id) return;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    (async () => {
+      const [sugRes, approvalRes] = await Promise.all([
+        supabase
+          .from('vendor_suggestions')
+          .select('id', { count: 'exact', head: true })
+          .eq('vendor_id', vendor.id)
+          .not('admin_response', 'is', null)
+          .gte('responded_at', sevenDaysAgo),
+        supabase
+          .from('vendor_approval_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('vendor_id', vendor.id)
+          .gte('created_at', sevenDaysAgo),
+      ]);
+      setNotifCount((sugRes.count || 0) + (approvalRes.count || 0));
+    })();
+  }, [vendor?.id, currentPage]);
 
   // Fetch revision notes if in revision mode
   useEffect(() => {
@@ -258,8 +281,17 @@ export const VendorPortal = () => {
               >
                 <div className="vp-nav-icon" style={{
                   background: isActive ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)',
+                  position: 'relative',
                 }}>
                   <Icon size={16} style={{ flexShrink: 0 }} />
+                  {item.id === 'notifications' && notifCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -4, right: -4, minWidth: 16, height: 16,
+                      borderRadius: 99, background: '#ef4444', color: '#fff',
+                      fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', padding: '0 4px', lineHeight: 1,
+                    }}>{notifCount > 9 ? '9+' : notifCount}</span>
+                  )}
                 </div>
                 {isOpen && <span style={{ whiteSpace: 'nowrap' }}>{item.label}</span>}
               </button>

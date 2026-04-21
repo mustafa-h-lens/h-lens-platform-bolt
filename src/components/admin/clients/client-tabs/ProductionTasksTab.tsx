@@ -675,7 +675,7 @@ export const ProductionTasksTab = ({ clientId }: ProductionTasksTabProps) => {
           title={`تخصيص المهمة: ${selectedTask.name}`}
         >
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--color-background-hover)' }}>
               <div>
                 <div className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>
                   المبلغ الكلي

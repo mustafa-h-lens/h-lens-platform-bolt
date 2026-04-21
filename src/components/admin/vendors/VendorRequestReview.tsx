@@ -379,7 +379,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
 
           {/* 3. Files (profile + ID only) */}
           <Section title="الملفات والمستندات" icon={FileText}>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {vendor.profile_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>

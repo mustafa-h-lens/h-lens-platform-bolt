@@ -253,7 +253,7 @@ export const ClientProjects = ({ clientId, onViewProject, onAddProject }: Client
                   {getStatusBadge(project.status)}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                   <div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">إجمالي المبلغ</p>
                     <p className="text-sm font-bold text-slate-700 dark:text-slate-300" style={{ direction: 'ltr', textAlign: 'right' }}>

@@ -1951,7 +1951,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
           <form onSubmit={handlePaymentSubmit} className="space-y-4">
             {/* Read-only info */}
             <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--color-background-hover)' }}>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                 <div>
                   <span style={{ color: 'var(--color-text-secondary)' }}>المورد: </span>
                   <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{paymentExpense.vendor_name}</span>

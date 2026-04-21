@@ -6,18 +6,19 @@ import { PageCard, EmptyState, LoadingSpinner, Pagination } from './shared';
 
 interface Notification {
   id: string;
-  type: 'project' | 'invoice' | 'document' | 'system' | 'suggestion';
+  type: 'project' | 'invoice' | 'document' | 'system' | 'suggestion' | 'status';
   title: string;
   description: string;
   created_at: string;
 }
 
 const TYPE_CONFIG: Record<string, { icon: typeof Bell; color: string; label: string }> = {
-  project:  { icon: FolderOpen, color: '#3b82f6', label: 'مشروع'  },
-  invoice:  { icon: Receipt,    color: '#f59e0b', label: 'فاتورة' },
-  document: { icon: FileStack,  color: '#06b6d4', label: 'مستند'  },
-  system:     { icon: Zap,        color: '#8b5cf6', label: 'نظام'     },
-  suggestion: { icon: Lightbulb,  color: '#f59e0b', label: 'اقتراح'   },
+  project:    { icon: FolderOpen, color: '#3b82f6', label: 'مشروع'  },
+  invoice:    { icon: Receipt,    color: '#f59e0b', label: 'فاتورة' },
+  document:   { icon: FileStack,  color: '#06b6d4', label: 'مستند'  },
+  system:     { icon: Zap,        color: '#8b5cf6', label: 'نظام'   },
+  suggestion: { icon: Lightbulb,  color: '#f59e0b', label: 'اقتراح' },
+  status:     { icon: Bell,       color: '#10b981', label: 'حالة'   },
 };
 
 export function VendorNotifications() {
@@ -40,7 +41,7 @@ export function VendorNotifications() {
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
       const thirtyDaysAgo = ninetyDaysAgo; // extended to 90 days
 
-      const [invRes, docRes, sugRes] = await Promise.all([
+      const [invRes, docRes, sugRes, approvalRes, eqSugRes] = await Promise.all([
         supabase
           .from('vendor_invoices')
           .select('id, amount_total, status, created_at, project_id, projects(name)')
@@ -61,6 +62,19 @@ export function VendorNotifications() {
           .eq('vendor_id', vendor.id)
           .not('admin_response', 'is', null)
           .order('responded_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('vendor_approval_log')
+          .select('id, action, reason, created_at')
+          .eq('vendor_id', vendor.id)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('equipment_suggestions')
+          .select('id, suggestion_text, status, admin_notes, updated_at, created_at')
+          .eq('vendor_id', vendor.id)
+          .in('status', ['approved', 'rejected', 'added'])
+          .order('updated_at', { ascending: false })
           .limit(10),
       ]);
 
@@ -119,6 +133,40 @@ export function VendorNotifications() {
         });
       });
 
+      // Approval status changes
+      const APPROVAL_LABELS: Record<string, string> = {
+        approved: 'تمت الموافقة على حسابك',
+        rejected: 'تم رفض طلبك',
+        revision_requested: 'مطلوب تعديلات على ملفك',
+        submitted: 'تم تقديم طلبك',
+        resubmitted: 'تم إعادة تقديم طلبك',
+      };
+      (approvalRes.data || []).forEach((a: any) => {
+        items.push({
+          id: `approval-${a.id}`,
+          type: 'status',
+          title: APPROVAL_LABELS[a.action] || 'تحديث حالة الحساب',
+          description: a.reason || '',
+          created_at: a.created_at,
+        });
+      });
+
+      // Equipment suggestion responses
+      const EQ_STATUS_LABELS: Record<string, string> = {
+        approved: 'تم قبول اقتراح المعدة',
+        rejected: 'تم رفض اقتراح المعدة',
+        added: 'تمت إضافة المعدة المقترحة',
+      };
+      (eqSugRes.data || []).forEach((e: any) => {
+        items.push({
+          id: `eqsug-${e.id}`,
+          type: 'suggestion',
+          title: EQ_STATUS_LABELS[e.status] || 'رد على اقتراح المعدة',
+          description: `${e.suggestion_text?.slice(0, 60) || ''}${e.admin_notes ? ' — ' + e.admin_notes.slice(0, 60) : ''}`,
+          created_at: e.updated_at || e.created_at,
+        });
+      });
+
       items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       setNotifications(items);
     } catch (err) {
@@ -143,9 +191,10 @@ export function VendorNotifications() {
   const filtered = filter === 'all' ? notifications : notifications.filter(n => n.type === filter);
 
   const filters = [
-    { k: 'all',      l: 'الكل' },
-    { k: 'project',  l: 'المشاريع' },
-    { k: 'invoice',  l: 'الفواتير' },
+    { k: 'all',        l: 'الكل' },
+    { k: 'status',     l: 'حالة الحساب' },
+    { k: 'project',    l: 'المشاريع' },
+    { k: 'invoice',    l: 'الفواتير' },
     { k: 'document',   l: 'المستندات' },
     { k: 'suggestion', l: 'الاقتراحات' },
   ];

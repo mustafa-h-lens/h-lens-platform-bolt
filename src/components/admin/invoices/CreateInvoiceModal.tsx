@@ -134,7 +134,7 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">تاريخ الإصدار</label>
               <input
@@ -171,7 +171,7 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
             <p className="text-sm text-slate-600 mt-1">القيمة الافتراضية من سعر المشروع، يمكن التعديل</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">المبلغ المدفوع</label>
               <input

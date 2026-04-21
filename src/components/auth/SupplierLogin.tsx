@@ -21,7 +21,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
     setLoading(true);
     try {
       // Auto-unblock expired blocks, then check block status
-      await supabase.rpc('auto_unblock_expired_vendors').catch(() => {});
+      try { await supabase.rpc('auto_unblock_expired_vendors'); } catch {}
       const { data: vendorRow } = await supabase
         .from('vendors')
         .select('status, block_reason, blocked_until')

@@ -393,7 +393,7 @@ export const ProjectItems = ({ projectId, currency }: ProjectItemsProps) => {
               {/* Budget tracking in detail view */}
               <div className="rounded-xl border p-4" style={{ borderColor: 'var(--color-border)' }}>
                 <p className="text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>تتبع الميزانية</p>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>المصروف</p>
                     <p className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }} dir="ltr">{formatCurrency(viewingItem.consumed_amount, currency)}</p>

@@ -251,7 +251,7 @@ export const TermsSettings = () => {
         {content.sections.map((section, sIndex) => (
           <div key={section.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-5 bg-slate-50 dark:bg-slate-800">
             <div className="flex justify-between items-start mb-4">
-              <div className="flex-1 grid grid-cols-3 gap-3">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input
                   type="text"
                   value={section.icon}

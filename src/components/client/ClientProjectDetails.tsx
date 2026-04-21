@@ -170,7 +170,7 @@ export const ClientProjectDetails = ({ projectId, onBack }: ClientProjectDetails
           <div className="p-6">
             {activeTab === 'details' ? (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h3 className="text-sm font-semibold text-slate-700 mb-2">تاريخ البدء</h3>
                     <p className="text-slate-600">
