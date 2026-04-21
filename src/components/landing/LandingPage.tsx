@@ -109,7 +109,9 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       <nav className="landing-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         padding: '16px 32px',
-        background: scrollY > 50 ? 'rgba(var(--bg-surface-rgb, 255,255,255), 0.85)' : 'transparent',
+        background: scrollY > 50
+          ? (isDark ? 'rgba(5,13,30,0.9)' : 'rgba(255,255,255,0.92)')
+          : 'transparent',
         backdropFilter: scrollY > 50 ? 'blur(20px)' : 'none',
         borderBottom: scrollY > 50 ? '1px solid var(--border-soft)' : 'none',
         transition: 'all 0.3s',
