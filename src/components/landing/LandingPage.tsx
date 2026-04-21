@@ -88,10 +88,25 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         .landing-feature { opacity: 0; animation: slide-up 0.6s ease forwards; }
         .landing-stat { opacity: 0; animation: slide-up 0.5s ease forwards; }
         .landing-blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; animation: pulse-glow 8s ease-in-out infinite; }
+
+        /* ── Mobile responsive ── */
+        @media (max-width: 768px) {
+          .landing-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
+          .landing-portals-grid { grid-template-columns: 1fr !important; }
+          .landing-features-grid { grid-template-columns: 1fr !important; }
+          .landing-hero-section { padding: 100px 20px 60px !important; }
+          .landing-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
+          .landing-cta-inner { padding: 40px 24px !important; }
+          .landing-nav { padding: 12px 16px !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .landing-portals-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .landing-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
       `}</style>
 
       {/* ═══ NAVBAR ═══ */}
-      <nav style={{
+      <nav className="landing-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         padding: '16px 32px',
         background: scrollY > 50 ? 'rgba(var(--bg-surface-rgb, 255,255,255), 0.85)' : 'transparent',
@@ -133,7 +148,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </nav>
 
       {/* ═══ HERO SECTION ═══ */}
-      <section style={{
+      <section className="landing-hero-section" style={{
         position: 'relative', minHeight: '100vh',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '120px 32px 80px', textAlign: 'center',
@@ -215,13 +230,13 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ STATS BAR ═══ */}
-      <section style={{
+      <section className="landing-section-pad" style={{
         padding: '40px 32px',
         background: 'var(--bg-overlay)',
         borderTop: '1px solid var(--border-soft)',
         borderBottom: '1px solid var(--border-soft)',
       }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+        <div className="landing-stats-grid" style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
           {stats.map((stat, i) => {
             const Icon = stat.icon;
             return (
@@ -238,7 +253,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ PORTALS SECTION ═══ */}
-      <section style={{ padding: '80px 32px', position: 'relative' }}>
+      <section className="landing-section-pad" style={{ padding: '80px 32px', position: 'relative' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12 }}>
@@ -249,7 +264,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+          <div className="landing-portals-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
             {portals.map((portal, i) => {
               const Icon = portal.icon;
               return (
@@ -315,7 +330,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ FEATURES SECTION ═══ */}
-      <section style={{ padding: '80px 32px', background: 'var(--bg-overlay)' }}>
+      <section className="landing-section-pad" style={{ padding: '80px 32px', background: 'var(--bg-overlay)' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12 }}>
@@ -326,7 +341,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="landing-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {[
               { icon: BarChart3, title: 'تقارير متقدمة', desc: 'تحليلات مالية وتقارير أداء تفصيلية لمشاريعك', color: '#2563eb' },
               { icon: Globe, title: 'دعم كامل للعربية', desc: 'واجهة عربية متكاملة مع دعم RTL بالكامل', color: '#059669' },
@@ -365,8 +380,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ CTA SECTION ═══ */}
-      <section style={{ padding: '80px 32px', textAlign: 'center' }}>
-        <div style={{
+      <section className="landing-section-pad" style={{ padding: '80px 32px', textAlign: 'center' }}>
+        <div className="landing-cta-inner" style={{
           maxWidth: 700, margin: '0 auto',
           background: 'linear-gradient(135deg, #1e40af, #3b82f6, #7c3aed)',
           borderRadius: 24, padding: '60px 40px',
