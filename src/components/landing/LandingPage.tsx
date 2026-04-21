@@ -238,6 +238,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
             return (
               <div key={i} className="landing-stat" style={{
                 textAlign: 'center', animationDelay: `${i * 0.15}s`,
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
               }}>
                 <Icon size={24} style={{ color: 'var(--accent-lighter)', marginBottom: 8 }} />
                 <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)', direction: 'ltr' }}>{stat.value}</div>
