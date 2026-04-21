@@ -192,6 +192,7 @@ function AppContent() {
 
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [hasRestoredRoute, setHasRestoredRoute] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Track route changes and save to localStorage
   useRouteTracking();
@@ -200,6 +201,13 @@ function AppContent() {
     const handlePathChange = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', handlePathChange);
     return () => window.removeEventListener('popstate', handlePathChange);
+  }, []);
+
+  // Pull-to-refresh: remount page components to reload data without killing sessions
+  useEffect(() => {
+    const handleRefresh = () => setRefreshKey(k => k + 1);
+    window.addEventListener('pull-to-refresh', handleRefresh);
+    return () => window.removeEventListener('pull-to-refresh', handleRefresh);
   }, []);
 
   // Clear admin session when on vendor portal (once, not on every render)
@@ -321,7 +329,7 @@ function AppContent() {
   if (currentPath === ROUTES.VENDOR_PORTAL) {
     const stored = getStoredVendorSession();
     if (stored) {
-      return <ErrorBoundary>{renderVendorPortal(stored)}</ErrorBoundary>;
+      return <ErrorBoundary key={refreshKey}>{renderVendorPortal(stored)}</ErrorBoundary>;
     }
     navigate(ROUTES.VENDOR_LOGIN);
     return null;
@@ -357,7 +365,7 @@ function AppContent() {
         return null;
       }
       return (
-        <ErrorBoundary>
+        <ErrorBoundary key={refreshKey}>
           <ClientPortalProvider
             initialClient={{
               id: stored.client.id,
@@ -421,7 +429,7 @@ function AppContent() {
     return <Login />;
   }
 
-  return <ErrorBoundary><NewAdminDashboard /></ErrorBoundary>;
+  return <ErrorBoundary key={refreshKey}><NewAdminDashboard /></ErrorBoundary>;
 }
 
 // ─────────────────────────────────────────────────────────────

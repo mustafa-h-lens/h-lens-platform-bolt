@@ -1,7 +1,16 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, createContext, useContext } from 'react';
 
 const THRESHOLD = 80;
 const MAX_PULL = 120;
+
+const PullToRefreshContext = createContext<{ onRefresh: (cb: () => void) => () => void }>({
+  onRefresh: () => () => {},
+});
+
+export const usePullToRefresh = (callback: () => void) => {
+  const { onRefresh } = useContext(PullToRefreshContext);
+  useEffect(() => onRefresh(callback), [callback, onRefresh]);
+};
 
 export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
   const [pullDistance, setPullDistance] = useState(0);
@@ -9,6 +18,12 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
   const startY = useRef(0);
   const pulling = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const refreshCallbacks = useRef<Set<() => void>>(new Set());
+
+  const onRefresh = useCallback((cb: () => void) => {
+    refreshCallbacks.current.add(cb);
+    return () => { refreshCallbacks.current.delete(cb); };
+  }, []);
 
   const isMobile = useCallback(() => {
     return 'ontouchstart' in window && window.innerWidth <= 768;
@@ -42,9 +57,13 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
     if (pullDistance >= THRESHOLD) {
       setRefreshing(true);
       setPullDistance(THRESHOLD);
+      // Dispatch custom event for soft refresh, then reset indicator
+      window.dispatchEvent(new CustomEvent('pull-to-refresh'));
+      refreshCallbacks.current.forEach(cb => cb());
       setTimeout(() => {
-        window.location.reload();
-      }, 400);
+        setRefreshing(false);
+        setPullDistance(0);
+      }, 600);
     } else {
       setPullDistance(0);
     }
@@ -65,6 +84,7 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
   const showIndicator = pullDistance > 10;
 
   return (
+    <PullToRefreshContext.Provider value={{ onRefresh }}>
     <div ref={containerRef}>
       {showIndicator && (
         <div style={{
@@ -118,5 +138,6 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
 
       <style>{`@keyframes ptr-spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+    </PullToRefreshContext.Provider>
   );
 };
