@@ -86,7 +86,7 @@ export function VendorProjects() {
   const activeCount = projects.filter(p => ['in_progress', 'active', 'pending', 'request', 'quoted', 'invoiced', 'po_issued'].includes(p.status)).length;
 
   const STAT_CARDS = [
-    { l: 'مشاريع جارية', v: activeCount, c: '#3b82f6', icon: Zap },
+    { l: 'مشاريع جارية', v: activeCount, c: '#3b82f6', icon: Zap, isCurrency: true },
     { l: 'إجمالي الأرباح', v: `${totalEarnings.toLocaleString('en-US')}`, c: '#8b5cf6', icon: Banknote, isCurrency: true },
     { l: 'تم التحصيل', v: `${totalPaid.toLocaleString('en-US')}`, c: '#10b981', icon: CheckCircle, isCurrency: true },
   ];
@@ -103,11 +103,13 @@ export function VendorProjects() {
             <div key={i} className="vp-card sc" style={{ padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', bottom: -14, left: -14, width: 60, height: 60, borderRadius: '50%', background: `${s.c}15`, filter: 'blur(18px)', pointerEvents: 'none' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 9, background: `${s.c}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                  <Icon size={16} style={{ color: s.c }} />
-                </div>
-                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.c, direction: 'ltr', lineHeight: 1, marginBottom: 3 }}>
-                  {s.v} {(s as any).isCurrency && <span style={{ fontSize: '.6rem', fontWeight: 600 }}>SAR</span>}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.c, direction: 'ltr', lineHeight: 1 }}>
+                    {s.v} {s.isCurrency && <span style={{ fontSize: '.6rem', fontWeight: 600 }}>SAR</span>}
+                  </div>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: `${s.c}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Icon size={16} style={{ color: s.c }} />
+                  </div>
                 </div>
                 <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--textSec)' }}>{s.l}</div>
               </div>
