@@ -158,7 +158,7 @@ export function VendorDashboard() {
         {STATS.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={i} className="vp-card sc" style={{ padding: '16px 18px', cursor: 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => navigateTo(s.page)}>
+            <div key={i} className="vp-card sc" style={{ padding: '16px 18px', cursor: s.page === 'documents' ? 'default' : 'pointer', position: 'relative', overflow: 'hidden' }} onClick={() => s.page !== 'documents' && navigateTo(s.page)}>
               <div style={{ position: 'absolute', bottom: -14, left: -14, width: 60, height: 60, borderRadius: '50%', background: `${s.color}15`, filter: 'blur(18px)', pointerEvents: 'none' }} />
               <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{ width: 38, height: 38, borderRadius: 10, background: `${s.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
