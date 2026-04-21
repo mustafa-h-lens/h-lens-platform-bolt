@@ -99,10 +99,6 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           .landing-cta-inner { padding: 40px 24px !important; }
           .landing-nav { padding: 12px 16px !important; }
         }
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .landing-portals-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .landing-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
-        }
       `}</style>
 
       {/* ═══ NAVBAR ═══ */}
