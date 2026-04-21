@@ -4,11 +4,14 @@ import App from './App.tsx';
 import './styles/half-lens-ds.css';
 import './index.css';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { PullToRefresh } from './components/shared/PullToRefresh';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
+      <PullToRefresh>
+        <App />
+      </PullToRefresh>
     </ThemeProvider>
   </StrictMode>
 );
