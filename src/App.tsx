@@ -202,6 +202,13 @@ function AppContent() {
     return () => window.removeEventListener('popstate', handlePathChange);
   }, []);
 
+  // Clear admin session when on vendor portal (once, not on every render)
+  useEffect(() => {
+    if (currentPath === ROUTES.VENDOR_PORTAL && user) {
+      supabase.auth.signOut().catch(() => {});
+    }
+  }, [currentPath]);
+
   // Restore last visited page on initial load (any portal, not just admin)
   useEffect(() => {
     if (hasRestoredRoute || loading) return;
@@ -314,10 +321,6 @@ function AppContent() {
   if (currentPath === ROUTES.VENDOR_PORTAL) {
     const stored = getStoredVendorSession();
     if (stored) {
-      // Clear admin session if switching from admin to vendor
-      if (user) {
-        supabase.auth.signOut().catch(() => {});
-      }
       return <ErrorBoundary>{renderVendorPortal(stored)}</ErrorBoundary>;
     }
     navigate(ROUTES.VENDOR_LOGIN);
