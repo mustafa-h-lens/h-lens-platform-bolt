@@ -116,7 +116,7 @@ export const VendorRegistrationForm = () => {
     selected_fields: [],
   });
 
-  const saveDraftRef = useRef(saveDraft);
+  const saveDraftRef = useRef<() => Promise<void>>(null!);
   useEffect(() => { saveDraftRef.current = saveDraft; });
 
   useEffect(() => {
@@ -127,7 +127,7 @@ export const VendorRegistrationForm = () => {
 
   useEffect(() => {
     if (isSubmitting) return;
-    const timeout = setTimeout(saveDraft, 2000);
+    const timeout = setTimeout(() => saveDraftRef.current(), 2000);
     return () => clearTimeout(timeout);
   }, [formData, currentStep, isSubmitting]);
 
