@@ -354,7 +354,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                   background: 'var(--bg-surface)',
                   border: '1px solid var(--border-soft)',
                   animationDelay: `${i * 0.1}s`,
-                  transition: 'all 0.3s',
+                  transition: 'all 0.3s', textAlign: 'center',
                 }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = feature.color; e.currentTarget.style.transform = 'translateY(-4px)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-soft)'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -363,7 +363,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                     width: 44, height: 44, borderRadius: 12,
                     background: `${feature.color}15`, color: feature.color,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 16,
+                    margin: '0 auto 16px',
                   }}>
                     <Icon size={22} />
                   </div>
