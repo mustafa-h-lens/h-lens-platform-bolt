@@ -100,16 +100,14 @@ export function VendorProjects() {
         {STAT_CARDS.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={i} className="vp-card sc" style={{ padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
+            <div key={i} className="vp-card sc vp-stat-card" style={{ padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', bottom: -14, left: -14, width: 60, height: 60, borderRadius: '50%', background: `${s.c}15`, filter: 'blur(18px)', pointerEvents: 'none' }} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 900, color: s.c, direction: 'ltr', lineHeight: 1 }}>
-                    {s.v} {s.isCurrency && <span style={{ fontSize: '.6rem', fontWeight: 600 }}>SAR</span>}
-                  </div>
-                  <div style={{ width: 34, height: 34, borderRadius: 9, background: `${s.c}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={16} style={{ color: s.c }} />
-                  </div>
+              <div className="vp-stat-inner" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="vp-stat-icon" style={{ width: 34, height: 34, borderRadius: 9, background: `${s.c}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <Icon size={16} style={{ color: s.c }} />
+                </div>
+                <div className="vp-stat-value" style={{ fontSize: '1.3rem', fontWeight: 900, color: s.c, direction: 'ltr', lineHeight: 1, marginBottom: 3 }}>
+                  {s.v} {(s as any).isCurrency && <span style={{ fontSize: '.6rem', fontWeight: 600 }}>SAR</span>}
                 </div>
                 <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--textSec)' }}>{s.l}</div>
               </div>
