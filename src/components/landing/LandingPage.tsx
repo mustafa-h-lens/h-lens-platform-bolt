@@ -8,7 +8,9 @@ interface LandingPageProps {
 export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+      const stored = localStorage.getItem('theme');
+      if (stored) return stored === 'dark';
+      return document.documentElement.getAttribute('data-theme') !== 'light';
     }
     return true;
   });
@@ -25,9 +27,11 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.setAttribute('data-theme', 'light');
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
