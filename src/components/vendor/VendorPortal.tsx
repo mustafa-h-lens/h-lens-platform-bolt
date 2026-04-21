@@ -38,11 +38,10 @@ const PAGE_TITLES: Record<VendorPage, string> = {
   suggestions:   'الاقتراحات',
 };
 
-const LOGO = '/assets/logo-white.png';
-
 export const VendorPortal = () => {
   const { vendor, currentPage, navigateTo, signOut } = useVendor();
   const { isDarkMode, toggleTheme } = useTheme();
+  const LOGO = isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png';
   const { showSuccess, showError } = useNotification();
   const completion = useProfileCompletion();
 
