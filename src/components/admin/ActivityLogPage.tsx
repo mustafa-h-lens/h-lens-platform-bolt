@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, User, Clock, FolderOpen, Briefcase, UserCog, ChevronLeft, ChevronRight, RotateCcw, Activity } from 'lucide-react';
+import { Bell, User, Clock, FolderOpen, Briefcase, UserCog, ChevronLeft, ChevronRight, RotateCcw, Activity, Calendar } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { formatDateArabic, formatNumber } from '../../lib/formatters';
 import { toEnglishNumbers } from '../../lib/numberUtils';
@@ -201,6 +201,8 @@ export const ActivityLogPage = () => {
   const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [actionFilter, setActionFilter] = useState<string[]>([]);
   const [userFilter, setUserFilter] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   const toggleFilter = (key: 'source' | 'action' | 'user', value: string) => {
     const setter = key === 'source' ? setSourceFilter : key === 'action' ? setActionFilter : setUserFilter;
@@ -213,7 +215,7 @@ export const ActivityLogPage = () => {
 
   useEffect(() => {
     setPage(0);
-  }, [searchQuery, sourceFilter, actionFilter, userFilter]);
+  }, [searchQuery, sourceFilter, actionFilter, userFilter, dateFrom, dateTo]);
 
   const loadActivities = useCallback(async () => {
     try {
@@ -236,6 +238,12 @@ export const ActivityLogPage = () => {
       if (userFilter.length > 0) {
         query = query.in('user_id', userFilter);
       }
+      if (dateFrom) {
+        query = query.gte('created_at', `${dateFrom}T00:00:00`);
+      }
+      if (dateTo) {
+        query = query.lte('created_at', `${dateTo}T23:59:59`);
+      }
 
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -252,7 +260,7 @@ export const ActivityLogPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, searchQuery, sourceFilter, actionFilter, userFilter]);
+  }, [page, searchQuery, sourceFilter, actionFilter, userFilter, dateFrom, dateTo]);
 
   useEffect(() => {
     loadActivities();
@@ -311,9 +319,11 @@ export const ActivityLogPage = () => {
     setSourceFilter([]);
     setActionFilter([]);
     setUserFilter([]);
+    setDateFrom('');
+    setDateTo('');
   };
 
-  const hasActiveFilters = sourceFilter.length > 0 || actionFilter.length > 0 || userFilter.length > 0;
+  const hasActiveFilters = sourceFilter.length > 0 || actionFilter.length > 0 || userFilter.length > 0 || dateFrom || dateTo;
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -383,6 +393,13 @@ export const ActivityLogPage = () => {
           selected={userFilter}
           onToggle={v => toggleFilter('user', v)}
         />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Calendar size={14} style={{ color: 'var(--text-muted)' }} />
+          <input type="date" className="input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={{ maxWidth: 150, fontSize: 12 }} title="من تاريخ" />
+          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>—</span>
+          <input type="date" className="input" value={dateTo} onChange={e => setDateTo(e.target.value)} style={{ maxWidth: 150, fontSize: 12 }} title="إلى تاريخ" />
+        </div>
 
         {hasActiveFilters && (
           <button className="btn btn-ghost btn-sm" onClick={resetFilters}>

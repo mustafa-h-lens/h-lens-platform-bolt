@@ -159,7 +159,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onVie
             )}
             {vendor.email && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }} dir="ltr">
-                @ {vendor.email}
+                ✉ {vendor.email}
               </span>
             )}
             {vendor.primary_field && (

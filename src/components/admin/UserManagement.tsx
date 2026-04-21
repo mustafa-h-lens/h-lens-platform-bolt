@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
 import { Plus, Pencil, Users, UserCheck, UserX, Shield, Eye, EyeOff, Trash2, Loader2 } from 'lucide-react';
 import type { User, Client, Role } from '../../types/database';
@@ -141,13 +140,32 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
 
     setDeletingId(user.id);
     try {
-      const { error } = await supabase.from('users').delete().eq('id', user.id);
-      if (error) throw error;
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error('غير مصرح');
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-admin-user`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({ user_id: user.id }),
+        }
+      );
+      const text = await res.text();
+      let result: any;
+      try { result = JSON.parse(text); } catch { result = { error: text }; }
+      if (!res.ok) throw new Error(result.error || result.message || 'فشل حذف المستخدم');
+
       setUsers(prev => prev.filter(u => u.id !== user.id));
       showSuccess(`تم حذف المستخدم "${user.full_name}" بنجاح`);
     } catch (error) {
       console.error('Error deleting user:', error);
-      showError('فشل حذف المستخدم. قد تكون هناك بيانات مرتبطة تمنع الحذف.');
+      showError(error instanceof Error ? error.message : 'فشل حذف المستخدم. قد تكون هناك بيانات مرتبطة تمنع الحذف.');
     } finally {
       setDeletingId(null);
     }
@@ -402,47 +420,75 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
           .update({
             full_name: formData.full_name,
             username: formData.username || null,
+            phone: formData.phone || null,
             role: legacyRole,
             role_id: formData.role_id,
           })
           .eq('id', user.id);
 
         if (error) throw error;
+
+        // Detect what changed and send notification email
+        const oldRoleName = roles.find(r => r.id === user.role_id)?.name || user.role || '';
+        const newRoleName = selectedRole?.name || legacyRole;
+        const changes: { field: string; old_value: string; new_value: string }[] = [];
+        if (formData.full_name !== (user.full_name || ''))
+          changes.push({ field: 'full_name', old_value: user.full_name || '', new_value: formData.full_name });
+        if ((formData.phone || '') !== ((user as any).phone || ''))
+          changes.push({ field: 'phone', old_value: (user as any).phone || '', new_value: formData.phone || '' });
+        if ((formData.username || '') !== (user.username || ''))
+          changes.push({ field: 'username', old_value: user.username || '', new_value: formData.username || '' });
+        if (formData.role_id !== (user.role_id || ''))
+          changes.push({ field: 'role', old_value: oldRoleName, new_value: newRoleName });
+
+        if (changes.length > 0) {
+          const { data: session } = await supabase.auth.getSession();
+          const token = session?.session?.access_token;
+          if (token) {
+            fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-user-update-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+              },
+              body: JSON.stringify({ user_id: user.id, changes }),
+            }).catch(() => {}); // fire-and-forget — don't block the save
+          }
+        }
       } else {
-        // Use separate Supabase client to avoid swapping admin session
-        const tempClient = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY,
-          { auth: { persistSession: false, autoRefreshToken: false } }
+        // Call the create-admin-user edge function which uses the service role key
+        // to properly create the user and send an invite email if requested
+        const { data: session } = await supabase.auth.getSession();
+        const token = session?.session?.access_token;
+        if (!token) throw new Error('غير مصرح - يرجى تسجيل الدخول مجدداً');
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin-user`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({
+              email: formData.email.trim(),
+              password: formData.password,
+              full_name: formData.full_name.trim(),
+              username: formData.username || null,
+              phone: formData.phone || null,
+              role: legacyRole,
+              role_id: formData.role_id,
+              send_invite: formData.sendInvite,
+            }),
+          }
         );
 
-        const { data: signUpData, error: signUpError } = await tempClient.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: { data: { full_name: formData.full_name } },
-        });
-
-        if (signUpError) throw new Error(signUpError.message);
-
-        // Supabase returns user with empty identities if email already exists
-        if (!signUpData.user || (signUpData.user.identities && signUpData.user.identities.length === 0)) {
-          throw new Error('هذا البريد الإلكتروني مسجل بالفعل');
-        }
-
-        const userId = signUpData.user.id;
-
-        // Insert profile — use upsert to handle race conditions with triggers
-        const { error: profileError } = await supabase.from('users').upsert({
-          id: userId,
-          email: formData.email,
-          full_name: formData.full_name,
-          username: formData.username || null,
-          phone: formData.phone || null,
-          role: legacyRole,
-          role_id: formData.role_id,
-        }, { onConflict: 'id' });
-
-        if (profileError) throw new Error(profileError.message);
+        const text = await res.text();
+        let result: any;
+        try { result = JSON.parse(text); } catch { result = { error: text }; }
+        if (!res.ok) throw new Error(result.error || result.message || result.msg || 'حدث خطأ أثناء إنشاء المستخدم');
       }
 
       onSuccess();

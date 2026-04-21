@@ -146,7 +146,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
     try {
       const validContacts = contacts.filter(c => c.name.trim());
       const payload: Record<string, any> = {
-        name: formData.name, code: formData.code || null, email: formData.email || null,
+        name: formData.name, code: formData.code || null, email: formData.email.trim() || null,
         phone: formData.phone || null, address: formData.address || null, notes: formData.notes || null,
         client_image: formData.client_image || null, website: formData.website || null,
         city: formData.city || null, sector: formData.sector || null,
