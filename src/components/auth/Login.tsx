@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Home } from 'lucide-react';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -203,6 +203,18 @@ export const Login = () => {
         }
         @keyframes hl-spin { to { transform: rotate(360deg); } }
 
+        .hl-home-link {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          margin-top: 20px; padding: 10px 20px; border-radius: 10px;
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+          color: #7a9ab8; font-size: 0.82rem; font-weight: 600; font-family: inherit;
+          cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .hl-home-link:hover {
+          background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3);
+          color: #93c5fd;
+        }
+
         .hl-footer {
           margin-top: 28px; padding-top: 24px;
           border-top: 1px solid rgba(255,255,255,0.06);
@@ -308,6 +320,11 @@ export const Login = () => {
                 )}
               </button>
             </form>
+
+            <a href="/" className="hl-home-link">
+              <Home size={16} />
+              <span>العودة إلى الصفحة الرئيسية</span>
+            </a>
 
             <div className="hl-footer">
               © {new Date().getFullYear()} Half Lens. جميع الحقوق محفوظة.
