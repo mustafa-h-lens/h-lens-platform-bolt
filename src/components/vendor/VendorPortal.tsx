@@ -197,9 +197,9 @@ export const VendorPortal = () => {
           display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
           justifyContent: isOpen ? 'flex-start' : 'center',
         }}>
-          <img src={LOGO} alt="Half Lens" style={{
+          <img src={LOGO} alt="Half Lens" onClick={() => navigateTo('dashboard')} style={{
             height: isOpen ? 42 : 24, objectFit: 'contain', flexShrink: 0,
-            minWidth: isOpen ? 'auto' : 24, transition: 'height 0.25s ease',
+            minWidth: isOpen ? 'auto' : 24, transition: 'height 0.25s ease', cursor: 'pointer',
           }} />
           {isMobile && (
             <button onClick={() => setDrawer(false)} style={{ marginRight: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
@@ -404,7 +404,7 @@ export const VendorPortal = () => {
           <span style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--textPri)', flex: 1 }}>
             {PAGE_TITLES[currentPage]}
           </span>
-          <img src={LOGO} alt="Half Lens" style={{ height: 28, objectFit: 'contain' }} />
+          <img src={LOGO} alt="Half Lens" onClick={() => navigateTo('dashboard')} style={{ height: 28, objectFit: 'contain', cursor: 'pointer' }} />
         </header>
 
         {/* Page content */}
