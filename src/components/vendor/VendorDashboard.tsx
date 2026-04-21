@@ -173,8 +173,8 @@ export function VendorDashboard() {
         })}
       </div>
 
-      {/* Quick actions */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {/* Quick actions — hidden on mobile */}
+      <div className="hidden md:flex" style={{ gap: 8, flexWrap: 'wrap' }}>
         {quickActions.map((a, i) => {
           const Icon = a.icon;
           return (
