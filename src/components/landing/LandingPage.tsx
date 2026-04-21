@@ -279,7 +279,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                   {/* Card header gradient */}
                   <div style={{
                     background: portal.gradient, padding: '32px 28px 24px',
-                    position: 'relative', overflow: 'hidden',
+                    position: 'relative', overflow: 'hidden', textAlign: 'center',
                   }}>
                     <div style={{
                       position: 'absolute', top: -20, left: -20,
@@ -290,7 +290,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                       width: 52, height: 52, borderRadius: 16,
                       background: 'rgba(255,255,255,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      marginBottom: 16, backdropFilter: 'blur(10px)',
+                      margin: '0 auto 16px', backdropFilter: 'blur(10px)',
                     }}>
                       <Icon size={24} color="#fff" />
                     </div>
