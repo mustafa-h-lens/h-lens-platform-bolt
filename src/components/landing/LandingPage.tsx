@@ -84,7 +84,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes border-glow { 0%, 100% { border-color: rgba(37,99,235,0.2); } 50% { border-color: rgba(37,99,235,0.5); } }
         .landing-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .landing-card:hover { transform: translateY(-8px); box-shadow: 0 25px 60px rgba(0,0,0,0.15); }
+        .landing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-color: rgba(59,130,246,0.35) !important; }
         .landing-feature { opacity: 0; animation: slide-up 0.6s ease forwards; }
         .landing-stat { opacity: 0; animation: slide-up 0.5s ease forwards; }
         .landing-blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; animation: pulse-glow 8s ease-in-out infinite; }
@@ -272,9 +272,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                     background: 'var(--bg-surface)',
                     border: '1px solid var(--border-soft)',
                     borderRadius: 20, padding: 0, overflow: 'hidden',
-                    cursor: 'pointer', animationDelay: `${i * 0.2}s`,
+                    animationDelay: `${i * 0.2}s`,
                   }}
-                  onClick={() => onNavigate(portal.path)}
                 >
                   {/* Card header gradient */}
                   <div style={{
@@ -310,14 +309,20 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                         <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{feature}</span>
                       </div>
                     ))}
-                    <div style={{
-                      marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      padding: '12px', borderRadius: 12,
-                      background: `${portal.color}10`, color: portal.color,
-                      fontSize: 14, fontWeight: 700, transition: 'all 0.2s',
-                    }}>
+                    <button
+                      onClick={() => onNavigate(portal.path)}
+                      style={{
+                        marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                        padding: '12px', borderRadius: 12, width: '100%',
+                        background: `${portal.color}15`, color: portal.color,
+                        fontSize: 14, fontWeight: 700, transition: 'all 0.25s',
+                        border: `1px solid ${portal.color}30`, cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = portal.color; e.currentTarget.style.color = '#fff'; e.currentTarget.style.boxShadow = `0 4px 20px ${portal.color}40`; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = `${portal.color}15`; e.currentTarget.style.color = portal.color; e.currentTarget.style.boxShadow = 'none'; }}
+                    >
                       الدخول <ChevronLeft size={16} />
-                    </div>
+                    </button>
                   </div>
                 </div>
               );
