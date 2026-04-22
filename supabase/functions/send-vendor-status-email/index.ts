@@ -30,6 +30,17 @@ const logoWhiteUrl =
 const logoBlueUrl =
   Deno.env.get("EMAIL_LOGO_BLUE_URL") || "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
 
+// Reject malformed addresses before SMTP handoff (e.g., "name+@host")
+const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)(?!.*\+\+)[A-Za-z0-9_'%=?^{|}~.\-]+(?:\+[A-Za-z0-9_'%=?^{|}~.\-]+)?@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
+function isValidEmail(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const v = value.trim();
+  if (v.length === 0 || v.length > 254) return false;
+  const [local] = v.split("@");
+  if (!local || local.length > 64 || local.endsWith("+") || local.endsWith(".")) return false;
+  return EMAIL_REGEX.test(v);
+}
+
 // HTML-escape user input to prevent injection in email templates
 function escapeHtml(str: string): string {
   return str
@@ -495,6 +506,24 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({ error: "المورد غير موجود", code: "vendor_not_found" }),
         {
           status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Guard against malformed vendor emails (e.g. "name+@host") that SMTP
+    // will accept but Gmail silently drops. Return a clear error so the
+    // admin UI surfaces the problem instead of showing success.
+    const vendorEmailRequired = email_type !== "admin_new_registration";
+    if (vendorEmailRequired && !isValidEmail(vendor.email)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "invalid_vendor_email",
+          message: "البريد الإلكتروني المسجل للمورد غير صالح",
+        }),
+        {
+          status: 422,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );

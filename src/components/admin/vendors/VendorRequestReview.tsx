@@ -194,12 +194,17 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
       // Send email notification
       const emailType = action === 'approved' ? 'approved' : action === 'rejected' ? 'rejected' : 'revision_requested';
       try {
-        const { data: emailResult } = await supabase.functions.invoke('send-vendor-status-email', {
+        const { data: emailResult, error: emailInvokeError } = await supabase.functions.invoke('send-vendor-status-email', {
           body: { vendor_id: vendorId, email_type: emailType, reason },
         });
 
-        if (emailResult && !emailResult.success) {
-          showWarning('تم تحديث حالة المورد بنجاح، لكن فشل إرسال البريد الإلكتروني. يرجى إبلاغ المورد يدوياً.');
+        if (emailInvokeError || (emailResult && !emailResult.success)) {
+          const code = emailResult?.error;
+          if (code === 'invalid_vendor_email') {
+            showWarning('تم تحديث حالة المورد بنجاح، لكن البريد الإلكتروني المسجل غير صالح ولم يتم إرسال الإشعار. يرجى مراجعة بيانات المورد.');
+          } else {
+            showWarning('تم تحديث حالة المورد بنجاح، لكن فشل إرسال البريد الإلكتروني. يرجى إبلاغ المورد يدوياً.');
+          }
         }
       } catch (emailError) {
         console.error('Email send error:', emailError);

@@ -7,6 +7,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import '../../styles/half-lens-ds.css';
 import '../../styles/vendor-registration.css';
 
+import { isValidEmail } from '../../lib/validators';
+
 import { Step1BasicIdentity } from './steps/Step1BasicIdentity';
 import { Step2Contact } from './steps/Step2Contact';
 import { Step3IdentityDocuments } from './steps/Step3IdentityDocuments';
@@ -203,7 +205,7 @@ export const VendorRegistrationForm = () => {
       case 2:
         if (!formData.phone) errors.phone = 'رقم الجوال مطلوب';
         if (!formData.email) errors.email = 'البريد الإلكتروني مطلوب';
-        else if (!formData.email.includes('@')) errors.email = 'البريد الإلكتروني غير صالح';
+        else if (!isValidEmail(formData.email)) errors.email = 'البريد الإلكتروني غير صالح';
         if (!formData.primary_city) errors.primary_city = 'مدينة العمل الأساسية مطلوبة';
         break;
       case 3:
