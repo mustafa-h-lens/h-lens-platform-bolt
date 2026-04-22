@@ -104,6 +104,11 @@ export const PrivacyPolicy: React.FC = () => {
 
   if (!content) return null;
 
+  const handleBack = () => {
+    if (window.history.length > 1) window.history.back();
+    else window.location.href = '/join';
+  };
+
   return (<>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
@@ -119,55 +124,121 @@ export const PrivacyPolicy: React.FC = () => {
       .nav-link:hover{color:#67e8f9!important}
       .item-row{transition:all .15s}
       .item-row:hover{background:rgba(6,182,212,0.06)!important}
+
+      .legal-page{overflow-x:hidden}
+      .legal-header{padding:0 24px}
+      .legal-hero{padding:52px 24px 40px}
+      .legal-hero h1{font-size:2.2rem}
+      .legal-hero .hero-sub{font-size:.88rem;max-width:480px}
+      .legal-hero .hero-meta{font-size:.75rem}
+      .legal-grid{max-width:1000px;margin:0 auto;padding:0 20px 60px;display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
+      .legal-toc{position:sticky;top:72px;border-radius:16px;background:rgba(5,20,35,0.8);border:1px solid rgba(6,182,212,0.08);overflow:hidden;animation:fadeIn .6s ease .2s both}
+      .legal-toc-title{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:.72rem;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:.1em;text-transform:uppercase}
+      .legal-toc-list{display:flex;flex-direction:column}
+      .legal-toc .nav-link{display:flex;align-items:center;gap:8px;padding:9px 14px;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.03);font-size:.78rem;border-right:2px solid transparent}
+      .legal-content{display:flex;flex-direction:column;gap:16px;padding-top:4px;min-width:0}
+
+      @media(max-width:900px){
+        .legal-grid{grid-template-columns:180px 1fr;gap:20px}
+      }
+
+      @media(max-width:700px){
+        .legal-header{padding:0 16px;height:56px!important}
+        .legal-header img{height:38px!important}
+        .legal-header .site-btn{padding:6px 10px!important;font-size:.72rem!important}
+        .legal-hero{padding:28px 16px 24px}
+        .legal-hero h1{font-size:1.5rem;margin-bottom:8px}
+        .legal-hero .hero-badge{padding:4px 12px!important;margin-bottom:12px!important}
+        .legal-hero .hero-badge span:last-child{font-size:.68rem!important}
+        .legal-hero .hero-sub{font-size:.82rem;max-width:100%;line-height:1.6;margin-bottom:10px!important}
+        .legal-hero .hero-meta{font-size:.7rem;flex-wrap:wrap;justify-content:center;gap:4px!important;row-gap:6px!important}
+        .legal-hero .hero-meta .status-pill{margin-right:0!important}
+
+        .legal-grid{grid-template-columns:1fr;gap:16px;padding:0 14px 40px}
+        .legal-toc{position:static;top:auto}
+        .legal-toc-title{padding:10px 12px;font-size:.68rem}
+        .legal-toc-list{flex-direction:row;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:8px 10px;gap:6px}
+        .legal-toc-list::-webkit-scrollbar{display:none}
+        .legal-toc .nav-link{flex-shrink:0;white-space:nowrap;padding:7px 12px;border-bottom:none;border-right:none;border-radius:999px;background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.06)}
+        .legal-toc .nav-link.is-active{background:rgba(6,182,212,0.18)!important;border-color:rgba(6,182,212,0.35);color:#67e8f9!important}
+
+        .sec-card{border-radius:14px!important}
+        .sec-card > div:first-child{padding:14px 14px!important;gap:10px!important}
+        .sec-card > div:first-child > div:first-child{width:32px!important;height:32px!important;border-radius:9px!important;font-size:.95rem!important}
+        .sec-card > div:first-child .sec-title{font-size:.88rem!important}
+        .sec-card > div:last-child{padding:14px 14px!important}
+        .sec-card p{font-size:.82rem!important;line-height:1.75!important}
+        .sec-card .item-row{padding:8px 6px!important;gap:10px!important}
+        .sec-card .item-title{font-size:.8rem!important}
+        .sec-card .item-desc{font-size:.76rem!important}
+
+        .legal-footer{padding:20px 16px!important;font-size:.7rem!important}
+        .legal-footer img{height:32px!important}
+      }
+
+      .legal-back{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.72);cursor:pointer;font-family:inherit;font-size:.78rem;font-weight:600;transition:all .2s}
+      .legal-back:hover{background:rgba(255,255,255,0.1);color:#fff}
+      @media(max-width:700px){.legal-back{padding:6px 10px;font-size:.72rem}}
     `}</style>
 
-    <div dir="rtl" style={{minHeight:"100vh",fontFamily:"Cairo,sans-serif",background:"#03111e",color:"#e2e8f0"}}>
-      <header style={{position:"sticky",top:0,zIndex:50,padding:"0 24px",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all .3s",background:scrolled?"rgba(3,17,30,0.97)":"transparent",backdropFilter:scrolled?"blur(16px)":"none",borderBottom:scrolled?"1px solid rgba(255,255,255,0.06)":"none"}}>
-        <img src={LOGO} alt="Half Lens" style={{height:48,objectFit:"contain"}}/>
-        <a href="/" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,background:"rgba(6,182,212,0.12)",border:"1px solid rgba(6,182,212,0.2)",color:"#67e8f9",textDecoration:"none",fontSize:".78rem",fontWeight:600,transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(6,182,212,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(6,182,212,0.12)"}>
+    <div className="legal-page" dir="rtl" style={{minHeight:"100vh",fontFamily:"Cairo,sans-serif",background:"#03111e",color:"#e2e8f0"}}>
+      <header className="legal-header" style={{position:"sticky",top:0,zIndex:50,height:60,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,transition:"all .3s",background:scrolled?"rgba(3,17,30,0.97)":"transparent",backdropFilter:scrolled?"blur(16px)":"none",borderBottom:scrolled?"1px solid rgba(255,255,255,0.06)":"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+          <button type="button" onClick={handleBack} className="legal-back" aria-label="رجوع">
+            <span aria-hidden>←</span>
+            <span>رجوع</span>
+          </button>
+          <img src={LOGO} alt="Half Lens" style={{height:42,objectFit:"contain"}}/>
+        </div>
+        <a href="/" className="site-btn" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,background:"rgba(6,182,212,0.12)",border:"1px solid rgba(6,182,212,0.2)",color:"#67e8f9",textDecoration:"none",fontSize:".78rem",fontWeight:600,whiteSpace:"nowrap",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(6,182,212,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(6,182,212,0.12)"}>
           🌐 الموقع الإلكتروني
         </a>
       </header>
 
-      <div style={{padding:"52px 24px 40px",textAlign:"center",background:"linear-gradient(180deg,rgba(6,182,212,0.08) 0%,transparent 100%)",animation:"fadeUp .5s ease",position:"relative",overflow:"hidden"}}>
+      <div className="legal-hero" style={{textAlign:"center",background:"linear-gradient(180deg,rgba(6,182,212,0.08) 0%,transparent 100%)",animation:"fadeUp .5s ease",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",inset:0,pointerEvents:"none"}}>
           <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:400,height:400,borderRadius:"50%",background:"radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%)",filter:"blur(40px)"}}/>
         </div>
         <div style={{position:"relative",zIndex:1}}>
-          <div style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",borderRadius:20,background:"rgba(6,182,212,0.1)",border:"1px solid rgba(6,182,212,0.2)",marginBottom:16}}>
+          <div className="hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",borderRadius:20,background:"rgba(6,182,212,0.1)",border:"1px solid rgba(6,182,212,0.2)",marginBottom:16}}>
             <span style={{fontSize:".95rem"}}>🛡️</span>
             <span style={{fontSize:".75rem",fontWeight:600,color:"#67e8f9",letterSpacing:".06em"}}>PRIVACY POLICY</span>
           </div>
-          <h1 style={{fontSize:"2.2rem",fontWeight:900,color:"white",marginBottom:10,lineHeight:1.2}}>سياسة الخصوصية</h1>
-          <p style={{fontSize:".88rem",color:"rgba(255,255,255,0.4)",maxWidth:480,margin:"0 auto 14px",lineHeight:1.7}}>نلتزم بشفافية كاملة حول كيفية تعاملنا مع بياناتك الشخصية وحمايتها</p>
-          <div style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:".75rem",color:"rgba(255,255,255,0.3)"}}>
+          <h1 style={{fontWeight:900,color:"white",marginBottom:10,lineHeight:1.2}}>سياسة الخصوصية</h1>
+          <p className="hero-sub" style={{color:"rgba(255,255,255,0.4)",margin:"0 auto 14px",lineHeight:1.7}}>نلتزم بشفافية كاملة حول كيفية تعاملنا مع بياناتك الشخصية وحمايتها</p>
+          <div className="hero-meta" style={{display:"inline-flex",alignItems:"center",gap:6,color:"rgba(255,255,255,0.3)"}}>
             <span>📅</span>
             <span>آخر تحديث: {content.lastUpdated}</span>
-            <span style={{padding:"2px 8px",borderRadius:5,background:"rgba(16,185,129,0.1)",color:"#6ee7b7",border:"1px solid rgba(16,185,129,0.2)",marginRight:6}}>نسخة سارية</span>
+            <span className="status-pill" style={{padding:"2px 8px",borderRadius:5,background:"rgba(16,185,129,0.1)",color:"#6ee7b7",border:"1px solid rgba(16,185,129,0.2)",marginRight:6}}>نسخة سارية</span>
           </div>
         </div>
       </div>
 
-      <div style={{maxWidth:1000,margin:"0 auto",padding:"0 20px 60px",display:"grid",gridTemplateColumns:"220px 1fr",gap:28,alignItems:"start"}}>
-        <div style={{position:"sticky",top:72,borderRadius:16,background:"rgba(5,20,35,0.8)",border:"1px solid rgba(6,182,212,0.08)",overflow:"hidden",animation:"fadeIn .6s ease .2s both"}}>
-          <div style={{padding:"12px 14px",borderBottom:"1px solid rgba(255,255,255,0.05)",fontSize:".72rem",fontWeight:700,color:"rgba(255,255,255,0.25)",letterSpacing:".1em",textTransform:"uppercase"}}>المحتويات</div>
-          {content.sections.map((s)=>(
-            <a key={s.id} href={`#${s.id}`} className="nav-link"
-              style={{display:"flex",alignItems:"center",gap:8,padding:"9px 14px",textDecoration:"none",borderBottom:"1px solid rgba(255,255,255,0.03)",color:activeSection===s.id?"#67e8f9":"rgba(255,255,255,0.45)",background:activeSection===s.id?"rgba(6,182,212,0.1)":"transparent",borderRight:activeSection===s.id?"2px solid #06b6d4":"2px solid transparent",fontSize:".78rem",fontWeight:activeSection===s.id?700:400}}>
-              <span style={{fontSize:".8rem",opacity:.8}}>{s.icon}</span>
-              {s.title}
-            </a>
-          ))}
+      <div className="legal-grid">
+        <div className="legal-toc">
+          <div className="legal-toc-title">المحتويات</div>
+          <div className="legal-toc-list">
+            {content.sections.map((s)=>{
+              const active = activeSection===s.id;
+              return (
+                <a key={s.id} href={`#${s.id}`} className={`nav-link${active?' is-active':''}`}
+                  style={{color:active?"#67e8f9":"rgba(255,255,255,0.45)",background:active?"rgba(6,182,212,0.1)":"transparent",borderRight:active?"2px solid #06b6d4":"2px solid transparent",fontWeight:active?700:400}}>
+                  <span style={{fontSize:".8rem",opacity:.8}}>{s.icon}</span>
+                  {s.title}
+                </a>
+              );
+            })}
+          </div>
         </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:16,paddingTop:4}}>
+        <div className="legal-content">
           {content.sections.map((sec,i)=>(
             <div id={sec.id} key={sec.id} className="sec-card"
               style={{borderRadius:16,background:"rgba(5,20,35,0.7)",border:"1px solid rgba(6,182,212,0.08)",overflow:"hidden",animation:`fadeUp .4s ease ${i*.05}s both`}}>
               <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(6,182,212,0.05) 0%,transparent 100%)"}}>
                 <div style={{width:36,height:36,borderRadius:10,background:"rgba(6,182,212,0.12)",border:"1px solid rgba(6,182,212,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{sec.icon}</div>
-                <div>
-                  <div style={{fontSize:".95rem",fontWeight:800,color:"#e2e8f0"}}>{sec.title}</div>
+                <div style={{minWidth:0}}>
+                  <div className="sec-title" style={{fontSize:".95rem",fontWeight:800,color:"#e2e8f0"}}>{sec.title}</div>
                 </div>
               </div>
               <div style={{padding:"18px 20px"}}>
@@ -179,9 +250,9 @@ export const PrivacyPolicy: React.FC = () => {
                     {sec.items.map((item,j)=>(
                       <div key={j} className="item-row" style={{display:"flex",gap:12,padding:"10px 10px",borderRadius:10,margin:"2px 0"}}>
                         <div style={{width:6,height:6,borderRadius:"50%",background:"#06b6d4",flexShrink:0,marginTop:7}}/>
-                        <div>
-                          <div style={{fontSize:".83rem",fontWeight:700,color:"rgba(255,255,255,0.8)",marginBottom:3}}>{item.title}</div>
-                          <div style={{fontSize:".79rem",color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>{item.desc}</div>
+                        <div style={{minWidth:0}}>
+                          <div className="item-title" style={{fontSize:".83rem",fontWeight:700,color:"rgba(255,255,255,0.8)",marginBottom:3}}>{item.title}</div>
+                          <div className="item-desc" style={{fontSize:".79rem",color:"rgba(255,255,255,0.45)",lineHeight:1.6}}>{item.desc}</div>
                         </div>
                       </div>
                     ))}
@@ -193,7 +264,7 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
       </div>
 
-      <div style={{borderTop:"1px solid rgba(255,255,255,0.05)",padding:"24px",textAlign:"center"}}>
+      <div className="legal-footer" style={{borderTop:"1px solid rgba(255,255,255,0.05)",padding:"24px",textAlign:"center"}}>
         <img src={LOGO} alt="Half Lens" style={{height:40,objectFit:"contain",marginBottom:10,opacity:.5}}/>
         <div style={{fontSize:".75rem",color:"rgba(255,255,255,0.2)"}}>
           © 2026 Half Lens Production — جميع الحقوق محفوظة
