@@ -118,6 +118,9 @@
 }
 .vp-inp:focus{border-color:#3b82f6}
 .vp-inp:disabled{opacity:.5;cursor:not-allowed}
+.vp-inp-compact{min-width:110px}
+@media(max-width:640px){.vp-inp-compact{min-width:90px;padding:9px 8px!important;font-size:.78rem}}
+@media(max-width:380px){.vp-inp-compact{min-width:82px}}
 
 .vp-select{
   width:100%;padding:9px 32px 9px 12px;border-radius:9px;background:var(--inp);
@@ -166,6 +169,8 @@
 .vp-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .vp-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .vp-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Form grid: 2 cols on desktop, 1 col on mobile */
+.vp-grid-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
 /* Table header/row grid for projects & invoices */
 .vp-tbl-grid{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 0.8fr 40px;gap:8px;padding:12px 18px;align-items:center}
@@ -185,12 +190,46 @@
   .vp-chip{padding:5px 10px;font-size:.72rem}
 
   /* Cards */
-  .vp-card{border-radius:12px}
+  .vp-card{border-radius:12px;padding:14px 14px!important}
 
   /* No hover effects on touch */
   .sc:hover{transform:none!important}
 
-  /* Tabs: horizontal scroll */
-  .vp-tabs-scroll{flex-wrap:nowrap!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;padding-bottom:4px}
-  .vp-tab{white-space:nowrap;flex-shrink:0}
+  /* Tabs: horizontal scroll, hide scrollbar */
+  .vp-tabs-scroll{
+    flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;padding-bottom:4px;
+    scrollbar-width:none;-ms-overflow-style:none;
+    margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px;
+  }
+  .vp-tabs-scroll::-webkit-scrollbar{display:none;height:0;width:0}
+  .vp-tab{white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:.75rem}
+}
+
+/* Phone / narrow screens: collapse form grids + shrink inputs */
+@media(max-width:640px){
+  .vp-grid-form{grid-template-columns:1fr!important;gap:12px}
+  .vp-grid-2{grid-template-columns:1fr!important}
+  .vp-inp,.vp-select{font-size:.85rem;padding:10px 12px}
+}
+
+/* Very small screens (≤380px) */
+@media(max-width:380px){
+  .vp-card{padding:12px 12px!important;border-radius:10px}
+  .vp-tab{padding:7px 10px;font-size:.72rem}
+}
+
+/* Profile hero: tighten on mobile */
+@media(max-width:540px){
+  .vp-profile-hero{gap:12px!important;padding:14px 14px!important}
+  .vp-profile-hero > div:first-child > div:first-child,
+  .vp-profile-hero img[alt=""]{width:56px!important;height:56px!important}
+}
+
+/* Page scroll padding on mobile */
+@media(max-width:640px){
+  .vp-page-scroll{padding:14px!important}
+}
+@media(max-width:380px){
+  .vp-page-scroll{padding:12px 10px!important}
 }

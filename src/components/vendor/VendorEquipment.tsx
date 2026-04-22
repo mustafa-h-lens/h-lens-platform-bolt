@@ -202,7 +202,7 @@ export function VendorEquipment() {
               <FieldLabel>اسم المعدة <span style={{ color: '#ef4444' }}>*</span></FieldLabel>
               <TextInput value={suggForm.name} onChange={(e: any) => setSuggForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: كاميرا Sony FX6" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="vp-grid-form">
               <div>
                 <FieldLabel>الماركة (اختياري)</FieldLabel>
                 <TextInput value={suggForm.brand} onChange={(e: any) => setSuggForm(f => ({ ...f, brand: e.target.value }))} placeholder="مثال: Sony" />
@@ -293,7 +293,7 @@ export function VendorEquipment() {
 
             {/* Quantity + Serial — only after item selected */}
             {selItem && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, animation: 'fadeUp .2s ease' }}>
+              <div className="vp-grid-form" style={{ animation: 'fadeUp .2s ease' }}>
                 <div>
                   <FieldLabel>الكمية</FieldLabel>
                   <TextInput value={newQuantity} onChange={(e: any) => setNewQuantity(Math.max(1, Number(e.target.value)))} type="number" dir="ltr" />

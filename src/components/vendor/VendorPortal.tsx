@@ -408,7 +408,7 @@ export const VendorPortal = () => {
         </header>
 
         {/* Page content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
+        <div className="vp-page-scroll" style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
           <div key={currentPage} className="vp-page-enter">
             {/* Desktop page title */}
             <h1 className="hidden md:block" style={{

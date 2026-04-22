@@ -26,14 +26,14 @@ export function SearchableSelect({ value, onChange, items, placeholder, disabled
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <button type="button" disabled={disabled} onClick={() => !disabled && setOpen(!open)} className="vp-inp"
+      <button type="button" disabled={disabled} onClick={() => !disabled && setOpen(!open)} className={`vp-inp${compact ? ' vp-inp-compact' : ''}`}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'right',
           padding: compact ? '9px 10px' : '9px 14px',
-          width: compact ? 'auto' : '100%', minWidth: compact ? 110 : undefined,
+          width: compact ? 'auto' : '100%',
           borderRadius: compact ? '9px 0 0 9px' : 9,
-          whiteSpace: 'nowrap', gap: 4,
+          whiteSpace: 'nowrap', gap: 4, flexShrink: 0,
         }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: compact ? '.78rem' : undefined }}>
           {selected ? (
@@ -43,7 +43,7 @@ export function SearchableSelect({ value, onChange, items, placeholder, disabled
         {!disabled && <ChevronDown size={compact ? 12 : 14} style={{ color: 'var(--textMut)', flexShrink: 0 }} />}
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', zIndex: 50, marginTop: 4, borderRadius: 10, background: 'var(--cardSolid, var(--card))', border: '1px solid var(--border)', boxShadow: '0 12px 32px rgba(0,0,0,0.3)', maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column', ...(compact ? { left: 0, width: 240 } : { right: 0, left: 0 }) }}>
+        <div style={{ position: 'absolute', top: '100%', zIndex: 50, marginTop: 4, borderRadius: 10, background: 'var(--cardSolid, var(--card))', border: '1px solid var(--border)', boxShadow: '0 12px 32px rgba(0,0,0,0.3)', maxHeight: 240, overflow: 'hidden', display: 'flex', flexDirection: 'column', ...(compact ? { left: 0, width: 'min(240px, 80vw)' } : { right: 0, left: 0 }) }}>
           <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Search size={14} style={{ color: 'var(--textMut)', flexShrink: 0 }} />
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث..." autoFocus

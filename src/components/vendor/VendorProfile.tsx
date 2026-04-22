@@ -432,7 +432,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Profile header */}
-      <PageCard style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+      <PageCard className="vp-profile-hero" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative' }}>
           {vendor?.profile_image ? (
             <img src={vendor.profile_image} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', border: '2px solid var(--border)' }} />
@@ -478,7 +478,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             {/* Row 1: Name + Vendor Type */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="vp-grid-form">
               <div><FieldLabel icon={User}>الاسم الكامل</FieldLabel><TextInput value={infoForm.full_name} onChange={(e: any) => setInfoForm(f => ({ ...f, full_name: e.target.value }))} placeholder="الاسم كما في الهوية" disabled={!editingInfo} /></div>
               <div>
                 <FieldLabel icon={Briefcase}>نوع المورد</FieldLabel>
@@ -498,7 +498,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
               </div>
             </div>
             {/* Row 2: Phone with country code + Email */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="vp-grid-form">
               <div>
                 <FieldLabel icon={Phone}>رقم الجوال</FieldLabel>
                 <div style={{ display: 'flex', gap: 0, direction: 'ltr' }}>
@@ -512,12 +512,12 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
               <div><FieldLabel icon={Mail}>البريد الإلكتروني</FieldLabel><TextInput value={infoForm.email} disabled placeholder="name@email.com" dir="ltr" /></div>
             </div>
             {/* Row 3: ID Number + Nationality */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="vp-grid-form">
               <div><FieldLabel icon={CreditCard}>رقم الهوية</FieldLabel><TextInput value={infoForm.id_number} onChange={(e: any) => setInfoForm(f => ({ ...f, id_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} placeholder="1234567890" dir="ltr" disabled={!editingInfo} /><div style={{ fontSize: '.63rem', color: 'var(--textMut)', marginTop: 3, textAlign: 'left' }}>{infoForm.id_number.length}/10</div></div>
               <div><FieldLabel icon={Globe}>الجنسية</FieldLabel><SearchableSelect value={infoForm.nationality} onChange={v => setInfoForm(f => ({ ...f, nationality: v }))} items={nationalityItems} placeholder="اختر الجنسية" disabled={!editingInfo} /></div>
             </div>
             {/* Row 4: City + ID Image */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="vp-grid-form">
               <div><FieldLabel icon={Building2}>مدينة الإقامة</FieldLabel><SearchableSelect value={infoForm.primary_city} onChange={v => setInfoForm(f => ({ ...f, primary_city: v }))} items={cityItems} placeholder="اختر المدينة" disabled={!editingInfo} /></div>
               <div>
                 <FieldLabel icon={Image}>صورة الهوية</FieldLabel>

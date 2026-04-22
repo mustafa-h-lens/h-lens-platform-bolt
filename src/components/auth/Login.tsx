@@ -77,8 +77,16 @@ export const Login = () => {
         }
         .hl-left-z { position: relative; z-index: 1; }
 
-        .hl-logo { padding: 20px 0; display: flex; justify-content: flex-start; }
-        .hl-logo img { height: 192px; width: auto; object-fit: contain; }
+        .hl-logo {
+          padding: 20px 0; display: flex; justify-content: flex-start;
+          cursor: pointer; transition: opacity 0.2s, transform 0.2s;
+        }
+        .hl-logo:hover { opacity: 0.85; transform: translateY(-1px); }
+        .hl-logo img { height: 192px; width: auto; object-fit: contain; pointer-events: none; }
+
+        .hl-mobile-logo { cursor: pointer; transition: opacity 0.2s; }
+        .hl-mobile-logo:hover { opacity: 0.8; }
+        .hl-mobile-logo img { pointer-events: none; }
 
         .hl-badge {
           display: inline-flex; align-items: center; gap: 8px;
