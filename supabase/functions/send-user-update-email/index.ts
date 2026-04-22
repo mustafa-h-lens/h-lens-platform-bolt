@@ -68,7 +68,13 @@ function buildEmailHtml(
 <body style="margin:0;padding:24px 0;background:#0b1437;">
 <div class="container">
   <div style="background:#07112a;padding:32px 32px 24px;text-align:center;">
-    <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="border:0;max-width:140px;height:auto;" />
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+      <tr>
+        <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
+          <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
+        </td>
+      </tr>
+    </table>
     <div style="margin-top:16px;">
       <span style="display:inline-block;padding:6px 18px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">تحديث الحساب</span>
     </div>

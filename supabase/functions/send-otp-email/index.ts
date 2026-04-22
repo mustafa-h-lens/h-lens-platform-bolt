@@ -48,21 +48,11 @@ function getEmailTemplate(
   <title>رمز التحقق - Half Lens</title>
   <style>
     :root { color-scheme: light dark; }
-    /* Default: dark — white logos */
-    .logo-w { display: block !important; }
-    .logo-b { display: none !important; }
-    /* Light mode: blue logos on light background */
+    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
     @media (prefers-color-scheme: light) {
-      .logo-w { display: none !important; }
-      .logo-b { display: block !important; }
-      .hdr { background-color: #ffffff !important; }
-      .ftr { background-color: #f4f6fb !important; }
       .ftr-links-dark { display: none !important; }
       .ftr-links-light { display: block !important; }
     }
-    /* Dark mode override for Gmail/Outlook */
-    [data-ogsc] .logo-w { display: block !important; }
-    [data-ogsc] .logo-b { display: none !important; }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad { padding: 20px 16px !important; }
@@ -87,8 +77,13 @@ function getEmailTemplate(
           <!-- Header -->
           <tr>
             <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;display:none;" />
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
+                <tr>
+                  <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                  </td>
+                </tr>
+              </table>
               <div style="margin-top:16px;">
                 <span style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
               </div>
@@ -181,8 +176,13 @@ function getEmailTemplate(
           <!-- Footer -->
           <tr>
             <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;display:none;opacity:0.7;" />
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+                <tr>
+                  <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+                  </td>
+                </tr>
+              </table>
               <div class="ftr-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
                 <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
@@ -346,14 +346,7 @@ Deno.serve(async (req: Request) => {
   <title>دعوة لبوابة العميل - Half Lens</title>
   <style>
     :root { color-scheme: light dark; }
-    .logo-w { display: block !important; }
-    .logo-b { display: none !important; }
-    @media (prefers-color-scheme: light) {
-      .logo-w { display: none !important; }
-      .logo-b { display: block !important; }
-    }
-    [data-ogsc] .logo-w { display: none !important; }
-    [data-ogsc] .logo-b { display: block !important; }
+    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad { padding: 20px 16px !important; }
@@ -376,8 +369,13 @@ Deno.serve(async (req: Request) => {
           <!-- Header -->
           <tr>
             <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;display:none;" />
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
+                <tr>
+                  <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                  </td>
+                </tr>
+              </table>
               <div style="margin-top:16px;">
                 <span style="display:inline-block;padding:6px 18px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#34d399;">&#127881; دعوة لبوابة العميل</span>
               </div>
@@ -460,8 +458,13 @@ Deno.serve(async (req: Request) => {
           <!-- Footer -->
           <tr>
             <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <img class="logo-w" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-              <img class="logo-b" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;display:none;" />
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+                <tr>
+                  <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+                  </td>
+                </tr>
+              </table>
               <div style="margin-top:12px;font-size:11px;color:#3b82f6;line-height:2;">
                 <a href="${appOrigin}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a href="${appOrigin}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>

@@ -46,8 +46,14 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
   return `
   <tr>
     <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-      <img class="logo-dark" src="${logoWhiteUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
-      <img class="logo-light" src="${logoBlueUrl}" alt="Half Lens" width="160" style="margin:0 auto 16px auto;border:0;max-width:160px;height:auto;" />
+      <!-- Logo pill — keeps dark background even if the outer header is swapped to light by the email client -->
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
+        <tr>
+          <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
+            <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+          </td>
+        </tr>
+      </table>
       <div style="margin-top:16px;">
         <span style="display:inline-block;padding:6px 18px;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;font-size:13px;font-weight:700;color:${badgeColor};">${badge}</span>
       </div>
@@ -59,8 +65,14 @@ function baseFooter(): string {
   return `
   <tr>
     <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <img class="logo-footer-dark" src="${logoWhiteUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.35;" />
-      <img class="logo-footer-light" src="${logoBlueUrl}" alt="Half Lens" width="100" style="margin:0 auto;border:0;max-width:100px;height:auto;opacity:0.7;display:none;" />
+      <!-- Footer logo pill — always-dark container so the white logo stays visible -->
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+        <tr>
+          <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
+            <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+          </td>
+        </tr>
+      </table>
       <div class="footer-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
         <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
         <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
@@ -116,29 +128,10 @@ function wrapTemplate(content: string, title: string): string {
       .et { color: #f0f4ff !important; }
       .es { color: rgba(200,215,255,0.6) !important; }
     }
-    /* Logo defaults — dark is default (white logo on dark bg) */
-    .logo-light { display: none !important; }
-    .logo-footer-light { display: none !important; }
-    .logo-dark { display: block !important; }
-    .logo-footer-dark { display: block !important; }
-
+    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
     @media (prefers-color-scheme: light) {
-      /* Switch to blue logo on light background */
-      .logo-dark { display: none !important; }
-      .logo-light { display: block !important; }
-      .logo-footer-dark { display: none !important; }
-      .logo-footer-light { display: block !important; }
       .footer-links-dark { display: none !important; }
       .footer-links-light { display: block !important; }
-      /* Light mode header/footer backgrounds */
-      .eh { background-color: #ffffff !important; }
-      .ef { background-color: #f4f6fb !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; }
-      .logo-dark { display: block !important; }
-      .logo-footer-light { display: none !important; }
-      .logo-footer-dark { display: block !important; }
     }
     @media only screen and (max-width: 600px) {
       .ec { border-radius: 0 !important; }
