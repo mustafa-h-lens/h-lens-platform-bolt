@@ -1,0 +1,918 @@
+/* ══════════════════════════════════════════════════════════════════
+ * Half Lens — Global responsive layer
+ * ──────────────────────────────────────────────────────────────────
+ * Desktop (≥ 901px) is untouched. Below that, this file reshapes the
+ * vendor portal, registration wizard, auth screens, and preview
+ * modules so everything feels right on iPads, phones, and tiny
+ * phones. Admin surface is deliberately excluded (see selectors).
+ *
+ *   --bp-xs : ≤ 400px   tiny phones (iPhone SE)
+ *   --bp-sm : ≤ 640px   all phones
+ *   --bp-md : ≤ 900px   iPads portrait / narrow laptops
+ *
+ * Opt-in utility attributes any component can sprinkle in:
+ *   data-stack-mobile        grid/flex → single column ≤ 640
+ *   data-stack-xs            same but ≤ 400 only
+ *   data-action-bar          row becomes sticky bottom full-width ≤ 640
+ *   data-chips               flex-wrap + 6px gap ≤ 640
+ *   data-card                card gets fluid padding
+ *   data-mobile-modal        modal fits within viewport
+ *   data-responsive-3col     3-col collapses progressively
+ *   data-hide-xs             hide at ≤ 400
+ * ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bp-xs: 400px;
+  --bp-sm: 640px;
+  --bp-md: 900px;
+}
+
+/* Global horizontal-scroll defence — belt & braces */
+html,
+body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── Fluid headings — scale down automatically on narrow viewports ── */
+.step-title,
+.reg-title,
+.vp-page-title,
+h1.reg-title,
+h2.step-title {
+  font-size: clamp(1rem, 1.6vw + 0.6rem, 1.5rem) !important;
+  line-height: 1.35;
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * iPads portrait & narrow laptops (≤ 900)
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* Admin review 3-col → 2-col on iPad portrait */
+  [data-responsive-3col],
+  .grid.lg\:grid-cols-3[data-responsive-3col] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Vendor portal content — slightly tighter padding on iPad */
+  .vp-page-scroll {
+    padding: 20px !important;
+  }
+  .vp-card {
+    padding: 16px 18px !important;
+  }
+  .vp-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .vp-grid-form {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * All phones (≤ 640) — the main event
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+  /* ── Root-level text shrink — everything in rem scales proportionally */
+  html {
+    font-size: 15px;
+  }
+
+  /* ── Page wrappers & containers ─────────────────────────────────── */
+  .page-wrap,
+  .vp-page-scroll,
+  [data-page-scroll] {
+    padding: clamp(12px, 3.2vw, 18px) !important;
+  }
+
+  /* ── Utility attributes ─────────────────────────────────────────── */
+  [data-stack-mobile='true'] {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  [data-stack-mobile='true'] > * {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  [data-responsive-3col] {
+    grid-template-columns: 1fr !important;
+  }
+  [data-chips],
+  .vp-chip-row {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  /* ── Buttons & tap targets ──────────────────────────────────────── */
+  button,
+  [role='button'],
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-submit,
+  .vp-btn-primary,
+  .vp-btn-ghost,
+  .success-btn {
+    min-height: 44px;
+    font-size: 13px !important;
+  }
+
+  /* Exemptions — small UI buttons that must stay visually small
+     (avatar badge, close-X, menu icon button, modal close, toggles, etc.) */
+  .vp-avatar-upload-btn,
+  .vp-toggle-btn,
+  .vp-mobile-header button,
+  button[aria-label='إغلاق'],
+  button[aria-label='القائمة'],
+  button.up-remove {
+    min-height: auto !important;
+    font-size: inherit !important;
+    padding: 0 !important;
+  }
+  .vp-avatar-upload-btn {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .vp-toggle-btn {
+    width: 28px !important;
+    height: 22px !important;
+  }
+  .vp-btn-primary,
+  .vp-btn-ghost {
+    padding: 10px 14px !important;
+  }
+
+  /* ── Cards & data containers ────────────────────────────────────── */
+  [data-card],
+  .form-card,
+  .vp-card,
+  .vp-status-card,
+  .vp-edit-form {
+    padding: clamp(14px, 3vw, 20px) !important;
+    border-radius: 14px !important;
+  }
+  .vp-card.sc {
+    padding: 14px 14px !important;
+  }
+
+  /* Vendor dashboard stat cards — tighter + legible numbers */
+  .vp-card.sc > div[style*='fontSize: "1.5rem"'],
+  .vp-card.sc > div[style*="fontSize: '1.5rem'"] {
+    font-size: 1.3rem !important;
+  }
+
+  /* Vendor portal grids ─────────────────────────────────────────── */
+  .vp-grid-4 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .vp-grid-3 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .vp-grid-form {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Header shell ──────────────────────────────────────────────── */
+  .reg-topbar,
+  .vp-topbar {
+    padding: 10px 14px !important;
+  }
+  .reg-topbar-logo img,
+  .vp-topbar img {
+    max-width: 86px !important;
+    height: auto !important;
+  }
+
+  /* Vendor portal mobile header — override generic button rule so the
+     menu icon doesn't stretch, and keep all three items baseline-aligned. */
+  .vp-mobile-header {
+    align-items: center !important;
+  }
+  .vp-mobile-header > * {
+    align-self: center;
+  }
+  .vp-mobile-header button {
+    min-height: 36px !important;
+    font-size: inherit !important;
+    padding: 0 !important;
+  }
+  .vp-mobile-header img {
+    height: 28px !important;
+    max-height: 28px !important;
+    width: auto !important;
+  }
+  .vp-mobile-header span {
+    line-height: 1 !important;
+  }
+
+  /* ── Sticky bottom action bar ──────────────────────────────────── */
+  [data-action-bar] {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 10 !important;
+    margin: 16px -14px -14px !important;
+    padding: 10px 14px !important;
+    background: var(--color-surface, var(--bg-card, #fff)) !important;
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.08)) !important;
+    gap: 8px !important;
+    display: flex !important;
+  }
+  [data-action-bar] > * {
+    flex: 1 1 auto !important;
+    min-height: 44px !important;
+    white-space: nowrap;
+  }
+  [data-action-bar] [data-action='secondary'] {
+    flex: 0 0 38% !important;
+  }
+
+  /* ── Modals ───────────────────────────────────────────────────── */
+  [data-mobile-modal='true'] {
+    max-height: 95vh !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 12px !important;
+  }
+
+  /* ── Forms — inputs, labels, file uploads ──────────────────────── */
+  .input-label,
+  .vp-inp-label,
+  label.input-label {
+    font-size: 13px !important;
+    margin-bottom: 5px !important;
+  }
+  .input,
+  input[type='text'],
+  input[type='email'],
+  input[type='tel'],
+  input[type='number'],
+  input[type='password'],
+  input[type='search'],
+  select,
+  textarea,
+  .vp-inp,
+  .vp-select {
+    font-size: 15px !important; /* ≥ 16px disables iOS zoom-on-focus… but Safari likes exactly 15px+ */
+    padding: 10px 12px !important;
+    min-height: 44px !important;
+  }
+  /* Give iOS the >=16px it needs to NOT zoom when focusing inputs */
+  @supports (-webkit-touch-callout: none) {
+    .input,
+    input[type='text'],
+    input[type='email'],
+    input[type='tel'],
+    input[type='number'],
+    input[type='password'],
+    input[type='search'],
+    select,
+    textarea,
+    .vp-inp,
+    .vp-select {
+      font-size: 16px !important;
+    }
+  }
+  textarea {
+    min-height: 88px !important;
+  }
+
+  /* Upload zones — smaller on phones */
+  .upload-zone {
+    padding: 16px !important;
+  }
+  .uz-emoji {
+    font-size: 24px !important;
+  }
+  .uz-text {
+    font-size: 13px !important;
+  }
+  .uz-hint {
+    font-size: 11px !important;
+  }
+
+  /* ── Profile hero & chips ─────────────────────────────────────── */
+  .vp-profile-hero {
+    flex-direction: row !important;
+    padding: 14px !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+  }
+  /* Avatar column stays pinned, never shrinks or stretches */
+  .vp-profile-hero > div:first-child {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 56px !important;
+  }
+  /* Avatar image OR initials-div (both variants) sized consistently */
+  .vp-profile-hero > div:first-child > img,
+  .vp-profile-hero > div:first-child > div:first-child {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 12px !important;
+    font-size: 1rem !important;
+  }
+  /* Text column takes remaining space */
+  .vp-profile-hero > div:nth-child(2) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  /* Name + type badge allow wrap */
+  .vp-profile-hero > div:nth-child(2) > div:first-child {
+    flex-wrap: wrap !important;
+  }
+
+  /* ── Stat numbers inside dashboard / projects / invoices cards ── */
+  .vp-card.sc [style*='fontWeight: 900'],
+  .vp-card.sc [style*='fontWeight:900'] {
+    word-break: break-all;
+    line-height: 1.15 !important;
+  }
+
+  /* ── Auth page animated blobs — tone down on phones ──────────── */
+  .sl-blob {
+    filter: blur(50px) !important;
+    opacity: 0.5 !important;
+  }
+
+
+  /* ── Tables → card mode on phones ─────────────────────────────── */
+  .vp-tbl-grid {
+    grid-template-columns: 1fr !important;
+    padding: 12px !important;
+  }
+  .vp-tbl-grid-head {
+    display: none !important;
+  }
+
+  /* ── Scrollable tab rows (chips / pills) ──────────────────────── */
+  .vp-tabs-scroll {
+    gap: 6px !important;
+  }
+
+  /* ── Preview module cards (demo content) ──────────────────────── */
+  .vp-preview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ── Welcome modal chips ──────────────────────────────────────── */
+  .vp-welcome-chips {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* ── Section titles across the vendor portal ──────────────────── */
+  h1,
+  h2,
+  h3 {
+    line-height: 1.3;
+  }
+  .vp-card h2,
+  .vp-card h3 {
+    font-size: clamp(0.95rem, 2.2vw + 0.4rem, 1.15rem) !important;
+  }
+
+  /* ── Auth card (Supplier/Client login) — `.sl-*` prefix used by
+        SupplierLogin/OTPInput, and generic auth markers. Their own
+        inline @media starts at 500px, so we extend coverage to 640. */
+  .auth-card,
+  .supplier-login-card,
+  .sl-card,
+  [data-auth-card] {
+    width: 100% !important;
+    max-width: calc(100vw - 24px) !important;
+    padding: clamp(20px, 5vw, 28px) !important;
+    border-radius: 18px !important;
+  }
+  .sl-card-wrap {
+    max-width: calc(100vw - 24px) !important;
+  }
+  .sl-title {
+    font-size: clamp(1.15rem, 3.5vw + 0.6rem, 1.5rem) !important;
+  }
+  .sl-subtitle {
+    font-size: 0.82rem !important;
+    line-height: 1.7 !important;
+  }
+  .sl-topbar {
+    padding: 12px 16px !important;
+  }
+  .sl-input {
+    font-size: 15px !important;
+    padding: 10px 14px !important;
+    min-height: 44px !important;
+  }
+  @supports (-webkit-touch-callout: none) {
+    .sl-input {
+      font-size: 16px !important;
+    }
+  }
+  /* OTP boxes shrink to fit 6 digits on narrow viewports */
+  .otp-box,
+  .otp-input {
+    max-width: clamp(38px, 13vw, 52px) !important;
+    height: 52px !important;
+    font-size: 1.4rem !important;
+  }
+  .otp-inputs {
+    gap: clamp(4px, 1.5vw, 8px) !important;
+  }
+
+  /* OTP input boxes — fit 6 digits on 320px */
+  .otp-input,
+  input.otp-digit {
+    width: 40px !important;
+    height: 48px !important;
+    font-size: 20px !important;
+  }
+
+  /* ── Success screen ──────────────────────────────────────────── */
+  .success-glass-card {
+    max-width: calc(100vw - 24px) !important;
+    padding: 60px 18px 24px !important;
+  }
+  .success-title {
+    font-size: 1.15rem !important;
+  }
+  .success-sub {
+    font-size: 0.84rem !important;
+  }
+
+  /* ── Notification bell + header icons ─────────────────────────── */
+  .vp-nav-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* ── Generic tightening: any element using fixed large padding ── */
+  [style*='padding: 24px 28px'],
+  [style*='padding:24px 28px'],
+  [style*='padding: "24px 28px"'] {
+    padding: 16px 16px !important;
+  }
+  [style*='padding: 20px 26px'],
+  [style*='padding:20px 26px'] {
+    padding: 14px 16px !important;
+  }
+  [style*='padding: 28px 24px'] {
+    padding: 16px 14px !important;
+  }
+  [style*='padding: 24,']:not([data-preserve-padding]),
+  [style*='padding:24,']:not([data-preserve-padding]) {
+    padding: 14px !important;
+  }
+  [style*='padding: 20,']:not([data-preserve-padding]),
+  [style*='padding:20,']:not([data-preserve-padding]) {
+    padding: 14px !important;
+  }
+
+  /* Common wide-gap flex rows → tighten */
+  [style*='gap: 24'] {
+    gap: 12px !important;
+  }
+  [style*='gap: 20'] {
+    gap: 10px !important;
+  }
+
+  /* Dashboard welcome hero title/subtitle shrinks */
+  .vp-card[style*='0a2a66'] div[style*='1.4rem'] {
+    font-size: 1.1rem !important;
+  }
+  /* Shrink the hero emoji bubble (fixed 52×52 inline) on phones */
+  .vp-card[style*='0a2a66'] div[style*='width: 52'] {
+    width: 42px !important;
+    height: 42px !important;
+    font-size: 1.1rem !important;
+    border-radius: 10px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * Small phones (≤ 420) — profile hero stacks
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 420px) {
+  .vp-profile-hero {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .vp-profile-hero > div:first-child {
+    align-self: flex-start !important;
+  }
+  .vp-profile-hero > div:nth-child(2) {
+    width: 100% !important;
+  }
+
+  /* Registration wizard — selected-fields rate pair stacks vertically */
+  .rate-pair,
+  [data-rate-pair],
+  .pricing-inputs {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .rate-pair > *,
+  [data-rate-pair] > *,
+  .pricing-inputs > * {
+    width: 100% !important;
+  }
+
+  /* Suggestions header: CTA button drops full-width when crowded */
+  .vp-suggest-cta {
+    flex: 1 1 100% !important;
+  }
+
+  /* Dashboard profile-completion CTA: drops full-width on tiny phones */
+  .vp-completion-cta {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * Tiny phones (≤ 400) — last-mile tightening
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  html {
+    font-size: 14px;
+  }
+  [data-stack-xs='true'] {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+  }
+  .reg-topbar-logo img,
+  .vp-topbar img {
+    max-width: 72px !important;
+  }
+  [data-hide-xs] {
+    display: none !important;
+  }
+
+  /* Stats grid — 1 column on tiny phones */
+  .vp-grid-4,
+  .vp-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Buttons shrink a touch more */
+  .vp-btn-primary,
+  .vp-btn-ghost {
+    padding: 9px 12px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* Welcome modal chips → single column */
+  .vp-welcome-chips {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* OTP input smaller on tiny phones */
+  .otp-input,
+  input.otp-digit {
+    width: 36px !important;
+    height: 44px !important;
+    font-size: 18px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * Portrait iPad (641 ≤ w ≤ 900) — a bit more comfort
+ * ════════════════════════════════════════════════════════════════ */
+@media (min-width: 641px) and (max-width: 900px) {
+  .vp-card {
+    padding: 18px 20px;
+  }
+  .vp-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * ADMIN SURFACE — responsive additions
+ *
+ * The blocks above deliberately skipped admin pages. This section
+ * fills that gap: page headers, stat grids, tab rows, filter bars,
+ * tables (horizontal-scroll wrapper instead of card mode — admin
+ * tables are dense and column-count matters), modals, settings
+ * sidebar, activity log. Safe, additive only — no existing rules
+ * are overridden or removed.
+ * ════════════════════════════════════════════════════════════════ */
+
+/* iPad portrait + narrow laptops — settings layout stacks */
+@media (max-width: 900px) {
+  /* Settings: sidebar nav stops being a 240px left column */
+  .card.settings-layout,
+  [data-settings-layout] {
+    flex-direction: column !important;
+  }
+  /* Admin 3-col stat grid becomes 2-col on iPad portrait */
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+/* Phones (≤ 640) — admin layout tightening */
+@media (max-width: 640px) {
+  /* Page header rows: title + action button stack with wrap */
+  .page-title-row {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    align-items: flex-start !important;
+  }
+  .page-title-row > * {
+    min-width: 0 !important;
+  }
+  .page-title {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+  .page-subtitle {
+    font-size: 0.78rem !important;
+  }
+
+  /* Stat cards: 1-column on phones, tighter padding */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .stat-card {
+    padding: 14px 16px !important;
+  }
+  .stat-val {
+    font-size: 1.25rem !important;
+  }
+  .stat-sub {
+    font-size: 0.72rem !important;
+  }
+  .stat-icon-box {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Admin sub-tab row — scroll horizontally so tabs don't overflow */
+  .tabs-colored {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none !important;
+    margin-bottom: 14px !important;
+  }
+  .tabs-colored::-webkit-scrollbar {
+    display: none;
+  }
+  .tabs-colored .tab {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 12.5px !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Filter bar: wrap chips/selects, don't let anything clip */
+  .filter-bar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 14px !important;
+  }
+  .filter-bar .input,
+  .filter-bar select,
+  .filter-bar input {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    max-width: 100% !important;
+  }
+
+  /* Admin tables: allow horizontal scroll inside .table-wrap
+     (simpler than card-mode; admin tables have many columns and
+     pivot-to-card loses column structure admins need) */
+  .table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    max-width: 100% !important;
+  }
+  .table-wrap table {
+    min-width: max-content !important;
+    font-size: 12.5px !important;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    padding: 8px 10px !important;
+    white-space: nowrap !important;
+  }
+  /* Don't force nowrap on the "primary" cell (usually a name) —
+     let it wrap so rows don't explode to 2000px wide */
+  .table-wrap td .td-primary,
+  .table-wrap td .user-row {
+    white-space: normal !important;
+  }
+
+  /* Pagination + bulk-action rows: wrap and pad tighter */
+  .pag-wrap,
+  .pagination,
+  .bulk-actions {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .pag-btn {
+    min-width: 34px !important;
+    min-height: 34px !important;
+    padding: 0 8px !important;
+    font-size: 12.5px !important;
+  }
+
+  /* Admin modals: fit within viewport and never exceed height */
+  .modal {
+    max-width: calc(100vw - 24px) !important;
+    max-height: 92vh !important;
+    margin: 12px !important;
+    overflow-y: auto !important;
+  }
+  .modal .modal-hdr {
+    padding: 14px 16px !important;
+  }
+  .modal .modal-ttl {
+    font-size: 1rem !important;
+  }
+  .modal .modal-body {
+    padding: 14px 16px !important;
+  }
+
+  /* Admin settings sidebar — already stacks at 900; on phones give it
+     a horizontal scrolling group header row so user can pick tabs */
+  .settings-sidebar,
+  nav[data-settings-nav] {
+    width: 100% !important;
+  }
+
+  /* Admin dashboard activity + unpaid-invoices cards: tighten */
+  .dash-section,
+  .dash-bottom-card,
+  .dash-welcome {
+    padding: 14px 16px !important;
+  }
+  .dash-welcome {
+    padding: 18px 18px !important;
+  }
+  .dash-welcome h1,
+  .dash-welcome .dash-welcome-title {
+    font-size: 1.1rem !important;
+  }
+  .dash-section-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+  }
+  .dash-activity-list .dash-activity-item {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  .dash-activity-item .card-icon {
+    width: 28px !important;
+    height: 28px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Quick-actions dashboard grid: 2 columns on phones */
+  .dash-quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .dash-qa-item {
+    padding: 12px 10px !important;
+    font-size: 12.5px !important;
+  }
+  .dash-qa-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Admin "needs attention" alert rows */
+  .dash-alert-item {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Vendor request review — buttons row under the badge */
+  [class*='flex items-center gap-4'] > .flex.items-center.gap-3 {
+    flex-wrap: wrap !important;
+  }
+
+  /* Form grids in admin edit tabs — single column */
+  .form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* Avatar columns in tables — keep small */
+  .avatar.av-md {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 11px !important;
+  }
+  .avatar.av-xl {
+    width: 56px !important;
+    height: 56px !important;
+    font-size: 18px !important;
+  }
+}
+
+/* Tiny phones (≤ 400) — admin final tightening */
+@media (max-width: 400px) {
+  .stats-grid {
+    gap: 8px !important;
+  }
+  .stat-card {
+    padding: 12px 14px !important;
+  }
+  .dash-quick-actions {
+    grid-template-columns: 1fr !important;
+  }
+  .tabs-colored .tab {
+    padding: 7px 10px !important;
+  }
+  .page-title {
+    font-size: 1.15rem !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * CLIENT PORTAL — responsive additions
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Client dashboard stat cards */
+  .client-stat-grid,
+  .client-stats,
+  .client-dashboard-stats {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .client-card,
+  .client-project-card,
+  .client-invoice-card {
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+  }
+  /* Client project detail grids */
+  .client-detail-grid,
+  .client-project-detail {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * GENERIC TIGHTENING — any inline padding that escaped our selectors
+ * ════════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+  /* Root padding commonly seen on admin page wrappers */
+  [style*='padding: 28'],
+  [style*='padding:28'] {
+    padding: 14px !important;
+  }
+  [style*='padding: 32'],
+  [style*='padding:32'] {
+    padding: 16px !important;
+  }
+
+  /* Wide fixed-width items auto-shrink */
+  [style*='minWidth: 600'],
+  [style*='minWidth:600'],
+  [style*='min-width: 600'] {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  [style*='width: 240']:not(.vp-avatar-upload-btn):not(.vp-toggle-btn),
+  [style*='width:240'] {
+    max-width: 100% !important;
+  }
+
+  /* Generic `.card` — shared admin component */
+  .card:not(.vp-card) {
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Any sidebar that's a fixed ~240-260 column becomes full-width */
+  aside[class*='sidebar'],
+  .sidebar-fixed {
+    width: 100% !important;
+    position: static !important;
+  }
+
+  /* Avoid fixed-height empty-states from looking short on tall phones */
+  .dash-empty {
+    min-height: 140px !important;
+    height: auto !important;
+    padding: 24px 16px !important;
+  }
+}
+
