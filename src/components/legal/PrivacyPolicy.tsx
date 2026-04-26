@@ -105,8 +105,18 @@ export const PrivacyPolicy: React.FC = () => {
   if (!content) return null;
 
   const handleBack = () => {
-    if (window.history.length > 1) window.history.back();
-    else window.location.href = '/join';
+    // Prefer real "back": preserves the registration form's in-memory state
+    // and avoids re-mounting (which would otherwise reset the wizard to step 1
+    // until the draft re-loads from Supabase).
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    // No history — likely opened in a fresh tab (target="_blank") from
+    // Step6Review's privacy link. Close this tab so the original registration
+    // tab stays untouched. If the browser blocks window.close(), fall through
+    // silently — better than redirecting to /join which wipes the wizard.
+    try { window.close(); } catch { /* no-op */ }
   };
 
   return (<>
