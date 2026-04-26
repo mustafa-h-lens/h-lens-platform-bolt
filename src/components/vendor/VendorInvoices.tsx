@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { cached } from '../../lib/cache';
 import { useVendor } from '../../contexts/VendorContext';
 import { StatusBadge, EmptyState, LoadingSpinner, Pagination } from './shared';
+import { PreviewInvoices } from './previews/PreviewInvoices';
 
 interface InvoiceData {
   id: string;
@@ -133,9 +134,12 @@ export function VendorInvoices() {
         ))}
       </div>
 
-      {/* Table */}
-      {loading ? <LoadingSpinner /> : filtered.length === 0 ? (
-        <EmptyState icon={FileText} message="لا توجد فواتير" />
+      {/* Table — sample whenever there's no real invoice yet,
+          filtered-empty if filters hide them all, real table otherwise */}
+      {loading ? <LoadingSpinner /> : invoices.length === 0 ? (
+        <PreviewInvoices />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={FileText} message="لا توجد نتائج تطابق الفلاتر" />
       ) : (
         <div className="vp-card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16 }}>
           <div className="vp-tbl-grid vp-tbl-grid-head">

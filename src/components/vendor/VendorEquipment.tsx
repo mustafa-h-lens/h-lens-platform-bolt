@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useVendor } from '../../contexts/VendorContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { FieldLabel, TextInput, SelectInput, EmptyState, LoadingSpinner } from './shared';
+import { PreviewEquipment } from './previews/PreviewEquipment';
 import type { Equipment, CatalogItem } from './shared/types';
 import { ConfirmationModal } from '../shared/ConfirmationModal';
 
@@ -315,9 +316,9 @@ export function VendorEquipment() {
         </div>
       )}
 
-      {/* Equipment grid */}
+      {/* Equipment grid — show samples until the vendor adds their first piece */}
       {loading ? <LoadingSpinner /> : equipment.length === 0 ? (
-        <EmptyState icon={Camera} message="لا توجد معدات بعد" />
+        <PreviewEquipment />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
           {equipment.map(eq => {

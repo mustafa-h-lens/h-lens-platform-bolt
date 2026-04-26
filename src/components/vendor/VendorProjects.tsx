@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { cached } from '../../lib/cache';
 import { useVendor } from '../../contexts/VendorContext';
 import { StatusBadge, EmptyState, LoadingSpinner, Pagination } from './shared';
+import { PreviewProjects } from './previews/PreviewProjects';
 
 interface ProjectData {
   id: string;
@@ -127,9 +128,13 @@ export function VendorProjects() {
         ))}
       </div>
 
-      {/* Table */}
-      {loading ? <LoadingSpinner /> : filtered.length === 0 ? (
-        <EmptyState icon={Folder} message="لا توجد مشاريع بعد" />
+      {/* Table — show samples whenever there's no real data yet,
+          a filtered-empty view if filters hide all real rows,
+          and the real table once at least one project exists and matches */}
+      {loading ? <LoadingSpinner /> : projects.length === 0 ? (
+        <PreviewProjects />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={Folder} message="لا توجد نتائج تطابق الفلاتر" />
       ) : (
         <div className="vp-card" style={{ padding: 0, overflow: 'hidden', borderRadius: 16 }}>
           {/* Table header */}
