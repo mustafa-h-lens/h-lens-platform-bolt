@@ -1,0 +1,20 @@
+# Per-function settings. The Supabase platform reads this file when you run
+# `supabase functions deploy` (or `supabase db push`). Keep function names in
+# sync with the folders under supabase/functions/.
+
+[functions.send-vendor-status-email]
+# The admin client uses the service role key internally for this function, so
+# verifying the caller's JWT at the gateway causes 401s whenever the admin's
+# session token is missing or expired. Disable gateway JWT verification — the
+# function is safe to call without user auth because it re-checks the target
+# vendor_id from an authoritative DB read.
+verify_jwt = false
+
+[functions.send-otp-email]
+verify_jwt = false
+
+[functions.verify-otp]
+verify_jwt = false
+
+[functions.send-user-update-email]
+verify_jwt = false

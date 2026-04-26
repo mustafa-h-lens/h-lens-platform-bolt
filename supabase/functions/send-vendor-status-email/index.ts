@@ -17,10 +17,85 @@ type EmailType =
   | "resubmitted"
   | "admin_new_registration";
 
+interface RevisionFlags {
+  steps: Record<string, { comment: string; fields: string[] }>;
+}
+
 interface StatusEmailRequest {
   vendor_id: string;
   email_type: EmailType;
   reason?: string;
+  flags?: RevisionFlags;
+}
+
+// Mirrors src/lib/vendorRegistrationSteps.ts — kept in sync manually because
+// Edge Functions cannot import from the React app. Update both together.
+const STEP_LABELS: Record<string, string> = {
+  identity: "الهوية الأساسية",
+  contact: "بيانات التواصل",
+  documents: "المستندات والصور",
+  travel: "وثائق السفر",
+  financial: "البيانات المالية",
+  fields: "المجالات والأسعار",
+  review: "المراجعة النهائية",
+};
+
+const FIELD_LABELS: Record<string, Record<string, string>> = {
+  identity: {
+    full_name: "الاسم الكامل",
+    nationality: "الجنسية",
+    vendor_type: "نوع المورد",
+    id_number: "رقم الهوية",
+  },
+  contact: {
+    email: "البريد الإلكتروني",
+    phone: "رقم الجوال",
+    primary_city: "المدينة الأساسية",
+    other_cities: "مدن أخرى",
+    portfolio_url: "رابط البورتفوليو",
+  },
+  documents: {
+    profile_image: "الصورة الشخصية",
+    id_image: "صورة الهوية",
+  },
+  travel: {
+    passport_number: "رقم جواز السفر",
+    passport_issuing_country: "بلد إصدار الجواز",
+    passport_expiry_date: "تاريخ انتهاء الجواز",
+    passport_file: "صورة جواز السفر",
+    visa_country: "بلد التأشيرة",
+    visa_file: "مستند التأشيرة",
+  },
+  financial: {
+    bank_id: "البنك",
+    account_name: "اسم الحساب",
+    iban: "رقم الآيبان (IBAN)",
+    price_includes_tax: "الأسعار تشمل ضريبة",
+    company_name: "اسم الشركة",
+    vat_number: "الرقم الضريبي",
+  },
+  fields: {
+    selected_fields: "المجالات المختارة",
+    rates: "نطاقات الأسعار",
+  },
+  review: {},
+};
+
+function renderFlagsHtml(flags: RevisionFlags): string {
+  const items: string[] = [];
+  for (const [stepId, step] of Object.entries(flags.steps)) {
+    const stepLabel = escapeHtml(STEP_LABELS[stepId] || stepId);
+    const fieldList = step.fields
+      .map((f) => escapeHtml(FIELD_LABELS[stepId]?.[f] || f))
+      .join("، ");
+    items.push(`
+      <li style="margin-bottom:14px;">
+        <div style="font-weight:700;color:#fbbf24;font-size:13px;">${stepLabel}</div>
+        ${fieldList ? `<div style="font-size:12px;color:rgba(200,215,255,0.55);margin-top:2px;">الحقول: ${fieldList}</div>` : ""}
+        ${step.comment ? `<div style="font-size:13px;color:rgba(200,215,255,0.8);margin-top:6px;line-height:1.7;">${escapeHtml(step.comment)}</div>` : ""}
+      </li>`);
+  }
+  return `<ul style="margin:0;padding:0 20px 0 0;list-style:disc;">${items.join("")}</ul>`;
 }
 
 // ── Shared template parts ──────────────────────────────────
@@ -330,8 +405,27 @@ function buildRejected(
 function buildRevisionRequested(
   vendorName: string,
   reason: string,
-  loginUrl: string
+  loginUrl: string,
+  flags?: RevisionFlags
 ): { subject: string; html: string } {
+  const hasStructured = flags && flags.steps && Object.keys(flags.steps).length > 0;
+  const detailsBlock = hasStructured
+    ? `
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.3);border-radius:10px;margin-bottom:24px;">
+          <tr>
+            <td style="padding:18px 20px;">
+              <div style="font-size:13px;font-weight:700;color:#fbbf24;margin-bottom:12px;">الخطوات التي تحتاج تعديلاً:</div>
+              ${renderFlagsHtml(flags!)}
+            </td>
+          </tr>
+        </table>`
+    : alertBox(
+        `<strong>ملاحظات المراجع:</strong><br/>${escapeHtml(reason)}`,
+        "rgba(245,158,11,0.05)",
+        "rgba(245,158,11,0.3)",
+        "#fbbf24"
+      );
+
   const content = `
     ${baseHeader("&#9888;&#65039; تعديلات مطلوبة", "rgba(245,158,11,0.1)", "rgba(245,158,11,0.25)", "#fbbf24")}
     <tr>
@@ -343,12 +437,7 @@ function buildRevisionRequested(
     </tr>
     <tr>
       <td style="padding:0 32px 28px;">
-        ${alertBox(
-          `<strong>ملاحظات المراجع:</strong><br/>${escapeHtml(reason)}`,
-          "rgba(245,158,11,0.05)",
-          "rgba(245,158,11,0.3)",
-          "#fbbf24"
-        )}
+        ${detailsBlock}
         ${ctaButton("تسجيل الدخول وتعديل البيانات", loginUrl, "#2563eb")}
         <p style="font-size:13px;color:rgba(200,215,255,0.4);line-height:1.8;margin:16px 0 0;text-align:center;">
           بعد إجراء التعديلات المطلوبة، اضغط على "إعادة تقديم الطلب" لإرسال طلبك مرة أخرى للمراجعة.
@@ -480,7 +569,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { vendor_id, email_type, reason }: StatusEmailRequest =
+    const { vendor_id, email_type, reason, flags }: StatusEmailRequest =
       await req.json();
 
     if (!vendor_id || !email_type) {
@@ -512,8 +601,9 @@ Deno.serve(async (req: Request) => {
     }
 
     // Guard against malformed vendor emails (e.g. "name+@host") that SMTP
-    // will accept but Gmail silently drops. Return a clear error so the
-    // admin UI surfaces the problem instead of showing success.
+    // will accept but Gmail silently drops. Return 200 with success:false
+    // so the supabase-js client delivers the body to the admin UI instead
+    // of surfacing only a generic FunctionsHttpError.
     const vendorEmailRequired = email_type !== "admin_new_registration";
     if (vendorEmailRequired && !isValidEmail(vendor.email)) {
       return new Response(
@@ -523,7 +613,7 @@ Deno.serve(async (req: Request) => {
           message: "البريد الإلكتروني المسجل للمورد غير صالح",
         }),
         {
-          status: 422,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -639,7 +729,8 @@ Deno.serve(async (req: Request) => {
         emailContent = buildRevisionRequested(
           vendor.full_name,
           reason || "",
-          loginUrl
+          loginUrl,
+          flags
         );
         recipients = [vendor.email];
         break;
