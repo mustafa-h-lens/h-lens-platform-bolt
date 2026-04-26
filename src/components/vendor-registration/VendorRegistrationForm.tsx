@@ -533,7 +533,7 @@ export const VendorRegistrationForm = () => {
   };
 
   if (isSubmitted) {
-    return <SuccessScreen />;
+    return <SuccessScreen email={formData.email} />;
   }
 
   const progress = Math.round((currentStep / TOTAL_STEPS) * 100);

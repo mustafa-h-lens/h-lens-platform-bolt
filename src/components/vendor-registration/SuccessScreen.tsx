@@ -6,13 +6,38 @@ const SPARKLE_COLORS = [
   '#a78bfa', '#34d399', '#60a5fa', '#fbbf24', '#fb7185',
 ];
 
-export const SuccessScreen = () => {
+interface SuccessScreenProps {
+  email?: string;
+}
+
+const REDIRECT_SECONDS = 10;
+
+export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
   const [show, setShow] = useState(false);
+  const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
+
+  // Where to send the user after the countdown — vendor login (preview
+  // dashboard for pending vendors). Pre-fill email + firstVisit flag so the
+  // login screen knows this is the post-registration flow.
+  const redirectUrl =
+    email && email.includes('@')
+      ? `/vendor/login?email=${encodeURIComponent(email)}&firstVisit=1`
+      : '/vendor/login?firstVisit=1';
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 50);
     return () => clearTimeout(t);
   }, []);
+
+  // Countdown + auto-redirect after REDIRECT_SECONDS
+  useEffect(() => {
+    if (countdown <= 0) {
+      window.location.href = redirectUrl;
+      return;
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, redirectUrl]);
 
   // Generate particles spread across the full viewport
   const particles = Array.from({ length: 120 }, (_, i) => {
@@ -103,13 +128,13 @@ export const SuccessScreen = () => {
           <span>يمكنك تسجيل الدخول لاحقاً عبر ايميلك لمتابعة حالة طلبك وتحديث بياناتك.</span>
         </div>
 
-        {/* CTA */}
+        {/* CTA — also auto-redirects after 10 seconds */}
         <button
           className="success-btn"
-          onClick={() => window.location.href = '/admin'}
+          onClick={() => { window.location.href = redirectUrl; }}
           type="button"
         >
-          العودة إلى الصفحة الرئيسية
+          الذهاب إلى لوحة التحكم ({countdown})
         </button>
       </div>
     </div>
