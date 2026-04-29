@@ -114,6 +114,7 @@ export const NewAdminDashboard = () => {
     }
   }, [permissionsLoading, profile, hasAccess, currentPage]);
   const [clientView, setClientView] = useState<'dashboard' | 'projects' | null>(null);
+  const [projectFromClientId, setProjectFromClientId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
@@ -159,15 +160,15 @@ export const NewAdminDashboard = () => {
   // Listen for browser back/forward
   const handleHashChange = useCallback(() => {
     const { page, id, tab } = parseHash();
-    // Block users from pages they don't have access to
-    const safePage = !hasAccess(page as any) ? 'dashboard' : page;
+    // Don't block during permissions loading — trust the hash
+    const safePage = (!permissionsLoading && !hasAccess(page as any)) ? 'dashboard' : page;
     setCurrentPage(safePage);
     setSelectedProjectId(safePage === 'projects' ? id : null);
     setSelectedClientId(safePage === 'clients' ? id : null);
     setSelectedVendorId(safePage === 'vendors' ? id : null);
     setActiveSubTab(tab);
     if (safePage !== 'clients') setClientView(null);
-  }, [hasAccess]);
+  }, [hasAccess, permissionsLoading]);
 
   useEffect(() => {
     window.addEventListener('hashchange', handleHashChange);
@@ -186,6 +187,7 @@ export const NewAdminDashboard = () => {
     setSelectedVendorId(null);
     setActiveSubTab(null);
     setClientView(null);
+    setProjectFromClientId(null);
   };
 
   const handleViewVendor = (vendorId: string) => {
@@ -302,7 +304,15 @@ export const NewAdminDashboard = () => {
             <Suspense fallback={<LazyFallback />}>
               <ImprovedProjectDetails
                 projectId={selectedProjectId}
-                onBack={() => { setSelectedProjectId(null); setActiveSubTab(null); }}
+                onBack={() => {
+                  setSelectedProjectId(null);
+                  setActiveSubTab(null);
+                  if (projectFromClientId) {
+                    setCurrentPage('clients');
+                    setSelectedClientId(projectFromClientId);
+                    setProjectFromClientId(null);
+                  }
+                }}
                 onViewVendor={handleViewVendor}
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
@@ -484,6 +494,7 @@ export const NewAdminDashboard = () => {
                     setActiveSubTab(null);
                   }}
                   onViewProject={(projectId) => {
+                    setProjectFromClientId(selectedClientId);
                     setCurrentPage('projects');
                     setSelectedProjectId(projectId);
                     setSelectedClientId(null);

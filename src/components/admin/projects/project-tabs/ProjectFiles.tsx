@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Folder, File, Download, Trash2, FileText, Image, FileArchive } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Folder, File, Download, Trash2, FileText, Image, FileArchive } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatDateArabic } from '../../../../lib/formatters';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { useAuth } from '../../../../contexts/AuthContext';
+import { FileUploader } from '../../../ui/FileUploader';
 
 interface ProjectFile {
   id: string;
@@ -25,7 +26,6 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deleteFileId, setDeleteFileId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError } = useNotification();
   const { user } = useAuth();
 
@@ -53,8 +53,7 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleUpload = async (file: File) => {
     if (!file || !user) return;
 
     setUploading(true);
@@ -104,8 +103,6 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
       showError(error.message || 'حدث خطأ أثناء رفع الملف');
     } finally {
       setUploading(false);
-      // Reset the input so the same file can be re-selected
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -175,24 +172,16 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleUpload}
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.zip,.rar"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all font-medium disabled:opacity-50"
-          style={{ backgroundColor: 'var(--color-primary)' }}
-        >
-          <Plus className="w-4 h-4" />
-          <span>{uploading ? 'جاري الرفع...' : 'رفع ملف'}</span>
-        </button>
-      </div>
+      <FileUploader
+        label="رفع ملف"
+        value=""
+        onChange={() => {}}
+        onFile={handleUpload}
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.zip,.rar"
+        maxSizeMB={50}
+        preview="none"
+        uploading={uploading}
+      />
 
       {files.length === 0 ? (
         <div className="bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border p-12 text-center">

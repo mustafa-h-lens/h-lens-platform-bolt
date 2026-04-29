@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { Upload, User, Plus, Trash2, X, UploadCloud } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import type { Client, ClientContact } from '../../../types/database';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { createPortal } from 'react-dom';
+import { FileUploader } from '../../ui/FileUploader';
 
 const CONTACT_ROLES = [
   { value: 'مسؤول التواصل', label: 'مسؤول التواصل' },
@@ -37,7 +38,6 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
   const [imagePreview, setImagePreview] = useState<string>('');
   const [showCropModal, setShowCropModal] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [sendInvite, setSendInvite] = useState(!client); // Default ON for new clients
   const [sectors, setSectors] = useState<Sector[]>([]);
@@ -89,8 +89,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
     setContacts(contacts.filter(c => c.id !== id));
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImageSelect = (file: File) => {
     if (!file) return;
     if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) { showError('يرجى اختيار صورة بصيغة JPG أو PNG فقط'); return; }
     if (file.size > 3 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 3 ميجابايت'); return; }
@@ -204,23 +203,22 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
           <div className="modal-body">
             <div className="form-grid">
               {/* Logo Upload */}
-              <div className="input-group full">
-                <label className="input-label">شعار العميل</label>
-                <div
-                  className="upload-area"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
-                  ) : (
-                    <>
-                      <UploadCloud size={28} />
-                      <strong>اسحب الشعار هنا أو انقر للرفع</strong>
-                      <span>PNG, JPG, SVG — حجم أقصى 2MB</span>
-                    </>
-                  )}
-                </div>
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageSelect} style={{ display: 'none' }} />
+              <div className="full">
+                <FileUploader
+                  label="شعار العميل"
+                  value={imagePreview || formData.client_image}
+                  onChange={(url) => {
+                    if (!url) {
+                      setImagePreview('');
+                      setFormData({ ...formData, client_image: '' });
+                    }
+                  }}
+                  onFile={handleImageSelect}
+                  accept="image/jpeg,image/png,image/jpg"
+                  maxSizeMB={3}
+                  preview="image"
+                  uploading={uploadingImage}
+                />
               </div>
 
               {/* Name */}

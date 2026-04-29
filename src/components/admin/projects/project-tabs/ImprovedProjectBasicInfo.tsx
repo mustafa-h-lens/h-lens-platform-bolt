@@ -3,6 +3,7 @@ import { Save, Edit, X } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { formatDateArabic, formatCurrency } from '../../../../lib/formatters';
+import { DatePicker } from '../../../ui/DatePicker';
 
 interface Project {
   id: string;
@@ -61,6 +62,7 @@ const CURRENCIES = [
 export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: ImprovedProjectBasicInfoProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<{ id: string; po_number: string; title: string }[]>([]);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -77,12 +79,14 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
     total_cost: project.total_cost ?? 0,
     total_price: project.total_price ?? 0,
     currency: project.currency || 'SAR',
+    po_id: (project as any).po_id || '',
   });
   const { showSuccess, showError } = useNotification();
 
   useEffect(() => {
     loadUsers();
     loadClients();
+    loadPurchaseOrders();
   }, []);
 
   useEffect(() => {
@@ -100,6 +104,7 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
       total_cost: project.total_cost ?? 0,
       total_price: project.total_price ?? 0,
       currency: project.currency || 'SAR',
+      po_id: (project as any).po_id || '',
     });
   }, [project]);
 
@@ -117,6 +122,16 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
       .select('id, name')
       .order('name');
     setClients(data || []);
+  };
+
+  const loadPurchaseOrders = async () => {
+    if (!project.client_id) return;
+    const { data } = await supabase
+      .from('purchase_orders')
+      .select('id, po_number, title')
+      .eq('client_id', project.client_id)
+      .order('created_at', { ascending: false });
+    setPurchaseOrders(data || []);
   };
 
   const handleSave = async () => {
@@ -147,6 +162,7 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
           total_cost: formData.total_cost,
           total_price: formData.total_price,
           currency: formData.currency,
+          po_id: formData.po_id || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', project.id);
@@ -279,6 +295,7 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
               <InfoField label="نوع المشروع" value={getModeLabel(project.project_mode)} />
               <InfoField label="العميل" value={client.name} />
               <InfoField label="مدير المشروع" value={getManagerName(project.project_manager_id)} />
+              <InfoField label="أمر الشراء" value={purchaseOrders.find(po => po.id === (project as any).po_id)?.title || '-'} />
               <InfoField label="الحالة" value={getStatusLabel(project.status)} />
               <InfoField label="تاريخ البداية" value={project.start_date ? formatDateArabic(project.start_date) : '-'} />
               <InfoField label="تاريخ الانتهاء المتوقع" value={project.end_date ? formatDateArabic(project.end_date) : '-'} />
@@ -382,6 +399,24 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
                 </select>
               </div>
 
+              {/* PO Link */}
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  أمر الشراء
+                </label>
+                <select
+                  value={formData.po_id}
+                  onChange={(e) => setFormData({ ...formData, po_id: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
+                  style={inputStyle}
+                >
+                  <option value="">بدون أمر شراء</option>
+                  {purchaseOrders.map((po) => (
+                    <option key={po.id} value={po.id}>{po.title} ({po.po_number})</option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
                   نوع المشروع
@@ -414,31 +449,17 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                  تاريخ البداية
-                </label>
-                <input
-                  type="date"
-                  value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                  style={inputStyle}
-                />
-              </div>
+              <DatePicker
+                label="تاريخ البداية"
+                value={formData.start_date}
+                onChange={(date) => setFormData({ ...formData, start_date: date })}
+              />
 
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-                  تاريخ الانتهاء المتوقع
-                </label>
-                <input
-                  type="date"
-                  value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-                  style={inputStyle}
-                />
-              </div>
+              <DatePicker
+                label="تاريخ الانتهاء المتوقع"
+                value={formData.end_date}
+                onChange={(date) => setFormData({ ...formData, end_date: date })}
+              />
             </div>
 
             {/* Financial fields */}
@@ -467,11 +488,14 @@ export const ImprovedProjectBasicInfo = ({ project, client, onUpdate }: Improved
                     إجمالي السعر / الميزانية
                   </label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
+                    type="text"
+                    inputMode="decimal"
                     value={formData.total_price}
-                    onChange={(e) => setFormData({ ...formData, total_price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, '');
+                      setFormData({ ...formData, total_price: v as any });
+                    }}
+                    onBlur={(e) => setFormData({ ...formData, total_price: parseFloat(e.target.value) || 0 })}
                     className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
                     style={inputStyle}
                     placeholder="0.00"

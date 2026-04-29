@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, Upload, Camera as CameraIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Edit2, Trash2, Camera as CameraIcon } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { Modal } from '../../../shared/Modal';
+import { FileUploader } from '../../../ui/FileUploader';
 
 interface Equipment {
   id: string;
@@ -82,7 +83,6 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogItem | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     catalog_item_id: '',
@@ -287,8 +287,7 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
     });
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleImageUpload = async (file: File) => {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
@@ -533,7 +532,7 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Catalog Selection */}
-          {!editingId && (
+          {(
             <div style={{ background: 'var(--bg-overlay)', borderRadius: 'var(--radius-md)', padding: 16, border: '1px solid var(--border-soft)' }}>
               <h3 style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 12, fontSize: 13 }}>اختر من كتالوج المعدات</h3>
 
@@ -631,32 +630,19 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
             </div>
           )}
 
-          {/* Basic fields */}
-          <div className="form-grid">
-            <div className="input-group">
-              <label className="input-label">الاسم <span className="req">*</span></label>
-              <input
-                type="text"
-                className="input"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="اسم المعدة"
-                disabled={!!selectedCatalogItem && !editingId}
-              />
+          {/* Name & Type (read-only, filled from catalog) */}
+          {selectedCatalogItem && (
+            <div className="form-grid">
+              <div className="input-group">
+                <label className="input-label">الاسم</label>
+                <input type="text" className="input" value={formData.name} disabled style={{ opacity: 0.7 }} />
+              </div>
+              <div className="input-group">
+                <label className="input-label">التصنيف</label>
+                <input type="text" className="input" value={formData.type} disabled style={{ opacity: 0.7 }} />
+              </div>
             </div>
-
-            <div className="input-group">
-              <label className="input-label">التصنيف <span className="req">*</span></label>
-              <input
-                type="text"
-                className="input"
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                placeholder="التصنيف"
-                disabled={!!selectedCatalogItem && !editingId}
-              />
-            </div>
-          </div>
+          )}
 
           {/* Additional vendor fields */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
@@ -704,36 +690,16 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
 
           {/* Custom image upload */}
           {!selectedCatalogItem && (
-            <div className="input-group">
-              <label className="input-label">صورة المعدة (اختياري)</label>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={handleImageUpload}
-                  style={{ display: 'none' }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
-                  style={{ gap: 6 }}
-                >
-                  <Upload size={14} />
-                  {uploadingImage ? 'جاري الرفع...' : 'رفع صورة'}
-                </button>
-                {formData.image && (
-                  <img
-                    src={formData.image}
-                    alt="Preview"
-                    style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', objectFit: 'cover', border: '1px solid var(--border-soft)' }}
-                  />
-                )}
-              </div>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>JPG, PNG, WebP - حد أقصى 5MB</span>
-            </div>
+            <FileUploader
+              label="صورة المعدة (اختياري)"
+              hint="JPG, PNG, WebP - حد أقصى 5MB"
+              value={formData.image}
+              onChange={(url) => setFormData({ ...formData, image: url })}
+              onFile={handleImageUpload}
+              accept="image/jpeg,image/png,image/webp"
+              preview="image"
+              uploading={uploadingImage}
+            />
           )}
 
           {/* Notes */}

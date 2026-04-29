@@ -133,17 +133,16 @@ export const Login = () => {
         .hl-form-wrap { width: 100%; max-width: 380px; }
 
         .hl-mobile-logo {
-          display: flex; justify-content: center; margin-bottom: 32px; padding: 10px 0;
+          display: flex; justify-content: center; margin-bottom: 48px; padding: 20px 0;
         }
         .hl-mobile-logo img { height: 120px; object-fit: contain; }
         @media (min-width: 1024px) { .hl-mobile-logo { display: none; } }
 
-        .hl-title { font-size: 1.8rem; font-weight: 800; color: #f0f4ff; margin-bottom: 6px; }
-        .hl-desc  { font-size: 0.875rem; color: #4a6480; margin-bottom: 32px; }
-        @media (max-width: 1023px) {
-          .hl-form-wrap { margin: 0 auto; }
-          .hl-title { text-align: center; }
-          .hl-desc  { text-align: center; }
+        .hl-title { font-size: 1.8rem; font-weight: 800; color: #f0f4ff; margin-bottom: 6px; text-align: center; }
+        .hl-desc  { font-size: 0.875rem; color: #4a6480; margin-bottom: 32px; text-align: center; }
+        @media (min-width: 1024px) {
+          .hl-title { text-align: right; }
+          .hl-desc  { text-align: right; }
         }
 
         .hl-field { margin-bottom: 18px; }

@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, FileText, Download, Trash2, Upload, Calendar, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, FileText, Download, Trash2, AlertTriangle } from 'lucide-react';
+import { DatePicker } from '../../../ui/DatePicker';
+import { FileUploader } from '../../../ui/FileUploader';
 import { supabase } from '../../../../lib/supabaseClient';
 import { Modal } from '../../../shared/Modal';
 import { useNotification } from '../../../../contexts/NotificationContext';
@@ -344,7 +346,6 @@ interface AddClientDocumentModalProps {
 const AddClientDocumentModal = ({ clientId, docTypes, onClose, onSuccess }: AddClientDocumentModalProps) => {
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showError, showSuccess } = useNotification();
   const [formData, setFormData] = useState({
     document_type_id: docTypes[0]?.id || '',
@@ -451,23 +452,11 @@ const AddClientDocumentModal = ({ clientId, docTypes, onClose, onSuccess }: AddC
         </div>
 
         {/* Expiry date */}
-        <div className="input-group">
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-            <Calendar size={13} style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 4 }} />
-            تاريخ انتهاء الصلاحية
-          </label>
-          <input
-            type="date"
-            className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none focus:ring-2"
-            style={{
-              backgroundColor: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              color: 'var(--color-text-primary)',
-            }}
-            value={formData.expiry_date}
-            onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-          />
-        </div>
+        <DatePicker
+          label="تاريخ انتهاء الصلاحية"
+          value={formData.expiry_date}
+          onChange={(date) => setFormData({ ...formData, expiry_date: date })}
+        />
 
         {/* Notes */}
         <div className="input-group">
@@ -489,51 +478,21 @@ const AddClientDocumentModal = ({ clientId, docTypes, onClose, onSuccess }: AddC
         </div>
 
         {/* File upload */}
-        <div className="input-group">
-          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-            اختيار الملف <span style={{ color: 'var(--color-danger)' }}>*</span>
-          </label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setSelectedFile(file);
-                if (!formData.file_name) {
-                  setFormData(prev => ({ ...prev, file_name: file.name }));
-                }
-              }
-            }}
-          />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              border: '2px dashed var(--color-border)',
-              borderRadius: 'var(--radius-md, 8px)',
-              padding: '24px 16px',
-              textAlign: 'center',
-              cursor: 'pointer',
-              backgroundColor: selectedFile ? 'color-mix(in srgb, var(--color-success) 5%, transparent)' : 'transparent',
-              transition: 'all 0.2s',
-            }}
-          >
-            <Upload size={24} style={{ margin: '0 auto 8px', color: 'var(--color-text-muted)' }} />
-            <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>
-              {selectedFile ? selectedFile.name : 'اضغط لاختيار ملف'}
-            </p>
-            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-              PDF, Word, Excel, أو صور (حد أقصى 50 ميجا)
-            </p>
-          </div>
-          {selectedFile && (
-            <span style={{ fontSize: 12, color: 'var(--color-success)', marginTop: 8, display: 'block' }}>
-              تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-            </span>
-          )}
-        </div>
+        <FileUploader
+          label="اختيار الملف"
+          hint={selectedFile ? `تم اختيار: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : 'PDF, Word, Excel, أو صور'}
+          value={selectedFile ? selectedFile.name : ''}
+          onChange={(url) => { if (!url) setSelectedFile(null); }}
+          onFile={(file) => {
+            setSelectedFile(file);
+            if (!formData.file_name) {
+              setFormData(prev => ({ ...prev, file_name: file.name }));
+            }
+          }}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+          maxSizeMB={50}
+          preview="file"
+        />
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>

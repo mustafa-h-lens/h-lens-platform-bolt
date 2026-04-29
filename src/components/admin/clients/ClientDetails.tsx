@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight, FolderOpen, ShoppingCart, ListChecks, FileText, User, Send, CheckCircle, Plus } from 'lucide-react';
+import { ArrowRight, FolderOpen, ShoppingCart, FileText, User, Send, CheckCircle, Plus, Mail } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { PurchaseOrdersTabEnhanced } from './client-tabs/PurchaseOrdersTabEnhanced';
-import { ProductionTasksTab } from './client-tabs/ProductionTasksTab';
 import { ClientDocuments } from './client-tabs/ClientDocuments';
 import { ClientProjects } from './ClientProjects';
 import { CreateProjectModal } from '../projects/CreateProjectModal';
@@ -25,16 +24,37 @@ interface ClientDetailsProps {
   onTabChange?: (tab: string | null) => void;
 }
 
-type TabType = 'projects' | 'purchase-orders' | 'production-tasks' | 'documents';
+type TabType = 'projects' | 'purchase-orders' | 'documents';
 
 const TABS = [
   { id: 'projects', label: 'المشاريع', icon: FolderOpen },
   { id: 'purchase-orders', label: 'أوامر الشراء', icon: ShoppingCart },
-  { id: 'production-tasks', label: 'المهام الإنتاجية', icon: ListChecks },
   { id: 'documents', label: 'المستندات', icon: FileText },
 ] as const;
 
 const VALID_TAB_IDS: string[] = TABS.map(t => t.id);
+
+const CLIENT_COLORS = [
+  { bg: 'var(--accent-glow)', color: 'var(--accent-lighter)' },
+  { bg: 'var(--purple-bg)', color: 'var(--purple-text)' },
+  { bg: 'var(--warning-bg)', color: 'var(--warning-text)' },
+  { bg: 'var(--success-bg)', color: 'var(--success-text)' },
+  { bg: 'var(--info-bg)', color: 'var(--info-text)' },
+];
+
+const getClientColor = (id: string) => {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash) + id.charCodeAt(i);
+  return CLIENT_COLORS[Math.abs(hash) % CLIENT_COLORS.length];
+};
+
+const getStatusInfo = (status: string) => {
+  switch (status) {
+    case 'active': return { label: 'نشط في البوابة', className: 'badge badge-green', dot: 'var(--success)' };
+    case 'pending': return { label: 'بانتظار تسجيل الدخول', className: 'badge badge-amber', dot: 'var(--warning)' };
+    default: return { label: 'غير مدعو', className: 'badge badge-gray', dot: 'var(--text-muted)' };
+  }
+};
 
 export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onTabChange }: ClientDetailsProps) => {
   const { showSuccess, showError } = useNotification();
@@ -81,7 +101,6 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
     }
     setInviting(true);
     try {
-      // Update client invitation status and portal email
       const { error } = await supabase
         .from('clients')
         .update({
@@ -93,7 +112,6 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
 
       if (error) throw error;
 
-      // Send OTP email to the client (this serves as the invitation)
       const deviceInfo = 'دعوة من لوحة التحكم';
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
         method: 'POST',
@@ -107,7 +125,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
       }
 
       showSuccess('تم إرسال الدعوة بنجاح');
-      loadClient(); // Refresh to show updated status
+      loadClient();
     } catch (error) {
       console.error('Error inviting client:', error);
       showError(error instanceof Error ? error.message : 'حدث خطأ أثناء إرسال الدعوة');
@@ -117,135 +135,102 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-        <div className="text-center">
-          <div
-            className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4"
-            style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
-          />
-          <p style={{ color: 'var(--color-text-secondary)' }}>جاري تحميل بيانات العميل...</p>
-        </div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 300 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري تحميل بيانات العميل...</span></div>;
   }
 
   if (!client) {
-    return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-        <p style={{ color: 'var(--color-text-secondary)' }}>العميل غير موجود</p>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 300 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>العميل غير موجود</span></div>;
   }
 
+  const cColor = getClientColor(clientId);
+  const statusInfo = getStatusInfo(client.invitation_status);
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div
-        className="sticky top-0 z-40 border-b"
-        style={{
-          backgroundColor: 'var(--color-surface)',
-          borderColor: 'var(--color-border)',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 mb-6 font-medium transition-all hover:gap-3"
-            style={{ color: 'var(--color-text-secondary)' }}
-          >
-            <ArrowRight size={20} />
-            العودة إلى العملاء
-          </button>
+    <div style={{ padding: 28 }}>
+      {/* Back button */}
+      <div style={{ marginBottom: 20 }}>
+        <button className="btn btn-ghost btn-sm" onClick={onBack} style={{ gap: 6 }}>
+          <ArrowRight size={14} /> العودة إلى العملاء
+        </button>
+      </div>
 
-          <div className="flex items-start gap-4 mb-6">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-background-hover)' }}
-            >
-              {client.client_image ? (
-                <img src={client.client_image} alt={client.name} className="w-full h-full object-cover" />
-              ) : (
-                <User size={32} style={{ color: 'var(--color-text-muted)' }} />
-              )}
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
-                {client.name}
-              </h1>
-              {client.email && (
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">
-                  {client.email}
-                </p>
-              )}
-            </div>
+      {/* Client Header */}
+      <div className="dash-welcome" style={{ marginBottom: 20, padding: '28px 32px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 }}>
+          {/* Top row: Avatar + Name + Badge + Action */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            {client.client_image ? (
+              <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--border-soft)', flexShrink: 0 }}>
+                <img src={client.client_image} alt={client.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div className="avatar av-xl" style={{ width: 72, height: 72, fontSize: 22, background: cColor.bg, color: cColor.color, border: '3px solid var(--border-soft)', flexShrink: 0 }}>
+                {client.name.substring(0, 2)}
+              </div>
+            )}
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)' }}>{client.name}</div>
+            <span className={statusInfo.className}>
+              <span className="badge-dot" style={{ background: statusInfo.dot }} />
+              {statusInfo.label}
+            </span>
 
-            {/* Action buttons */}
-            <div style={{ marginRight: 'auto', display: 'flex', gap: 12, alignItems: 'center' }}>
-              {client.invitation_status === 'active' ? (
-                <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-                  style={{ background: 'color-mix(in srgb, var(--color-success) 12%, transparent)', color: 'var(--color-success)' }}>
-                  <CheckCircle size={16} />
-                  العميل نشط في البوابة
-                </span>
-              ) : client.invitation_status === 'pending' ? (
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
-                    style={{ background: 'color-mix(in srgb, var(--color-warning) 12%, transparent)', color: 'var(--color-warning)' }}>
-                    <Send size={16} />
-                    {client.invitation_status === 'pending' ? 'بانتظار تسجيل الدخول' : 'تم إرسال الدعوة'}
-                  </span>
-                  <button
-                    onClick={handleInviteClient}
-                    disabled={inviting}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{ background: 'transparent', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', opacity: inviting ? 0.5 : 1 }}
-                  >
-                    <Send size={14} />
-                    {inviting ? 'جاري الإرسال...' : 'إعادة إرسال الدعوة'}
-                  </button>
-                </div>
+            {/* Invite button (pushed to the left in RTL) */}
+            <div style={{ marginRight: 'auto', flexShrink: 0 }}>
+              {client.invitation_status === 'active' ? null : client.invitation_status === 'pending' ? (
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleInviteClient}
+                  disabled={inviting}
+                  style={{ gap: 6 }}
+                >
+                  <Send size={13} />
+                  {inviting ? 'جاري الإرسال...' : 'إعادة إرسال الدعوة'}
+                </button>
               ) : (
                 <button
+                  className="btn btn-primary btn-sm"
                   onClick={handleInviteClient}
                   disabled={inviting || !client.email}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                  style={{
-                    background: 'var(--color-primary)', color: '#fff',
-                    opacity: inviting || !client.email ? 0.5 : 1,
-                  }}
+                  style={{ gap: 6 }}
                 >
-                  <Send size={16} />
+                  <Send size={13} />
                   {inviting ? 'جاري الإرسال...' : 'دعوة العميل للبوابة'}
                 </button>
               )}
             </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => handleTabChange(tab.id as TabType)}
-                  className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all whitespace-nowrap"
-                  style={{
-                    backgroundColor: isActive ? 'var(--color-primary)' : 'transparent',
-                    color: isActive ? '#ffffff' : 'var(--color-text-secondary)',
-                  }}
-                >
-                  <Icon size={18} />
-                  {tab.label}
-                </button>
-              );
-            })}
+          {/* Info pills */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {client.email && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', fontSize: 12, color: 'var(--text-secondary)' }} dir="ltr">
+                <Mail size={12} /> {client.email}
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Tabs */}
+      <div className="tabs-colored" style={{ marginBottom: 20, width: '100%', display: 'flex' }}>
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <div
+              key={tab.id}
+              className={`tab tab-blue ${activeTab === tab.id ? 'on' : ''}`}
+              onClick={() => handleTabChange(tab.id as TabType)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
+            >
+              <Icon size={14} />
+              {tab.label}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Tab Content */}
+      <div>
         {activeTab === 'projects' && (
           <ClientProjects
             key={projectsRefreshKey}
@@ -259,7 +244,6 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
           />
         )}
         {activeTab === 'purchase-orders' && <PurchaseOrdersTabEnhanced clientId={clientId} />}
-        {activeTab === 'production-tasks' && <ProductionTasksTab clientId={clientId} />}
         {activeTab === 'documents' && <ClientDocuments clientId={clientId} />}
       </div>
 
@@ -268,13 +252,11 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
           onClose={() => setShowCreateProjectModal(false)}
           onSuccess={() => {
             setShowCreateProjectModal(false);
-            // Trigger refresh of projects table by incrementing key
             setProjectsRefreshKey(prev => prev + 1);
           }}
           preSelectedClientId={clientId}
           preSelectedClientName={client?.name}
           onProjectCreated={() => {
-            // Callback to refresh the projects list
             setProjectsRefreshKey(prev => prev + 1);
           }}
         />

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { Modal } from '../../shared/Modal';
+import { DatePicker } from '../../ui/DatePicker';
+import { FileUploader } from '../../ui/FileUploader';
 
 interface CreateInvoiceModalProps {
   project: {
@@ -25,7 +26,6 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFileUrl, setUploadedFileUrl] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [formData, setFormData] = useState({
     issue_date: new Date().toISOString().split('T')[0],
@@ -52,8 +52,7 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileSelect = (file: File) => {
     if (file) {
       setSelectedFile(file);
     }
@@ -134,28 +133,19 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">تاريخ الإصدار</label>
-              <input
-                type="date"
-                value={formData.issue_date}
-                onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">تاريخ الاستحقاق</label>
-              <input
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <DatePicker
+              label="تاريخ الإصدار"
+              required
+              value={formData.issue_date}
+              onChange={(date) => setFormData({ ...formData, issue_date: date })}
+            />
+            <DatePicker
+              label="تاريخ الاستحقاق"
+              required
+              value={formData.due_date}
+              onChange={(date) => setFormData({ ...formData, due_date: date })}
+            />
           </div>
 
           <div>
@@ -198,30 +188,16 @@ export const CreateInvoiceModal = ({ project, onClose, onSuccess }: CreateInvoic
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">ملف الفاتورة</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-              onChange={handleFileSelect}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingFile}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-slate-300 text-slate-600 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors"
-            >
-              <Upload className="w-5 h-5" />
-              {uploadingFile ? 'جاري الرفع...' : selectedFile ? selectedFile.name : 'اضغط لاختيار ملف الفاتورة'}
-            </button>
-            {selectedFile && (
-              <p className="text-xs text-green-600 mt-1">
-                تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-              </p>
-            )}
-          </div>
+          <FileUploader
+            label="ملف الفاتورة"
+            hint={selectedFile ? `تم اختيار: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : undefined}
+            value={selectedFile ? selectedFile.name : uploadedFileUrl}
+            onChange={(url) => { if (!url) { setSelectedFile(null); setUploadedFileUrl(''); } }}
+            onFile={handleFileSelect}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+            preview="file"
+            uploading={uploadingFile}
+          />
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">ملاحظات</label>

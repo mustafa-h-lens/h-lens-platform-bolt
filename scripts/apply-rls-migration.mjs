@@ -4,11 +4,11 @@ import fs from 'fs';
 import path from 'path';
 
 const token = process.env.MGMT_TOKEN;
-const projectRef = process.env.PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const projectRef = process.env.PROJECT_REF;
 const sqlPath = process.argv[2];
 
-if (!token || !sqlPath) {
-  console.error('Usage: MGMT_TOKEN=... node apply-rls-migration.mjs <file.sql>');
+if (!token || !projectRef || !sqlPath) {
+  console.error('Usage: MGMT_TOKEN=... PROJECT_REF=... node apply-rls-migration.mjs <file.sql>');
   process.exit(1);
 }
 

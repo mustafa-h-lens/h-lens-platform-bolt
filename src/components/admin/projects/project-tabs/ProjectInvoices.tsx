@@ -8,6 +8,7 @@ import { Modal } from '../../../shared/Modal';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { PAYMENT_METHODS } from '../../../../types/database';
 import type { InvoicePayment } from '../../../../types/database';
+import { DatePicker } from '../../../ui/DatePicker';
 
 interface Invoice {
   id: string;
@@ -617,16 +618,12 @@ export const ProjectInvoices = ({ projectId }: ProjectInvoicesProps) => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">تاريخ الدفع</label>
-              <input
-                type="date"
-                value={paymentForm.payment_date}
-                onChange={(e) => setPaymentForm({ ...paymentForm, payment_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                required
-              />
-            </div>
+            <DatePicker
+              label="تاريخ الدفع"
+              required
+              value={paymentForm.payment_date}
+              onChange={(date) => setPaymentForm({ ...paymentForm, payment_date: date })}
+            />
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">طريقة الدفع</label>

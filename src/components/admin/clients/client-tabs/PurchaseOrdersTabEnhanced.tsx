@@ -3,6 +3,7 @@ import { Plus, Eye, Trash2, TrendingUp, DollarSign, Package, FolderOpen } from '
 import { supabase } from '../../../../lib/supabaseClient';
 import { formatCurrency } from '../../../../lib/formatters';
 import { Modal } from '../../../shared/Modal';
+import { DatePicker } from '../../../ui/DatePicker';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import type { PurchaseOrder, TaskPOAllocation, POSettings } from '../../../../types/database';
@@ -101,22 +102,43 @@ export const PurchaseOrdersTabEnhanced = ({
 
       if (allocationsError) throw allocationsError;
 
+      // Also fetch projects linked via po_id
+      const { data: linkedProjects } = await supabase
+        .from('projects')
+        .select('id, po_id, total_price')
+        .eq('client_id', clientId)
+        .not('po_id', 'is', null);
+
       const ordersWithDetails = await Promise.all(
         (ordersData || []).map(async (order) => {
           const orderAllocations =
             allocationsData?.filter((a) => a.po_id === order.id) || [];
 
-          const uniqueProjects = new Set(
+          // Count from task allocations
+          const taskProjects = new Set(
             orderAllocations
               .map((a: any) => a.production_tasks?.project_id)
               .filter(Boolean)
           );
 
+          // Count from direct po_id link
+          const directProjects = (linkedProjects || []).filter(p => p.po_id === order.id);
+          const directProjectIds = new Set(directProjects.map(p => p.id));
+
+          // Merge both
+          const allProjectIds = new Set([...taskProjects, ...directProjectIds]);
+
+          // Calculate used_amount from linked projects
+          const usedFromProjects = directProjects.reduce((sum, p) => sum + (p.total_price || 0), 0);
+          const effectiveUsed = Math.max(order.used_amount || 0, usedFromProjects);
+
           return {
             ...order,
             allocations: orderAllocations,
             task_count: orderAllocations.length,
-            project_count: uniqueProjects.size,
+            project_count: allProjectIds.size,
+            used_amount: effectiveUsed,
+            remaining_amount: (order.total_amount || 0) - effectiveUsed,
           };
         })
       );
@@ -224,6 +246,7 @@ export const PurchaseOrdersTabEnhanced = ({
     setShowDetailsModal(true);
 
     try {
+      // Fetch tasks allocated to this PO
       const { data: tasksData, error: tasksError } = await supabase
         .from('production_tasks')
         .select('*, task_po_allocations!inner(allocated_amount, po_id)')
@@ -232,23 +255,39 @@ export const PurchaseOrdersTabEnhanced = ({
 
       if (tasksError) throw tasksError;
 
-      const projectIds = [
+      const taskProjectIds = [
         ...new Set(tasksData?.map((t) => t.project_id).filter(Boolean)),
       ];
 
-      let projectsData: any[] = [];
-      if (projectIds.length > 0) {
+      // Also fetch projects linked directly via po_id
+      const { data: directProjectsData, error: directProjectsError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('po_id', order.id)
+        .order('start_date', { ascending: false });
+
+      if (directProjectsError) throw directProjectsError;
+
+      // Fetch projects from task allocations that aren't already in direct projects
+      const directProjectIds = new Set((directProjectsData || []).map(p => p.id));
+      const missingTaskProjectIds = taskProjectIds.filter(id => !directProjectIds.has(id));
+
+      let taskProjectsData: any[] = [];
+      if (missingTaskProjectIds.length > 0) {
         const { data, error: projectsError } = await supabase
           .from('projects')
           .select('*')
-          .in('id', projectIds);
+          .in('id', missingTaskProjectIds);
         if (projectsError) throw projectsError;
-        projectsData = data || [];
+        taskProjectsData = data || [];
       }
 
-      const projectsWithTasks = (projectsData || []).map((project) => {
+      // Merge both sets of projects
+      const allProjects = [...(directProjectsData || []), ...taskProjectsData];
+
+      const projectsWithTasks = allProjects.map((project) => {
         const projectTasks = tasksData?.filter((t) => t.project_id === project.id) || [];
-        const totalAllocated = projectTasks.reduce(
+        const taskAllocated = projectTasks.reduce(
           (sum: number, t: any) =>
             sum +
             (t.task_po_allocations?.reduce(
@@ -261,13 +300,13 @@ export const PurchaseOrdersTabEnhanced = ({
         return {
           ...project,
           task_count: projectTasks.length,
-          total_allocated: totalAllocated,
+          total_allocated: taskAllocated || project.total_price || 0,
         };
       });
 
       setDetailsData({
         projects: projectsWithTasks,
-        tasks: tasksData || [],
+        tasks: [],
       });
     } catch (error: any) {
       console.error('Error loading PO details:', error);
@@ -605,49 +644,17 @@ export const PurchaseOrdersTabEnhanced = ({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  تاريخ الإصدار
-                </label>
-                <input
-                  type="date"
-                  value={formData.issue_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, issue_date: e.target.value })
-                  }
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text-primary)',
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium mb-2"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                >
-                  تاريخ الانتهاء
-                </label>
-                <input
-                  type="date"
-                  value={formData.expiry_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, expiry_date: e.target.value })
-                  }
-                  className="w-full px-4 py-2 rounded-lg border"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text-primary)',
-                  }}
-                />
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+              <DatePicker
+                label="تاريخ الإصدار"
+                value={formData.issue_date}
+                onChange={(date) => setFormData({ ...formData, issue_date: date })}
+              />
+              <DatePicker
+                label="تاريخ الانتهاء"
+                value={formData.expiry_date}
+                onChange={(date) => setFormData({ ...formData, expiry_date: date })}
+              />
             </div>
 
             <div>

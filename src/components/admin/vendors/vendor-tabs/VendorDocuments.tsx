@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, FileText, Download, Trash2, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, FileText, Download, Trash2 } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { Modal } from '../../../shared/Modal';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
+import { FileUploader } from '../../../ui/FileUploader';
 
 interface Document {
   id: string;
@@ -238,7 +239,6 @@ interface AddDocumentModalProps {
 const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProps) => {
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { showError } = useNotification();
   const [formData, setFormData] = useState({
     document_type: 'contract' as 'contract' | 'nda' | 'certificate' | 'other',
@@ -322,36 +322,21 @@ const AddDocumentModal = ({ vendorId, onClose, onSuccess }: AddDocumentModalProp
           />
         </div>
 
-        <div className="input-group">
-          <label className="input-label">اختيار الملف <span className="req">*</span></label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setSelectedFile(file);
-                if (!formData.file_name) {
-                  setFormData({ ...formData, file_name: file.name });
-                }
-              }
-            }}
-          />
-          <div
-            className="upload-area"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload size={24} />
-            <strong>{selectedFile ? selectedFile.name : 'اضغط لاختيار ملف'}</strong>
-          </div>
-          {selectedFile && (
-            <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>
-              تم اختيار: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-            </span>
-          )}
-        </div>
+        <FileUploader
+          label="اختيار الملف"
+          hint={selectedFile ? `تم اختيار: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : undefined}
+          value={selectedFile ? selectedFile.name : ''}
+          onChange={(url) => { if (!url) setSelectedFile(null); }}
+          onFile={(file) => {
+            setSelectedFile(file);
+            if (!formData.file_name) {
+              setFormData({ ...formData, file_name: file.name });
+            }
+          }}
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+          preview="file"
+        />
+
 
         <div style={{ display: 'flex', gap: 8, paddingTop: 16 }}>
           <button type="button" className="btn btn-secondary" onClick={onClose} style={{ flex: 1 }}>

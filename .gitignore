@@ -52,3 +52,18 @@ pnpm-debug.log*
 # Supabase local
 supabase/.temp/
 supabase/.branches/
+
+# Claude Code local settings (may contain tokens in command history)
+.claude/settings.local.json
+
+# Test/seed files with hardcoded credentials
+seed-test-vendors.html
+
+# Internal dev docs and prompts
+bolt-prompt.md
+ds-cheatsheet.md
+migration-map.md
+DS-REFERENCE.md
+half-lens-roadmap.html
+prompts/
+public/client-preview.html

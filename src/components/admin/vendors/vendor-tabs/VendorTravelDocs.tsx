@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Save, Edit2, Trash2, Upload, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Save, Edit2, Trash2, FileText } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
+import { DatePicker } from '../../../ui/DatePicker';
+import { FileUploader } from '../../../ui/FileUploader';
 
 interface TravelDocument {
   id: string;
@@ -86,8 +88,6 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
   const [uploadedTravelFiles, setUploadedTravelFiles] = useState<UploadedTravelFile[]>([]);
   const [uploadingPassport, setUploadingPassport] = useState(false);
   const [uploadingVisa, setUploadingVisa] = useState(false);
-  const passportFileRef = useRef<HTMLInputElement>(null);
-  const visaFileRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (
     file: File,
@@ -350,56 +350,30 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 </select>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">تاريخ الإصدار</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={passportForm.passport_issue_date}
-                  onChange={(e) => setPassportForm({ ...passportForm, passport_issue_date: e.target.value })}
-                />
-              </div>
+              <DatePicker
+                label="تاريخ الإصدار"
+                value={passportForm.passport_issue_date}
+                onChange={(date) => setPassportForm({ ...passportForm, passport_issue_date: date })}
+              />
 
-              <div className="input-group">
-                <label className="input-label">تاريخ الانتهاء</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={passportForm.passport_expiry_date}
-                  onChange={(e) => setPassportForm({ ...passportForm, passport_expiry_date: e.target.value })}
-                />
-              </div>
+              <DatePicker
+                label="تاريخ الانتهاء"
+                value={passportForm.passport_expiry_date}
+                onChange={(date) => setPassportForm({ ...passportForm, passport_expiry_date: date })}
+              />
 
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">رفع ملف الجواز</label>
-                <input
-                  ref={passportFileRef}
-                  type="file"
-                  style={{ display: 'none' }}
+              <div style={{ gridColumn: 'span 2' }}>
+                <FileUploader
+                  label="رفع ملف الجواز"
+                  value={passportForm.passport_file}
+                  onChange={(url) => setPassportForm({ ...passportForm, passport_file: url })}
+                  onFile={(file) => handleFileUpload(file, 'passport', (url) => {
+                    setPassportForm({ ...passportForm, passport_file: url });
+                  }, setUploadingPassport)}
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload(file, 'passport', (url) => {
-                        setPassportForm({ ...passportForm, passport_file: url });
-                      }, setUploadingPassport);
-                    }
-                    if (passportFileRef.current) passportFileRef.current.value = '';
-                  }}
+                  preview="image"
+                  uploading={uploadingPassport}
                 />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => passportFileRef.current?.click()}
-                  disabled={uploadingPassport}
-                  style={{ gap: 6 }}
-                >
-                  <Upload size={14} />
-                  {uploadingPassport ? 'جاري الرفع...' : 'اختيار ملف'}
-                </button>
-                {passportForm.passport_file && (
-                  <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>تم رفع الملف بنجاح</span>
-                )}
               </div>
             </div>
 
@@ -524,59 +498,31 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                 />
               </div>
 
-              <div className="input-group">
-                <label className="input-label">تاريخ البداية</label>
-                <input
-                  type="date"
-                  className="input"
-                  value={visaForm.visa_start_date}
-                  onChange={(e) => setVisaForm({ ...visaForm, visa_start_date: e.target.value })}
-                  dir="ltr"
-                />
-              </div>
+              <DatePicker
+                label="تاريخ البداية"
+                value={visaForm.visa_start_date}
+                onChange={(date) => setVisaForm({ ...visaForm, visa_start_date: date })}
+              />
 
-              <div className="input-group">
-                <label className="input-label">تاريخ الانتهاء <span className="req">*</span></label>
-                <input
-                  type="date"
-                  className="input"
-                  value={visaForm.visa_expiry_date}
-                  onChange={(e) => setVisaForm({ ...visaForm, visa_expiry_date: e.target.value })}
-                  dir="ltr"
-                  required
-                />
-              </div>
+              <DatePicker
+                label="تاريخ الانتهاء"
+                required
+                value={visaForm.visa_expiry_date}
+                onChange={(date) => setVisaForm({ ...visaForm, visa_expiry_date: date })}
+              />
 
-              <div className="input-group" style={{ gridColumn: 'span 2' }}>
-                <label className="input-label">رفع إثبات الفيزا</label>
-                <input
-                  ref={visaFileRef}
-                  type="file"
-                  style={{ display: 'none' }}
+              <div style={{ gridColumn: 'span 2' }}>
+                <FileUploader
+                  label="رفع إثبات الفيزا"
+                  value={visaForm.visa_file}
+                  onChange={(url) => setVisaForm({ ...visaForm, visa_file: url })}
+                  onFile={(file) => handleFileUpload(file, 'visa', (url) => {
+                    setVisaForm({ ...visaForm, visa_file: url });
+                  }, setUploadingVisa)}
                   accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileUpload(file, 'visa', (url) => {
-                        setVisaForm({ ...visaForm, visa_file: url });
-                      }, setUploadingVisa);
-                    }
-                    if (visaFileRef.current) visaFileRef.current.value = '';
-                  }}
+                  preview="image"
+                  uploading={uploadingVisa}
                 />
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => visaFileRef.current?.click()}
-                  disabled={uploadingVisa}
-                  style={{ gap: 6 }}
-                >
-                  <Upload size={14} />
-                  {uploadingVisa ? 'جاري الرفع...' : 'اختيار ملف'}
-                </button>
-                {visaForm.visa_file && (
-                  <span style={{ fontSize: 12, color: 'var(--success-text)', marginTop: 8 }}>تم رفع الملف بنجاح</span>
-                )}
               </div>
             </div>
 

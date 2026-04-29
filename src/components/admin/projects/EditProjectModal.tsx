@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { Modal } from '../../shared/Modal';
+import { DatePicker } from '../../ui/DatePicker';
 
 interface Client {
   id: string;
@@ -284,33 +285,16 @@ export const EditProjectModal = ({ projectId, currentData, onClose, onSuccess }:
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                تاريخ البداية
-              </label>
-              <input
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg
-                  bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                  focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                تاريخ النهاية
-              </label>
-              <input
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg
-                  bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-                  focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+            <DatePicker
+              label="تاريخ البداية"
+              value={formData.start_date}
+              onChange={(date) => setFormData({ ...formData, start_date: date })}
+            />
+            <DatePicker
+              label="تاريخ النهاية"
+              value={formData.end_date}
+              onChange={(date) => setFormData({ ...formData, end_date: date })}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

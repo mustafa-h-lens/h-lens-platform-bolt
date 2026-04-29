@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, Calendar, Plus } from 'lucide-react';
+import { Eye, Plus, DollarSign, TrendingUp, RotateCcw, FolderOpen } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useHideAmounts } from '../../../contexts/HideAmountsContext';
+import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../../lib/formatters';
-import type { Project, Client } from '../../../types/database';
+import type { Project } from '../../../types/database';
 
 interface ClientProjectsProps {
   clientId: string;
@@ -11,37 +12,52 @@ interface ClientProjectsProps {
   onAddProject?: () => void;
 }
 
+const STATUS_BADGES: Record<string, { label: string; className: string }> = {
+  request:      { label: 'طلب',           className: 'badge badge-gray' },
+  quoted:       { label: 'عرض سعر',      className: 'badge badge-blue' },
+  invoiced:     { label: 'فاتورة',        className: 'badge badge-blue' },
+  po_issued:    { label: 'أمر شراء',      className: 'badge badge-blue' },
+  partial_paid: { label: 'مدفوع جزئي',   className: 'badge badge-amber' },
+  paid:         { label: 'مدفوع',         className: 'badge badge-green' },
+  pending:      { label: 'معلق',          className: 'badge badge-gray' },
+  in_progress:  { label: 'قيد التنفيذ',   className: 'badge badge-amber' },
+  completed:    { label: 'مكتمل',         className: 'badge badge-green' },
+  closed:       { label: 'مغلق',          className: 'badge badge-gray' },
+  cancelled:    { label: 'ملغي',          className: 'badge badge-red' },
+};
+
 export const ClientProjects = ({ clientId, onViewProject, onAddProject }: ClientProjectsProps) => {
   const { masked } = useHideAmounts();
-  const [client, setClient] = useState<Client | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [totalCosts, setTotalCosts] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
   }, [clientId]);
 
-  useEffect(() => {
-    filterProjects();
-  }, [searchQuery, statusFilter, projects]);
-
   const loadData = async () => {
     try {
       setLoading(true);
+      const { data } = await supabase
+        .from('projects')
+        .select('*, purchase_orders:po_id(id, po_number, title)')
+        .eq('client_id', clientId)
+        .order('updated_at', { ascending: false });
+      setProjects(data || []);
 
-      const [clientRes, projectsRes] = await Promise.all([
-        supabase.from('clients').select('*').eq('id', clientId).maybeSingle(),
-        supabase.from('projects').select('*').eq('client_id', clientId).order('updated_at', { ascending: false }),
-      ]);
-
-      if (clientRes.data) {
-        setClient(clientRes.data);
+      // Fetch total expenses for all projects
+      if (data && data.length > 0) {
+        const projectIds = data.map(p => p.id);
+        const { data: expenses } = await supabase
+          .from('vendor_invoices')
+          .select('amount_total')
+          .in('project_id', projectIds);
+        const costs = (expenses || []).reduce((sum, e) => sum + (e.amount_total || 0), 0);
+        setTotalCosts(costs);
       }
-
-      setProjects(projectsRes.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -49,239 +65,167 @@ export const ClientProjects = ({ clientId, onViewProject, onAddProject }: Client
     }
   };
 
-  const filterProjects = () => {
-    let filtered = projects;
-
+  // Filtering
+  const filtered = projects.filter(p => {
+    if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false;
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          (p.project_code && p.project_code.toLowerCase().includes(query))
-      );
+      const q = searchQuery.toLowerCase();
+      return p.name.toLowerCase().includes(q) || (p.project_code && p.project_code.toLowerCase().includes(q));
     }
+    return true;
+  });
 
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((p) => p.status === statusFilter);
-    }
+  // Sort by project date (start_date or created_at), newest first
+  filtered.sort((a, b) => {
+    const da = new Date(a.start_date || a.created_at).getTime();
+    const db = new Date(b.start_date || b.created_at).getTime();
+    return db - da;
+  });
 
-    setFilteredProjects(filtered);
-  };
+  const totalRevenue = projects.reduce((sum, p) => sum + (p.total_price || 0), 0);
+  const profit = totalRevenue - totalCosts;
+  const profitMargin = totalRevenue > 0 ? ((profit / totalRevenue) * 100) : 0;
+  const completedCount = projects.filter(p => p.status === 'completed').length;
+  const inProgressCount = projects.filter(p => p.status === 'in_progress').length;
+  const pendingCount = projects.filter(p => p.status === 'pending' || p.status === 'request' || p.status === 'quoted').length;
+  const currency = projects[0]?.currency || 'SAR';
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      request: { label: 'طلب', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-      quoted: { label: 'عرض سعر', color: 'bg-[#0A2A66]/10 text-[#0A2A66] dark:bg-[#0A2A66]/30 dark:text-[#7CC9FF]' },
-      invoiced: { label: 'فاتورة', color: 'bg-[#143D8D]/10 text-[#143D8D] dark:bg-[#143D8D]/30 dark:text-[#47A1FF]' },
-      po_issued: { label: 'أمر شراء', color: 'bg-[#1B4FA9]/10 text-[#1B4FA9] dark:bg-[#1B4FA9]/30 dark:text-[#7CC9FF]' },
-      partial_paid: { label: 'مدفوع جزئي', color: 'bg-[#47A1FF]/10 text-[#143D8D] dark:bg-[#47A1FF]/30 dark:text-[#7CC9FF]' },
-      paid: { label: 'مدفوع', color: 'bg-[#1B4FA9]/20 text-[#0A2A66] dark:bg-[#1B4FA9]/40 dark:text-white' },
-      pending: { label: 'معلق', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-      in_progress: { label: 'قيد التنفيذ', color: 'bg-[#0A2A66]/10 text-[#0A2A66] dark:bg-[#0A2A66]/30 dark:text-[#47A1FF]' },
-      completed: { label: 'مكتمل', color: 'bg-[#143D8D]/20 text-[#0A2A66] dark:bg-[#143D8D]/40 dark:text-white' },
-      closed: { label: 'مغلق', color: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-      cancelled: { label: 'ملغي', color: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-400' },
-    };
-
-    const statusInfo = statusMap[status] || statusMap.request;
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-        {statusInfo.label}
-      </span>
-    );
+    const info = STATUS_BADGES[status] || STATUS_BADGES.request;
+    return <span className={info.className}>{info.label}</span>;
   };
 
-
   if (loading) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-slate-600 dark:text-slate-300">جاري التحميل...</div>
-      </div>
-    );
+    return <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header */}
+      <div className="page-title-row">
         <div>
-          <h2 className="text-xl font-bold" style={{ color: 'var(--color-text-primary)' }}>
-            المشاريع ({formatNumber(projects.length)})
-          </h2>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-            عرض وإدارة جميع المشاريع
-          </p>
+          <div className="page-title" style={{ fontSize: 18 }}>المشاريع ({formatNumber(projects.length)})</div>
+          <div className="page-subtitle">عرض وإدارة جميع المشاريع</div>
         </div>
         {onAddProject && (
-          <button
-            onClick={onAddProject}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-            style={{ background: 'var(--color-primary)', color: '#fff' }}
-          >
-            <Plus size={16} />
-            إضافة مشروع
+          <button className="btn btn-primary btn-sm" onClick={onAddProject} style={{ gap: 6 }}>
+            <Plus size={14} /> إضافة مشروع
           </button>
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ابحث عن مشروع..."
-            className="w-full pr-10 pl-4 py-2.5 border border-slate-300 dark:border-dark-border rounded-lg
-              bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-              focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><DollarSign size={18} /></div>
+          <div className="stat-sub">إجمالي المبيعات</div>
+          <div className="stat-val" dir="ltr">{masked(formatCurrency(totalRevenue, currency))}</div>
         </div>
-
-        <div className="relative min-w-[200px]">
-          <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full pr-10 pl-4 py-2.5 border border-slate-300 dark:border-dark-border rounded-lg
-              bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
-              focus:ring-2 focus:ring-primary focus:border-transparent appearance-none cursor-pointer"
-          >
-            <option value="all">كل الحالات</option>
-            <option value="request">طلب</option>
-            <option value="quoted">عرض سعر</option>
-            <option value="invoiced">فاتورة</option>
-            <option value="po_issued">أمر شراء</option>
-            <option value="partial_paid">مدفوع جزئي</option>
-            <option value="paid">مدفوع</option>
-            <option value="pending">معلق</option>
-            <option value="in_progress">قيد التنفيذ</option>
-            <option value="completed">مكتمل</option>
-            <option value="closed">مغلق</option>
-            <option value="cancelled">ملغي</option>
-          </select>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><DollarSign size={18} /></div>
+          <div className="stat-sub">إجمالي التكاليف</div>
+          <div className="stat-val" dir="ltr">{masked(formatCurrency(totalCosts, currency))}</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><TrendingUp size={18} /></div>
+          <div className="stat-sub">هامش الربح</div>
+          <div className="stat-val">
+            {masked(`${profitMargin.toFixed(1)}%`)}
+          </div>
+          <div className="stat-hint" dir="ltr">
+            {masked(formatCurrency(profit, currency))}
+          </div>
+        </div>
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><FolderOpen size={18} /></div>
+          <div className="stat-sub">إجمالي المشاريع</div>
+          <div className="stat-val">{formatNumber(projects.length)}</div>
         </div>
       </div>
 
-      {filteredProjects.length === 0 ? (
-        <div className="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200 dark:border-dark-border p-8">
-          <div className="text-center text-slate-600 dark:text-slate-300">
-            {searchQuery || statusFilter !== 'all' ? 'لا توجد نتائج للبحث' : 'لا توجد مشاريع'}
-          </div>
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <input
+          className="input"
+          placeholder="ابحث عن مشروع..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{ maxWidth: 280 }}
+        />
+        <MultiSelectFilter
+          label="الحالة"
+          options={[
+            { value: 'pending', label: 'معلق' },
+            { value: 'in_progress', label: 'قيد التنفيذ' },
+            { value: 'completed', label: 'مكتمل' },
+            { value: 'cancelled', label: 'ملغي' },
+          ]}
+          selected={statusFilter}
+          onToggle={(v) => setStatusFilter(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+        />
+        {(searchQuery || statusFilter.length > 0) && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setSearchQuery(''); setStatusFilter([]); }}>
+            <RotateCcw size={13} /> إعادة تعيين
+          </button>
+        )}
+      </div>
+
+      {/* Table */}
+      {filtered.length === 0 ? (
+        <div className="dash-empty" style={{ height: 200 }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+            {searchQuery || statusFilter.length > 0 ? 'لا توجد نتائج للبحث' : 'لا توجد مشاريع'}
+          </span>
         </div>
       ) : (
-        <>
-          <div className="hidden md:block bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200 dark:border-dark-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-dark-border">
-                  <tr>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      اسم المشروع
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      الكود
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      الحالة
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      إجمالي المبلغ
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      آخر تعديل
-                    </th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-slate-700 dark:text-slate-300">
-                      الإجراءات
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-dark-border">
-                  {filteredProjects.map((project) => (
-                    <tr key={project.id} className="hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-slate-800 dark:text-slate-100">{project.name}</div>
-                        {project.description && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
-                            {project.description}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 dark:text-slate-400">
-                        {project.project_code || '-'}
-                      </td>
-                      <td className="px-6 py-4">{getStatusBadge(project.status)}</td>
-                      <td className="px-6 py-4 text-slate-800 dark:text-slate-100 font-medium" style={{ direction: 'ltr', textAlign: 'right' }}>
-                        {masked(formatCurrency(project.total_price, project.currency))}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm" style={{ direction: 'ltr', textAlign: 'right' }}>
-                          <Calendar className="w-4 h-4" />
-                          <span>{formatDateArabic(project.updated_at)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => onViewProject(project.id)}
-                          className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700
-                            dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-                        >
-                          <Eye className="w-4 h-4" />
-                          عرض
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="md:hidden space-y-4">
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className="bg-white dark:bg-dark-card rounded-xl shadow-sm border border-slate-200
-                  dark:border-dark-border p-4"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-1">{project.name}</h3>
-                    {project.project_code && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{project.project_code}</p>
-                    )}
-                  </div>
-                  {getStatusBadge(project.status)}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">إجمالي المبلغ</p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-300" style={{ direction: 'ltr', textAlign: 'right' }}>
-                      {masked(formatCurrency(project.total_price, project.currency))}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">آخر تعديل</p>
-                    <div className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400" style={{ direction: 'ltr', textAlign: 'right' }}>
-                      <Calendar className="w-3 h-3" />
-                      <span>{formatDateArabic(project.updated_at)}</span>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم المشروع</th>
+                <th>الحالة</th>
+                <th>إجمالي المبلغ</th>
+                <th>تاريخ المشروع</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((project) => (
+                <tr key={project.id} onClick={() => onViewProject(project.id)} style={{ cursor: 'pointer' }}>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="td-primary">{project.name}</span>
+                      {(project as any).purchase_orders && (
+                        <span className="badge badge-blue" style={{ fontSize: 10, padding: '1px 6px', whiteSpace: 'nowrap' }}>
+                          {(project as any).purchase_orders.title || (project as any).purchase_orders.po_number}
+                        </span>
+                      )}
                     </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => onViewProject(project.id)}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2
-                    text-blue-600 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100
-                    dark:hover:bg-blue-900/30 rounded-lg transition-colors text-sm font-medium"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span>عرض المشروع</span>
-                </button>
-              </div>
-            ))}
-          </div>
-        </>
+                    {project.description && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{project.description}</div>
+                    )}
+                  </td>
+                  <td>{getStatusBadge(project.status)}</td>
+                  <td style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 13 }} dir="ltr">
+                    {masked(formatCurrency(project.total_price, project.currency))}
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }} dir="ltr">
+                    {formatDateArabic(project.start_date || project.created_at)}
+                  </td>
+                  <td>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={(e) => { e.stopPropagation(); onViewProject(project.id); }}
+                      style={{ gap: 4, fontSize: 12 }}
+                    >
+                      <Eye size={14} /> عرض
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

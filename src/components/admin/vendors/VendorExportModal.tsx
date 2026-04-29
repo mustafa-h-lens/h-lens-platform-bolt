@@ -81,9 +81,12 @@ const defaultFields: ExportFields = {
   status: false,
 };
 
-export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportModalProps) => {
+export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess }: VendorExportModalProps) => {
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(false);
+  const [vendors, setVendors] = useState<Vendor[]>(initialVendors);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const isSelectedSubset = initialVendors.length > 0 && initialVendors.length <= 20;
   const [selectedFields, setSelectedFields] = useState<ExportFields>(defaultFields);
   const [separatePages, setSeparatePages] = useState(false);
   const [equipmentData, setEquipmentData] = useState<Record<string, VendorEquipment[]>>({});
@@ -99,7 +102,27 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
         console.error('Error loading saved preferences:', e);
       }
     }
+    // Only fetch ALL if no specific selection was made (export all)
+    if (!isSelectedSubset) {
+      fetchAllVendors();
+    }
   }, []);
+
+  const fetchAllVendors = async () => {
+    setLoadingAll(true);
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .in('status', ['active', 'inactive', 'blocked'])
+        .order('created_at', { ascending: false });
+      if (!error && data) setVendors(data);
+    } catch (e) {
+      console.error('Error fetching all vendors:', e);
+    } finally {
+      setLoadingAll(false);
+    }
+  };
 
   useEffect(() => {
     fetchEquipmentData();
@@ -153,7 +176,11 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
 
   const convertImageToBase64 = async (url: string): Promise<string> => {
     try {
-      const response = await fetch(url);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!response.ok) return '';
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -190,6 +217,10 @@ export const VendorExportModal = ({ vendors, onClose, onSuccess }: VendorExportM
   const handleExport = async () => {
     if (Object.values(selectedFields).every(v => !v)) {
       showError('يرجى اختيار حقل واحد على الأقل');
+      return;
+    }
+    if (loadingAll || vendors.length === 0) {
+      showError('جاري تحميل البيانات، يرجى الانتظار...');
       return;
     }
 

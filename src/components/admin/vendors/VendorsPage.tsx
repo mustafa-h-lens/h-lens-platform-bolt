@@ -89,6 +89,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(initialVendorId || null);
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
@@ -118,8 +119,14 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     });
   };
 
-  useEffect(() => { fetchVendors(); fetchPendingCount(); }, [page, pageSize]);
-  useEffect(() => { setPage(0); }, [searchTerm, filters]);
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(searchTerm); setPage(0); }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => { fetchVendors(); fetchPendingCount(); }, [page, pageSize, debouncedSearch, filters]);
+  useEffect(() => { setPage(0); }, [filters]);
   useEffect(() => { loadVendorStats(); }, []);
   useEffect(() => { if (initialTab === 'pending') setActiveSubTab('pending'); }, [initialTab]);
   useEffect(() => { if (initialShowAdd) { setShowAddModal(true); onShowAddConsumed?.(); } }, [initialShowAdd]);
@@ -152,9 +159,22 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       await supabase.rpc('auto_unblock_expired_vendors');
       const from = page * pageSize;
       const to = from + pageSize - 1;
-      const { data, error, count } = await supabase
+      let query = supabase
         .from('vendors').select('*', { count: 'exact' })
-        .in('status', ['active', 'inactive', 'blocked'])
+        .in('status', ['active', 'inactive', 'blocked']);
+
+      // Server-side search
+      if (debouncedSearch.trim()) {
+        query = query.or(`full_name.ilike.%${debouncedSearch.trim()}%,phone.ilike.%${debouncedSearch.trim()}%,primary_field.ilike.%${debouncedSearch.trim()}%,email.ilike.%${debouncedSearch.trim()}%`);
+      }
+
+      // Server-side filters
+      if (filters.nationality.length > 0) query = query.in('nationality', filters.nationality);
+      if (filters.primary_city.length > 0) query = query.in('primary_city', filters.primary_city);
+      if (filters.primary_field.length > 0) query = query.in('primary_field', filters.primary_field);
+      if (filters.status.length > 0) query = query.in('status', filters.status);
+
+      const { data, error, count } = await query
         .order('created_at', { ascending: false }).range(from, to);
       if (error) throw error;
       setVendors(data || []);
@@ -170,14 +190,8 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     } catch (error) { console.error('Error fetching pending count:', error); }
   };
 
-  const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || vendor.phone.includes(searchTerm) || vendor.primary_field?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesNationality = filters.nationality.length === 0 || (vendor.nationality && filters.nationality.includes(vendor.nationality));
-    const matchesCity = filters.primary_city.length === 0 || (vendor.primary_city && filters.primary_city.includes(vendor.primary_city));
-    const matchesField = filters.primary_field.length === 0 || (vendor.primary_field && filters.primary_field.includes(vendor.primary_field));
-    const matchesStatus = filters.status.length === 0 || filters.status.includes(vendor.status);
-    return matchesSearch && matchesNationality && matchesCity && matchesField && matchesStatus;
-  });
+  // All filtering is now server-side
+  const filteredVendors = vendors;
 
   const toggleVendorSelection = (vendorId: string) => {
     const newSelected = new Set(selectedVendors);
@@ -464,51 +478,119 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   const [loading, setLoading] = useState(false);
   const [allFields, setAllFields] = useState<SupplierField[]>([]);
   const [cities, setCities] = useState<City[]>([]);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const [imagePreview, setImagePreview] = useState('');
+  const profileInputRef = React.useRef<HTMLInputElement>(null);
+  const idInputRef = React.useRef<HTMLInputElement>(null);
+  const [profileFile, setProfileFile] = useState<File | null>(null);
+  const [profilePreview, setProfilePreview] = useState('');
+  const [idFile, setIdFile] = useState<File | null>(null);
+  const [idPreview, setIdPreview] = useState('');
+  const [smartText, setSmartText] = useState('');
+  const [showSmartParse, setShowSmartParse] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '', phone: '', email: '', primary_field: '', primary_city: '',
-    estimated_cost: '', status: 'active' as 'active' | 'inactive' | 'blocked',
-    nationality: '', cr_number: '', tax_number: '', notes: '',
+    id_number: '', nationality: '', status: 'active' as 'active' | 'inactive' | 'blocked',
   });
 
   useEffect(() => {
-    supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data, error }) => { if (error) console.error('Failed to fetch supplier_fields:', error); setAllFields(data || []); });
-    supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data, error }) => { if (error) console.error('Failed to fetch cities:', error); setCities(data || []); });
+    supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data }) => setAllFields(data || []));
+    supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data }) => setCities(data || []));
   }, []);
 
-  // Build service options with main → sub grouping
   const serviceOptions = React.useMemo(() => {
     const parents = allFields.filter(f => !f.parent_id);
     const options: { value: string; label: string }[] = [];
     parents.forEach(parent => {
-      options.push({ value: parent.name, label: `◆ ${parent.name}` });
       const children = allFields.filter(f => f.parent_id === parent.id);
-      children.forEach(child => {
-        options.push({ value: child.name, label: `    ${child.name}` });
-      });
-    });
-    // Add orphan fields (no parent, no children)
-    const parentIds = new Set(parents.map(p => p.id));
-    const childParentIds = new Set(allFields.filter(f => f.parent_id).map(f => f.parent_id!));
-    allFields.filter(f => !f.parent_id && !childParentIds.has(f.id) && !parentIds.has(f.id)).forEach(f => {
-      options.push({ value: f.name, label: f.name });
+      if (children.length > 0) {
+        children.forEach(child => options.push({ value: child.name, label: `${parent.name} — ${child.name}` }));
+      } else {
+        options.push({ value: parent.name, label: parent.name });
+      }
     });
     return options;
   }, [allFields]);
 
-  // Nationality options with flags from shared-data
-  const nationalityOptions = React.useMemo(() => {
-    return COUNTRIES.map(c => ({ value: c.nameAr, label: `${c.flag} ${c.nameAr}` }));
-  }, []);
+  const nationalityOptions = React.useMemo(() => COUNTRIES.map(c => ({ value: c.nameAr, label: `${c.flag} ${c.nameAr}` })), []);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5 ميجابايت'); return; }
+  // Smart text parser
+  const parseSmartText = () => {
+    const text = smartText.trim();
+    if (!text) return;
+    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+    const allText = lines.join(' ');
+    const updates: Partial<typeof formData> = {};
+
+    // Phone: 05xxxxxxxx or +966 xx xxx xxxx
+    const phoneMatch = allText.match(/(?:\+?966\s*)?0?5\d[\d\s]{7,10}/);
+    if (phoneMatch) {
+      updates.phone = phoneMatch[0].replace(/\s+/g, '').replace(/^\+?966/, '0');
+    }
+
+    // Email
+    const emailMatch = allText.match(/[\w.-]+@[\w.-]+\.\w+/i);
+    if (emailMatch) updates.email = emailMatch[0];
+
+    // ID number: 10 digits starting with 1 or 2
+    const idMatch = allText.match(/\b[12]\d{9}\b/);
+    if (idMatch) updates.id_number = idMatch[0];
+
+    // City detection
+    const cityNames = cities.map(c => c.name);
+    const foundCity = cityNames.find(c => allText.includes(c));
+    if (foundCity) updates.primary_city = foundCity;
+
+    // Field detection
+    const fieldNames = serviceOptions.map(f => f.value);
+    const foundField = fieldNames.find(f => allText.includes(f));
+    if (foundField) updates.primary_field = foundField;
+
+    // Nationality detection
+    const natKeywords: Record<string, string> = {
+      'سعودي': 'سعودي', 'سوري': 'سوري', 'يمني': 'يمني', 'مصري': 'مصري',
+      'مغربي': 'مغربي', 'مغربية': 'مغربية', 'أردني': 'أردني', 'فلسطيني': 'فلسطيني',
+      'لبناني': 'لبناني', 'عراقي': 'عراقي', 'سوداني': 'سوداني', 'تونسي': 'تونسي',
+      'جزائري': 'جزائري', 'باكستاني': 'باكستاني', 'هندي': 'هندي',
+    };
+    const foundNat = Object.keys(natKeywords).find(k => allText.includes(k));
+    if (foundNat) updates.nationality = natKeywords[foundNat];
+
+    // Name: first Arabic-only line that isn't a known keyword
+    const usedTokens = new Set([
+      updates.phone, updates.email, updates.id_number,
+      updates.primary_city, updates.primary_field, foundNat,
+    ].filter(Boolean));
+    for (const line of lines) {
+      const clean = line.replace(/[0-9@+._\-]/g, '').trim();
+      if (clean.length > 3 && /[\u0600-\u06FF]/.test(clean) && !usedTokens.has(line)) {
+        // Check it's not a known city/field/nationality
+        if (!cityNames.includes(clean) && !fieldNames.includes(clean) && !Object.keys(natKeywords).includes(clean)) {
+          updates.full_name = clean;
+          break;
+        }
+      }
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
+    setShowSmartParse(false);
+    setSmartText('');
+    showSuccess(`تم استخراج ${Object.keys(updates).length} حقل تلقائياً`);
+  };
+
+  const handleFileSelect = (file: File, type: 'profile' | 'id') => {
+    if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5MB'); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+    reader.onload = (ev) => {
+      if (type === 'profile') { setProfileFile(file); setProfilePreview(ev.target?.result as string); }
+      else { setIdFile(file); setIdPreview(ev.target?.result as string); }
+    };
     reader.readAsDataURL(file);
+  };
+
+  const handleDrop = (e: React.DragEvent, type: 'profile' | 'id') => {
+    e.preventDefault(); e.stopPropagation();
+    e.currentTarget.style.borderColor = 'var(--border-soft)';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleFileSelect(file, type);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -517,101 +599,164 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     if (!formData.phone.trim()) { showError('يرجى إدخال رقم الجوال'); return; }
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from('vendors').insert([{
-        full_name: formData.full_name.trim(), phone: toEnglishNumbers(formData.phone.trim()),
-        email: formData.email.trim() || null, primary_field: formData.primary_field.trim() || null,
-        primary_city: formData.primary_city.trim() || null, nationality: formData.nationality.trim() || null,
-        estimated_cost: formData.estimated_cost ? parseFloat(formData.estimated_cost) : null,
-        status: formData.status, created_by: user?.id,
-      }]);
+      const { data: vendor, error } = await supabase.from('vendors').insert([{
+        full_name: formData.full_name.trim(),
+        phone: toEnglishNumbers(formData.phone.trim()),
+        email: formData.email.trim() || null,
+        primary_field: formData.primary_field.trim() || null,
+        primary_city: formData.primary_city.trim() || null,
+        nationality: formData.nationality.trim() || null,
+        id_number: formData.id_number ? toEnglishNumbers(formData.id_number.trim()) : null,
+        status: formData.status,
+      }]).select('id').single();
       if (error) throw error;
+
+      // Upload images
+      if (profileFile && vendor) {
+        const buf = await profileFile.arrayBuffer();
+        const ext = profileFile.name.split('.').pop() || 'jpg';
+        const path = `${vendor.id}-profile-${Date.now()}.${ext}`;
+        await supabase.storage.from('vendor-images').upload(path, new Uint8Array(buf), { contentType: profileFile.type, cacheControl: '3600', upsert: true });
+        const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
+        await supabase.from('vendors').update({ profile_image: publicUrl }).eq('id', vendor.id);
+      }
+      if (idFile && vendor) {
+        const buf = await idFile.arrayBuffer();
+        const ext = idFile.name.split('.').pop() || 'jpg';
+        const path = `${vendor.id}-id-${Date.now()}.${ext}`;
+        await supabase.storage.from('vendor-images').upload(path, new Uint8Array(buf), { contentType: idFile.type, cacheControl: '3600', upsert: true });
+        const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
+        await supabase.from('vendors').update({ id_image: publicUrl }).eq('id', vendor.id);
+      }
+
       showSuccess('تم إضافة المورد بنجاح');
       onSuccess();
-    } catch (error) { console.error('Error adding vendor:', error); showError('حدث خطأ أثناء إضافة المورد'); }
-    finally { setLoading(false); }
+    } catch (error: any) {
+      console.error('Error adding vendor:', error);
+      showError(error.message || 'حدث خطأ أثناء إضافة المورد');
+    } finally { setLoading(false); }
   };
+
+  const dropZoneStyle = (hasPreview: boolean): React.CSSProperties => ({
+    border: `2px dashed ${hasPreview ? 'var(--accent)' : 'var(--border-soft)'}`,
+    borderRadius: 'var(--radius-md)', padding: hasPreview ? 0 : 20,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+    gap: 6, cursor: 'pointer', transition: 'border-color 0.2s', overflow: 'hidden',
+    minHeight: hasPreview ? 0 : 100, position: 'relative',
+  });
 
   return createPortal(
     <div className="modal-overlay show" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
         <div className="modal-hdr">
           <div>
             <div className="modal-ttl">إضافة مورد جديد</div>
-            <div className="modal-sub">أدخل بيانات المورد لإضافته للنظام</div>
+            <div className="modal-sub">أدخل البيانات يدوياً أو الصق النص لاستخراجها تلقائياً</div>
           </div>
           <button className="modal-close" onClick={onClose}><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-grid">
-              {/* Logo Upload */}
-              <div className="input-group full">
-                <label className="input-label">شعار المورد</label>
-                <div className="upload-area" onClick={() => fileInputRef.current?.click()}>
-                  {imagePreview ? (
-                    <img src={imagePreview} alt="Preview" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 'var(--radius-md)' }} />
+          <div className="modal-body" style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+
+            {/* Smart Paste */}
+            {!showSmartParse ? (
+              <button type="button" onClick={() => setShowSmartParse(true)}
+                style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-md)', border: '1px dashed var(--accent)', background: 'var(--accent-glow)', color: 'var(--accent-lighter)', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}>
+                <span style={{ fontSize: 18 }}>⚡</span> لصق ذكي — الصق بيانات المورد واستخرجها تلقائياً
+              </button>
+            ) : (
+              <div style={{ marginBottom: 16, padding: 16, borderRadius: 'var(--radius-md)', background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-lighter)', marginBottom: 8 }}>⚡ لصق ذكي</div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>الصق الاسم، الجوال، الإيميل، رقم الهوية، الجنسية، المدينة، المجال — كل منها في سطر أو مختلطة</div>
+                <textarea className="input" value={smartText} onChange={e => setSmartText(e.target.value)}
+                  rows={4} placeholder={'مثال:\nمحمد أحمد الغامدي\n0551234567\ntest@email.com\n1089915647\nسعودي\nجدة\nمصور فيديو'} style={{ fontSize: 13, marginBottom: 8 }} dir="auto" />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" className="btn btn-sm" onClick={parseSmartText} style={{ background: 'var(--accent)', color: '#fff', gap: 6 }}>
+                    استخراج البيانات
+                  </button>
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setShowSmartParse(false); setSmartText(''); }}>إلغاء</button>
+                </div>
+              </div>
+            )}
+
+            {/* Images row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+              {/* Profile Image */}
+              <div>
+                <label className="input-label" style={{ marginBottom: 6 }}>الصورة الشخصية</label>
+                <div style={dropZoneStyle(!!profilePreview)}
+                  onClick={() => profileInputRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                  onDragLeave={e => { e.currentTarget.style.borderColor = profilePreview ? 'var(--accent)' : 'var(--border-soft)'; }}
+                  onDrop={e => handleDrop(e, 'profile')}>
+                  {profilePreview ? (
+                    <img src={profilePreview} alt="Profile" style={{ width: '100%', height: 120, objectFit: 'cover' }} />
                   ) : (
                     <>
-                      <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                      <strong>اسحب الصورة هنا أو انقر للرفع</strong>
-                      <span>PNG, JPG, SVG — حجم أقصى 5MB</span>
+                      <span style={{ fontSize: 24, opacity: 0.3 }}>📷</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>اسحب أو انقر</span>
                     </>
                   )}
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+                <input ref={profileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, 'profile'); e.target.value = ''; }} style={{ display: 'none' }} />
               </div>
 
-              {/* Name (full width) */}
+              {/* ID Image */}
+              <div style={{ gridColumn: 'span 2' }}>
+                <label className="input-label" style={{ marginBottom: 6 }}>صورة الهوية</label>
+                <div style={dropZoneStyle(!!idPreview)}
+                  onClick={() => idInputRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                  onDragLeave={e => { e.currentTarget.style.borderColor = idPreview ? 'var(--accent)' : 'var(--border-soft)'; }}
+                  onDrop={e => handleDrop(e, 'id')}>
+                  {idPreview ? (
+                    <img src={idPreview} alt="ID" style={{ width: '100%', height: 120, objectFit: 'contain' }} />
+                  ) : (
+                    <>
+                      <span style={{ fontSize: 24, opacity: 0.3 }}>🪪</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>اسحب صورة الهوية أو انقر</span>
+                    </>
+                  )}
+                </div>
+                <input ref={idInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelect(f, 'id'); e.target.value = ''; }} style={{ display: 'none' }} />
+              </div>
+            </div>
+
+            <div className="form-grid">
+              {/* Name */}
               <div className="input-group full">
-                <label className="input-label">اسم المورد / الشركة <span className="req">*</span></label>
-                <input className="input" required value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="مثال: محمد خالد" />
+                <label className="input-label">الاسم الكامل <span className="req">*</span></label>
+                <input className="input" required value={formData.full_name} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="مثال: محمد أحمد الغامدي" />
               </div>
 
-              {/* Email + Phone */}
+              {/* Phone + Email */}
               <div className="input-group">
-                <label className="input-label">البريد الإلكتروني <span className="req">*</span></label>
-                <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="vendor@example.com" dir="ltr" style={{ textAlign: 'right' }} />
+                <label className="input-label">رقم الجوال <span className="req">*</span></label>
+                <input className="input" type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })} placeholder="05xxxxxxxx" dir="ltr" />
               </div>
               <div className="input-group">
-                <label className="input-label">رقم الهاتف <span className="req">*</span></label>
-                <input className="input" type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })} placeholder="+966 5x xxx xxxx" dir="ltr" style={{ textAlign: 'right' }} />
+                <label className="input-label">البريد الإلكتروني</label>
+                <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" dir="ltr" />
               </div>
 
-              {/* Service (with main/sub) + Nationality (with flags + search) */}
+              {/* ID Number + Nationality */}
               <div className="input-group">
-                <label className="input-label">الخدمة <span className="req">*</span></label>
-                <SearchableDropdown value={formData.primary_field} onChange={value => setFormData({ ...formData, primary_field: value })} options={serviceOptions} placeholder="اختر نوع الخدمة" />
+                <label className="input-label">رقم الهوية</label>
+                <input className="input" value={formData.id_number} onChange={e => setFormData({ ...formData, id_number: toEnglishNumbers(e.target.value) })} placeholder="10 أرقام" dir="ltr" maxLength={10} />
               </div>
               <div className="input-group">
                 <label className="input-label">الجنسية</label>
                 <SearchableDropdown value={formData.nationality} onChange={value => setFormData({ ...formData, nationality: value })} options={nationalityOptions} placeholder="اختر الجنسية" />
               </div>
 
-              {/* City + Cost */}
+              {/* Field + City */}
+              <div className="input-group">
+                <label className="input-label">المجال</label>
+                <SearchableDropdown value={formData.primary_field} onChange={value => setFormData({ ...formData, primary_field: value })} options={serviceOptions} placeholder="اختر المجال" />
+              </div>
               <div className="input-group">
                 <label className="input-label">المدينة</label>
                 <SearchableDropdown value={formData.primary_city} onChange={value => setFormData({ ...formData, primary_city: value })} options={cities.map(c => ({ value: c.name, label: c.name }))} placeholder="اختر المدينة" />
-              </div>
-              <div className="input-group">
-                <label className="input-label">التكلفة التقديرية (ريال)</label>
-                <input className="input" type="number" step="0.01" value={formData.estimated_cost} onChange={e => setFormData({ ...formData, estimated_cost: e.target.value })} placeholder="مثال: 5000" dir="ltr" style={{ textAlign: 'right' }} />
-              </div>
-
-              {/* CR + Tax */}
-              <div className="input-group">
-                <label className="input-label">رقم السجل التجاري</label>
-                <input className="input" value={formData.cr_number} onChange={e => setFormData({ ...formData, cr_number: toEnglishNumbers(e.target.value) })} placeholder="10 أرقام" dir="ltr" style={{ textAlign: 'right' }} />
-              </div>
-              <div className="input-group">
-                <label className="input-label">الرقم الضريبي</label>
-                <input className="input" value={formData.tax_number} onChange={e => setFormData({ ...formData, tax_number: toEnglishNumbers(e.target.value) })} placeholder="15 رقم" dir="ltr" style={{ textAlign: 'right' }} />
-              </div>
-
-              {/* Notes */}
-              <div className="input-group full">
-                <label className="input-label">ملاحظات</label>
-                <textarea className="input" value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="ملاحظات إضافية عن المورد..." style={{ minHeight: 70 }} />
               </div>
             </div>
           </div>

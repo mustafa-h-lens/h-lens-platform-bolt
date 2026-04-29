@@ -25,9 +25,9 @@ You need to add these **6 secrets** to your Supabase Edge Functions environment:
 |------------|-------|
 | `SMTP_HOST` | `smtp-relay.brevo.com` |
 | `SMTP_PORT` | `587` |
-| `SMTP_USER` | `898d68001@smtp-brevo.com` |
-| `SMTP_PASSWORD` | `xsmtpsib-c905cafdc9e50b60e02843f4ce2d4ef6199519aad9881dee1882433ad55ceb25-gT1Ew32Vz8psL4T9` |
-| `SMTP_FROM_EMAIL` | `platform@h-lens.co` |
+| `SMTP_USER` | `your-smtp-user@smtp-brevo.com` |
+| `SMTP_PASSWORD` | `your-smtp-password` |
+| `SMTP_FROM_EMAIL` | `platform@your-domain.com` |
 | `SMTP_FROM_NAME` | `Half Lens` |
 
 ### Important Notes About Secret Format
@@ -49,9 +49,9 @@ You need to configure the SMTP secrets in your Supabase project. Since I don't h
 ```bash
 supabase secrets set SMTP_HOST=smtp-relay.brevo.com
 supabase secrets set SMTP_PORT=587
-supabase secrets set SMTP_USER=898d68001@smtp-brevo.com
-supabase secrets set SMTP_PASSWORD=xsmtpsib-c905cafdc9e50b60e02843f4ce2d4ef6199519aad9881dee1882433ad55ceb25-gT1Ew32Vz8psL4T9
-supabase secrets set SMTP_FROM_EMAIL=platform@h-lens.co
+supabase secrets set SMTP_USER=your-smtp-user@smtp-brevo.com
+supabase secrets set SMTP_PASSWORD=your-smtp-password
+supabase secrets set SMTP_FROM_EMAIL=platform@your-domain.com
 supabase secrets set SMTP_FROM_NAME="Half Lens"
 ```
 

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
-  Lightbulb, Search, Send, Clock, CheckCircle, XCircle, Eye, Zap,
+  Lightbulb, Send, Clock, CheckCircle, XCircle, Eye, Zap,
   MessageSquare, ChevronDown, ChevronUp, User, Camera, Package,
+  RotateCcw, Inbox,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
+import { formatDateArabic } from '../../../lib/formatters';
 
 // ── Vendor Suggestions ──
 interface Suggestion {
@@ -34,37 +37,35 @@ interface EquipSuggestion {
   vendor_name?: string;
 }
 
-const STATUS_OPTIONS = [
-  { value: 'all',          label: 'الكل' },
-  { value: 'new',          label: 'جديد',         color: '#3b82f6' },
-  { value: 'under_review', label: 'قيد المراجعة', color: '#f59e0b' },
-  { value: 'accepted',     label: 'مقبول',        color: '#10b981' },
-  { value: 'rejected',     label: 'مرفوض',        color: '#ef4444' },
-  { value: 'implemented',  label: 'تم التنفيذ',   color: '#8b5cf6' },
+const VS_STATUS_OPTIONS = [
+  { value: 'new',          label: 'جديد' },
+  { value: 'under_review', label: 'قيد المراجعة' },
+  { value: 'accepted',     label: 'مقبول' },
+  { value: 'rejected',     label: 'مرفوض' },
+  { value: 'implemented',  label: 'تم التنفيذ' },
 ];
 
-const EQUIP_STATUS_OPTIONS = [
-  { value: 'all',      label: 'الكل' },
-  { value: 'pending',  label: 'معلق',     color: '#f59e0b' },
-  { value: 'approved', label: 'مقبول',    color: '#10b981' },
-  { value: 'rejected', label: 'مرفوض',    color: '#ef4444' },
-  { value: 'added',    label: 'تمت الإضافة', color: '#8b5cf6' },
+const ES_STATUS_OPTIONS = [
+  { value: 'pending',  label: 'معلق' },
+  { value: 'approved', label: 'مقبول' },
+  { value: 'rejected', label: 'مرفوض' },
+  { value: 'added',    label: 'تمت الإضافة' },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: typeof Clock }> = {
-  new:          { label: 'جديد',         color: '#3b82f6', bg: '#dbeafe', icon: Clock },
-  under_review: { label: 'قيد المراجعة', color: '#f59e0b', bg: '#fef3c7', icon: Eye },
-  accepted:     { label: 'مقبول',        color: '#10b981', bg: '#d1fae5', icon: CheckCircle },
-  rejected:     { label: 'مرفوض',        color: '#ef4444', bg: '#fee2e2', icon: XCircle },
-  implemented:  { label: 'تم التنفيذ',   color: '#8b5cf6', bg: '#ede9fe', icon: Zap },
-  pending:      { label: 'معلق',         color: '#f59e0b', bg: '#fef3c7', icon: Clock },
-  approved:     { label: 'مقبول',        color: '#10b981', bg: '#d1fae5', icon: CheckCircle },
-  added:        { label: 'تمت الإضافة',  color: '#8b5cf6', bg: '#ede9fe', icon: CheckCircle },
+type StatusBadge = { label: string; className: string; dot: string; icon: typeof Clock };
+
+const STATUS_CONFIG: Record<string, StatusBadge> = {
+  new:          { label: 'جديد',         className: 'badge badge-blue',   dot: 'var(--info)',    icon: Clock },
+  under_review: { label: 'قيد المراجعة', className: 'badge badge-amber',  dot: 'var(--warning)', icon: Eye },
+  accepted:     { label: 'مقبول',        className: 'badge badge-green',  dot: 'var(--success)', icon: CheckCircle },
+  rejected:     { label: 'مرفوض',        className: 'badge badge-red',    dot: 'var(--danger)',  icon: XCircle },
+  implemented:  { label: 'تم التنفيذ',   className: 'badge badge-purple', dot: 'var(--purple)',  icon: Zap },
+  pending:      { label: 'معلق',         className: 'badge badge-amber',  dot: 'var(--warning)', icon: Clock },
+  approved:     { label: 'مقبول',        className: 'badge badge-green',  dot: 'var(--success)', icon: CheckCircle },
+  added:        { label: 'تمت الإضافة',  className: 'badge badge-purple', dot: 'var(--purple)',  icon: CheckCircle },
 };
 
 const CATEGORY_LABELS: Record<string, string> = { feature: 'ميزة جديدة', improvement: 'تحسين', bug: 'مشكلة', other: 'أخرى' };
-
-const formatDate = (d: string) => new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
 export const AdminSuggestions = () => {
   const { profile } = useAuth();
@@ -73,7 +74,7 @@ export const AdminSuggestions = () => {
   // ── Vendor suggestions state ──
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingVS, setLoadingVS] = useState(true);
-  const [vsFilter, setVsFilter] = useState('all');
+  const [vsStatusFilter, setVsStatusFilter] = useState<string[]>([]);
   const [vsSearch, setVsSearch] = useState('');
   const [vsExpandedId, setVsExpandedId] = useState<string | null>(null);
   const [vsResponse, setVsResponse] = useState('');
@@ -83,7 +84,7 @@ export const AdminSuggestions = () => {
   // ── Equipment suggestions state ──
   const [equipSuggestions, setEquipSuggestions] = useState<EquipSuggestion[]>([]);
   const [loadingES, setLoadingES] = useState(true);
-  const [esFilter, setEsFilter] = useState('all');
+  const [esStatusFilter, setEsStatusFilter] = useState<string[]>([]);
   const [esSearch, setEsSearch] = useState('');
   const [esExpandedId, setEsExpandedId] = useState<string | null>(null);
   const [esNotes, setEsNotes] = useState('');
@@ -164,13 +165,13 @@ export const AdminSuggestions = () => {
 
   // ── Filtered data ──
   const filteredVS = suggestions.filter(s => {
-    if (vsFilter !== 'all' && s.status !== vsFilter) return false;
+    if (vsStatusFilter.length > 0 && !vsStatusFilter.includes(s.status)) return false;
     if (vsSearch.trim()) { const q = vsSearch.toLowerCase(); return s.title.toLowerCase().includes(q) || s.content.toLowerCase().includes(q) || (s.vendor_name || '').toLowerCase().includes(q); }
     return true;
   });
 
   const filteredES = equipSuggestions.filter(s => {
-    if (esFilter !== 'all' && s.status !== esFilter) return false;
+    if (esStatusFilter.length > 0 && !esStatusFilter.includes(s.status)) return false;
     if (esSearch.trim()) { const q = esSearch.toLowerCase(); return s.suggestion_text.toLowerCase().includes(q) || (s.vendor_name || '').toLowerCase().includes(q); }
     return true;
   });
@@ -180,146 +181,191 @@ export const AdminSuggestions = () => {
 
   const newVsCount = (vsCounts['new'] || 0) + (vsCounts['under_review'] || 0);
   const newEsCount = esCounts['pending'] || 0;
+  const acceptedVsCount = (vsCounts['accepted'] || 0) + (vsCounts['implemented'] || 0);
+  const acceptedEsCount = (esCounts['approved'] || 0) + (esCounts['added'] || 0);
 
   return (
-    <div dir="rtl" className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-            <Lightbulb className="w-6 h-6 text-amber-500" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">صندوق الاقتراحات</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">اقتراحات الموردين والمعدات</p>
-          </div>
+    <div style={{ padding: 28 }}>
+      {/* Page Title */}
+      <div className="page-title-row">
+        <div>
+          <div className="page-title">صندوق الاقتراحات</div>
+          <div className="page-subtitle">إدارة اقتراحات الموردين والمعدات</div>
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="stats-grid">
+        <div className="stat-card sc-blue">
+          <div className="stat-icon-box"><Lightbulb size={18} /></div>
+          <div className="stat-sub">اقتراحات الموردين</div>
+          <div className="stat-val">{suggestions.length}</div>
+          <div className="stat-hint">إجمالي الاقتراحات المستلمة</div>
+        </div>
+        <div className="stat-card sc-amber">
+          <div className="stat-icon-box"><Inbox size={18} /></div>
+          <div className="stat-sub">بانتظار المراجعة</div>
+          <div className="stat-val">{newVsCount + newEsCount}</div>
+          <div className="stat-hint">اقتراحات جديدة أو قيد المراجعة</div>
+        </div>
+        <div className="stat-card sc-green">
+          <div className="stat-icon-box"><CheckCircle size={18} /></div>
+          <div className="stat-sub">تم القبول</div>
+          <div className="stat-val">{acceptedVsCount + acceptedEsCount}</div>
+          <div className="stat-hint">اقتراحات مقبولة أو منفذة</div>
+        </div>
+        <div className="stat-card sc-purple">
+          <div className="stat-icon-box"><Package size={18} /></div>
+          <div className="stat-sub">اقتراحات المعدات</div>
+          <div className="stat-val">{equipSuggestions.length}</div>
+          <div className="stat-hint">اقتراحات المعدات الجديدة</div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-dark-border">
-        <button
+      <div className="tabs-colored" style={{ marginBottom: 20, display: 'flex' }}>
+        <div
+          className={`tab tab-blue ${activeTab === 'vendor' ? 'on' : ''}`}
           onClick={() => setActiveTab('vendor')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm transition-all border-b-2 -mb-px ${
-            activeTab === 'vendor'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-          }`}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <Lightbulb className="w-4 h-4" />
+          <Lightbulb size={14} />
           اقتراحات الموردين
-          {newVsCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 font-bold">{newVsCount}</span>}
-        </button>
-        <button
+          {newVsCount > 0 && <span className="badge badge-amber" style={{ padding: '1px 7px', fontSize: 10 }}>{newVsCount}</span>}
+        </div>
+        <div
+          className={`tab tab-blue ${activeTab === 'equipment' ? 'on' : ''}`}
           onClick={() => setActiveTab('equipment')}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm transition-all border-b-2 -mb-px ${
-            activeTab === 'equipment'
-              ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700'
-          }`}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <Package className="w-4 h-4" />
+          <Package size={14} />
           اقتراحات المعدات
-          {newEsCount > 0 && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 font-bold">{newEsCount}</span>}
-        </button>
+          {newEsCount > 0 && <span className="badge badge-amber" style={{ padding: '1px 7px', fontSize: 10 }}>{newEsCount}</span>}
+        </div>
       </div>
 
       {/* ═══ VENDOR SUGGESTIONS TAB ═══ */}
       {activeTab === 'vendor' && (
-        <div className="space-y-4">
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap">
-            {STATUS_OPTIONS.map(opt => {
-              const isActive = vsFilter === opt.value;
-              const count = opt.value === 'all' ? suggestions.length : (vsCounts[opt.value] || 0);
-              return (
-                <button key={opt.value} onClick={() => setVsFilter(opt.value)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all border ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-dark-card border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                  {opt.color && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} />}
-                  {opt.label}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input value={vsSearch} onChange={e => setVsSearch(e.target.value)} placeholder="بحث في الاقتراحات..."
-              className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card text-slate-800 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400" />
+        <>
+          {/* Filter Bar */}
+          <div className="filter-bar">
+            <input
+              className="input"
+              placeholder="بحث في الاقتراحات..."
+              value={vsSearch}
+              onChange={e => setVsSearch(e.target.value)}
+              style={{ maxWidth: 280 }}
+            />
+            <MultiSelectFilter
+              label="الحالة"
+              options={VS_STATUS_OPTIONS}
+              selected={vsStatusFilter}
+              onToggle={(v) => setVsStatusFilter(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+            />
+            <button className="btn btn-ghost btn-sm" onClick={() => { setVsSearch(''); setVsStatusFilter([]); }}>
+              <RotateCcw size={13} /> إعادة تعيين
+            </button>
           </div>
 
           {/* List */}
-          {loadingVS ? <div className="text-center py-12 text-slate-500">جاري التحميل...</div> : filteredVS.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border">
-              <Lightbulb className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400">لا توجد اقتراحات</p>
+          {loadingVS ? (
+            <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>
+          ) : filteredVS.length === 0 ? (
+            <div className="dash-empty" style={{ height: 200, flexDirection: 'column', gap: 10 }}>
+              <Lightbulb size={36} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد اقتراحات</span>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredVS.map(s => {
                 const status = STATUS_CONFIG[s.status] || STATUS_CONFIG.new;
                 const StatusIcon = status.icon;
                 const isExpanded = vsExpandedId === s.id;
                 return (
-                  <div key={s.id} className={`bg-white dark:bg-dark-card rounded-xl border transition-all ${isExpanded ? 'border-blue-300 dark:border-blue-700 shadow-lg' : 'border-slate-200 dark:border-dark-border hover:shadow-md'}`}>
-                    <button onClick={() => handleVsExpand(s)} className="w-full text-right p-4 flex items-center gap-3">
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold flex-shrink-0" style={{ backgroundColor: status.bg, color: status.color }}>
-                        <StatusIcon className="w-3.5 h-3.5" /> {status.label}
+                  <div key={s.id} className="card" style={{ padding: 0, cursor: 'default', overflow: 'hidden' }}>
+                    <div
+                      onClick={() => handleVsExpand(s)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, cursor: 'pointer' }}
+                    >
+                      <span className={status.className} style={{ flexShrink: 0 }}>
+                        <StatusIcon size={12} /> {status.label}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">{s.title}</span>
-                          {s.admin_response && <MessageSquare className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</span>
+                          {s.admin_response && <MessageSquare size={13} style={{ color: 'var(--success)', flexShrink: 0 }} />}
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          <span className="flex items-center gap-1"><User className="w-3 h-3" /> {s.vendor_name}</span>
-                          <span>{formatDate(s.created_at)}</span>
-                          <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/10">{CATEGORY_LABELS[s.category] || 'أخرى'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><User size={11} /> {s.vendor_name}</span>
+                          <span>{formatDateArabic(s.created_at)}</span>
+                          <span className="badge badge-gray" style={{ padding: '1px 8px', fontSize: 10 }}>{CATEGORY_LABELS[s.category] || 'أخرى'}</span>
                         </div>
                       </div>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                    </button>
+                      {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                    </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-slate-100 dark:border-dark-border">
-                        <div className="mt-3 p-3 bg-slate-50 dark:bg-white/5 rounded-lg">
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{s.content}</p>
+                      <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-surface)' }}>
+                        <div style={{ padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border-soft)', borderRadius: 10 }}>
+                          <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{s.content}</p>
                         </div>
                         {s.admin_response && (
-                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
-                            <div className="flex items-center gap-2 mb-1">
-                              <MessageSquare className="w-3.5 h-3.5 text-green-600" />
-                              <span className="text-xs font-semibold text-green-700 dark:text-green-400">الرد السابق</span>
-                              {s.responded_at && <span className="text-xs text-slate-400 mr-auto">{formatDate(s.responded_at)}</span>}
+                          <div style={{ marginTop: 12, padding: 14, background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                              <MessageSquare size={13} style={{ color: 'var(--success-text)' }} />
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success-text)' }}>الرد السابق</span>
+                              {s.responded_at && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 'auto' }}>{formatDateArabic(s.responded_at)}</span>}
                             </div>
-                            <p className="text-sm text-green-800 dark:text-green-300 leading-relaxed whitespace-pre-wrap">{s.admin_response}</p>
+                            <p style={{ fontSize: 13, color: 'var(--success-text)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{s.admin_response}</p>
                           </div>
                         )}
-                        <div className="mt-4 space-y-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">تغيير الحالة</label>
-                            <div className="flex gap-2 flex-wrap">
-                              {STATUS_OPTIONS.filter(o => o.value !== 'all').map(opt => (
-                                <button key={opt.value} onClick={() => setVsNewStatus(opt.value)}
-                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${vsNewStatus === opt.value ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} /> {opt.label}
-                                </button>
-                              ))}
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          <div className="input-group">
+                            <label className="input-label">تغيير الحالة</label>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              {VS_STATUS_OPTIONS.map(opt => {
+                                const cfg = STATUS_CONFIG[opt.value];
+                                const selected = vsNewStatus === opt.value;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setVsNewStatus(opt.value)}
+                                    className={selected ? `${cfg.className}` : 'badge badge-gray'}
+                                    style={{ cursor: 'pointer', border: selected ? '1px solid currentColor' : '1px solid var(--border-soft)' }}
+                                  >
+                                    <span className="badge-dot" style={{ background: cfg.dot }} />
+                                    {opt.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">الرد</label>
-                            <textarea value={vsResponse} onChange={e => setVsResponse(e.target.value)} placeholder="اكتب ردك هنا..." rows={3}
-                              className="w-full p-3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card text-slate-800 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none" />
+                          <div className="input-group">
+                            <label className="input-label">الرد</label>
+                            <textarea
+                              className="input"
+                              value={vsResponse}
+                              onChange={e => setVsResponse(e.target.value)}
+                              placeholder="اكتب ردك هنا..."
+                              rows={3}
+                              style={{ resize: 'none', fontFamily: 'inherit' }}
+                            />
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleVsRespond(s)} disabled={vsSaving || (!vsResponse.trim() && vsNewStatus === s.status)}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                              <Send className="w-3.5 h-3.5" /> {vsSaving ? 'جاري الحفظ...' : 'حفظ'}
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleVsRespond(s)}
+                              disabled={vsSaving || (!vsResponse.trim() && vsNewStatus === s.status)}
+                              style={{ gap: 6 }}
+                            >
+                              <Send size={13} /> {vsSaving ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
-                            <button onClick={() => { setVsExpandedId(null); setVsResponse(''); setVsNewStatus(''); }}
-                              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">إلغاء</button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => { setVsExpandedId(null); setVsResponse(''); setVsNewStatus(''); }}
+                            >
+                              إلغاء
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -329,103 +375,129 @@ export const AdminSuggestions = () => {
               })}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* ═══ EQUIPMENT SUGGESTIONS TAB ═══ */}
       {activeTab === 'equipment' && (
-        <div className="space-y-4">
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap">
-            {EQUIP_STATUS_OPTIONS.map(opt => {
-              const isActive = esFilter === opt.value;
-              const count = opt.value === 'all' ? equipSuggestions.length : (esCounts[opt.value] || 0);
-              return (
-                <button key={opt.value} onClick={() => setEsFilter(opt.value)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all border ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-dark-card border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                  {opt.color && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} />}
-                  {opt.label}
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? 'bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300' : 'bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400'}`}>{count}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input value={esSearch} onChange={e => setEsSearch(e.target.value)} placeholder="بحث في اقتراحات المعدات..."
-              className="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card text-slate-800 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400" />
+        <>
+          {/* Filter Bar */}
+          <div className="filter-bar">
+            <input
+              className="input"
+              placeholder="بحث في اقتراحات المعدات..."
+              value={esSearch}
+              onChange={e => setEsSearch(e.target.value)}
+              style={{ maxWidth: 280 }}
+            />
+            <MultiSelectFilter
+              label="الحالة"
+              options={ES_STATUS_OPTIONS}
+              selected={esStatusFilter}
+              onToggle={(v) => setEsStatusFilter(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v])}
+            />
+            <button className="btn btn-ghost btn-sm" onClick={() => { setEsSearch(''); setEsStatusFilter([]); }}>
+              <RotateCcw size={13} /> إعادة تعيين
+            </button>
           </div>
 
           {/* List */}
-          {loadingES ? <div className="text-center py-12 text-slate-500">جاري التحميل...</div> : filteredES.length === 0 ? (
-            <div className="text-center py-16 bg-white dark:bg-dark-card rounded-2xl border border-slate-200 dark:border-dark-border">
-              <Package className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400">لا توجد اقتراحات معدات</p>
+          {loadingES ? (
+            <div className="dash-empty" style={{ height: 200 }}><span style={{ color: 'var(--text-muted)', fontSize: 13 }}>جاري التحميل...</span></div>
+          ) : filteredES.length === 0 ? (
+            <div className="dash-empty" style={{ height: 200, flexDirection: 'column', gap: 10 }}>
+              <Package size={36} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>لا توجد اقتراحات معدات</span>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredES.map(s => {
                 const status = STATUS_CONFIG[s.status] || STATUS_CONFIG.pending;
                 const StatusIcon = status.icon;
                 const isExpanded = esExpandedId === s.id;
                 return (
-                  <div key={s.id} className={`bg-white dark:bg-dark-card rounded-xl border transition-all ${isExpanded ? 'border-blue-300 dark:border-blue-700 shadow-lg' : 'border-slate-200 dark:border-dark-border hover:shadow-md'}`}>
-                    <button onClick={() => handleEsExpand(s)} className="w-full text-right p-4 flex items-center gap-3">
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold flex-shrink-0" style={{ backgroundColor: status.bg, color: status.color }}>
-                        <StatusIcon className="w-3.5 h-3.5" /> {status.label}
+                  <div key={s.id} className="card" style={{ padding: 0, cursor: 'default', overflow: 'hidden' }}>
+                    <div
+                      onClick={() => handleEsExpand(s)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, cursor: 'pointer' }}
+                    >
+                      <span className={status.className} style={{ flexShrink: 0 }}>
+                        <StatusIcon size={12} /> {status.label}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Camera className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          <span className="font-semibold text-slate-900 dark:text-white text-sm truncate">{s.suggestion_text}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Camera size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.suggestion_text}</span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                          <span className="flex items-center gap-1"><User className="w-3 h-3" /> {s.vendor_name}</span>
-                          <span>{formatDate(s.created_at)}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, fontSize: 11, color: 'var(--text-muted)' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><User size={11} /> {s.vendor_name}</span>
+                          <span>{formatDateArabic(s.created_at)}</span>
                         </div>
                       </div>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-                    </button>
+                      {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
+                    </div>
                     {isExpanded && (
-                      <div className="px-4 pb-4 border-t border-slate-100 dark:border-dark-border">
-                        <div className="mt-3 p-3 bg-slate-50 dark:bg-white/5 rounded-lg">
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{s.suggestion_text}</p>
+                      <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--border-soft)', background: 'var(--bg-surface)' }}>
+                        <div style={{ padding: 14, background: 'var(--bg-base)', border: '1px solid var(--border-soft)', borderRadius: 10 }}>
+                          <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{s.suggestion_text}</p>
                         </div>
                         {s.admin_notes && (
-                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/10 rounded-lg border border-green-200 dark:border-green-800">
-                            <div className="flex items-center gap-2 mb-1">
-                              <MessageSquare className="w-3.5 h-3.5 text-green-600" />
-                              <span className="text-xs font-semibold text-green-700 dark:text-green-400">ملاحظات الأدمن</span>
+                          <div style={{ marginTop: 12, padding: 14, background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                              <MessageSquare size={13} style={{ color: 'var(--success-text)' }} />
+                              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success-text)' }}>ملاحظات الأدمن</span>
                             </div>
-                            <p className="text-sm text-green-800 dark:text-green-300 leading-relaxed whitespace-pre-wrap">{s.admin_notes}</p>
+                            <p style={{ fontSize: 13, color: 'var(--success-text)', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>{s.admin_notes}</p>
                           </div>
                         )}
-                        <div className="mt-4 space-y-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">تغيير الحالة</label>
-                            <div className="flex gap-2 flex-wrap">
-                              {EQUIP_STATUS_OPTIONS.filter(o => o.value !== 'all').map(opt => (
-                                <button key={opt.value} onClick={() => setEsNewStatus(opt.value)}
-                                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${esNewStatus === opt.value ? 'border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'border-slate-200 dark:border-dark-border text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'}`}>
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: opt.color }} /> {opt.label}
-                                </button>
-                              ))}
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                          <div className="input-group">
+                            <label className="input-label">تغيير الحالة</label>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              {ES_STATUS_OPTIONS.map(opt => {
+                                const cfg = STATUS_CONFIG[opt.value];
+                                const selected = esNewStatus === opt.value;
+                                return (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setEsNewStatus(opt.value)}
+                                    className={selected ? `${cfg.className}` : 'badge badge-gray'}
+                                    style={{ cursor: 'pointer', border: selected ? '1px solid currentColor' : '1px solid var(--border-soft)' }}
+                                  >
+                                    <span className="badge-dot" style={{ background: cfg.dot }} />
+                                    {opt.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">ملاحظات</label>
-                            <textarea value={esNotes} onChange={e => setEsNotes(e.target.value)} placeholder="ملاحظات أو سبب القرار..." rows={2}
-                              className="w-full p-3 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-card text-slate-800 dark:text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 resize-none" />
+                          <div className="input-group">
+                            <label className="input-label">ملاحظات</label>
+                            <textarea
+                              className="input"
+                              value={esNotes}
+                              onChange={e => setEsNotes(e.target.value)}
+                              placeholder="ملاحظات أو سبب القرار..."
+                              rows={2}
+                              style={{ resize: 'none', fontFamily: 'inherit' }}
+                            />
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleEsRespond(s)} disabled={esSaving || (!esNotes.trim() && esNewStatus === s.status)}
-                              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                              <Send className="w-3.5 h-3.5" /> {esSaving ? 'جاري الحفظ...' : 'حفظ'}
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleEsRespond(s)}
+                              disabled={esSaving || (!esNotes.trim() && esNewStatus === s.status)}
+                              style={{ gap: 6 }}
+                            >
+                              <Send size={13} /> {esSaving ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
-                            <button onClick={() => { setEsExpandedId(null); setEsNotes(''); setEsNewStatus(''); }}
-                              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">إلغاء</button>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => { setEsExpandedId(null); setEsNotes(''); setEsNewStatus(''); }}
+                            >
+                              إلغاء
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -435,7 +507,7 @@ export const AdminSuggestions = () => {
               })}
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );

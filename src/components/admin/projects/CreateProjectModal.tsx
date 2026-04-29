@@ -5,6 +5,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { Modal } from '../../shared/Modal';
 import { ClientModal } from '../clients/ClientModal';
+import { DatePicker } from '../../ui/DatePicker';
 
 interface Client {
   id: string;
@@ -333,26 +334,17 @@ export const CreateProjectModal = ({ onClose, onSuccess, preSelectedClientId, pr
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">تاريخ البدء</label>
-              <input
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">تاريخ الانتهاء</label>
-              <input
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
+            <DatePicker
+              label="تاريخ البدء"
+              value={formData.start_date}
+              onChange={(date) => setFormData({ ...formData, start_date: date })}
+            />
+            <DatePicker
+              label="تاريخ الانتهاء"
+              value={formData.end_date}
+              onChange={(date) => setFormData({ ...formData, end_date: date })}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
