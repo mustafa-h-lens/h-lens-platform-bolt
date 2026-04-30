@@ -627,7 +627,7 @@ export const VendorRegistrationForm = () => {
               {currentStep === 4 && <Step4TravelInfo formData={formData} updateFormData={updateFormData} />}
               {currentStep === 5 && <Step5Financial formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
               {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} portfolioUrl={formData.portfolio_url} updatePortfolioUrl={(url) => updateFormData({ portfolio_url: url })} errors={validationErrors} />}
-              {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} />}
+              {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} saveDraftNow={() => saveDraftRef.current?.()} />}
 
               {/* Nav Buttons */}
               <div className="nav-buttons">

@@ -5,9 +5,23 @@ interface Props {
   goToStep: (step: number) => void;
   termsAccepted: boolean;
   setTermsAccepted: (v: boolean) => void;
+  saveDraftNow?: () => void | Promise<void>;
 }
 
-export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepted }: Props) => {
+export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepted, saveDraftNow }: Props) => {
+
+  const openLegal = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Persist current draft (step 7 + all filled data) before leaving this tab.
+    // Without this, the 2s debounced autosave may not have fired and a
+    // returning user could see an older step when the form re-mounts.
+    try { saveDraftNow?.(); } catch {}
+    // Force a new tab/window so the registration form stays mounted in the
+    // original tab. Even if the browser ignores this (popup blocker), the
+    // draft has already been persisted to Supabase.
+    window.open(href, '_blank', 'noopener,noreferrer');
+  };
 
   const vendorTypeLabel = formData.vendor_type === 'individual' ? 'فرد' : formData.vendor_type === 'company' ? 'شركة' : '—';
 
@@ -177,9 +191,9 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
           <div className="terms-checkbox" />
           <div className="terms-text">
             أوافق على{' '}
-            <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>الشروط والأحكام</a>
+            <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={(e) => openLegal(e, '/terms-and-conditions')} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>الشروط والأحكام</a>
             {' '}و{' '}
-            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>سياسة الخصوصية</a>
+            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={(e) => openLegal(e, '/privacy-policy')} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>سياسة الخصوصية</a>
             {' '}الخاصة بمنصة Half Lens، وأقر بأن جميع البيانات المدخلة صحيحة ودقيقة.
           </div>
         </div>
