@@ -5,6 +5,7 @@ import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import ExcelJS from 'exceljs';
 
 interface Vendor {
   id: string;
@@ -214,6 +215,333 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     }
   };
 
+  const formatDate = () => new Date().toISOString().split('T')[0];
+
+  const csvVisibleColumns = () =>
+    fieldLabelsOrder.filter(
+      f =>
+        selectedFields[f.key] &&
+        f.key !== 'profile_image' &&
+        f.key !== 'id_image' &&
+        f.key !== 'vehicle_registration_image' &&
+        f.key !== 'equipment_images',
+    );
+
+  const cellValue = (v: Vendor, key: keyof ExportFields): string => {
+    if (key === 'status') return getStatusText(v.status);
+    if (key === 'equipment') {
+      const eq = equipmentData[v.id] || [];
+      if (eq.length === 0) return '-';
+      return eq.map(e => `${toEnglishNumbers(String(e.quantity))} × ${e.name}`).join('\n');
+    }
+    if (key === 'phone') return toEnglishNumbers(v.phone || '') || '-';
+    if (key === 'id_number') return v.id_number ? toEnglishNumbers(v.id_number) : '-';
+    if (key === 'vehicle_registration_number')
+      return v.vehicle_registration_number ? toEnglishNumbers(v.vehicle_registration_number) : '-';
+    if (key === 'vehicle_plate_number')
+      return v.vehicle_plate_number ? toEnglishNumbers(v.vehicle_plate_number) : '-';
+    return ((v as unknown as Record<string, string | undefined>)[key] as string) || '-';
+  };
+
+  const exportCsv = () => {
+    const cols = csvVisibleColumns();
+    const BOM = '﻿';
+    const meta = [
+      [`فريق Half Lens`],
+      [`تاريخ التصدير: ${formatDate()}`],
+      [`عدد السجلات: ${toEnglishNumbers(String(vendors.length))}`],
+      [],
+    ];
+    const header = cols.map(c => c.label);
+    const dataRows = vendors.map(v => cols.map(c => cellValue(v, c.key)));
+    const all = [...meta, header, ...dataRows];
+    const csv =
+      BOM +
+      all
+        .map(row =>
+          row
+            .map(cell => {
+              const s = String(cell ?? '');
+              return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+            })
+            .join(','),
+        )
+        .join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `فريق هاف لينس_${formatDate()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const fetchAsBuffer = async (
+    url: string,
+  ): Promise<{ buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' } | null> => {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      const ct = (r.headers.get('content-type') || '').toLowerCase();
+      const ext: 'png' | 'jpeg' | 'gif' = ct.includes('png')
+        ? 'png'
+        : ct.includes('gif')
+          ? 'gif'
+          : 'jpeg';
+      const buf = await r.arrayBuffer();
+      return { buffer: buf, ext };
+    } catch {
+      return null;
+    }
+  };
+
+  const exportXlsx = async () => {
+    const allCols = fieldLabelsOrder.filter(f => selectedFields[f.key]);
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Half Lens';
+    wb.created = new Date();
+
+    const ws = wb.addWorksheet('فريق Half Lens', {
+      views: [{ state: 'frozen', ySplit: 5, rightToLeft: true }],
+      properties: { defaultRowHeight: 22 },
+    });
+
+    const widthFor = (key: keyof ExportFields): number => {
+      switch (key) {
+        case 'profile_image':
+        case 'id_image':
+        case 'vehicle_registration_image':
+          return 18;
+        case 'equipment_images':
+          return 50;
+        case 'equipment':
+          return 36;
+        case 'full_name':
+        case 'email':
+          return 28;
+        case 'phone':
+        case 'id_number':
+        case 'vehicle_plate_number':
+        case 'vehicle_registration_number':
+          return 18;
+        default:
+          return 20;
+      }
+    };
+    ws.columns = allCols.map(c => ({ key: c.key, width: widthFor(c.key) }));
+
+    const lastColLetter = ws.getColumn(allCols.length).letter;
+    ws.mergeCells(`A1:${lastColLetter}1`);
+    const titleCell = ws.getCell('A1');
+    titleCell.value = 'فريق Half Lens';
+    titleCell.font = { name: 'Cairo', size: 22, bold: true, color: { argb: 'FF1E293B' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle', readingOrder: 'rtl' };
+    ws.getRow(1).height = 36;
+
+    ws.mergeCells(`A2:${lastColLetter}2`);
+    const subCell = ws.getCell('A2');
+    subCell.value = `تاريخ التصدير: ${formatDate()}    |    عدد الفريق: ${toEnglishNumbers(String(vendors.length))}`;
+    subCell.font = { name: 'Cairo', size: 11, color: { argb: 'FF64748B' } };
+    subCell.alignment = { horizontal: 'center', vertical: 'middle', readingOrder: 'rtl' };
+    ws.getRow(2).height = 22;
+
+    ws.mergeCells(`A3:${lastColLetter}3`);
+    const ruleCell = ws.getCell('A3');
+    ruleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+    ws.getRow(3).height = 4;
+
+    ws.getRow(4).height = 8;
+
+    const headerRow = ws.getRow(5);
+    allCols.forEach((c, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = c.label;
+      cell.font = { name: 'Cairo', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A5F' } };
+      cell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+        wrapText: true,
+        readingOrder: 'rtl',
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1E3A5F' } },
+        bottom: { style: 'thin', color: { argb: 'FF1E3A5F' } },
+        left: { style: 'thin', color: { argb: 'FF1E3A5F' } },
+        right: { style: 'thin', color: { argb: 'FF1E3A5F' } },
+      };
+    });
+    headerRow.height = 30;
+
+    const hasImages =
+      selectedFields.profile_image ||
+      selectedFields.id_image ||
+      selectedFields.vehicle_registration_image ||
+      selectedFields.equipment_images;
+
+    const imageUrls = new Set<string>();
+    for (const v of vendors) {
+      if (selectedFields.profile_image && v.profile_image) imageUrls.add(v.profile_image);
+      if (selectedFields.id_image && v.id_image) imageUrls.add(v.id_image);
+      if (selectedFields.vehicle_registration_image && v.vehicle_registration_image)
+        imageUrls.add(v.vehicle_registration_image);
+      if (selectedFields.equipment_images) {
+        (equipmentData[v.id] || []).forEach(e => {
+          if (e.image) imageUrls.add(e.image);
+        });
+      }
+    }
+    const imageMap = new Map<string, { buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' }>();
+    await Promise.all(
+      Array.from(imageUrls).map(async url => {
+        const r = await fetchAsBuffer(url);
+        if (r) imageMap.set(url, r);
+      }),
+    );
+
+    const DATA_START_ROW = 6;
+    for (let i = 0; i < vendors.length; i++) {
+      const v = vendors[i];
+      const rowIdx = DATA_START_ROW + i;
+      const row = ws.getRow(rowIdx);
+      const isAlt = i % 2 === 1;
+
+      row.height = hasImages ? 78 : 24;
+
+      for (let c = 0; c < allCols.length; c++) {
+        const col = allCols[c];
+        const cell = row.getCell(c + 1);
+
+        cell.alignment = {
+          horizontal: 'center',
+          vertical: 'middle',
+          wrapText: true,
+          readingOrder: 'rtl',
+        };
+        cell.font = { name: 'Cairo', size: 11, color: { argb: 'FF334155' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: isAlt ? 'FFFFFFFF' : 'FFF8FAFC' },
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        };
+
+        if (col.key === 'status') {
+          cell.value = getStatusText(v.status);
+          const statusColor =
+            v.status === 'active'
+              ? 'FF10B981'
+              : v.status === 'blocked'
+                ? 'FFEF4444'
+                : 'FF64748B';
+          cell.font = { name: 'Cairo', size: 11, bold: true, color: { argb: statusColor } };
+        } else if (col.key === 'profile_image' && v.profile_image && imageMap.has(v.profile_image)) {
+          const img = imageMap.get(v.profile_image)!;
+          const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+          ws.addImage(id, {
+            tl: { col: c + 0.1, row: rowIdx - 1 + 0.05 },
+            ext: { width: 70, height: 70 },
+            editAs: 'oneCell',
+          });
+          cell.value = '';
+        } else if (col.key === 'id_image' && v.id_image && imageMap.has(v.id_image)) {
+          const img = imageMap.get(v.id_image)!;
+          const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+          ws.addImage(id, {
+            tl: { col: c + 0.05, row: rowIdx - 1 + 0.05 },
+            ext: { width: 110, height: 70 },
+            editAs: 'oneCell',
+          });
+          cell.value = '';
+        } else if (
+          col.key === 'vehicle_registration_image' &&
+          v.vehicle_registration_image &&
+          imageMap.has(v.vehicle_registration_image)
+        ) {
+          const img = imageMap.get(v.vehicle_registration_image)!;
+          const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+          ws.addImage(id, {
+            tl: { col: c + 0.05, row: rowIdx - 1 + 0.05 },
+            ext: { width: 110, height: 70 },
+            editAs: 'oneCell',
+          });
+          cell.value = '';
+        } else if (col.key === 'equipment_images') {
+          const eq = (equipmentData[v.id] || []).filter(e => e.image && imageMap.has(e.image!));
+          if (eq.length === 0) {
+            cell.value = '-';
+          } else {
+            const slot = 60;
+            const gap = 4;
+            for (let k = 0; k < Math.min(eq.length, 5); k++) {
+              const e = eq[k];
+              const img = imageMap.get(e.image!)!;
+              const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+              ws.addImage(id, {
+                tl: {
+                  col: c + 0.05 + (k * (slot + gap)) / 320,
+                  row: rowIdx - 1 + 0.05,
+                },
+                ext: { width: slot, height: slot },
+                editAs: 'oneCell',
+              });
+            }
+            cell.value = eq.length > 5 ? `+${eq.length - 5}` : '';
+          }
+        } else if (col.key === 'equipment') {
+          const eq = equipmentData[v.id] || [];
+          if (eq.length === 0) {
+            cell.value = '-';
+          } else {
+            cell.value = eq
+              .map(e => `${toEnglishNumbers(String(e.quantity))} × ${e.name}`)
+              .join('\n');
+            row.height = Math.max(row.height || 24, 18 + eq.length * 16);
+          }
+        } else if (col.key === 'phone') {
+          cell.value = toEnglishNumbers(v.phone || '') || '-';
+          cell.alignment = { ...cell.alignment, readingOrder: 'ltr' };
+        } else if (col.key === 'id_number') {
+          cell.value = v.id_number ? toEnglishNumbers(v.id_number) : '-';
+          cell.alignment = { ...cell.alignment, readingOrder: 'ltr' };
+        } else if (col.key === 'vehicle_registration_number') {
+          cell.value = v.vehicle_registration_number
+            ? toEnglishNumbers(v.vehicle_registration_number)
+            : '-';
+          cell.alignment = { ...cell.alignment, readingOrder: 'ltr' };
+        } else if (col.key === 'vehicle_plate_number') {
+          cell.value = v.vehicle_plate_number ? toEnglishNumbers(v.vehicle_plate_number) : '-';
+          cell.alignment = { ...cell.alignment, readingOrder: 'ltr' };
+        } else if (
+          col.key === 'profile_image' ||
+          col.key === 'id_image' ||
+          col.key === 'vehicle_registration_image'
+        ) {
+          cell.value = '-';
+        } else {
+          cell.value = ((v as unknown as Record<string, string | undefined>)[col.key] as string) || '-';
+        }
+      }
+    }
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `فريق هاف لينس_${formatDate()}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleExport = async () => {
     if (Object.values(selectedFields).every(v => !v)) {
       showError('يرجى اختيار حقل واحد على الأقل');
@@ -230,49 +558,15 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     try {
       // ── CSV / XLSX export ──
       if (exportFormat === 'csv' || exportFormat === 'xlsx') {
-        const columns: { key: string; label: string }[] = fieldLabelsOrder
-          .filter(f => selectedFields[f.key] && f.key !== 'profile_image' && f.key !== 'id_image' && f.key !== 'vehicle_registration_image' && f.key !== 'equipment_images')
-          .map(f => ({ key: f.key, label: f.label }));
-
-        const header = columns.map(c => c.label);
-        const rows = vendors.map(v => columns.map(c => {
-          if (c.key === 'status') return getStatusText(v.status);
-          if (c.key === 'equipment') {
-            const eq = equipmentData[v.id] || [];
-            return eq.map(e => `${e.quantity} ${e.name}`).join(' | ') || '-';
-          }
-          return (v as any)[c.key] || '-';
-        }));
-
-        // BOM for UTF-8 Arabic support
-        const BOM = '\uFEFF';
-        const csvContent = BOM + [header.join(','), ...rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))].join('\n');
-
-        if (exportFormat === 'csv') {
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `فريق هاف لينس_${new Date().toISOString().split('T')[0]}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
+        if (exportFormat === 'xlsx') {
+          await exportXlsx();
         } else {
-          // XLSX: generate as TSV (opens in Excel with proper columns)
-          const tsvContent = BOM + [header.join('\t'), ...rows.map(r => r.join('\t'))].join('\n');
-          const blob = new Blob([tsvContent], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `فريق هاف لينس_${new Date().toISOString().split('T')[0]}.xls`;
-          a.click();
-          URL.revokeObjectURL(url);
+          exportCsv();
         }
-
         showSuccess('تم تصدير البيانات بنجاح');
         onSuccess();
         return;
       }
-
       // ── PDF export ──
       // Ensure Arabic font is loaded before rendering
       await ensureFontLoaded();
