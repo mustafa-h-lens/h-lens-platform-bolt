@@ -16,11 +16,15 @@ export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
   const [show, setShow] = useState(false);
   const [countdown, setCountdown] = useState(REDIRECT_SECONDS);
 
-  // Where to send the user after the countdown — vendor login (preview
-  // dashboard for pending vendors). Pre-fill email + firstVisit flag so the
-  // login screen knows this is the post-registration flow.
-  const redirectUrl =
-    email && email.includes('@')
+  // If the registration flow created an auto-session, send the user straight
+  // to the vendor portal. Otherwise fall back to the login page.
+  const hasSession = typeof window !== 'undefined'
+    && !!localStorage.getItem('vendor_session')
+    && !!localStorage.getItem('vendor_data');
+
+  const redirectUrl = hasSession
+    ? '/vendor'
+    : email && email.includes('@')
       ? `/vendor/login?email=${encodeURIComponent(email)}&firstVisit=1`
       : '/vendor/login?firstVisit=1';
 

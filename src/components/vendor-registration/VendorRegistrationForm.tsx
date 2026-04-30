@@ -522,6 +522,29 @@ export const VendorRegistrationForm = () => {
         body: { vendor_id: vendor.id, email_type: 'registration_received' },
       }).catch(() => {});
 
+      // Create a vendor session so the user lands directly in the dashboard
+      // after the success-screen countdown — no extra OTP login required.
+      try {
+        const sessionResp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-post-registration-session`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ vendor_id: vendor.id }),
+          }
+        );
+        const sessionData = await sessionResp.json();
+        if (sessionResp.ok && sessionData?.session && sessionData?.vendor) {
+          localStorage.setItem('vendor_session', JSON.stringify(sessionData.session));
+          localStorage.setItem('vendor_data', JSON.stringify(sessionData.vendor));
+        }
+      } catch (err) {
+        console.error('Auto-session error:', err);
+      }
+
       setIsSubmitted(true);
       showSuccess('تم إرسال طلبك بنجاح');
     } catch (error: any) {
