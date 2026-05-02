@@ -47,7 +47,9 @@ export default function ClientLogin({ onOTPSent }: ClientLoginProps) {
         <button onClick={toggleTheme} style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
           {isDarkMode ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="#93c5fd" />}
         </button>
-        <img src={logo} alt="Half Lens" style={{ height:54, objectFit:'contain' }} />
+        <a href="/" aria-label="الانتقال إلى الصفحة الرئيسية" style={{ display:'inline-flex', textDecoration:'none', cursor:'pointer' }}>
+          <img src={logo} alt="Half Lens" style={{ height:54, objectFit:'contain' }} />
+        </a>
       </div>
 
       {/* MAIN */}

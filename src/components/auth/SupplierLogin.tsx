@@ -71,7 +71,9 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         <button className="sl-theme-btn" onClick={toggleTheme}>
           {d ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="#3b82f6" />}
         </button>
-        <img src={logo} alt="Half Lens" className="sl-logo" />
+        <a href="/" aria-label="الانتقال إلى الصفحة الرئيسية" className="sl-logo-link">
+          <img src={logo} alt="Half Lens" className="sl-logo" />
+        </a>
       </div>
 
       {/* ── Main ── */}
@@ -318,6 +320,9 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         }
         .sl-theme-btn:hover { transform: scale(1.05); }
         .sl-logo { height: 54px; object-fit: contain; }
+        .sl-logo-link { display: inline-flex; cursor: pointer; text-decoration: none; transition: opacity 0.2s, transform 0.2s; }
+        .sl-logo-link:hover { opacity: 0.85; transform: scale(1.02); }
+        .sl-logo-link:active { transform: scale(0.98); }
 
         /* ══════════ MAIN ══════════ */
         .sl-main {
