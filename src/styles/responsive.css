@@ -32,6 +32,11 @@ html,
 body {
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+  /* Keep overscroll inside the document so the browser's native
+     pull-to-refresh doesn't fire on top of our custom one when an
+     inner scroll container is mid-scroll. The custom PullToRefresh
+     component still handles the legitimate at-top case. */
+  overscroll-behavior-y: contain;
 }
 
 /* ── Fluid headings — scale down automatically on narrow viewports ── */

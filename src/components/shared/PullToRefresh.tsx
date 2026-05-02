@@ -29,22 +29,44 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
     return 'ontouchstart' in window && window.innerWidth <= 768;
   }, []);
 
+  // Walk from the touch target up to <html>; if any ancestor is itself a
+  // scrollable container that has been scrolled down, the user's downward
+  // swipe is meant to scroll that container, not trigger pull-to-refresh.
+  const isAtTopOfScrollChain = useCallback((target: EventTarget | null) => {
+    if (window.scrollY > 0 || document.documentElement.scrollTop > 0) return false;
+    let node = target as HTMLElement | null;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const style = window.getComputedStyle(node);
+      const overflowY = style.overflowY;
+      const scrollable =
+        (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+        node.scrollHeight > node.clientHeight;
+      if (scrollable && node.scrollTop > 0) return false;
+      node = node.parentElement;
+    }
+    return true;
+  }, []);
+
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!isMobile() || refreshing) return;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    if (scrollTop <= 0) {
-      startY.current = e.touches[0].clientY;
-      pulling.current = true;
-    }
-  }, [isMobile, refreshing]);
+    if (!isAtTopOfScrollChain(e.target)) return;
+    startY.current = e.touches[0].clientY;
+    pulling.current = true;
+  }, [isMobile, refreshing, isAtTopOfScrollChain]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!pulling.current || refreshing) return;
+    // Bail if window scrolled away from top during the gesture (rare but possible).
+    if (window.scrollY > 0 || document.documentElement.scrollTop > 0) {
+      pulling.current = false;
+      setPullDistance(0);
+      return;
+    }
     const diff = e.touches[0].clientY - startY.current;
     if (diff > 0) {
       const distance = Math.min(diff * 0.45, MAX_PULL);
       setPullDistance(distance);
-      if (distance > 10) e.preventDefault();
+      if (distance > 10 && e.cancelable) e.preventDefault();
     } else {
       pulling.current = false;
       setPullDistance(0);
