@@ -10,6 +10,9 @@ import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
 import { createPortal } from 'react-dom';
 import { formatNumber } from '../../../lib/formatters';
 import { COUNTRIES } from '../../../lib/shared-data';
+import DocumentCropper from '../../shared/DocumentCropper';
+
+const ID_ASPECT_RATIO = 1.586;
 
 const VendorDetails = lazy(() => import('./VendorDetails').then(m => ({ default: m.VendorDetails })));
 const VendorExportModal = lazy(() => import('./VendorExportModal').then(m => ({ default: m.VendorExportModal })));
@@ -570,6 +573,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   const [profilePreview, setProfilePreview] = useState('');
   const [idFile, setIdFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState('');
+  const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
   const [smartText, setSmartText] = useState('');
   const [showSmartParse, setShowSmartParse] = useState(false);
   const [formData, setFormData] = useState({
@@ -664,10 +668,24 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
 
   const handleFileSelect = (file: File, type: 'profile' | 'id') => {
     if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5MB'); return; }
+    if (type === 'id') {
+      setPendingIdFile(file);
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (type === 'profile') { setProfileFile(file); setProfilePreview(ev.target?.result as string); }
-      else { setIdFile(file); setIdPreview(ev.target?.result as string); }
+      setProfileFile(file);
+      setProfilePreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const commitIdFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setIdFile(file);
+      setIdPreview(ev.target?.result as string);
+      setPendingIdFile(null);
     };
     reader.readAsDataURL(file);
   };
@@ -854,6 +872,15 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
           </div>
         </form>
       </div>
+      <DocumentCropper
+        open={!!pendingIdFile}
+        file={pendingIdFile}
+        aspect={ID_ASPECT_RATIO}
+        docLabel="صورة الهوية"
+        onSave={commitIdFile}
+        onSkip={commitIdFile}
+        onCancel={() => setPendingIdFile(null)}
+      />
     </div>,
     document.body
   );
