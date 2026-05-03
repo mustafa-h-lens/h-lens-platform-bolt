@@ -965,222 +965,173 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
   const createSingleVendorTemplate = async (vendor: Vendor): Promise<HTMLElement> => {
     const container = document.createElement('div');
-    container.style.cssText = `
-      direction: rtl;
-      font-family: 'Tahoma', 'Arial', 'Cairo', sans-serif;
-      padding: 40px;
-      background: white;
-      min-width: 1000px;
-    `;
+    container.style.cssText = `direction:rtl;font-family:Tahoma,Arial,sans-serif;padding:40px;background:white;min-width:900px;max-width:1000px;`;
 
     const logoBase64 = await convertImageToBase64('/assets/logo-blue.png');
+    const columns = fieldLabelsOrder.filter(f => selectedFields[f.key]);
 
+    // Helper to render an image or return null
+    const renderImg = async (url: string | undefined, w: string, h: string, round = '6px') => {
+      if (!url) return null;
+      const b64 = await convertImageToBase64(url);
+      if (!b64) return null;
+      const img = document.createElement('img');
+      img.src = b64;
+      img.style.cssText = `width:${w};height:${h};object-fit:cover;border-radius:${round};border:1px solid #e2e8f0;`;
+      return img;
+    };
+
+    // ── Header with logo ──
     const header = document.createElement('div');
-    header.style.cssText = `
-      position: relative;
-      text-align: center;
-      margin-bottom: 30px;
-      border-bottom: 3px solid #3b82f6;
-      padding-bottom: 20px;
-    `;
-
+    header.style.cssText = `display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1e3a5f;`;
+    const titleDiv = document.createElement('div');
+    titleDiv.innerHTML = `<div style="font-size:28px;font-weight:700;color:#1e293b;">ملف المورد</div><div style="font-size:12px;color:#94a3b8;margin-top:4px;">تاريخ التصدير: ${new Date().toLocaleDateString('en-US')}</div>`;
+    header.appendChild(titleDiv);
     if (logoBase64) {
       const logoImg = document.createElement('img');
       logoImg.src = logoBase64;
-      logoImg.style.cssText = `
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 120px;
-        height: auto;
-        object-fit: contain;
-      `;
+      logoImg.style.cssText = `width:100px;height:auto;object-fit:contain;`;
       header.appendChild(logoImg);
     }
-
-    const titleDiv = document.createElement('div');
-    titleDiv.innerHTML = `
-      <h1 style="font-size: 36px; font-weight: 700; color: #1e293b; margin: 0 0 15px 0;">فريق Half Lens</h1>
-      <p style="font-size: 15px; color: #64748b; margin: 0;">تاريخ التصدير: ${new Date().toLocaleDateString('en-US')}</p>
-    `;
-    header.appendChild(titleDiv);
-
     container.appendChild(header);
 
-    const table = document.createElement('table');
-    table.style.cssText = `
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    `;
+    // ── Profile section: photo + basic info ──
+    const profileSection = document.createElement('div');
+    profileSection.style.cssText = `display:flex;gap:24px;align-items:flex-start;margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;`;
 
-    const thead = document.createElement('thead');
-    thead.style.cssText = 'background: #3b82f6;';
-    const headerRow = document.createElement('tr');
-
-    const columns: { key: keyof ExportFields; label: string }[] = fieldLabelsOrder.filter(f => selectedFields[f.key]);
-
-    columns.forEach(col => {
-      const th = document.createElement('th');
-      th.style.cssText = `
-        padding: 12px;
-        text-align: center;
-        color: white;
-        font-weight: 600;
-        font-size: 14px;
-        border: 1px solid #2563eb;
-        vertical-align: middle;
-      `;
-      th.textContent = col.label;
-      headerRow.appendChild(th);
-    });
-
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement('tbody');
-    const dataRow = document.createElement('tr');
-    dataRow.style.cssText = 'background: #f8fafc; height: 110px;';
-
-    for (const col of columns) {
-      const td = document.createElement('td');
-      td.style.cssText = `
-        padding: 10px;
-        text-align: center;
-        border: 1px solid #e2e8f0;
-        font-size: 13px;
-        color: #334155;
-        vertical-align: middle;
-        font-family: Tahoma, Arial, sans-serif;
-        direction: rtl;
-        unicode-bidi: embed;
-      `;
-
-      if (col.key === 'profile_image' && vendor.profile_image) {
-        const base64 = await convertImageToBase64(vendor.profile_image);
-        if (base64) {
-          const img = document.createElement('img');
-          img.src = base64;
-          img.style.cssText = `
-            width: 95px;
-            height: 95px;
-            object-fit: cover;
-            border-radius: 8px;
-            border: 2px solid #cbd5e1;
-            margin: 0 auto;
-            display: block;
-          `;
-          td.appendChild(img);
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'id_image' && vendor.id_image) {
-        const base64 = await convertImageToBase64(vendor.id_image);
-        if (base64) {
-          const img = document.createElement('img');
-          img.src = base64;
-          img.style.cssText = `
-            max-width: 100%;
-            max-height: 95px;
-            object-fit: contain;
-            border-radius: 4px;
-            border: 1px solid #cbd5e1;
-            margin: 0 auto;
-            display: block;
-          `;
-          td.appendChild(img);
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'passport_image' && travelDocs[vendor.id]?.passport_file) {
-        const base64 = await convertImageToBase64(travelDocs[vendor.id].passport_file!);
-        if (base64) {
-          const img = document.createElement('img');
-          img.src = base64;
-          img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
-          td.appendChild(img);
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'visa_image' && travelDocs[vendor.id]?.visa_file) {
-        const base64 = await convertImageToBase64(travelDocs[vendor.id].visa_file!);
-        if (base64) {
-          const img = document.createElement('img');
-          img.src = base64;
-          img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
-          td.appendChild(img);
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'phone') {
-        td.textContent = toEnglishNumbers(vendor.phone);
-        td.style.direction = 'ltr';
-      } else if (col.key === 'id_number') {
-        td.textContent = vendor.id_number ? toEnglishNumbers(vendor.id_number) : '-';
-        td.style.direction = 'ltr';
-      } else if (col.key === 'equipment') {
-        const equipment = equipmentData[vendor.id] || [];
-        if (equipment.length > 0) {
-          td.style.textAlign = 'right';
-          td.style.padding = '12px';
-          td.style.lineHeight = '1.8';
-          td.innerHTML = equipment.map(e => `${toEnglishNumbers(e.quantity.toString())} ${e.name}`).join('<br>');
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'equipment_images') {
-        const equipment = equipmentData[vendor.id] || [];
-        const equipmentWithImages = equipment.filter(e => e.image);
-        if (equipmentWithImages.length > 0) {
-          const imagesContainer = document.createElement('div');
-          imagesContainer.style.cssText = `
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            justify-content: center;
-            align-items: center;
-            padding: 4px;
-          `;
-
-          for (const eq of equipmentWithImages) {
-            if (eq.image) {
-              const base64 = await convertImageToBase64(eq.image);
-              if (base64) {
-                const img = document.createElement('img');
-                img.src = base64;
-                img.style.cssText = `
-                  width: 60px;
-                  height: 60px;
-                  object-fit: cover;
-                  border-radius: 4px;
-                  border: 1px solid #cbd5e1;
-                `;
-                img.title = eq.name;
-                imagesContainer.appendChild(img);
-              }
-            }
-          }
-
-          td.appendChild(imagesContainer);
-        } else {
-          td.textContent = '-';
-        }
-      } else if (col.key === 'status') {
-        td.textContent = getStatusText(vendor.status);
-      } else if (col.key === 'estimated_cost') {
-        td.textContent = vendor.estimated_cost ? `${toEnglishNumbers(vendor.estimated_cost.toString())} ريال` : '-';
-        td.style.direction = 'ltr';
-      } else {
-        td.textContent = (vendor[col.key as keyof Vendor] as string) || '-';
+    // Profile image
+    if (selectedFields.profile_image) {
+      const profileImg = await renderImg(vendor.profile_image, '110px', '110px', '10px');
+      if (profileImg) {
+        profileImg.style.flexShrink = '0';
+        profileSection.appendChild(profileImg);
       }
-
-      dataRow.appendChild(td);
     }
 
-    tbody.appendChild(dataRow);
-    table.appendChild(tbody);
-    container.appendChild(table);
+    // Info grid
+    const infoGrid = document.createElement('div');
+    infoGrid.style.cssText = `flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px;`;
+
+    const textFields: { key: keyof ExportFields; label: string }[] = columns.filter(c =>
+      !['profile_image','id_image','vehicle_registration_image','passport_image','visa_image','equipment','equipment_images'].includes(c.key)
+    );
+
+    for (const field of textFields) {
+      const cell = document.createElement('div');
+      let value = '-';
+      if (field.key === 'phone') value = toEnglishNumbers(vendor.phone || '');
+      else if (field.key === 'id_number') value = vendor.id_number ? toEnglishNumbers(vendor.id_number) : '-';
+      else if (field.key === 'status') value = getStatusText(vendor.status);
+      else if (field.key === 'vehicle_registration_number') value = vendor.vehicle_registration_number ? toEnglishNumbers(vendor.vehicle_registration_number) : '-';
+      else if (field.key === 'vehicle_plate_number') value = vendor.vehicle_plate_number ? toEnglishNumbers(vendor.vehicle_plate_number) : '-';
+      else value = (vendor[field.key as keyof Vendor] as string) || '-';
+
+      cell.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">${field.label}</div><div style="font-size:14px;font-weight:600;color:#1e293b;direction:${['phone','id_number','vehicle_registration_number','vehicle_plate_number'].includes(field.key) ? 'ltr;text-align:left' : 'rtl'}">${value}</div>`;
+      infoGrid.appendChild(cell);
+    }
+    profileSection.appendChild(infoGrid);
+    container.appendChild(profileSection);
+
+    // ── Documents section: ID, Passport, Visa side by side ──
+    const docKeys = ['id_image', 'passport_image', 'visa_image', 'vehicle_registration_image'] as const;
+    const activeDocKeys = docKeys.filter(k => selectedFields[k]);
+
+    if (activeDocKeys.length > 0) {
+      const docsSection = document.createElement('div');
+      docsSection.style.cssText = `margin-bottom:24px;`;
+      const docsTitle = document.createElement('div');
+      docsTitle.style.cssText = `font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;`;
+      docsTitle.textContent = 'الوثائق والمستندات';
+      docsSection.appendChild(docsTitle);
+
+      const docsGrid = document.createElement('div');
+      docsGrid.style.cssText = `display:grid;grid-template-columns:repeat(${Math.min(activeDocKeys.length, 3)},1fr);gap:16px;`;
+
+      const docLabels: Record<string, string> = {
+        id_image: 'الهوية الوطنية',
+        passport_image: 'جواز السفر',
+        visa_image: 'التأشيرة',
+        vehicle_registration_image: 'استمارة المركبة',
+      };
+
+      for (const key of activeDocKeys) {
+        let url: string | undefined;
+        if (key === 'id_image') url = vendor.id_image;
+        else if (key === 'passport_image') url = travelDocs[vendor.id]?.passport_file;
+        else if (key === 'visa_image') url = travelDocs[vendor.id]?.visa_file;
+        else if (key === 'vehicle_registration_image') url = vendor.vehicle_registration_image;
+
+        const card = document.createElement('div');
+        card.style.cssText = `background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;`;
+        const label = document.createElement('div');
+        label.style.cssText = `font-size:12px;font-weight:600;color:#475569;margin-bottom:10px;`;
+        label.textContent = docLabels[key] || key;
+        card.appendChild(label);
+
+        if (url) {
+          const b64 = await convertImageToBase64(url);
+          if (b64) {
+            const img = document.createElement('img');
+            img.src = b64;
+            img.style.cssText = `width:100%;height:160px;object-fit:contain;border-radius:6px;`;
+            card.appendChild(img);
+          } else {
+            card.innerHTML += `<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+          }
+        } else {
+          card.innerHTML += `<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+        }
+        docsGrid.appendChild(card);
+      }
+      docsSection.appendChild(docsGrid);
+      container.appendChild(docsSection);
+    }
+
+    // ── Equipment section ──
+    if (selectedFields.equipment || selectedFields.equipment_images) {
+      const equipment = equipmentData[vendor.id] || [];
+      if (equipment.length > 0) {
+        const eqSection = document.createElement('div');
+        const eqTitle = document.createElement('div');
+        eqTitle.style.cssText = `font-size:15px;font-weight:700;color:#1e3a5f;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;`;
+        eqTitle.textContent = `المعدات (${toEnglishNumbers(equipment.length.toString())})`;
+        eqSection.appendChild(eqTitle);
+
+        if (selectedFields.equipment_images) {
+          const eqGrid = document.createElement('div');
+          eqGrid.style.cssText = `display:grid;grid-template-columns:repeat(6,1fr);gap:10px;`;
+          for (const eq of equipment) {
+            const eqCard = document.createElement('div');
+            eqCard.style.cssText = `text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;`;
+            if (eq.image) {
+              const b64 = await convertImageToBase64(eq.image);
+              if (b64) {
+                const img = document.createElement('img');
+                img.src = b64;
+                img.style.cssText = `width:100%;height:70px;object-fit:contain;border-radius:4px;margin-bottom:4px;`;
+                eqCard.appendChild(img);
+              }
+            }
+            const name = document.createElement('div');
+            name.style.cssText = `font-size:10px;color:#475569;line-height:1.3;overflow:hidden;`;
+            name.textContent = eq.name;
+            eqCard.appendChild(name);
+            eqGrid.appendChild(eqCard);
+          }
+          eqSection.appendChild(eqGrid);
+        } else {
+          const eqList = document.createElement('div');
+          eqList.style.cssText = `display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;font-size:13px;color:#334155;line-height:1.8;`;
+          equipment.forEach(e => {
+            const item = document.createElement('div');
+            item.textContent = `• ${e.name}`;
+            eqList.appendChild(item);
+          });
+          eqSection.appendChild(eqList);
+        }
+        container.appendChild(eqSection);
+      }
+    }
 
     return container;
   };
