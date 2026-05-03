@@ -168,19 +168,40 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     if (vendors.length === 0) return;
     try {
       const vendorIds = vendors.map(v => v.id);
-      const { data } = await supabase
+      const grouped: Record<string, { passport_file?: string; visa_file?: string }> = {};
+
+      // Source 1: vendor_travel_documents (admin-entered)
+      const { data: travelData } = await supabase
         .from('vendor_travel_documents')
         .select('vendor_id, document_type, passport_file, visa_file')
         .in('vendor_id', vendorIds);
-      if (data) {
-        const grouped: Record<string, { passport_file?: string; visa_file?: string }> = {};
-        data.forEach(doc => {
+      if (travelData) {
+        travelData.forEach(doc => {
           if (!grouped[doc.vendor_id]) grouped[doc.vendor_id] = {};
           if (doc.document_type === 'passport' && doc.passport_file) grouped[doc.vendor_id].passport_file = doc.passport_file;
           if (doc.document_type === 'visa' && doc.visa_file) grouped[doc.vendor_id].visa_file = doc.visa_file;
         });
-        setTravelDocs(grouped);
       }
+
+      // Source 2: vendor_documents (uploaded files) — fill gaps
+      const { data: docData } = await supabase
+        .from('vendor_documents')
+        .select('vendor_id, document_type, file_url')
+        .in('vendor_id', vendorIds)
+        .in('document_type', ['passport', 'other', 'visa_usa']);
+      if (docData) {
+        docData.forEach(doc => {
+          if (!grouped[doc.vendor_id]) grouped[doc.vendor_id] = {};
+          if (doc.document_type === 'passport' && !grouped[doc.vendor_id].passport_file) {
+            grouped[doc.vendor_id].passport_file = doc.file_url;
+          }
+          if ((doc.document_type === 'other' || doc.document_type === 'visa_usa') && !grouped[doc.vendor_id].visa_file) {
+            grouped[doc.vendor_id].visa_file = doc.file_url;
+          }
+        });
+      }
+
+      setTravelDocs(grouped);
     } catch (error) {
       console.error('Error fetching travel docs:', error);
     }
