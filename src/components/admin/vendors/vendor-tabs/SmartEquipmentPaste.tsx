@@ -60,18 +60,49 @@ export const SmartEquipmentPaste = ({ vendorId, isOpen, onClose, onSaved }: Prop
     })();
   }, [isOpen]);
 
-  const catalogIndex = useMemo(() => {
-    const m = new Map<string, CatalogRow>();
-    catalog.forEach(c => {
-      const a = normalize(c.name);
-      if (a) m.set(a, c);
-      if (c.name_en) {
-        const b = normalize(c.name_en);
-        if (b && !m.has(b)) m.set(b, c);
-      }
-    });
-    return m;
+  // Build catalog entries with all searchable variants
+  const catalogEntries = useMemo(() => {
+    return catalog.map(c => ({
+      item: c,
+      keys: [normalize(c.name), c.name_en ? normalize(c.name_en) : ''].filter(Boolean),
+    }));
   }, [catalog]);
+
+  // Fuzzy match: exact > contains > word overlap
+  const findMatch = (input: string): CatalogRow | null => {
+    const n = input;
+    // 1. Exact match
+    for (const entry of catalogEntries) {
+      if (entry.keys.some(k => k === n)) return entry.item;
+    }
+    // 2. One contains the other
+    for (const entry of catalogEntries) {
+      if (entry.keys.some(k => k.includes(n) || n.includes(k))) return entry.item;
+    }
+    // 3. Word overlap (at least 2 words or all words match)
+    const inputWords = n.split(/\s+/).filter(w => w.length > 1);
+    if (inputWords.length > 0) {
+      let bestScore = 0;
+      let bestMatch: CatalogRow | null = null;
+      for (const entry of catalogEntries) {
+        for (const k of entry.keys) {
+          const catWords = k.split(/\s+/).filter(w => w.length > 1);
+          const overlap = inputWords.filter(w => catWords.some(cw => cw.includes(w) || w.includes(cw)));
+          const score = overlap.length / Math.max(inputWords.length, catWords.length);
+          if (overlap.length >= 2 && score > bestScore) {
+            bestScore = score;
+            bestMatch = entry.item;
+          }
+          // Single-word input: match if it appears in any catalog key
+          if (inputWords.length === 1 && catWords.some(cw => cw === inputWords[0])) {
+            if (score > bestScore) { bestScore = score; bestMatch = entry.item; }
+          }
+        }
+      }
+      if (bestMatch && bestScore >= 0.4) return bestMatch;
+    }
+    return null;
+  };
 
   const chips: ChipState[] = useMemo(() => {
     const lines = text
@@ -84,10 +115,10 @@ export const SmartEquipmentPaste = ({ vendorId, isOpen, onClose, onSaved }: Prop
       const n = normalize(raw);
       if (!n || seen.has(n)) continue;
       seen.add(n);
-      out.push({ raw, normalized: n, matched: catalogIndex.get(n) || null });
+      out.push({ raw, normalized: n, matched: findMatch(n) });
     }
     return out;
-  }, [text, catalogIndex]);
+  }, [text, catalogEntries]);
 
   const matchedCount = chips.filter(c => c.matched).length;
   const newCount = chips.length - matchedCount;
@@ -105,6 +136,7 @@ export const SmartEquipmentPaste = ({ vendorId, isOpen, onClose, onSaved }: Prop
       if (newChips.length > 0) {
         const rows = newChips.map(c => ({
           name: c.raw.trim(),
+          name_en: c.raw.trim(),
           is_active: true,
         }));
         const { data: created, error: cErr } = await supabase
