@@ -132,7 +132,7 @@ export function VendorProjects() {
           a filtered-empty view if filters hide all real rows,
           and the real table once at least one project exists and matches */}
       {loading ? <LoadingSpinner /> : projects.length === 0 ? (
-        <PreviewProjects />
+        <PreviewProjects isApproved={vendor?.status === 'active'} />
       ) : filtered.length === 0 ? (
         <EmptyState icon={Folder} message="لا توجد نتائج تطابق الفلاتر" />
       ) : (

@@ -38,82 +38,67 @@ function getEmailTemplate(
   let baseUrl = rawUrl;
   try { baseUrl = new URL(rawUrl).origin; } catch { baseUrl = rawUrl.replace(/\/[^/]*$/, '') || rawUrl; }
 
+  // Self-contained light theme (solid colors, no RGBA, color-scheme: light only)
+  // so Gmail/Outlook dark modes don't auto-invert the OTP boxes into invisible
+  // states. Each digit gets its own opaque-bg box with high contrast text — all
+  // 6 are guaranteed to render.
+  const otpBox = (d) => `<td class="otp" align="center" valign="middle" width="48" height="56" bgcolor="#eff6ff" style="width:48px;height:56px;background-color:#eff6ff;border:2px solid #1e40af;border-radius:10px;font-family:'JetBrains Mono',Courier,monospace;font-size:26px;font-weight:800;color:#1e40af;">${d}</td>`;
+
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="supported-color-schemes" content="light dark" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
   <title>رمز التحقق - Half Lens</title>
   <style>
-    :root { color-scheme: light dark; }
-    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
-    @media (prefers-color-scheme: light) {
-      .ftr-links-dark { display: none !important; }
-      .ftr-links-light { display: block !important; }
-    }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
-      .pad { padding: 20px 16px !important; }
-      .hdr { padding: 24px 16px 20px !important; }
-      .ftr { padding: 20px 16px !important; }
-      .otp { width: 40px !important; height: 48px !important; font-size: 20px !important; }
-      .sp { width: 5px !important; }
+      .pad  { padding: 20px 16px !important; }
+      .hdr  { padding: 24px 16px 20px !important; }
+      .ftr  { padding: 20px 16px !important; }
+      .otp  { width: 40px !important; height: 48px !important; font-size: 20px !important; }
+      .sp   { width: 5px !important; }
     }
   </style>
 </head>
-<body bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,sans-serif;direction:rtl;">
-  <!-- Preheader -->
-  <div dir="ltr" style="display:none;font-size:1px;color:#030b1a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;">
+  <div dir="ltr" style="display:none;font-size:1px;color:#f3f4f6;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
     رمز التحقق الخاص بك: ${otp} — صالح لمدة 10 دقائق
-    ${"&zwnj;&nbsp;".repeat(30)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;">
     <tr>
-      <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
-        <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
+      <td align="center" style="padding:24px 12px;">
+        <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
 
           <!-- Header -->
           <tr>
-            <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
-                <tr>
-                  <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-                  </td>
-                </tr>
-              </table>
-              <div style="margin-top:16px;">
-                <span style="display:inline-block;padding:6px 18px;background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">&#128272; رمز التحقق</span>
-              </div>
+            <td class="hdr" align="center" bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;">
+              <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#bfdbfe;" dir="rtl">&#128272; رمز التحقق</p>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td class="pad" style="padding:32px 32px 0;">
-              <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-              <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم طلب رمز تحقق لتسجيل الدخول إلى منصة هاف لينس. استخدم الرمز التالي:</p>
+            <td class="pad" style="padding:32px 32px 8px;background-color:#ffffff;">
+              <p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 10px;" dir="rtl">مرحباً ${vendorName} &#128075;</p>
+              <p style="font-size:14px;color:#4b5563;line-height:1.85;margin:0 0 22px;" dir="rtl">تم طلب رمز تحقق لتسجيل الدخول إلى منصة هاف لينس. استخدم الرمز التالي:</p>
             </td>
           </tr>
 
-          <!-- OTP Boxes -->
+          <!-- OTP Boxes (always 6, opaque bg + high contrast) -->
           <tr>
-            <td style="padding:0 32px;text-align:center;" dir="ltr">
+            <td style="padding:4px 32px 8px;text-align:center;background-color:#ffffff;" dir="ltr">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;direction:ltr;">
                 <tr dir="ltr">
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[0]}</td>
-                  <td class="sp" width="8" style="width:8px;"></td>
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[1]}</td>
-                  <td class="sp" width="8" style="width:8px;"></td>
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[2]}</td>
-                  <td class="sp" width="8" style="width:8px;"></td>
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[3]}</td>
-                  <td class="sp" width="8" style="width:8px;"></td>
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[4]}</td>
-                  <td class="sp" width="8" style="width:8px;"></td>
-                  <td class="otp" align="center" valign="middle" width="46" height="56" style="width:46px;height:56px;background:rgba(37,99,235,0.06);border:1.5px solid rgba(37,99,235,0.3);border-radius:12px;font-family:'JetBrains Mono',Courier,monospace;font-size:24px;font-weight:700;color:#60a5fa;">${digits[5]}</td>
+                  ${otpBox(digits[0])}<td class="sp" width="8" style="width:8px;"></td>
+                  ${otpBox(digits[1])}<td class="sp" width="8" style="width:8px;"></td>
+                  ${otpBox(digits[2])}<td class="sp" width="8" style="width:8px;"></td>
+                  ${otpBox(digits[3])}<td class="sp" width="8" style="width:8px;"></td>
+                  ${otpBox(digits[4])}<td class="sp" width="8" style="width:8px;"></td>
+                  ${otpBox(digits[5])}
                 </tr>
               </table>
             </td>
@@ -121,26 +106,26 @@ function getEmailTemplate(
 
           <!-- Expiry -->
           <tr>
-            <td style="padding:18px 32px 0;text-align:center;">
-              <p style="font-size:13px;color:rgba(200,215,255,0.5);margin:0;">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:rgba(200,215,255,0.8);">10 دقائق</strong></p>
+            <td style="padding:14px 32px 4px;text-align:center;background-color:#ffffff;">
+              <p style="font-size:13px;color:#6b7280;margin:0;" dir="rtl">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:#111827;">10 دقائق</strong></p>
             </td>
           </tr>
 
-          <!-- Info Row -->
+          <!-- Info Box -->
           <tr>
-            <td class="pad" style="padding:20px 32px 0;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+            <td class="pad" style="padding:18px 32px 4px;background-color:#ffffff;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f9fafb" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128338; وقت الطلب</td>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);" dir="ltr">${requestTime}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;border-bottom:1px solid #e5e7eb;width:120px;" dir="rtl">&#128338; وقت الطلب</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;text-align:left;" dir="ltr">${requestTime}</td>
                 </tr>
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);border-bottom:1px solid rgba(255,255,255,0.05);">&#128231; البريد</td>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;border-bottom:1px solid rgba(255,255,255,0.05);" dir="ltr">${email}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;border-bottom:1px solid #e5e7eb;" dir="rtl">&#128231; البريد</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${email}</td>
                 </tr>
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.5);">&#128187; الجهاز</td>
-                  <td style="padding:12px 18px;font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;" dir="rtl">&#128187; الجهاز</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
                 </tr>
               </table>
             </td>
@@ -148,10 +133,10 @@ function getEmailTemplate(
 
           <!-- Warning -->
           <tr>
-            <td class="pad" style="padding:18px 32px 0;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(245,158,11,0.3);background:rgba(245,158,11,0.05);border-radius:10px;">
+            <td class="pad" style="padding:14px 32px 0;background-color:#ffffff;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#fef3c7" style="background-color:#fef3c7;border:1px solid #fcd34d;border-radius:10px;">
                 <tr>
-                  <td style="padding:14px 18px;font-size:12px;color:#fbbf24;line-height:1.7;">
+                  <td style="padding:14px 18px;font-size:12px;color:#92400e;line-height:1.7;" dir="rtl">
                     &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق هاف لينس لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
                   </td>
                 </tr>
@@ -161,39 +146,31 @@ function getEmailTemplate(
 
           <!-- CTA Button -->
           <tr>
-            <td style="padding:24px 32px;text-align:center;">
-              <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${loginUrl}" style="height:48px;v-text-anchor:middle;width:280px;" arcsize="21%" fillcolor="#2563eb" stroke="f">
-                <w:anchorlock/><center style="color:#ffffff;font-family:Cairo,Arial,sans-serif;font-size:14px;font-weight:bold;">الذهاب إلى صفحة تسجيل الدخول</center>
-              </v:roundrect>
-              <![endif]-->
-              <!--[if !mso]><!-->
-              <a href="${loginUrl}" style="display:inline-block;padding:14px 40px;background:#2563eb;color:#ffffff !important;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 15px rgba(37,99,235,0.3);mso-hide:all;">&#127760; <span style="color:#ffffff !important;">الذهاب إلى صفحة تسجيل الدخول</span></a>
-              <!--<![endif]-->
+            <td align="center" style="padding:22px 32px 28px;background-color:#ffffff;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td bgcolor="#1e40af" style="background-color:#1e40af;border-radius:10px;">
+                    <a href="${loginUrl}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:'Cairo',Arial,sans-serif;">
+                      الذهاب إلى صفحة تسجيل الدخول &#9665;
+                    </a>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-                <tr>
-                  <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
-                  </td>
-                </tr>
-              </table>
-              <div class="ftr-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
-                <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+            <td class="ftr" align="center" bgcolor="#f9fafb" style="background-color:#f9fafb;padding:18px 32px;border-top:1px solid #e5e7eb;">
+              <p style="margin:0 0 6px;font-size:11px;color:#6b7280;line-height:1.7;" dir="rtl">
+                هذه الرسالة مرسلة تلقائياً من منصة Half Lens. لا ترد عليها مباشرةً.
+              </p>
+              <div style="font-size:11px;line-height:2;">
+                <a href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+                <a href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+                <a href="${baseUrl}/terms" style="color:#2563eb;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <div class="ftr-links-light" style="display:none;margin-top:12px;font-size:11px;line-height:2;">
-                <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
-              </div>
-              <p style="font-size:10px;color:rgba(200,215,255,0.3);margin:8px 0 0;">هاف لينس &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p style="font-size:10px;color:#9ca3af;margin:6px 0 0;" dir="rtl">هاف لينس &copy; ${new Date().getFullYear()} — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 

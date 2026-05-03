@@ -12,7 +12,7 @@ const statusStyle = (status: string) => {
 
 const fmt = (n: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(n);
 
-export const PreviewInvoices = () => {
+export const PreviewInvoices = ({ isApproved = false }: { isApproved?: boolean }) => {
   return (
     <div style={{ padding: 16, color: 'var(--color-text-primary)' }}>
       <PreviewBanner message="هذه فواتير تجريبية لتعريفك بشكل صفحة الفواتير والمدفوعات. ستحلّ فواتيرك الحقيقية مكانها فور إصدار أول فاتورة لك." />
@@ -22,21 +22,23 @@ export const PreviewInvoices = () => {
           <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>الفواتير والمدفوعات</h2>
           <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>نماذج تعريفية</div>
         </div>
-        <button
-          type="button"
-          disabled
-          title="متاح بعد الموافقة على حسابك"
-          style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '9px 16px', borderRadius: 10,
-            background: 'var(--color-background-hover, rgba(148,163,184,0.1))',
-            border: '1px solid var(--color-border)',
-            color: 'var(--color-text-muted)', cursor: 'not-allowed', fontSize: 13, fontWeight: 600,
-          }}
-        >
-          <Lock size={14} />
-          طلب فاتورة جديدة
-        </button>
+        {!isApproved && (
+          <button
+            type="button"
+            disabled
+            title="متاح بعد الموافقة على حسابك"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '9px 16px', borderRadius: 10,
+              background: 'var(--color-background-hover, rgba(148,163,184,0.1))',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)', cursor: 'not-allowed', fontSize: 13, fontWeight: 600,
+            }}
+          >
+            <Lock size={14} />
+            طلب فاتورة جديدة
+          </button>
+        )}
       </div>
 
       <div className="vp-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(260px,100%),1fr))', gap: 12 }}>
@@ -91,9 +93,11 @@ export const PreviewInvoices = () => {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                <LockedActionHint />
-              </div>
+              {!isApproved && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
+                  <LockedActionHint />
+                </div>
+              )}
             </div>
           );
         })}

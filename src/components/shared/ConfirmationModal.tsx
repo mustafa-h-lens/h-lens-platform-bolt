@@ -1,10 +1,11 @@
+import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => void;
@@ -55,9 +56,9 @@ export const ConfirmationModal = ({
               {title}
             </h3>
 
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }} dir="rtl">
+            <div style={{ color: 'var(--text-secondary)', marginBottom: 24, width: '100%' }} dir="rtl">
               {message}
-            </p>
+            </div>
 
             <div style={{ display: 'flex', gap: 12, width: '100%' }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onCancel}>

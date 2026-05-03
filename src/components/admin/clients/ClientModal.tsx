@@ -32,7 +32,7 @@ interface Sector {
 
 export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) => {
   const { user } = useAuth();
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -40,6 +40,7 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
   const [uploadingImage, setUploadingImage] = useState(false);
   const [contacts, setContacts] = useState<ClientContact[]>([]);
   const [sendInvite, setSendInvite] = useState(!client); // Default ON for new clients
+  const [notifyEmailChange, setNotifyEmailChange] = useState(false);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [formData, setFormData] = useState({
     name: '', code: '', email: '', phone: '', address: '', notes: '', client_image: '', website: '', city: '', sector: '',
@@ -154,6 +155,32 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
       if (client) {
         const { error } = await supabase.from('clients').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', client.id);
         if (error) throw error;
+
+        const trimmedEmail = formData.email.trim();
+        const oldEmail = (client.email || '').trim();
+        const emailChanged = trimmedEmail && trimmedEmail.toLowerCase() !== oldEmail.toLowerCase();
+        if (emailChanged && notifyEmailChange) {
+          try {
+            const { error: emailErr } = await supabase.functions.invoke('send-vendor-status-email', {
+              body: {
+                vendor_id: client.id,
+                email_type: 'email_changed',
+                new_email: trimmedEmail,
+                old_email: oldEmail || undefined,
+                portal_type: 'client',
+              },
+            });
+            if (emailErr) {
+              console.error('Notify-email error:', emailErr);
+              showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
+            } else {
+              showSuccess('تم حفظ التعديلات وإرسال إشعار للبريد الجديد');
+            }
+          } catch (emailErr) {
+            console.error('Notify-email exception:', emailErr);
+            showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
+          }
+        }
       } else {
         // Add invitation fields if sending invite
         if (sendInvite && formData.email) {
@@ -237,6 +264,24 @@ export const ClientModal = ({ client, onClose, onSuccess }: ClientModalProps) =>
               <div className="input-group">
                 <label className="input-label">البريد الإلكتروني <span className="req">*</span></label>
                 <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="info@example.com" dir="ltr" style={{ textAlign: 'right' }} />
+                {client && formData.email.trim() && formData.email.trim().toLowerCase() !== (client.email || '').trim().toLowerCase() && (
+                  <label
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
+                      padding: '10px 12px', borderRadius: 10,
+                      background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
+                      fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={notifyEmailChange}
+                      onChange={(e) => setNotifyEmailChange(e.target.checked)}
+                      style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                    />
+                    <span>إشعار العميل بالبريد الجديد عبر إيميل يحتوي على رابط تسجيل الدخول</span>
+                  </label>
+                )}
               </div>
 
               {/* Phone */}

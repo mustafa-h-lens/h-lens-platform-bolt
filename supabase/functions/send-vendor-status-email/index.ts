@@ -15,7 +15,8 @@ type EmailType =
   | "rejected"
   | "revision_requested"
   | "resubmitted"
-  | "admin_new_registration";
+  | "admin_new_registration"
+  | "email_changed";
 
 interface RevisionFlags {
   steps: Record<string, { comment: string; fields: string[] }>;
@@ -26,6 +27,11 @@ interface StatusEmailRequest {
   email_type: EmailType;
   reason?: string;
   flags?: RevisionFlags;
+  new_email?: string;
+  old_email?: string;
+  // Used only by email_changed — selects which portal the login CTA opens
+  // and which table is read for the recipient's full name.
+  portal_type?: "vendor" | "client";
 }
 
 // Mirrors src/lib/vendorRegistrationSteps.ts — kept in sync manually because
@@ -368,6 +374,119 @@ function buildApproved(
   };
 }
 
+function buildEmailChanged(
+  vendorName: string,
+  newEmail: string,
+  oldEmail: string,
+  loginUrl: string,
+  date: string
+): { subject: string; html: string } {
+  // Self-contained light-theme template. The shared dark-theme wrapper renders
+  // poorly in Gmail mobile dark mode (Gmail strips most of the swap CSS, so the
+  // email can come through as light text on a near-white auto-inverted card,
+  // making content unreadable). Here we use solid opaque colors only — no RGBA,
+  // no prefers-color-scheme tricks — so the email looks identical and legible
+  // in every client whether dark mode is on or off.
+  const subject = "تحديث البريد الإلكتروني - Half Lens";
+  const oldRow = oldEmail ? `
+        <tr>
+          <td style="padding:14px 18px 6px;font-size:12px;color:#6b7280;font-weight:600;" dir="rtl">البريد السابق</td>
+        </tr>
+        <tr>
+          <td style="padding:0 18px 14px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#dc2626;font-weight:700;text-decoration:line-through;text-decoration-color:#dc2626;text-decoration-thickness:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${oldEmail}</td>
+        </tr>` : "";
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;margin:0;padding:0;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+          <tr>
+            <td bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;text-align:center;">
+              <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <p style="margin:6px 0 0;font-size:13px;font-weight:600;color:#bfdbfe;" dir="rtl">تحديث البريد الإلكتروني</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 8px;background-color:#ffffff;">
+              <p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 10px;" dir="rtl">مرحباً ${vendorName} &#128075;</p>
+              <p style="font-size:14px;color:#4b5563;line-height:1.85;margin:0 0 22px;" dir="rtl">
+                قام فريق هاف لينس بتحديث البريد الإلكتروني المرتبط بحسابك. هذا هو بريدك الجديد لتسجيل الدخول إلى المنصة.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 8px;background-color:#ffffff;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f9fafb" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
+                ${oldRow}
+                <tr>
+                  <td style="padding:14px 18px 6px;font-size:12px;color:#6b7280;font-weight:600;" dir="rtl">البريد الجديد</td>
+                </tr>
+                <tr>
+                  <td style="padding:0 18px 14px;border-bottom:1px solid #e5e7eb;font-size:15px;color:#1e40af;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${newEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 18px 6px;font-size:12px;color:#6b7280;font-weight:600;" dir="rtl">التاريخ</td>
+                </tr>
+                <tr>
+                  <td style="padding:0 18px 14px;font-size:14px;color:#374151;font-weight:600;" dir="rtl">${date}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px 8px;background-color:#ffffff;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#fef3c7" style="background-color:#fef3c7;border:1px solid #fcd34d;border-radius:10px;">
+                <tr>
+                  <td style="padding:14px 18px;font-size:13px;line-height:1.75;color:#92400e;" dir="rtl">
+                    &#128274; استخدم البريد الجديد أعلاه لتسجيل الدخول. إذا لم تطلب هذا التغيير، تواصل معنا فوراً.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:24px 32px 32px;background-color:#ffffff;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td bgcolor="#1e40af" style="background-color:#1e40af;border-radius:10px;">
+                    <a href="${loginUrl}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:'Cairo',Arial,sans-serif;">
+                      تسجيل الدخول الآن &#9665;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td bgcolor="#f9fafb" style="background-color:#f9fafb;padding:18px 32px;border-top:1px solid #e5e7eb;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#6b7280;line-height:1.7;" dir="rtl">
+                هذه الرسالة مرسلة تلقائياً من منصة Half Lens. لا ترد عليها مباشرةً.
+              </p>
+              <p style="margin:6px 0 0;font-size:11px;color:#9ca3af;" dir="rtl">
+                &copy; ${new Date().getFullYear()} Half Lens
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  return { subject, html };
+}
+
 function buildRejected(
   vendorName: string,
   reason: string
@@ -569,8 +688,15 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { vendor_id, email_type, reason, flags }: StatusEmailRequest =
-      await req.json();
+    const {
+      vendor_id,
+      email_type,
+      reason,
+      flags,
+      new_email,
+      old_email,
+      portal_type,
+    }: StatusEmailRequest = await req.json();
 
     if (!vendor_id || !email_type) {
       return new Response(
@@ -582,29 +708,63 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Fetch vendor data
-    const { data: vendor, error: vendorError } = await supabase
-      .from("vendors")
-      .select("id, full_name, email, vendor_type, primary_city")
-      .eq("id", vendor_id)
-      .maybeSingle();
+    // For email_changed with portal_type=client, the id refers to a row in
+    // the clients table — fetch from there. Everything else is a vendor.
+    const isClientEmailChange =
+      email_type === "email_changed" && portal_type === "client";
 
-    if (vendorError || !vendor) {
-      console.error("Vendor lookup error:", vendorError);
-      return new Response(
-        JSON.stringify({ error: "المورد غير موجود", code: "vendor_not_found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    let vendor: {
+      id: string;
+      full_name: string;
+      email: string | null;
+      vendor_type?: string | null;
+      primary_city?: string | null;
+    } | null = null;
+
+    if (isClientEmailChange) {
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id, name, email")
+        .eq("id", vendor_id)
+        .maybeSingle();
+      if (clientError || !client) {
+        console.error("Client lookup error:", clientError);
+        return new Response(
+          JSON.stringify({ error: "العميل غير موجود", code: "client_not_found" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      vendor = { id: client.id, full_name: client.name, email: client.email };
+    } else {
+      const { data: v, error: vendorError } = await supabase
+        .from("vendors")
+        .select("id, full_name, email, vendor_type, primary_city")
+        .eq("id", vendor_id)
+        .maybeSingle();
+      if (vendorError || !v) {
+        console.error("Vendor lookup error:", vendorError);
+        return new Response(
+          JSON.stringify({ error: "المورد غير موجود", code: "vendor_not_found" }),
+          {
+            status: 404,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+      vendor = v;
     }
 
     // Guard against malformed vendor emails (e.g. "name+@host") that SMTP
     // will accept but Gmail silently drops. Return 200 with success:false
     // so the supabase-js client delivers the body to the admin UI instead
     // of surfacing only a generic FunctionsHttpError.
-    const vendorEmailRequired = email_type !== "admin_new_registration";
+    // email_changed sends to the brand-new address (passed in payload), not
+    // the row's stored email — skip the row-email validation for that path.
+    const vendorEmailRequired =
+      email_type !== "admin_new_registration" && email_type !== "email_changed";
     if (vendorEmailRequired && !isValidEmail(vendor.email)) {
       return new Response(
         JSON.stringify({
@@ -662,7 +822,8 @@ Deno.serve(async (req: Request) => {
     });
 
     const siteUrl = Deno.env.get("SITE_URL") || "https://platform.h-lens.co";
-    const loginUrl = Deno.env.get("VENDOR_LOGIN_URL") || `${siteUrl}/vendor-login`;
+    const loginUrl = Deno.env.get("VENDOR_LOGIN_URL") || `${siteUrl}/vendor/login`;
+    const clientLoginUrl = Deno.env.get("CLIENT_LOGIN_URL") || `${siteUrl}/client`;
     const adminUrl = Deno.env.get("ADMIN_URL") || `${siteUrl}/#vendors`;
 
     // Build email based on type
@@ -752,6 +913,33 @@ Deno.serve(async (req: Request) => {
         );
         recipients = [vendor.email];
         break;
+
+      case "email_changed": {
+        if (!new_email || !isValidEmail(new_email)) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "invalid_new_email",
+              message: "البريد الإلكتروني الجديد غير صالح",
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        const targetLoginUrl =
+          portal_type === "client" ? clientLoginUrl : loginUrl;
+        emailContent = buildEmailChanged(
+          vendor.full_name,
+          new_email,
+          old_email || "",
+          targetLoginUrl,
+          dateStr
+        );
+        recipients = [new_email];
+        break;
+      }
 
       case "admin_new_registration": {
         // Fetch all super_admin emails

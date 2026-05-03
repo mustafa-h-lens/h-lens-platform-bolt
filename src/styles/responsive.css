@@ -27,11 +27,15 @@
   --bp-md: 900px;
 }
 
-/* Global horizontal-scroll defence — belt & braces */
-html,
+/* Global horizontal-scroll defence — body only.
+   Putting overflow-x:hidden on <html> can break wheel/vertical scroll
+   in some browsers (especially with RTL + min-height:100vh layouts),
+   so we scope it to <body> and let <html> remain the natural scroller. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
 body {
   overflow-x: hidden;
-  -webkit-text-size-adjust: 100%;
   /* Keep overscroll inside the document so the browser's native
      pull-to-refresh doesn't fire on top of our custom one when an
      inner scroll container is mid-scroll. The custom PullToRefresh

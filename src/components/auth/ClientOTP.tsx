@@ -21,6 +21,20 @@ export default function ClientOTP({ email, onBack, onSuccess }: ClientOTPProps) 
   useEffect(() => { inputRefs.current[0]?.focus(); }, []);
 
   const handleChange = (index: number, value: string) => {
+    // iOS Safari one-time-code autofill dispatches the entire 6-digit code in
+    // a single change event — fan it out across every box and auto-verify,
+    // matching what handlePaste already does for clipboard input.
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, '').slice(0, 6);
+      if (digits.length === 0) return;
+      const newOtp = ['', '', '', '', '', ''];
+      for (let i = 0; i < digits.length; i++) newOtp[i] = digits[i];
+      setOtp(newOtp);
+      setError(''); setRemainingAttempts(null);
+      if (digits.length === 6) verifyOTP(digits);
+      else inputRefs.current[Math.min(digits.length, 5)]?.focus();
+      return;
+    }
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp]; newOtp[index] = value.slice(-1); setOtp(newOtp);
     setError(''); setRemainingAttempts(null);

@@ -318,7 +318,7 @@ export function VendorEquipment() {
 
       {/* Equipment grid — show samples until the vendor adds their first piece */}
       {loading ? <LoadingSpinner /> : equipment.length === 0 ? (
-        <PreviewEquipment />
+        <PreviewEquipment isApproved={vendor?.status === 'active'} />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
           {equipment.map(eq => {

@@ -77,7 +77,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', fontFamily: "'Cairo', 'Tajawal', sans-serif", direction: 'rtl', background: 'var(--bg-base)', color: 'var(--text-primary)', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', fontFamily: "'Cairo', 'Tajawal', sans-serif", direction: 'rtl', background: 'var(--bg-base)', color: 'var(--text-primary)', overflowX: 'hidden' }}>
 
       <style>{`
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
@@ -196,7 +196,9 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
-              onClick={() => onNavigate('/admin')}
+              onClick={() => {
+                document.getElementById('portals-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
               style={{
                 padding: '14px 32px', borderRadius: 14, border: 'none',
                 background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
@@ -256,7 +258,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ PORTALS SECTION ═══ */}
-      <section className="landing-section-pad" style={{ padding: '80px 32px', position: 'relative' }}>
+      <section id="portals-section" className="landing-section-pad" style={{ padding: '80px 32px', position: 'relative', scrollMarginTop: 80 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12 }}>

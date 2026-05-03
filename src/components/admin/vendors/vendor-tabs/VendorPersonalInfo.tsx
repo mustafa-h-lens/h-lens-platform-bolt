@@ -75,6 +75,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
     estimated_cost: vendor.estimated_cost?.toString() || '',
   });
 
+  const [notifyEmailChange, setNotifyEmailChange] = useState(false);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [countries, setCountries] = useState<Array<{ value: string; label: string }>>([]);
@@ -182,9 +183,37 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
 
       if (error) throw error;
 
+      const trimmedEmail = formData.email.trim();
+      const oldEmail = (vendor.email || '').trim();
+      const emailChanged = trimmedEmail && trimmedEmail.toLowerCase() !== oldEmail.toLowerCase();
+      if (emailChanged && notifyEmailChange) {
+        try {
+          const { error: emailErr } = await supabase.functions.invoke('send-vendor-status-email', {
+            body: {
+              vendor_id: vendor.id,
+              email_type: 'email_changed',
+              new_email: trimmedEmail,
+              old_email: oldEmail || undefined,
+              portal_type: 'vendor',
+            },
+          });
+          if (emailErr) {
+            console.error('Notify-email error:', emailErr);
+            showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
+          } else {
+            showSuccess('تم حفظ التعديلات وإرسال إشعار للبريد الجديد');
+          }
+        } catch (emailErr) {
+          console.error('Notify-email exception:', emailErr);
+          showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
+        }
+      } else {
+        showSuccess('تم حفظ التعديلات بنجاح');
+      }
+
       setIsEditing(false);
+      setNotifyEmailChange(false);
       onUpdate();
-      showSuccess('تم حفظ التعديلات بنجاح');
     } catch (error) {
       console.error('Error updating vendor:', error);
       showError('حدث خطأ أثناء حفظ التعديلات');
@@ -638,6 +667,26 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
               disabled={!isEditing}
               dir="ltr"
             />
+            {isEditing && formData.email.trim() && formData.email.trim().toLowerCase() !== (vendor.email || '').trim().toLowerCase() && (
+              <label
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
+                  padding: '10px 12px', borderRadius: 10,
+                  background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
+                  fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={notifyEmailChange}
+                  onChange={(e) => setNotifyEmailChange(e.target.checked)}
+                  style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
+                />
+                <span>
+                  إشعار المورد بالبريد الجديد عبر إيميل يحتوي على رابط تسجيل الدخول
+                </span>
+              </label>
+            )}
           </div>
 
           <div className="input-group">

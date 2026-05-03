@@ -137,7 +137,7 @@ export function VendorInvoices() {
       {/* Table — sample whenever there's no real invoice yet,
           filtered-empty if filters hide them all, real table otherwise */}
       {loading ? <LoadingSpinner /> : invoices.length === 0 ? (
-        <PreviewInvoices />
+        <PreviewInvoices isApproved={vendor?.status === 'active'} />
       ) : filtered.length === 0 ? (
         <EmptyState icon={FileText} message="لا توجد نتائج تطابق الفلاتر" />
       ) : (

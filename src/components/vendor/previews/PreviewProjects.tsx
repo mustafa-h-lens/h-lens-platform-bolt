@@ -10,7 +10,7 @@ const statusStyle = (s: string) => {
 
 const fmt = (n: number) => new Intl.NumberFormat('ar-SA').format(n);
 
-export const PreviewProjects = () => (
+export const PreviewProjects = ({ isApproved = false }: { isApproved?: boolean }) => (
   <div style={{ padding: 16, color: 'var(--color-text-primary)' }}>
     <PreviewBanner message="هذه مشاريع تجريبية لتعريفك بشكل صفحة المشاريع. ستحلّ مشاريعك الحقيقية مكانها فور إسناد أول مشروع لك." />
 
@@ -19,19 +19,21 @@ export const PreviewProjects = () => (
         <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>مشاريعي</h2>
         <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>نماذج تعريفية</div>
       </div>
-      <button
-        type="button"
-        disabled
-        title="متاح بعد الموافقة على حسابك"
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 10,
-          background: 'var(--color-background-hover, rgba(148,163,184,0.1))',
-          border: '1px solid var(--color-border)',
-          color: 'var(--color-text-muted)', cursor: 'not-allowed', fontSize: 13, fontWeight: 600,
-        }}
-      >
-        <Lock size={14} /> إرسال مقترح
-      </button>
+      {!isApproved && (
+        <button
+          type="button"
+          disabled
+          title="متاح بعد الموافقة على حسابك"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, padding: '9px 16px', borderRadius: 10,
+            background: 'var(--color-background-hover, rgba(148,163,184,0.1))',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text-muted)', cursor: 'not-allowed', fontSize: 13, fontWeight: 600,
+          }}
+        >
+          <Lock size={14} /> إرسال مقترح
+        </button>
+      )}
     </div>
 
     <div className="vp-preview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(280px,100%),1fr))', gap: 12 }}>
@@ -76,9 +78,11 @@ export const PreviewProjects = () => (
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-              <LockedActionHint />
-            </div>
+            {!isApproved && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
+                <LockedActionHint />
+              </div>
+            )}
           </div>
         );
       })}

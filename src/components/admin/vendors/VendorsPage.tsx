@@ -95,6 +95,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteNames, setDeleteNames] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -209,13 +210,22 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     setDeleting(true);
     try {
       const vendorIds = Array.from(selectedVendors);
-      const { count: invoiceCount } = await supabase.from('vendor_invoices').select('*', { count: 'exact', head: true }).in('vendor_id', vendorIds);
-      if (invoiceCount && invoiceCount > 0) {
-        showError(`لا يمكن حذف الموردين المحددين لوجود ${invoiceCount} فاتورة مرتبطة بهم.`);
-        setShowDeleteConfirm(false); setDeleting(false); return;
-      }
+      // Force delete: vendor_invoices has ON DELETE RESTRICT, so wipe linked
+      // invoices first. All other vendor_id FKs cascade automatically when the
+      // vendor row is removed (vendor_documents, vendor_equipment, vendor_fields,
+      // vendor_rates, vendor_approval_log, vendor_suggestions, vendor_sessions,
+      // vendor_activation_tokens, etc.).
+      const { error: invErr } = await supabase.from('vendor_invoices').delete().in('vendor_id', vendorIds);
+      if (invErr) throw invErr;
+
       const { error } = await supabase.from('vendors').delete().in('id', vendorIds);
-      if (error) { if (error.code === '23503') showError('لا يمكن حذف الموردين المحددين لوجود سجلات مرتبطة بهم.'); else throw error; return; }
+      if (error) {
+        if (error.code === '23503') {
+          showError('لا يمكن حذف الموردين المحددين لوجود سجلات مرتبطة بهم.');
+          return;
+        }
+        throw error;
+      }
       showSuccess(`تم حذف ${selectedVendors.size} مورد بنجاح`);
       setSelectedVendors(new Set()); setShowDeleteConfirm(false); await fetchVendors();
     } catch (error) { console.error('Error deleting vendors:', error); showError('حدث خطأ أثناء حذف الموردين'); }
@@ -326,7 +336,19 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
             </button>
             {selectedVendors.size > 0 && (
               <>
-                <button className="btn btn-sm" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }} onClick={() => setShowDeleteConfirm(true)}>
+                <button className="btn btn-sm" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)', border: '1px solid var(--danger-border)' }} onClick={async () => {
+                  const ids = Array.from(selectedVendors);
+                  // Names from current page first (instant)
+                  const localMap = new Map(vendors.map(v => [v.id, v.full_name]));
+                  const missing = ids.filter(id => !localMap.has(id));
+                  let names = ids.map(id => localMap.get(id)).filter((n): n is string => !!n);
+                  if (missing.length > 0) {
+                    const { data } = await supabase.from('vendors').select('id, full_name').in('id', missing);
+                    if (data) names = names.concat(data.map(d => d.full_name));
+                  }
+                  setDeleteNames(names);
+                  setShowDeleteConfirm(true);
+                }}>
                   <Trash2 size={13} /> حذف المحدد ({toEnglishNumbers(selectedVendors.size.toString())})
                 </button>
                 <button className="btn btn-sm" style={{ background: 'var(--warning-bg)', color: 'var(--warning-text)', border: '1px solid var(--warning-border)' }} onClick={() => setShowBulkBlock(true)}>
@@ -462,7 +484,29 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
       )}
 
       {showDeleteConfirm && (
-        <ConfirmationModal isOpen={showDeleteConfirm} onCancel={() => setShowDeleteConfirm(false)} onConfirm={handleDelete} title="تأكيد حذف الموردين" message={`هل أنت متأكد من حذف ${selectedVendors.size} مورد؟ هذا الإجراء لا يمكن التراجع عنه.`} confirmText="حذف" cancelText="إلغاء" type="danger" />
+        <ConfirmationModal
+          isOpen={showDeleteConfirm}
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDelete}
+          title="تأكيد حذف الموردين"
+          message={
+            <span>
+              هل أنت متأكد من حذف {toEnglishNumbers(selectedVendors.size.toString())} مورد؟ هذا الإجراء لا يمكن التراجع عنه.
+              {deleteNames.length > 0 && (
+                <span style={{ display: 'block', marginTop: 12, padding: '10px 12px', background: 'var(--bg-overlay)', border: '1px solid var(--border-soft)', borderRadius: 8, maxHeight: 160, overflowY: 'auto', fontSize: 13, color: 'var(--text-primary)', textAlign: 'right' }}>
+                  {deleteNames.map((n, i) => (
+                    <span key={i} style={{ display: 'block', padding: '3px 0', borderBottom: i < deleteNames.length - 1 ? '1px dashed var(--border-soft)' : 'none' }}>
+                      {n}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </span>
+          }
+          confirmText="حذف"
+          cancelText="إلغاء"
+          type="danger"
+        />
       )}
     </div>
   );
