@@ -647,8 +647,9 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       // ── PDF export ──
       // Ensure Arabic font is loaded before rendering
       await ensureFontLoaded();
+      const orientation = separatePages ? 'portrait' : 'landscape';
       const doc = new jsPDF({
-        orientation: 'landscape',
+        orientation,
         unit: 'mm',
         format: 'a4',
       });
@@ -691,12 +692,14 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
             letterRendering: true,
           });
 
-          const imgWidth = 297;
+          const pageW = orientation === 'portrait' ? 210 : 297;
+          const pageH = orientation === 'portrait' ? 297 : 210;
+          const imgWidth = pageW;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           const imgData = canvas.toDataURL('image/png');
 
           if (pageIdx > 0) doc.addPage();
-          doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, 210));
+          doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageH));
         }
       }
 
@@ -965,7 +968,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
   const createSingleVendorTemplate = async (vendor: Vendor): Promise<HTMLElement> => {
     const container = document.createElement('div');
-    container.style.cssText = `direction:rtl;font-family:Tahoma,Arial,sans-serif;padding:40px;background:white;min-width:900px;max-width:1000px;`;
+    container.style.cssText = `direction:rtl;font-family:Tahoma,Arial,sans-serif;padding:32px;background:white;width:700px;`;
 
     const logoBase64 = await convertImageToBase64('/assets/logo-blue.png');
     const columns = fieldLabelsOrder.filter(f => selectedFields[f.key]);
@@ -1010,7 +1013,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
     // Info grid
     const infoGrid = document.createElement('div');
-    infoGrid.style.cssText = `flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 24px;`;
+    infoGrid.style.cssText = `flex:1;display:grid;grid-template-columns:repeat(2,1fr);gap:10px 20px;align-content:center;`;
 
     const textFields: { key: keyof ExportFields; label: string }[] = columns.filter(c =>
       !['profile_image','id_image','vehicle_registration_image','passport_image','visa_image','equipment','equipment_images'].includes(c.key)
@@ -1045,7 +1048,8 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       docsSection.appendChild(docsTitle);
 
       const docsGrid = document.createElement('div');
-      docsGrid.style.cssText = `display:grid;grid-template-columns:repeat(${Math.min(activeDocKeys.length, 3)},1fr);gap:16px;`;
+      const docCols = Math.min(activeDocKeys.length, 2);
+      docsGrid.style.cssText = `display:grid;grid-template-columns:repeat(${docCols},1fr);gap:14px;`;
 
       const docLabels: Record<string, string> = {
         id_image: 'الهوية الوطنية',
@@ -1073,13 +1077,13 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
           if (b64) {
             const img = document.createElement('img');
             img.src = b64;
-            img.style.cssText = `width:100%;height:160px;object-fit:contain;border-radius:6px;`;
+            img.style.cssText = `width:100%;height:180px;object-fit:contain;border-radius:6px;`;
             card.appendChild(img);
           } else {
-            card.innerHTML += `<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+            card.innerHTML += `<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
           }
         } else {
-          card.innerHTML += `<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+          card.innerHTML += `<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
         }
         docsGrid.appendChild(card);
       }
@@ -1099,7 +1103,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
         if (selectedFields.equipment_images) {
           const eqGrid = document.createElement('div');
-          eqGrid.style.cssText = `display:grid;grid-template-columns:repeat(6,1fr);gap:10px;`;
+          eqGrid.style.cssText = `display:grid;grid-template-columns:repeat(4,1fr);gap:10px;`;
           for (const eq of equipment) {
             const eqCard = document.createElement('div');
             eqCard.style.cssText = `text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;`;
