@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Camera as CameraIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Camera as CameraIcon, Sparkles } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { Modal } from '../../../shared/Modal';
 import { FileUploader } from '../../../ui/FileUploader';
+import { SmartEquipmentPaste } from './SmartEquipmentPaste';
 
 interface Equipment {
   id: string;
@@ -83,6 +84,7 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<CatalogItem | null>(null);
+  const [showSmartPaste, setShowSmartPaste] = useState(false);
 
   const [formData, setFormData] = useState({
     catalog_item_id: '',
@@ -421,12 +423,23 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>المعدات</h2>
-        <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)} style={{ gap: 6 }}>
-          <Plus size={13} />
-          إضافة معدة
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setShowSmartPaste(true)}
+            style={{ gap: 6, color: 'var(--accent-lighter)', borderColor: 'var(--accent-glow-md)' }}
+            title="ألصق قائمة أسماء — نطابقها بالكتالوج ونضيف الناقص تلقائياً"
+          >
+            <Sparkles size={13} />
+            اللصق الذكي
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)} style={{ gap: 6 }}>
+            <Plus size={13} />
+            إضافة معدة
+          </button>
+        </div>
       </div>
 
       {equipment.length === 0 ? (
@@ -725,6 +738,13 @@ export const VendorEquipment = ({ vendorId }: VendorEquipmentProps) => {
           </div>
         </div>
       </Modal>
+
+      <SmartEquipmentPaste
+        vendorId={vendorId}
+        isOpen={showSmartPaste}
+        onClose={() => setShowSmartPaste(false)}
+        onSaved={fetchEquipment}
+      />
     </div>
   );
 };

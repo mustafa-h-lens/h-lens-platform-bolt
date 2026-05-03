@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
+import DocumentCropper from '../../shared/DocumentCropper';
+
+const ID_ASPECT_RATIO = 1.586;
 
 interface Props {
   formData: VendorFormData;
@@ -16,6 +19,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const [profileDragging, setProfileDragging] = useState(false);
   const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
+  const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
 
   // Restore previews from File objects or URLs when component mounts
   useEffect(() => {
@@ -45,17 +49,27 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
 
   const handleFile = (file: File, type: 'id' | 'profile') => {
     if (!file.type.startsWith('image/')) return;
+    if (type === 'id') {
+      setPendingIdFile(file);
+      return;
+    }
     const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
     const reader = new FileReader();
     reader.onload = () => {
       const preview = { url: reader.result as string, name: file.name, size: sizeStr };
-      if (type === 'id') {
-        setIdPreview(preview);
-        updateFormData({ id_image: file });
-      } else {
-        setProfilePreview(preview);
-        updateFormData({ profile_image: file });
-      }
+      setProfilePreview(preview);
+      updateFormData({ profile_image: file });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const commitIdFile = (file: File) => {
+    const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setIdPreview({ url: reader.result as string, name: file.name, size: sizeStr });
+      updateFormData({ id_image: file });
+      setPendingIdFile(null);
     };
     reader.readAsDataURL(file);
   };
@@ -182,6 +196,16 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
           <span>بياناتك في أمان — نستخدم تشفير متقدم لحماية جميع بياناتك ومستنداتك الشخصية</span>
         </div>
       </div>
+
+      <DocumentCropper
+        open={!!pendingIdFile}
+        file={pendingIdFile}
+        aspect={ID_ASPECT_RATIO}
+        docLabel="صورة الهوية"
+        onSave={commitIdFile}
+        onSkip={commitIdFile}
+        onCancel={() => setPendingIdFile(null)}
+      />
     </>
   );
 };

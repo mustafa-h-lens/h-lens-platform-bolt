@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
+import DocumentCropper from '../../shared/DocumentCropper';
+import { pdfFirstPageToImage } from '../../../utils/pdfFirstPageToImage';
+
+const PASSPORT_ASPECT_RATIO = 1.42;
 
 interface Props {
   formData: VendorFormData;
@@ -32,6 +36,8 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   });
 
   const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(null);
+  const [pendingPassportFile, setPendingPassportFile] = useState<File | null>(null);
+  const [convertingPdf, setConvertingPdf] = useState(false);
 
   // Restore passport preview from File object or URL on mount
   useEffect(() => {
@@ -96,7 +102,29 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
     });
   };
 
-  const handlePassportUpload = (file: File) => {
+  const handlePassportUpload = async (file: File) => {
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (isPdf) {
+      setConvertingPdf(true);
+      try {
+        const image = await pdfFirstPageToImage(file);
+        setPendingPassportFile(image);
+      } catch (e) {
+        console.error('PDF conversion failed', e);
+        commitPassportFile(file);
+      } finally {
+        setConvertingPdf(false);
+      }
+      return;
+    }
+    if (file.type.startsWith('image/')) {
+      setPendingPassportFile(file);
+      return;
+    }
+    commitPassportFile(file);
+  };
+
+  const commitPassportFile = (file: File) => {
     const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -108,6 +136,7 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       setPassportPreview({ url: 'document', name: file.name, size: sizeStr });
     }
     updateFormData({ passport_file: file });
+    setPendingPassportFile(null);
   };
 
   const removePassportDoc = () => {
@@ -238,6 +267,27 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
           </div>
         )}
       </div>
+
+      {convertingPdf && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(2,6,23,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#e2e8f0', fontFamily: 'Tajawal, sans-serif', fontSize: 14,
+        }}>
+          جاري تحويل ملف PDF…
+        </div>
+      )}
+
+      <DocumentCropper
+        open={!!pendingPassportFile}
+        file={pendingPassportFile}
+        aspect={PASSPORT_ASPECT_RATIO}
+        docLabel="جواز السفر"
+        onSave={commitPassportFile}
+        onSkip={commitPassportFile}
+        onCancel={() => setPendingPassportFile(null)}
+      />
     </>
   );
 };

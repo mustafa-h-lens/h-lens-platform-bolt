@@ -94,6 +94,8 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const [selectedVendorId, setSelectedVendorId] = useState<string | null>(initialVendorId || null);
   const [selectedVendors, setSelectedVendors] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = useState(false);
+  const [exportSubset, setExportSubset] = useState<Vendor[]>([]);
+  const [preparingExport, setPreparingExport] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteNames, setDeleteNames] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
@@ -331,8 +333,41 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
           {/* Actions bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, direction: 'ltr' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => setShowExportModal(true)}>
-              <Download size={14} /> {selectedVendors.size > 0 ? `تصدير المحدد (${toEnglishNumbers(selectedVendors.size.toString())})` : 'تصدير الكل'}
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={preparingExport}
+              onClick={async () => {
+                if (selectedVendors.size === 0) {
+                  setExportSubset([]);
+                  setShowExportModal(true);
+                  return;
+                }
+                setPreparingExport(true);
+                try {
+                  const ids = Array.from(selectedVendors);
+                  const localMap = new Map(vendors.map(v => [v.id, v] as const));
+                  const local = ids.map(id => localMap.get(id)).filter((v): v is Vendor => !!v);
+                  const missing = ids.filter(id => !localMap.has(id));
+                  let combined: Vendor[] = local;
+                  if (missing.length > 0) {
+                    const { data, error } = await supabase
+                      .from('vendors')
+                      .select('*')
+                      .in('id', missing);
+                    if (error) throw error;
+                    combined = combined.concat((data || []) as Vendor[]);
+                  }
+                  setExportSubset(combined);
+                  setShowExportModal(true);
+                } catch (e) {
+                  console.error('Failed to prepare export selection', e);
+                  showError('تعذّر تحضير قائمة التصدير');
+                } finally {
+                  setPreparingExport(false);
+                }
+              }}
+            >
+              <Download size={14} /> {preparingExport ? 'جاري التحضير…' : (selectedVendors.size > 0 ? `تصدير المحدد (${toEnglishNumbers(selectedVendors.size.toString())})` : 'تصدير الكل')}
             </button>
             {selectedVendors.size > 0 && (
               <>
@@ -461,7 +496,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
       {showExportModal && (
         <Suspense fallback={<VendorLazyFallback />}>
-          <VendorExportModal vendors={selectedVendors.size > 0 ? vendors.filter(v => selectedVendors.has(v.id)) : filteredVendors} onClose={() => setShowExportModal(false)} onSuccess={() => { setShowExportModal(false); setSelectedVendors(new Set()); }} />
+          <VendorExportModal vendors={selectedVendors.size > 0 ? exportSubset : filteredVendors} onClose={() => setShowExportModal(false)} onSuccess={() => { setShowExportModal(false); setSelectedVendors(new Set()); setExportSubset([]); }} />
         </Suspense>
       )}
 

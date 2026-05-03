@@ -1,8 +1,48 @@
-import { useState, useEffect } from 'react';
-import { Camera, Users, Briefcase, Shield, ChevronLeft, ArrowLeft, Zap, Globe, BarChart3, Clock, Star, CheckCircle2, Sun, Moon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Camera, Users, Briefcase, Shield, ChevronLeft, ChevronDown, ArrowLeft, Zap, Globe, BarChart3, Clock, Star, CheckCircle2, Sun, Moon, TrendingUp, Bell } from 'lucide-react';
 
 interface LandingPageProps {
   onNavigate: (path: string) => void;
+}
+
+/** Counts up to the numeric portion of a value when scrolled into view. */
+function AnimatedStat({ value }: { value: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const m = value.match(/^([^\d]*)(\d+(?:\.\d+)?)([^\d]*)$/);
+  const [display, setDisplay] = useState(() => m ? `${m[1]}0${m[3]}` : value);
+
+  useEffect(() => {
+    if (!m) return;
+    const node = ref.current;
+    if (!node) return;
+    const [, prefix, numStr, suffix] = m;
+    const target = parseFloat(numStr);
+    const decimals = (numStr.split('.')[1] || '').length;
+    let raf = 0;
+    let started = false;
+    const run = () => {
+      if (started) return;
+      started = true;
+      const dur = 1500;
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        const t = Math.min((now - t0) / dur, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        const cur = target * eased;
+        setDisplay(`${prefix}${cur.toFixed(decimals)}${suffix}`);
+        if (t < 1) raf = requestAnimationFrame(tick);
+        else setDisplay(value);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { run(); obs.disconnect(); }
+    }, { threshold: 0.4 });
+    obs.observe(node);
+    return () => { obs.disconnect(); cancelAnimationFrame(raf); };
+  }, [value]);
+
+  return <span ref={ref}>{display}</span>;
 }
 
 export const LandingPage = ({ onNavigate }: LandingPageProps) => {
@@ -70,10 +110,10 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   ];
 
   const stats = [
-    { value: '+500', label: 'مشروع مكتمل', icon: Briefcase },
-    { value: '+200', label: 'مورد موثق', icon: Users },
-    { value: '24/7', label: 'دعم متواصل', icon: Clock },
-    { value: '99.9%', label: 'وقت التشغيل', icon: Zap },
+    { value: '+500', label: 'مشروع مكتمل', icon: Briefcase, color: '#3b82f6' },
+    { value: '+200', label: 'مورد موثق', icon: Users, color: '#8b5cf6' },
+    { value: '24/7', label: 'دعم متواصل', icon: Clock, color: '#10b981' },
+    { value: '99.9%', label: 'وقت التشغيل', icon: Zap, color: '#f59e0b' },
   ];
 
   return (
@@ -87,11 +127,87 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
         @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         @keyframes border-glow { 0%, 100% { border-color: rgba(37,99,235,0.2); } 50% { border-color: rgba(37,99,235,0.5); } }
+        @keyframes scroll-bounce { 0%, 100% { transform: translate(-50%, 0); opacity: 0.45; } 50% { transform: translate(-50%, 8px); opacity: 0.85; } }
+        @keyframes card-fade-in { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes mockup-float { 0%, 100% { transform: rotateY(8deg) rotateX(4deg) rotateZ(-2deg) translateY(0); } 50% { transform: rotateY(8deg) rotateX(4deg) rotateZ(-2deg) translateY(-10px); } }
+        @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
         .landing-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .landing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-color: rgba(59,130,246,0.35) !important; }
         .landing-feature { opacity: 0; animation: slide-up 0.6s ease forwards; }
         .landing-stat { opacity: 0; animation: slide-up 0.5s ease forwards; }
+        .landing-stat-card {
+          position: relative;
+          display: flex; flex-direction: column; align-items: center; text-align: center;
+          padding: 20px 14px; border-radius: 16px;
+          transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+          cursor: default;
+        }
+        .landing-stat-card:hover { transform: translateY(-6px); }
+        .landing-stat-icon {
+          width: 54px; height: 54px; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 14px;
+          transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease;
+        }
+        .landing-stat-card:hover .landing-stat-icon {
+          transform: scale(1.1) rotate(-4deg);
+          box-shadow: 0 10px 28px -6px currentColor;
+        }
+        .landing-stat-num {
+          font-size: clamp(26px, 3vw, 34px); font-weight: 900;
+          direction: ltr; letter-spacing: -0.02em;
+          background-clip: text; -webkit-background-clip: text;
+          color: transparent; -webkit-text-fill-color: transparent;
+          margin-bottom: 6px; line-height: 1;
+          font-variant-numeric: tabular-nums;
+        }
+        .landing-stat-label {
+          font-size: 13px; color: var(--text-muted); font-weight: 500;
+        }
         .landing-blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; animation: pulse-glow 8s ease-in-out infinite; }
+        .landing-grid-pattern {
+          position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+          background-image: radial-gradient(rgba(148,163,184,0.12) 1px, transparent 1px);
+          background-size: 28px 28px;
+          mask-image: radial-gradient(ellipse at center, black 35%, transparent 75%);
+          -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 75%);
+        }
+        .landing-hero-grid {
+          position: relative; z-index: 1;
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 64px; max-width: 1240px; width: 100%;
+          margin: 0 auto; align-items: center;
+        }
+        .landing-hero-text { text-align: right; opacity: 0; animation: slide-up 0.8s cubic-bezier(0.4,0,0.2,1) 0.1s forwards; }
+        .landing-mockup-wrap {
+          perspective: 1600px; transform-style: preserve-3d;
+          opacity: 0; animation: card-fade-in 0.9s cubic-bezier(0.4,0,0.2,1) 0.4s forwards;
+        }
+        .landing-mockup {
+          border-radius: 18px; overflow: hidden;
+          border: 1px solid var(--border-soft);
+          box-shadow: 0 50px 90px -20px rgba(0,0,0,0.55), 0 24px 48px -12px rgba(37,99,235,0.22);
+          animation: mockup-float 8s ease-in-out 1.4s infinite;
+        }
+        .landing-bar { transform-origin: bottom; animation: bar-grow 0.9s cubic-bezier(0.4,0,0.2,1) forwards; }
+        .landing-trust-row { display: flex; justify-content: flex-start; gap: 28px; flex-wrap: wrap; margin-top: 28px; }
+        .landing-trust-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .landing-scroll-cue {
+          position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+          display: flex; flex-direction: column; align-items: center; gap: 4px;
+          color: var(--text-muted); font-size: 11px; font-weight: 600;
+          animation: scroll-bounce 2.4s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        /* ── Tablet ── */
+        @media (max-width: 1024px) {
+          .landing-hero-grid { grid-template-columns: 1fr; gap: 48px; }
+          .landing-hero-text { text-align: center; }
+          .landing-mockup { animation: none !important; transform: none !important; }
+          .landing-trust-row { justify-content: center !important; }
+          .landing-grid-pattern { opacity: 0.25; }
+        }
 
         /* ── Mobile responsive ── */
         @media (max-width: 768px) {
@@ -102,6 +218,9 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           .landing-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
           .landing-cta-inner { padding: 40px 24px !important; }
           .landing-nav { padding: 12px 16px !important; }
+          .landing-trust-row { gap: 16px !important; margin-top: 22px !important; justify-content: center !important; }
+          .landing-scroll-cue { display: none !important; }
+          .landing-mockup-cta-row { justify-content: center !important; }
         }
       `}</style>
 
@@ -133,19 +252,6 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           >
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button
-            onClick={() => onNavigate('/admin')}
-            style={{
-              padding: '10px 24px', borderRadius: 12, border: 'none',
-              background: 'var(--accent)', color: '#fff',
-              fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              fontFamily: 'inherit', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(37,99,235,0.35)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-          >
-            تسجيل الدخول
-          </button>
         </div>
       </nav>
 
@@ -153,83 +259,212 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       <section className="landing-hero-section" style={{
         position: 'relative', minHeight: '100vh',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '120px 32px 80px', textAlign: 'center',
+        padding: '120px 32px 80px',
       }}>
         {/* Animated blobs */}
         <div className="landing-blob" style={{ width: 500, height: 500, top: '-10%', right: '-5%', background: 'rgba(37,99,235,0.12)', animationDelay: '0s' }} />
         <div className="landing-blob" style={{ width: 400, height: 400, bottom: '0%', left: '-5%', background: 'rgba(124,58,237,0.1)', animationDelay: '2s' }} />
-        <div className="landing-blob" style={{ width: 350, height: 350, top: '30%', left: '20%', background: 'rgba(16,185,129,0.08)', animationDelay: '4s' }} />
 
-        <div style={{
-          position: 'relative', zIndex: 1, maxWidth: 800,
-          opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(30px)',
-          transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-        }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '8px 20px', borderRadius: 99,
-            background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
-            fontSize: 13, fontWeight: 600, color: 'var(--accent-lighter)',
-            marginBottom: 24,
-          }}>
-            <Star size={14} /> منصة إدارة الإنتاج المتكاملة
+        {/* Subtle dot grid */}
+        <div className="landing-grid-pattern" />
+
+        <div className="landing-hero-grid">
+
+          {/* ── TEXT COLUMN (right in RTL) ── */}
+          <div className="landing-hero-text">
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 20px', borderRadius: 99,
+              background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
+              fontSize: 13, fontWeight: 600, color: 'var(--accent-lighter)',
+              marginBottom: 24,
+            }}>
+              <Star size={14} /> منصة إدارة الإنتاج المتكاملة
+            </div>
+
+            <h1 style={{
+              fontSize: 'clamp(32px, 4.4vw, 56px)', fontWeight: 900, lineHeight: 1.15,
+              color: 'var(--text-primary)', marginBottom: 22,
+            }}>
+              أدر مشاريعك الإنتاجية
+              <br />
+              <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                بكفاءة واحترافية
+              </span>
+            </h1>
+
+            <p style={{
+              fontSize: 17, color: 'var(--text-secondary)', lineHeight: 1.75,
+              marginBottom: 36, maxWidth: 540,
+            }}>
+              منصة Half Lens تجمع فريقك وعملاءك ومورديك في مكان واحد.
+              تتبع المشاريع، أدر الفواتير، وحلل الأداء — كل ذلك بتصميم عربي متكامل.
+            </p>
+
+            <div className="landing-mockup-cta-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  document.getElementById('portals-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                style={{
+                  padding: '14px 32px', borderRadius: 14, border: 'none',
+                  background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
+                  color: '#fff', fontSize: 16, fontWeight: 700,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: '0 8px 30px rgba(37,99,235,0.35)',
+                  transition: 'all 0.3s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(37,99,235,0.45)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(37,99,235,0.35)'; }}
+              >
+                ابدأ الآن <ArrowLeft size={18} />
+              </button>
+            </div>
+
+            {/* Trust badges */}
+            <div className="landing-trust-row">
+              <div className="landing-trust-item">
+                <Shield size={13} style={{ color: '#10b981' }} /> تشفير وحماية كاملة
+              </div>
+              <div className="landing-trust-item">
+                <Globe size={13} style={{ color: 'var(--accent-lighter)' }} /> دعم RTL متكامل
+              </div>
+              <div className="landing-trust-item">
+                <Clock size={13} style={{ color: '#f59e0b' }} /> دعم 24/7
+              </div>
+              <div className="landing-trust-item">
+                <Star size={13} style={{ color: '#8b5cf6' }} /> صنع في السعودية
+              </div>
+            </div>
           </div>
 
-          <h1 style={{
-            fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 900, lineHeight: 1.2,
-            color: 'var(--text-primary)', marginBottom: 20,
-          }}>
-            أدر مشاريعك الإنتاجية
-            <br />
-            <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              بكفاءة واحترافية
-            </span>
-          </h1>
+          {/* ── DASHBOARD MOCKUP COLUMN (left in RTL) ── */}
+          <div className="landing-mockup-wrap">
+            <div className="landing-mockup" style={{ background: isDark ? 'rgba(15,23,42,0.92)' : '#fff' }}>
 
-          <p style={{
-            fontSize: 18, color: 'var(--text-secondary)', lineHeight: 1.8,
-            maxWidth: 600, margin: '0 auto 40px',
-          }}>
-            منصة Half Lens تجمع فريقك وعملاءك ومورديك في مكان واحد.
-            تتبع المشاريع، أدر الفواتير، وحلل الأداء — كل ذلك بتصميم عربي متكامل.
-          </p>
+              {/* Browser chrome */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '12px 16px',
+                background: isDark ? 'rgba(8,15,32,0.6)' : 'rgba(248,250,252,1)',
+                borderBottom: `1px solid ${isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)'}`,
+                direction: 'ltr',
+              }}>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#ef4444' }} />
+                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#f59e0b' }} />
+                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#10b981' }} />
+                </div>
+                <div style={{
+                  flex: 1, marginInline: 12, padding: '5px 14px', borderRadius: 8,
+                  background: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)',
+                  fontSize: 11, color: 'var(--text-muted)', textAlign: 'center',
+                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                }}>half-lens.app/admin</div>
+              </div>
 
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => {
-                document.getElementById('portals-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }}
-              style={{
-                padding: '14px 32px', borderRadius: 14, border: 'none',
-                background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-                color: '#fff', fontSize: 16, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: 8,
-                boxShadow: '0 8px 30px rgba(37,99,235,0.35)',
-                transition: 'all 0.3s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(37,99,235,0.45)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(37,99,235,0.35)'; }}
-            >
-              ابدأ الآن <ArrowLeft size={18} />
-            </button>
-            <button
-              onClick={() => onNavigate('/join')}
-              style={{
-                padding: '14px 32px', borderRadius: 14,
-                border: '2px solid var(--border-soft)',
-                background: 'var(--bg-surface)', color: 'var(--text-primary)',
-                fontSize: 16, fontWeight: 700,
-                cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: 8,
-                transition: 'all 0.3s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-soft)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <Users size={18} /> سجّل كمورد
-            </button>
+              {/* Dashboard body */}
+              <div style={{ padding: 22, direction: 'rtl' }}>
+
+                {/* Welcome row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>أهلاً، أحمد 👋</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>ملخص آخر 30 يوم</div>
+                  </div>
+                  <div style={{ padding: '5px 11px', borderRadius: 8, background: 'rgba(37,99,235,0.14)', color: 'var(--accent-lighter)', fontSize: 10.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Bell size={11} /> 3 جديد
+                  </div>
+                </div>
+
+                {/* Stats grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
+                  {[
+                    { label: 'مشاريع نشطة', value: '24', color: '#3b82f6', icon: Briefcase, trend: '+8.2%' },
+                    { label: 'الموردين', value: '208', color: '#8b5cf6', icon: Users, trend: '+12%' },
+                    { label: 'الإيرادات', value: '842K', color: '#10b981', icon: TrendingUp, trend: '+18%' },
+                  ].map((s, i) => {
+                    const I = s.icon;
+                    return (
+                      <div key={i} style={{
+                        padding: 11, borderRadius: 11,
+                        background: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(15,23,42,0.025)',
+                        border: `1px solid ${isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)'}`,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <div style={{ width: 24, height: 24, borderRadius: 7, background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <I size={12} color={s.color} />
+                          </div>
+                          <div style={{ fontSize: 9.5, color: '#10b981', fontWeight: 800, direction: 'ltr' }}>↑ {s.trend}</div>
+                        </div>
+                        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1, direction: 'ltr', textAlign: 'right' }}>{s.value}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{s.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Chart */}
+                <div style={{
+                  padding: '12px 14px', borderRadius: 12, marginBottom: 14,
+                  background: isDark ? 'rgba(148,163,184,0.04)' : 'rgba(15,23,42,0.02)',
+                  border: `1px solid ${isDark ? 'rgba(148,163,184,0.06)' : 'rgba(15,23,42,0.03)'}`,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)' }}>الإيرادات الشهرية</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>آخر 6 أشهر</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 64, direction: 'ltr' }}>
+                    {[42, 65, 50, 80, 70, 95].map((h, i) => (
+                      <div key={i} className="landing-bar" style={{
+                        flex: 1,
+                        height: `${h}%`,
+                        background: i === 5
+                          ? 'linear-gradient(180deg, #3b82f6, #1e40af)'
+                          : 'linear-gradient(180deg, rgba(59,130,246,0.45), rgba(59,130,246,0.18))',
+                        borderRadius: '5px 5px 2px 2px',
+                        animationDelay: `${0.6 + i * 0.07}s`,
+                      }} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Activity rows */}
+                <div>
+                  {[
+                    { icon: CheckCircle2, color: '#10b981', t: 'تمت الموافقة على فاتورة #1284', s: 'منذ 5 دقائق' },
+                    { icon: Camera, color: '#06b6d4', t: 'مورد جديد بانتظار المراجعة', s: 'منذ 22 دقيقة' },
+                  ].map((a, i) => {
+                    const I = a.icon;
+                    return (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '8px 0',
+                        borderBottom: i < 1 ? `1px solid ${isDark ? 'rgba(148,163,184,0.06)' : 'rgba(15,23,42,0.04)'}` : 'none',
+                      }}>
+                        <div style={{ width: 26, height: 26, borderRadius: 8, background: `${a.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <I size={12} color={a.color} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.t}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{a.s}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+              </div>
+            </div>
           </div>
+
+        </div>
+
+        {/* Scroll cue */}
+        <div className="landing-scroll-cue">
+          <span>اكتشف المزيد</span>
+          <ChevronDown size={18} />
         </div>
       </section>
 
@@ -240,17 +475,29 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         borderTop: '1px solid var(--border-soft)',
         borderBottom: '1px solid var(--border-soft)',
       }}>
-        <div className="landing-stats-grid" style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+        <div className="landing-stats-grid" style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
           {stats.map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <div key={i} className="landing-stat" style={{
-                textAlign: 'center', animationDelay: `${i * 0.15}s`,
-                display: 'flex', flexDirection: 'column', alignItems: 'center',
-              }}>
-                <Icon size={24} style={{ color: 'var(--accent-lighter)', marginBottom: 8 }} />
-                <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--text-primary)', direction: 'ltr' }}>{stat.value}</div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>{stat.label}</div>
+              <div
+                key={i}
+                className="landing-stat landing-stat-card"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              >
+                <div className="landing-stat-icon" style={{
+                  background: `${stat.color}1a`,
+                  border: `1px solid ${stat.color}40`,
+                  color: stat.color,
+                  boxShadow: `0 0 0 0 ${stat.color}00`,
+                }}>
+                  <Icon size={22} />
+                </div>
+                <div className="landing-stat-num" style={{
+                  backgroundImage: `linear-gradient(135deg, ${stat.color}, ${stat.color}b3)`,
+                }}>
+                  <AnimatedStat value={stat.value} />
+                </div>
+                <div className="landing-stat-label">{stat.label}</div>
               </div>
             );
           })}
@@ -385,59 +632,6 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ CTA SECTION ═══ */}
-      <section className="landing-section-pad" style={{ padding: '80px 32px', textAlign: 'center' }}>
-        <div className="landing-cta-inner" style={{
-          maxWidth: 700, margin: '0 auto',
-          background: 'linear-gradient(135deg, #1e40af, #3b82f6, #7c3aed)',
-          borderRadius: 24, padding: '60px 40px',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-          <div style={{ position: 'absolute', bottom: -30, left: -30, width: 150, height: 150, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{ fontSize: 28, fontWeight: 900, color: '#fff', marginBottom: 12 }}>
-              جاهز لإدارة مشاريعك باحترافية؟
-            </h2>
-            <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: 32, lineHeight: 1.7 }}>
-              انضم إلى مئات شركات الإنتاج التي تدير مشاريعها عبر Half Lens
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => onNavigate('/join')}
-                style={{
-                  padding: '14px 32px', borderRadius: 14,
-                  background: '#fff', color: '#1e40af',
-                  fontSize: 15, fontWeight: 800, border: 'none',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  transition: 'all 0.3s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                سجّل كمورد الآن <ArrowLeft size={16} />
-              </button>
-              <button
-                onClick={() => onNavigate('/admin')}
-                style={{
-                  padding: '14px 32px', borderRadius: 14,
-                  background: 'rgba(255,255,255,0.15)', color: '#fff',
-                  fontSize: 15, fontWeight: 700, border: '1px solid rgba(255,255,255,0.3)',
-                  cursor: 'pointer', fontFamily: 'inherit', backdropFilter: 'blur(10px)',
-                  transition: 'all 0.3s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
-              >
-                تسجيل دخول الإدارة
-              </button>
-            </div>
           </div>
         </div>
       </section>
