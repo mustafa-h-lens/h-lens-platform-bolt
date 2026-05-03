@@ -202,9 +202,16 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
     setSelectedVendors(newSelected);
   };
 
+  const allCurrentPageSelected = filteredVendors.length > 0 && filteredVendors.every(v => selectedVendors.has(v.id));
+
   const toggleSelectAll = () => {
-    if (selectedVendors.size === filteredVendors.length) setSelectedVendors(new Set());
-    else setSelectedVendors(new Set(filteredVendors.map(v => v.id)));
+    const next = new Set(selectedVendors);
+    if (allCurrentPageSelected) {
+      filteredVendors.forEach(v => next.delete(v.id));
+    } else {
+      filteredVendors.forEach(v => next.add(v.id));
+    }
+    setSelectedVendors(next);
   };
 
   const handleDelete = async () => {
@@ -401,7 +408,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
               <table>
                 <thead>
                   <tr>
-                    <th style={{ width: 40 }}><input type="checkbox" className="tbl-check" checked={filteredVendors.length > 0 && selectedVendors.size === filteredVendors.length} onChange={toggleSelectAll} /></th>
+                    <th style={{ width: 40 }}><input type="checkbox" className="tbl-check" checked={allCurrentPageSelected} onChange={toggleSelectAll} /></th>
                     <th>المورد</th>
                     <th>المجال</th>
                     <th>الجنسية</th>
