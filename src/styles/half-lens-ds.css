@@ -2455,8 +2455,19 @@ a.breadcrumb-item:hover { color: var(--text-primary); }
   background: var(--accent-glow); color: var(--accent-lighter);
 }
 .dp-day.other-month {
-  color: var(--text-disabled); pointer-events: none;
+  color: var(--text-disabled);
 }
+.dp-year-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 8px;
+}
+.dp-year {
+  padding: 8px 4px; text-align: center; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text-secondary); transition: background 0.15s;
+}
+.dp-year:hover { background: var(--bg-input-hover); color: var(--text-primary); }
+.dp-year.today { color: var(--accent); font-weight: 600; }
+.dp-year.selected { background: var(--accent); color: #fff; font-weight: 600; }
+.dp-year.selected:hover { background: var(--accent-light); }
 
 /* ═══════════════════════════════════════════════════════════════
    SPACING SYSTEM

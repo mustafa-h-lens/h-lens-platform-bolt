@@ -7,11 +7,10 @@ interface Props {
 }
 
 const VISA_COUNTRIES = [
-  { code: 'US', name: 'US', flag: '🇺🇸' },
-  { code: 'GB', name: 'UK', flag: '🇬🇧' },
+  { code: 'US', name: 'USA', flag: '🇺🇸' },
   { code: 'EU', name: 'Schengen', flag: '🇪🇺' },
   { code: 'JP', name: 'Japan', flag: '🇯🇵' },
-  { code: 'AU', name: 'Australia', flag: '🇦🇺' },
+  { code: 'GB', name: 'UK', flag: '🇬🇧' },
 ];
 
 interface VisaEntry {

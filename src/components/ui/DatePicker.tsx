@@ -14,15 +14,19 @@ interface DatePickerProps {
 
 export const DatePicker = ({ value, onChange, placeholder = 'اختر التاريخ', label, required }: DatePickerProps) => {
   const [open, setOpen] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
-    if (value) return new Date(value);
+    if (value) return new Date(value + 'T12:00:00');
     return new Date();
   });
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowYearPicker(false);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -31,7 +35,7 @@ export const DatePicker = ({ value, onChange, placeholder = 'اختر التار
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const selectedDate = value ? new Date(value) : null;
+  const selectedDate = value ? new Date(value + 'T12:00:00') : null;
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -64,10 +68,13 @@ export const DatePicker = ({ value, onChange, placeholder = 'اختر التار
   const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
   const selectDay = (d: typeof days[0]) => {
-    const date = new Date(d.year, d.month, d.day);
-    const iso = date.toISOString().split('T')[0];
+    // Format as YYYY-MM-DD without UTC conversion
+    const yy = d.year + (d.month < 0 ? -1 : d.month > 11 ? 1 : 0);
+    const mm = ((d.month % 12) + 12) % 12;
+    const iso = `${yy}-${String(mm + 1).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
     onChange(iso);
     setOpen(false);
+    setShowYearPicker(false);
   };
 
   const isToday = (d: typeof days[0]) => !d.isOther && d.day === today.getDate() && d.month === today.getMonth() && d.year === today.getFullYear();
@@ -75,6 +82,10 @@ export const DatePicker = ({ value, onChange, placeholder = 'اختر التار
     if (!selectedDate) return false;
     return d.day === selectedDate.getDate() && d.month === selectedDate.getMonth() && d.year === selectedDate.getFullYear();
   };
+
+  // Year picker: show range of 12 years centered on current view year
+  const yearRangeStart = Math.floor(year / 12) * 12;
+  const years = Array.from({ length: 12 }, (_, i) => yearRangeStart + i);
 
   const displayValue = value ? value : '';
 
@@ -93,22 +104,43 @@ export const DatePicker = ({ value, onChange, placeholder = 'اختر التار
       {open && (
         <div className="date-picker" style={{ position: 'absolute', top: '100%', right: 0, zIndex: 100, marginTop: 4 }}>
           <div className="dp-header">
-            <button type="button" onClick={nextMonth}><ChevronRight size={16} /></button>
-            <span className="dp-title">{AR_MONTHS[month]} {year}</span>
-            <button type="button" onClick={prevMonth}><ChevronLeft size={16} /></button>
+            <button type="button" onClick={showYearPicker ? () => { const s = yearRangeStart + 12; setViewDate(new Date(s, month, 1)); } : nextMonth}><ChevronRight size={16} /></button>
+            <span
+              className="dp-title"
+              onClick={() => setShowYearPicker(!showYearPicker)}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+            >
+              {showYearPicker ? `${yearRangeStart} - ${yearRangeStart + 11}` : `${AR_MONTHS[month]} ${year}`}
+            </span>
+            <button type="button" onClick={showYearPicker ? () => { const s = yearRangeStart - 12; setViewDate(new Date(s, month, 1)); } : prevMonth}><ChevronLeft size={16} /></button>
           </div>
-          <div className="dp-grid">
-            {AR_DAYS.map(d => <span key={d} className="dp-dayname">{d}</span>)}
-            {days.map((d, i) => (
-              <span
-                key={i}
-                className={`dp-day ${d.isOther ? 'other-month' : ''} ${isToday(d) ? 'today' : ''} ${isSelected(d) ? 'selected' : ''}`}
-                onClick={() => selectDay(d)}
-              >
-                {d.day}
-              </span>
-            ))}
-          </div>
+
+          {showYearPicker ? (
+            <div className="dp-year-grid">
+              {years.map(y => (
+                <span
+                  key={y}
+                  className={`dp-year ${y === year ? 'selected' : ''} ${y === today.getFullYear() ? 'today' : ''}`}
+                  onClick={() => { setViewDate(new Date(y, month, 1)); setShowYearPicker(false); }}
+                >
+                  {y}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="dp-grid">
+              {AR_DAYS.map(d => <span key={d} className="dp-dayname">{d}</span>)}
+              {days.map((d, i) => (
+                <span
+                  key={i}
+                  className={`dp-day ${d.isOther ? 'other-month' : ''} ${isToday(d) ? 'today' : ''} ${isSelected(d) ? 'selected' : ''}`}
+                  onClick={() => selectDay(d)}
+                >
+                  {d.day}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

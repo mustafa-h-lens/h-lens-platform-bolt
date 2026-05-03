@@ -52,13 +52,12 @@ interface VendorTravelDocsProps {
   vendorId: string;
 }
 
-const COUNTRIES = [
+const PASSPORT_COUNTRIES = [
   'السعودية', 'الإمارات', 'الكويت', 'قطر', 'البحرين', 'عمان', 'مصر', 'الأردن',
   'لبنان', 'سوريا', 'العراق', 'اليمن', 'ليبيا', 'تونس', 'الجزائر', 'المغرب',
   'السودان', 'فلسطين', 'الصومال', 'جيبوتي', 'موريتانيا', 'جزر القمر',
-  'الولايات المتحدة', 'المملكة المتحدة', 'كندا', 'أستراليا', 'فرنسا', 'ألمانيا',
-  'إيطاليا', 'إسبانيا', 'الهند', 'الصين', 'اليابان', 'كوريا الجنوبية'
 ];
+const VISA_COUNTRIES = ['USA', 'Schengen', 'Japan', 'UK'];
 
 export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
   const { showSuccess, showError, confirm } = useNotification();
@@ -344,7 +343,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                   dir="rtl"
                 >
                   <option value="">اختر دولة</option>
-                  {COUNTRIES.map((country) => (
+                  {PASSPORT_COUNTRIES.map((country) => (
                     <option key={country} value={country}>{country}</option>
                   ))}
                 </select>
@@ -480,7 +479,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                   required
                 >
                   <option value="">اختر دولة</option>
-                  {COUNTRIES.map((country) => (
+                  {VISA_COUNTRIES.map((country) => (
                     <option key={country} value={country}>{country}</option>
                   ))}
                 </select>
@@ -578,7 +577,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+                <div className="form-grid">
                   <div>
                     <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>تاريخ البداية</p>
                     <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{visa.visa_start_date || '-'}</p>
@@ -588,16 +587,17 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                     <p style={{ color: 'var(--text-primary)', fontWeight: 500 }} dir="ltr">{visa.visa_expiry_date || '-'}</p>
                   </div>
                   {visa.visa_file && (
-                    <div>
-                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملف المرفق</p>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => window.open(visa.visa_file, '_blank')}
-                        style={{ gap: 6, color: 'var(--accent-lighter)', fontSize: 12 }}
-                      >
-                        <FileText size={14} />
-                        عرض
-                      </button>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>الملفات المرفقة</p>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <div style={{ width: 140 }}>
+                          {visa.visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                            <img src={visa.visa_file} alt={visa.visa_country} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(visa.visa_file, '_blank')} />
+                          ) : (
+                            <button className="btn btn-ghost btn-sm" onClick={() => window.open(visa.visa_file, '_blank')} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
