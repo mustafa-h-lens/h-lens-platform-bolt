@@ -43,6 +43,8 @@ interface ExportFields {
   profile_image: boolean;
   id_image: boolean;
   vehicle_registration_image: boolean;
+  passport_image: boolean;
+  visa_image: boolean;
   equipment: boolean;
   equipment_images: boolean;
   email: boolean;
@@ -73,6 +75,8 @@ const defaultFields: ExportFields = {
   profile_image: true,
   id_image: true,
   vehicle_registration_image: true,
+  passport_image: false,
+  visa_image: false,
   equipment: false,
   equipment_images: false,
   email: false,
@@ -91,6 +95,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
   const [selectedFields, setSelectedFields] = useState<ExportFields>(defaultFields);
   const [separatePages, setSeparatePages] = useState(false);
   const [equipmentData, setEquipmentData] = useState<Record<string, VendorEquipment[]>>({});
+  const [travelDocs, setTravelDocs] = useState<Record<string, { passport_file?: string; visa_file?: string }>>({});
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -127,6 +132,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
   useEffect(() => {
     fetchEquipmentData();
+    fetchTravelDocs();
   }, [vendors]);
 
   const fetchEquipmentData = async () => {
@@ -155,6 +161,28 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       }
     } catch (error) {
       console.error('Error fetching equipment:', error);
+    }
+  };
+
+  const fetchTravelDocs = async () => {
+    if (vendors.length === 0) return;
+    try {
+      const vendorIds = vendors.map(v => v.id);
+      const { data } = await supabase
+        .from('vendor_travel_documents')
+        .select('vendor_id, document_type, passport_file, visa_file')
+        .in('vendor_id', vendorIds);
+      if (data) {
+        const grouped: Record<string, { passport_file?: string; visa_file?: string }> = {};
+        data.forEach(doc => {
+          if (!grouped[doc.vendor_id]) grouped[doc.vendor_id] = {};
+          if (doc.document_type === 'passport' && doc.passport_file) grouped[doc.vendor_id].passport_file = doc.passport_file;
+          if (doc.document_type === 'visa' && doc.visa_file) grouped[doc.vendor_id].visa_file = doc.visa_file;
+        });
+        setTravelDocs(grouped);
+      }
+    } catch (error) {
+      console.error('Error fetching travel docs:', error);
     }
   };
 
@@ -224,6 +252,8 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
         f.key !== 'profile_image' &&
         f.key !== 'id_image' &&
         f.key !== 'vehicle_registration_image' &&
+        f.key !== 'passport_image' &&
+        f.key !== 'visa_image' &&
         f.key !== 'equipment_images',
     );
 
@@ -312,6 +342,8 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
         case 'profile_image':
         case 'id_image':
         case 'vehicle_registration_image':
+        case 'passport_image':
+        case 'visa_image':
           return 18;
         case 'equipment_images':
           return 50;
@@ -386,6 +418,10 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       if (selectedFields.id_image && v.id_image) imageUrls.add(v.id_image);
       if (selectedFields.vehicle_registration_image && v.vehicle_registration_image)
         imageUrls.add(v.vehicle_registration_image);
+      if (selectedFields.passport_image && travelDocs[v.id]?.passport_file)
+        imageUrls.add(travelDocs[v.id].passport_file!);
+      if (selectedFields.visa_image && travelDocs[v.id]?.visa_file)
+        imageUrls.add(travelDocs[v.id].visa_file!);
       if (selectedFields.equipment_images) {
         (equipmentData[v.id] || []).forEach(e => {
           if (e.image) imageUrls.add(e.image);
@@ -472,6 +508,24 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
             editAs: 'oneCell',
           });
           cell.value = '';
+        } else if (col.key === 'passport_image' && travelDocs[v.id]?.passport_file && imageMap.has(travelDocs[v.id].passport_file!)) {
+          const img = imageMap.get(travelDocs[v.id].passport_file!)!;
+          const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+          ws.addImage(id, {
+            tl: { col: c + 0.05, row: rowIdx - 1 + 0.05 },
+            ext: { width: 110, height: 70 },
+            editAs: 'oneCell',
+          });
+          cell.value = '';
+        } else if (col.key === 'visa_image' && travelDocs[v.id]?.visa_file && imageMap.has(travelDocs[v.id].visa_file!)) {
+          const img = imageMap.get(travelDocs[v.id].visa_file!)!;
+          const id = wb.addImage({ buffer: img.buffer, extension: img.ext });
+          ws.addImage(id, {
+            tl: { col: c + 0.05, row: rowIdx - 1 + 0.05 },
+            ext: { width: 110, height: 70 },
+            editAs: 'oneCell',
+          });
+          cell.value = '';
         } else if (col.key === 'equipment_images') {
           const eq = (equipmentData[v.id] || []).filter(e => e.image && imageMap.has(e.image!));
           if (eq.length === 0) {
@@ -521,7 +575,9 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
         } else if (
           col.key === 'profile_image' ||
           col.key === 'id_image' ||
-          col.key === 'vehicle_registration_image'
+          col.key === 'vehicle_registration_image' ||
+          col.key === 'passport_image' ||
+          col.key === 'visa_image'
         ) {
           cell.value = '-';
         } else {
@@ -577,7 +633,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       });
 
       // Calculate rows per page based on content: images need ~110px height, text ~45px
-      const hasImages = selectedFields.profile_image || selectedFields.id_image || selectedFields.vehicle_registration_image || selectedFields.equipment_images;
+      const hasImages = selectedFields.profile_image || selectedFields.id_image || selectedFields.vehicle_registration_image || selectedFields.passport_image || selectedFields.visa_image || selectedFields.equipment_images;
       const ROWS_PER_PAGE = separatePages ? 1 : (hasImages ? 4 : 8);
 
       if (printRef.current) {
@@ -782,15 +838,27 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
           if (base64) {
             const img = document.createElement('img');
             img.src = base64;
-            img.style.cssText = `
-              max-width: 100%;
-              max-height: 95px;
-              object-fit: contain;
-              border-radius: 4px;
-              border: 1px solid #cbd5e1;
-              margin: 0 auto;
-              display: block;
-            `;
+            img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
+            td.appendChild(img);
+          } else {
+            td.textContent = '-';
+          }
+        } else if (col.key === 'passport_image' && travelDocs[vendor.id]?.passport_file) {
+          const base64 = await convertImageToBase64(travelDocs[vendor.id].passport_file!);
+          if (base64) {
+            const img = document.createElement('img');
+            img.src = base64;
+            img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
+            td.appendChild(img);
+          } else {
+            td.textContent = '-';
+          }
+        } else if (col.key === 'visa_image' && travelDocs[vendor.id]?.visa_file) {
+          const base64 = await convertImageToBase64(travelDocs[vendor.id].visa_file!);
+          if (base64) {
+            const img = document.createElement('img');
+            img.src = base64;
+            img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
             td.appendChild(img);
           } else {
             td.textContent = '-';
@@ -1004,6 +1072,26 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
         } else {
           td.textContent = '-';
         }
+      } else if (col.key === 'passport_image' && travelDocs[vendor.id]?.passport_file) {
+        const base64 = await convertImageToBase64(travelDocs[vendor.id].passport_file!);
+        if (base64) {
+          const img = document.createElement('img');
+          img.src = base64;
+          img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
+          td.appendChild(img);
+        } else {
+          td.textContent = '-';
+        }
+      } else if (col.key === 'visa_image' && travelDocs[vendor.id]?.visa_file) {
+        const base64 = await convertImageToBase64(travelDocs[vendor.id].visa_file!);
+        if (base64) {
+          const img = document.createElement('img');
+          img.src = base64;
+          img.style.cssText = `max-width:100%;max-height:95px;object-fit:contain;border-radius:4px;border:1px solid #cbd5e1;margin:0 auto;display:block;`;
+          td.appendChild(img);
+        } else {
+          td.textContent = '-';
+        }
       } else if (col.key === 'phone') {
         td.textContent = toEnglishNumbers(vendor.phone);
         td.style.direction = 'ltr';
@@ -1098,6 +1186,8 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     { key: 'vehicle_brand', label: 'ماركة المركبة' },
     { key: 'vehicle_plate_number', label: 'رقم اللوحة' },
     { key: 'vehicle_registration_image', label: 'صورة الاستمارة' },
+    { key: 'passport_image', label: 'صورة الجواز' },
+    { key: 'visa_image', label: 'صورة الفيزا' },
     { key: 'equipment', label: 'المعدات' },
     { key: 'equipment_images', label: 'صور المعدات' },
   ];
