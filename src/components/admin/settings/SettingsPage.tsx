@@ -237,6 +237,11 @@ export const SettingsPage = ({ initialTab, onTabChange }: SettingsPageProps) => 
           ))}
         </div>
       </div>
+
+      {/* Git version footer */}
+      <div style={{ marginTop: 16, padding: '10px 16px', fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'var(--font-mono)', direction: 'ltr', textAlign: 'left' }}>
+        Build: {typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : '?'} — {typeof __GIT_MSG__ !== 'undefined' ? __GIT_MSG__ : ''} — {typeof __GIT_DATE__ !== 'undefined' ? new Date(__GIT_DATE__).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+      </div>
     </div>
   );
 };
