@@ -576,7 +576,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
     }
 
     const amount = parseFloat(toEnglishNumbers(expenseForm.amount));
-    if (isNaN(amount) || amount <= 0) {
+    if (isNaN(amount) || amount < 0) {
       showError('يرجى إدخال مبلغ صحيح');
       return;
     }

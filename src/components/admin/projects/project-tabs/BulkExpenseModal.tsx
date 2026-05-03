@@ -66,7 +66,7 @@ export const BulkExpenseModal = ({ isOpen, onClose, onSuccess, projectId, curren
     setRows(rows.map(r => r.key === key ? { ...r, [field]: value } : r));
   };
 
-  const validRows = rows.filter(r => r.vendor_id && r.amount && parseFloat(toEnglishNumbers(r.amount)) > 0);
+  const validRows = rows.filter(r => r.vendor_id && r.amount !== '' && parseFloat(toEnglishNumbers(r.amount)) >= 0);
 
   const totalAmount = validRows.reduce((sum, r) => {
     const amt = parseFloat(toEnglishNumbers(r.amount));
