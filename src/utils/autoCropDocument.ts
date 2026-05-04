@@ -45,6 +45,15 @@ export interface AutoCropOpts {
   quality?: number;
 }
 
+// Hard cap so the spinner never hangs on a slow phone CPU or stalled WASM init.
+// First-time WASM download + parse on a phone over cellular can take a while —
+// give it generous headroom but never indefinite.
+const TOTAL_TIMEOUT_MS = 12000;
+// Source images larger than this on the long edge get downscaled before being
+// fed to OpenCV. A 4000×3000 phone photo through findContours on a phone CPU
+// takes 5-10s; downscaled to 1400 it's well under a second.
+const ANALYSIS_LONG_EDGE = 1400;
+
 export async function autoCropDocument(file: File, opts: AutoCropOpts): Promise<File | null> {
   if (!file.type.startsWith('image/')) return null;
 
@@ -54,6 +63,15 @@ export async function autoCropDocument(file: File, opts: AutoCropOpts): Promise<
   const targetW = longEdge;
   const targetH = Math.max(1, Math.round(longEdge * (opts.aspectHeight / opts.aspectWidth)));
 
+  return await withTimeout(runAutoCrop(file, { targetW, targetH, targetAspect, quality }), TOTAL_TIMEOUT_MS, 'autoCrop');
+}
+
+async function runAutoCrop(file: File, params: {
+  targetW: number;
+  targetH: number;
+  targetAspect: number;
+  quality: number;
+}): Promise<File | null> {
   let img: HTMLImageElement;
   try {
     img = await fileToImage(file);
@@ -65,34 +83,76 @@ export async function autoCropDocument(file: File, opts: AutoCropOpts): Promise<
   const s = await ensureScanner();
   if (!s) return null;
 
-  // Sanity-check the detected quad before extracting. Rejects quads whose
-  // aspect ratio is far from the target (e.g. a square QR-code panel inside
-  // an ID screenshot) or whose area is too small to be the document itself.
-  if (!isPlausibleDocumentQuad(s, img, targetAspect)) return null;
+  // Downscale before feeding into OpenCV so phone photos don't choke the CPU.
+  const analysisSource = downscaleIfHuge(img, ANALYSIS_LONG_EDGE);
+
+  if (!isPlausibleDocumentQuad(s, analysisSource, params.targetAspect)) return null;
 
   let outCanvas: HTMLCanvasElement | null = null;
   try {
-    outCanvas = s.extractPaper(img, targetW, targetH) as HTMLCanvasElement | null;
+    outCanvas = s.extractPaper(analysisSource, params.targetW, params.targetH) as HTMLCanvasElement | null;
   } catch (e) {
     console.warn('extractPaper threw', e);
     return null;
   }
   if (!outCanvas) return null;
 
-  return await canvasToJpegFile(outCanvas, file.name, quality);
+  return await canvasToJpegFile(outCanvas, file.name, params.quality);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T | null> {
+  return new Promise<T | null>(resolve => {
+    let settled = false;
+    const t = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      console.warn(`${label} timed out after ${ms}ms — falling back to manual cropper`);
+      resolve(null);
+    }, ms);
+    promise.then(v => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(t);
+      resolve(v as T);
+    }).catch(e => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(t);
+      console.warn(`${label} threw`, e);
+      resolve(null);
+    });
+  });
+}
+
+function downscaleIfHuge(img: HTMLImageElement, maxLongEdge: number): HTMLImageElement | HTMLCanvasElement {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  const longest = Math.max(w, h);
+  if (longest <= maxLongEdge) return img;
+  const scale = maxLongEdge / longest;
+  const c = document.createElement('canvas');
+  c.width = Math.round(w * scale);
+  c.height = Math.round(h * scale);
+  const ctx = c.getContext('2d');
+  if (!ctx) return img;
+  ctx.drawImage(img, 0, 0, c.width, c.height);
+  return c;
 }
 
 const ASPECT_TOLERANCE = 0.25;
 const MIN_AREA_FRACTION = 0.18;
 
-function isPlausibleDocumentQuad(scanner: any, img: HTMLImageElement, targetAspect: number): boolean {
+function isPlausibleDocumentQuad(scanner: any, img: HTMLImageElement | HTMLCanvasElement, targetAspect: number): boolean {
   const cv = (window as any).cv;
   if (!cv) return true;
+
+  const srcW = (img as HTMLImageElement).naturalWidth || (img as HTMLCanvasElement).width;
+  const srcH = (img as HTMLImageElement).naturalHeight || (img as HTMLCanvasElement).height;
 
   let mat: any = null;
   let contour: any = null;
   try {
-    mat = cv.imread(img);
+    mat = cv.imread(img as any);
     contour = scanner.findPaperContour(mat);
     if (!contour) return false;
 
@@ -112,22 +172,15 @@ function isPlausibleDocumentQuad(scanner: any, img: HTMLImageElement, targetAspe
     if (w <= 0 || h <= 0) return false;
 
     const detectedAspect = w / h;
-    // Quads photographed at angle look narrower; allow either orientation.
     const ratio = Math.max(detectedAspect, targetAspect) / Math.min(detectedAspect, targetAspect);
     const flippedRatio = Math.max(1 / detectedAspect, targetAspect) / Math.min(1 / detectedAspect, targetAspect);
     const aspectOk = ratio <= 1 + ASPECT_TOLERANCE || flippedRatio <= 1 + ASPECT_TOLERANCE;
-    if (!aspectOk) {
-      console.info('autoCrop: rejecting quad — aspect', detectedAspect.toFixed(2), 'vs target', targetAspect.toFixed(2));
-      return false;
-    }
+    if (!aspectOk) return false;
 
     const quadArea = w * h;
-    const imgArea = img.naturalWidth * img.naturalHeight;
+    const imgArea = srcW * srcH;
     const areaFrac = quadArea / Math.max(1, imgArea);
-    if (areaFrac < MIN_AREA_FRACTION) {
-      console.info('autoCrop: rejecting quad — area fraction', areaFrac.toFixed(3));
-      return false;
-    }
+    if (areaFrac < MIN_AREA_FRACTION) return false;
 
     return true;
   } catch (e) {
