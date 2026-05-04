@@ -2,9 +2,13 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { execSync } from 'child_process';
 
-const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
-const commitMsg = execSync('git log -1 --format=%s').toString().trim();
-const commitDate = execSync('git log -1 --format=%ci').toString().trim();
+function tryExec(cmd: string, fallback: string): string {
+  try { return execSync(cmd).toString().trim(); } catch { return fallback; }
+}
+
+const commitHash = tryExec('git rev-parse --short HEAD', 'unknown');
+const commitMsg = tryExec('git log -1 --format=%s', '');
+const commitDate = tryExec('git log -1 --format=%ci', new Date().toISOString());
 
 // https://vitejs.dev/config/
 export default defineConfig({
