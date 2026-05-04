@@ -119,6 +119,36 @@ export const VendorPortal = () => {
     }
   }, [isRevisionMode, vendor?.id]);
 
+  // Lock the page (and the iOS pull-to-refresh gesture) while the mobile drawer is open.
+  // Without this, dragging on the dimmed backdrop pulls the underlying main scroll
+  // and Safari's rubber-band shifts the layout viewport down, leaving the drawer
+  // visually stranded.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscroll: body.style.overscrollBehavior,
+    };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'contain';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      body.style.overscrollBehavior = prev.overscroll;
+      window.scrollTo(0, scrollY);
+    };
+  }, [drawerOpen]);
+
   const handleResubmit = async () => {
     if (!vendor?.id) return;
     setResubmitting(true);
@@ -373,14 +403,19 @@ export const VendorPortal = () => {
       {/* ── Mobile Drawer ── */}
       {drawerOpen && (
         <>
-          <div className="md:hidden" onClick={() => setDrawer(false)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 40 }} />
+          <div
+            className="md:hidden"
+            onClick={() => setDrawer(false)}
+            onTouchMove={(e) => e.preventDefault()}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 40, touchAction: 'none', overscrollBehavior: 'contain' }}
+          />
           <aside className="md:hidden" style={{
-            position: 'fixed', top: 0, right: 0, width: 260, height: '100vh', zIndex: 50,
+            position: 'fixed', top: 0, right: 0, width: 260, height: '100dvh', zIndex: 50,
             display: 'flex', flexDirection: 'column',
             background: isDarkMode ? 'rgba(4,10,24,0.98)' : 'linear-gradient(175deg, #1a3a6b 0%, #0e2247 100%)',
             borderLeft: '1px solid rgba(255,255,255,0.06)',
             animation: 'slideIn 0.25s ease',
+            overscrollBehavior: 'contain',
           }}>
             <SidebarInner isMobile />
           </aside>
