@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Tag, FileText, Building2, Shield, ChevronDown, Briefcase } from 'lucide-react';
+import { Settings as SettingsIcon, FolderOpen, Package, Users, Camera, Layers, ShoppingCart, Tag, FileText, Building2, Shield, ChevronDown, Briefcase, GitCommit } from 'lucide-react';
+import { DeploymentStatus } from './DeploymentStatus';
 import { ServiceItemsCatalog } from '../ServiceItemsCatalog';
 import { ItemCategoriesManagement } from '../projects/ItemCategoriesManagement';
 import { ProjectStatusSettings } from './ProjectStatusSettings';
@@ -13,7 +14,7 @@ import { PrivacySettings } from './PrivacySettings';
 import { BanksSettings } from './BanksSettings';
 import { SectorsSettings } from './SectorsSettings';
 import { ClientDocumentTypesSettings } from './ClientDocumentTypesSettings';
-type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'sectors';
+type TabId = 'projects' | 'items-catalog' | 'items-categories' | 'suppliers' | 'clients' | 'equipment-categories' | 'equipment-brands' | 'equipment-catalog' | 'purchase-orders' | 'terms' | 'privacy' | 'banks' | 'sectors' | 'deployment';
 
 interface SubTab {
   id: TabId;
@@ -82,6 +83,15 @@ const tabGroups: TabGroup[] = [
       { id: 'projects', label: 'إعدادات المشاريع', icon: FolderOpen, component: ProjectStatusSettings },
       { id: 'suppliers', label: 'إعدادات الموردين', icon: Users, component: VendorFieldsSettings },
       { id: 'clients', label: 'إعدادات العملاء', icon: FileText, component: ClientDocumentTypesSettings }
+    ]
+  },
+  {
+    id: 'system-group',
+    label: 'النظام',
+    icon: GitCommit,
+    color: '#0891B2',
+    tabs: [
+      { id: 'deployment', label: 'حالة النشر', icon: GitCommit, component: DeploymentStatus },
     ]
   },
 ];
