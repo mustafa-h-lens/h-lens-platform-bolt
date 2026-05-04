@@ -16,6 +16,7 @@ import { VendorEquipment } from './VendorEquipment';
 import { VendorNotifications } from './VendorNotifications';
 import { VendorSuggestions } from './VendorSuggestions';
 import { ErrorBoundary } from '../shared/ErrorBoundary';
+import { useDisablePullToRefresh } from '../shared/PullToRefresh';
 import '../../styles/vendor-portal.css';
 
 const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }[] = [
@@ -119,30 +120,27 @@ export const VendorPortal = () => {
     }
   }, [isRevisionMode, vendor?.id]);
 
-  // While the mobile drawer is open: disable our custom PullToRefresh
-  // (otherwise its translateY pulls the page out from under the fixed drawer)
-  // and pin body so iOS-native rubber-band can't shift the layout viewport.
+  // While the mobile drawer is open: disable our app-level PullToRefresh
+  // (its translateY moves the wrapper out from under the fixed drawer) and
+  // pin body so iOS-native rubber-band can't shift the layout viewport.
+  useDisablePullToRefresh(drawerOpen);
   useEffect(() => {
     if (!drawerOpen) return;
     const body = document.body;
     const scrollY = window.scrollY;
     const prev = {
-      ptrDisabled: body.dataset.ptrDisabled,
       position: body.style.position,
       top: body.style.top,
       width: body.style.width,
       overflow: body.style.overflow,
       overscroll: body.style.overscrollBehavior,
     };
-    body.dataset.ptrDisabled = 'true';
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
     return () => {
-      if (prev.ptrDisabled === undefined) delete body.dataset.ptrDisabled;
-      else body.dataset.ptrDisabled = prev.ptrDisabled;
       body.style.position = prev.position;
       body.style.top = prev.top;
       body.style.width = prev.width;

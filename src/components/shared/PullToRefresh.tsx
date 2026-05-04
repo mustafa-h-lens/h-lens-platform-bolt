@@ -3,8 +3,12 @@ import { useState, useRef, useCallback, useEffect, createContext, useContext } f
 const THRESHOLD = 80;
 const MAX_PULL = 120;
 
-const PullToRefreshContext = createContext<{ onRefresh: (cb: () => void) => () => void }>({
+const PullToRefreshContext = createContext<{
+  onRefresh: (cb: () => void) => () => void;
+  setDisabled: (v: boolean) => void;
+}>({
   onRefresh: () => () => {},
+  setDisabled: () => {},
 });
 
 export const usePullToRefresh = (callback: () => void) => {
@@ -12,18 +16,45 @@ export const usePullToRefresh = (callback: () => void) => {
   useEffect(() => onRefresh(callback), [callback, onRefresh]);
 };
 
+/** Pause/resume the global pull-to-refresh gesture (e.g. while a drawer or
+ * full-screen modal is open). Returns a cleanup function. */
+export const useDisablePullToRefresh = (active: boolean) => {
+  const { setDisabled } = useContext(PullToRefreshContext);
+  useEffect(() => {
+    if (!active) return;
+    setDisabled(true);
+    return () => setDisabled(false);
+  }, [active, setDisabled]);
+};
+
 export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
   const [pullDistance, setPullDistance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [disabledCount, setDisabledCount] = useState(0);
   const startY = useRef(0);
   const pulling = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const refreshCallbacks = useRef<Set<() => void>>(new Set());
+  const disabled = disabledCount > 0;
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
+
+  const setDisabled = useCallback((v: boolean) => {
+    setDisabledCount(c => Math.max(0, c + (v ? 1 : -1)));
+  }, []);
 
   const onRefresh = useCallback((cb: () => void) => {
     refreshCallbacks.current.add(cb);
     return () => { refreshCallbacks.current.delete(cb); };
   }, []);
+
+  // Force-reset gesture state if disabled flips on mid-pull.
+  useEffect(() => {
+    if (disabled) {
+      pulling.current = false;
+      setPullDistance(0);
+    }
+  }, [disabled]);
 
   const isMobile = useCallback(() => {
     return 'ontouchstart' in window && window.innerWidth <= 768;
@@ -49,17 +80,18 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!isMobile() || refreshing) return;
-    // Bail when any modal/drawer marks the document as locked (e.g. the
-    // mobile vendor-portal drawer). Otherwise the wrapper's translateY moves
-    // the page underneath while the position:fixed drawer stays put,
-    // creating the visual mismatch the user reported.
-    if (document.body.dataset.ptrDisabled === 'true') return;
+    if (disabledRef.current) return;
     if (!isAtTopOfScrollChain(e.target)) return;
     startY.current = e.touches[0].clientY;
     pulling.current = true;
   }, [isMobile, refreshing, isAtTopOfScrollChain]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (disabledRef.current) {
+      pulling.current = false;
+      if (pullDistance !== 0) setPullDistance(0);
+      return;
+    }
     if (!pulling.current || refreshing) return;
     // Bail if window scrolled away from top during the gesture (rare but possible).
     if (window.scrollY > 0 || document.documentElement.scrollTop > 0) {
@@ -111,7 +143,7 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
   const showIndicator = pullDistance > 10;
 
   return (
-    <PullToRefreshContext.Provider value={{ onRefresh }}>
+    <PullToRefreshContext.Provider value={{ onRefresh, setDisabled }}>
     <div ref={containerRef}>
       {showIndicator && (
         <div style={{
@@ -157,7 +189,7 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
       )}
 
       <div style={{
-        transform: showIndicator ? `translateY(${pullDistance * 0.3}px)` : 'none',
+        transform: (!disabled && showIndicator) ? `translateY(${pullDistance * 0.3}px)` : 'none',
         transition: pulling.current ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       }}>
         {children}
