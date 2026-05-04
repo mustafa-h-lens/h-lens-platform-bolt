@@ -10,7 +10,9 @@ import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
 import { createPortal } from 'react-dom';
 import { formatNumber } from '../../../lib/formatters';
 import { COUNTRIES } from '../../../lib/shared-data';
-import DocumentCropper from '../../shared/DocumentCropper';
+// Lazy so the cropper bundle is fetched only when the admin actually picks
+// an ID image — keeps the AddVendorModal mount fast.
+const DocumentCropper = lazy(() => import('../../shared/DocumentCropper'));
 
 const ID_ASPECT_RATIO = 1.586;
 
@@ -600,6 +602,16 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data }) => setCities(data || []));
   }, []);
 
+  // Watchdog: clear pendingIdFile if the cropper somehow stays stuck >30s.
+  useEffect(() => {
+    if (!pendingIdFile) return;
+    const t = window.setTimeout(() => {
+      console.warn('AddVendorModal: cropper pendingIdFile watchdog tripped, clearing');
+      setPendingIdFile(null);
+    }, 30000);
+    return () => window.clearTimeout(t);
+  }, [pendingIdFile]);
+
   const serviceOptions = React.useMemo(() => {
     const parents = allFields.filter(f => !f.parent_id);
     const options: { value: string; label: string }[] = [];
@@ -886,15 +898,19 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
           </div>
         </form>
       </div>
-      <DocumentCropper
-        open={!!pendingIdFile}
-        file={pendingIdFile}
-        aspect={ID_ASPECT_RATIO}
-        docLabel="صورة الهوية"
-        onSave={commitIdFile}
-        onSkip={commitIdFile}
-        onCancel={() => setPendingIdFile(null)}
-      />
+      {pendingIdFile && (
+        <Suspense fallback={null}>
+          <DocumentCropper
+            open={!!pendingIdFile}
+            file={pendingIdFile}
+            aspect={ID_ASPECT_RATIO}
+            docLabel="صورة الهوية"
+            onSave={commitIdFile}
+            onSkip={commitIdFile}
+            onCancel={() => setPendingIdFile(null)}
+          />
+        </Suspense>
+      )}
     </div>,
     document.body
   );

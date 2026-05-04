@@ -33,6 +33,9 @@ export default function DocumentCropper({
   const [busy, setBusy] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const urlRef = useRef<string>('');
+  // Memoize the last Sobel-detected bbox per (file, aspect) so re-opens
+  // after a cancel don't re-run the 200-1000ms Sobel pass.
+  const bboxCacheRef = useRef<{ file: File; aspect: number; area: Area } | null>(null);
 
   useEffect(() => {
     if (!open || !file) return;
@@ -47,11 +50,23 @@ export default function DocumentCropper({
     urlRef.current = url;
     setImageUrl(url);
 
+    // Same file + aspect as last open? Reuse cached bbox to avoid Sobel.
+    const cached = bboxCacheRef.current;
+    if (cached && cached.file === file && cached.aspect === aspect) {
+      setInitialArea(cached.area);
+      setImgLoaded(true);
+      return () => {
+        URL.revokeObjectURL(url);
+        urlRef.current = '';
+      };
+    }
+
     const img = new Image();
     img.onload = async () => {
       try {
         const bbox = await detectDocumentBBox(img);
         const fitted = fitToAspect(bbox, aspect, img.naturalWidth, img.naturalHeight);
+        bboxCacheRef.current = { file, aspect, area: fitted };
         setInitialArea(fitted);
         setImgLoaded(true);
       } catch {
@@ -61,6 +76,7 @@ export default function DocumentCropper({
           img.naturalWidth,
           img.naturalHeight,
         );
+        bboxCacheRef.current = { file, aspect, area: fallback };
         setInitialArea(fallback);
         setImgLoaded(true);
       }

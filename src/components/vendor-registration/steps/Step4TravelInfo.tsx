@@ -1,9 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
-import DocumentCropper from '../../shared/DocumentCropper';
 import { pdfFirstPageToImage } from '../../../utils/pdfFirstPageToImage';
 
+// Lazy so the cropper code is fetched only when the user actually picks
+// a passport file.
+const DocumentCropper = lazy(() => import('../../shared/DocumentCropper'));
+
 const PASSPORT_ASPECT_RATIO = 1.42;
+const PENDING_FILE_WATCHDOG_MS = 30000;
 
 interface Props {
   formData: VendorFormData;
@@ -38,6 +42,16 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [pendingPassportFile, setPendingPassportFile] = useState<File | null>(null);
   const [convertingPdf, setConvertingPdf] = useState(false);
+
+  // Watchdog: never let a stuck cropper freeze the form permanently.
+  useEffect(() => {
+    if (!pendingPassportFile) return;
+    const t = window.setTimeout(() => {
+      console.warn('Step4: cropper pendingPassportFile watchdog tripped, clearing');
+      setPendingPassportFile(null);
+    }, PENDING_FILE_WATCHDOG_MS);
+    return () => window.clearTimeout(t);
+  }, [pendingPassportFile]);
 
   // Restore passport preview from File object or URL on mount
   useEffect(() => {
@@ -282,15 +296,19 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
         </div>
       )}
 
-      <DocumentCropper
-        open={!!pendingPassportFile}
-        file={pendingPassportFile}
-        aspect={PASSPORT_ASPECT_RATIO}
-        docLabel="جواز السفر"
-        onSave={commitPassportFile}
-        onSkip={commitPassportFile}
-        onCancel={() => setPendingPassportFile(null)}
-      />
+      {pendingPassportFile && (
+        <Suspense fallback={null}>
+          <DocumentCropper
+            open={!!pendingPassportFile}
+            file={pendingPassportFile}
+            aspect={PASSPORT_ASPECT_RATIO}
+            docLabel="جواز السفر"
+            onSave={commitPassportFile}
+            onSkip={commitPassportFile}
+            onCancel={() => setPendingPassportFile(null)}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

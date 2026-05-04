@@ -1,8 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
-import DocumentCropper from '../../shared/DocumentCropper';
+
+// Lazy so the cropper code is fetched only when the user actually picks
+// an ID file. Keeps Step 3 mount lightweight — no react-easy-crop or Sobel
+// detector loaded just for typing into form fields.
+const DocumentCropper = lazy(() => import('../../shared/DocumentCropper'));
 
 const ID_ASPECT_RATIO = 1.586;
+const PENDING_FILE_WATCHDOG_MS = 30000;
 
 interface Props {
   formData: VendorFormData;
@@ -20,6 +25,17 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
+
+  // Watchdog: if the cropper somehow gets stuck for >30s, force-clear the
+  // pending file so the form can never permanently freeze.
+  useEffect(() => {
+    if (!pendingIdFile) return;
+    const t = window.setTimeout(() => {
+      console.warn('Step3: cropper pendingIdFile watchdog tripped, clearing');
+      setPendingIdFile(null);
+    }, PENDING_FILE_WATCHDOG_MS);
+    return () => window.clearTimeout(t);
+  }, [pendingIdFile]);
 
   // Restore previews from File objects or URLs when component mounts
   useEffect(() => {
@@ -197,15 +213,19 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
         </div>
       </div>
 
-      <DocumentCropper
-        open={!!pendingIdFile}
-        file={pendingIdFile}
-        aspect={ID_ASPECT_RATIO}
-        docLabel="صورة الهوية"
-        onSave={commitIdFile}
-        onSkip={commitIdFile}
-        onCancel={() => setPendingIdFile(null)}
-      />
+      {pendingIdFile && (
+        <Suspense fallback={null}>
+          <DocumentCropper
+            open={!!pendingIdFile}
+            file={pendingIdFile}
+            aspect={ID_ASPECT_RATIO}
+            docLabel="صورة الهوية"
+            onSave={commitIdFile}
+            onSkip={commitIdFile}
+            onCancel={() => setPendingIdFile(null)}
+          />
+        </Suspense>
+      )}
 
     </>
   );
