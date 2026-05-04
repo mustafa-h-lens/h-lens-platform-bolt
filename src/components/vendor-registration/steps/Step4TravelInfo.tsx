@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 import DocumentCropper from '../../shared/DocumentCropper';
 import { pdfFirstPageToImage } from '../../../utils/pdfFirstPageToImage';
-import { autoCropDocument } from '../../../utils/autoCropDocument';
+import { autoCropDocument, prewarmAutoCrop, isAutoCropReady } from '../../../utils/autoCropDocument';
 
 const PASSPORT_ASPECT_RATIO = 1.42;
 
@@ -40,6 +40,10 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   const [pendingPassportFile, setPendingPassportFile] = useState<File | null>(null);
   const [convertingPdf, setConvertingPdf] = useState(false);
   const [autoCropping, setAutoCropping] = useState(false);
+
+  // Background-load OpenCV/jscanify so it's ready by the time the user picks
+  // a file. No await — fire and forget.
+  useEffect(() => { prewarmAutoCrop(); }, []);
 
   // Restore passport preview from File object or URL on mount
   useEffect(() => {
@@ -126,15 +130,16 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       return;
     }
 
-    setAutoCropping(true);
-    try {
-      const cropped = await autoCropDocument(imageFile, { aspectWidth: 1.42, aspectHeight: 1 });
-      if (cropped) {
-        commitPassportFile(cropped);
-        return;
+    if (isAutoCropReady()) {
+      setAutoCropping(true);
+      try {
+        const cropped = await autoCropDocument(imageFile, { aspectWidth: 1.42, aspectHeight: 1, timeoutMs: 3000 });
+        if (cropped) { commitPassportFile(cropped); return; }
+      } finally {
+        setAutoCropping(false);
       }
-    } finally {
-      setAutoCropping(false);
+    } else {
+      prewarmAutoCrop();
     }
     setPendingPassportFile(imageFile);
   };

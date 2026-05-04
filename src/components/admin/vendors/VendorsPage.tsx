@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { formatNumber } from '../../../lib/formatters';
 import { COUNTRIES } from '../../../lib/shared-data';
 import DocumentCropper from '../../shared/DocumentCropper';
-import { autoCropDocument } from '../../../utils/autoCropDocument';
+import { autoCropDocument, prewarmAutoCrop, isAutoCropReady } from '../../../utils/autoCropDocument';
 
 const ID_ASPECT_RATIO = 1.586;
 
@@ -600,6 +600,9 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   useEffect(() => {
     supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data }) => setAllFields(data || []));
     supabase.from('cities').select('*').eq('is_active', true).order('name').then(({ data }) => setCities(data || []));
+    // Background-load OpenCV/jscanify so the auto-cropper is ready when the
+    // admin drops an ID image.
+    prewarmAutoCrop();
   }, []);
 
   const serviceOptions = React.useMemo(() => {
@@ -685,15 +688,16 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   const handleFileSelect = async (file: File, type: 'profile' | 'id') => {
     if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5MB'); return; }
     if (type === 'id') {
-      setAutoCropping(true);
-      try {
-        const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1 });
-        if (cropped) {
-          commitIdFile(cropped);
-          return;
+      if (isAutoCropReady()) {
+        setAutoCropping(true);
+        try {
+          const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1, timeoutMs: 3000 });
+          if (cropped) { commitIdFile(cropped); return; }
+        } finally {
+          setAutoCropping(false);
         }
-      } finally {
-        setAutoCropping(false);
+      } else {
+        prewarmAutoCrop();
       }
       setPendingIdFile(file);
       return;

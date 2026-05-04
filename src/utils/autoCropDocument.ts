@@ -1,5 +1,18 @@
 let runtimeReady: Promise<void> | null = null;
 let scanner: any = null;
+let scannerLoading = false;
+
+/** Sync check: is the scanner fully initialised in this tab right now? */
+export function isAutoCropReady(): boolean {
+  return scanner !== null;
+}
+
+/** Kick off OpenCV+jscanify load in the background. Safe to call repeatedly. */
+export function prewarmAutoCrop(): void {
+  if (scanner || scannerLoading) return;
+  scannerLoading = true;
+  ensureScanner().finally(() => { scannerLoading = false; });
+}
 
 async function ensureScanner(): Promise<any | null> {
   if (scanner) return scanner;
@@ -43,12 +56,13 @@ export interface AutoCropOpts {
   aspectHeight: number;
   longEdge?: number;
   quality?: number;
+  timeoutMs?: number;
 }
 
-// Hard cap so the spinner never hangs on a slow phone CPU or stalled WASM init.
-// First-time WASM download + parse on a phone over cellular can take a while —
-// give it generous headroom but never indefinite.
-const TOTAL_TIMEOUT_MS = 12000;
+// Defensive cap. We only call autoCropDocument when isAutoCropReady() is true,
+// so we should never hit this — it's just here so a stalled GPU / GC pause
+// can't freeze the spinner.
+const DEFAULT_TIMEOUT_MS = 3000;
 // Source images larger than this on the long edge get downscaled before being
 // fed to OpenCV. A 4000×3000 phone photo through findContours on a phone CPU
 // takes 5-10s; downscaled to 1400 it's well under a second.
@@ -63,7 +77,11 @@ export async function autoCropDocument(file: File, opts: AutoCropOpts): Promise<
   const targetW = longEdge;
   const targetH = Math.max(1, Math.round(longEdge * (opts.aspectHeight / opts.aspectWidth)));
 
-  return await withTimeout(runAutoCrop(file, { targetW, targetH, targetAspect, quality }), TOTAL_TIMEOUT_MS, 'autoCrop');
+  return await withTimeout(
+    runAutoCrop(file, { targetW, targetH, targetAspect, quality }),
+    opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    'autoCrop',
+  );
 }
 
 async function runAutoCrop(file: File, params: {

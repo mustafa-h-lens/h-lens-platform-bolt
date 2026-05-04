@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 import DocumentCropper from '../../shared/DocumentCropper';
-import { autoCropDocument } from '../../../utils/autoCropDocument';
+import { autoCropDocument, prewarmAutoCrop, isAutoCropReady } from '../../../utils/autoCropDocument';
 
 const ID_ASPECT_RATIO = 1.586;
 
@@ -22,6 +22,10 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
   const [autoCropping, setAutoCropping] = useState(false);
+
+  // Background-load OpenCV/jscanify so it's ready by the time the user picks
+  // a file. No await — fire and forget.
+  useEffect(() => { prewarmAutoCrop(); }, []);
 
   // Restore previews from File objects or URLs when component mounts
   useEffect(() => {
@@ -52,15 +56,19 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const handleFile = async (file: File, type: 'id' | 'profile') => {
     if (!file.type.startsWith('image/')) return;
     if (type === 'id') {
-      setAutoCropping(true);
-      try {
-        const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1 });
-        if (cropped) {
-          commitIdFile(cropped);
-          return;
+      // Auto-crop only if the OpenCV scanner is already warm in this tab.
+      // Cold-load can take 10-30s on cellular — never block the user for that.
+      if (isAutoCropReady()) {
+        setAutoCropping(true);
+        try {
+          const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1, timeoutMs: 3000 });
+          if (cropped) { commitIdFile(cropped); return; }
+        } finally {
+          setAutoCropping(false);
         }
-      } finally {
-        setAutoCropping(false);
+      } else {
+        // Trigger background load so the *next* upload in this session is fast.
+        prewarmAutoCrop();
       }
       setPendingIdFile(file);
       return;
