@@ -49,6 +49,11 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!isMobile() || refreshing) return;
+    // Bail when any modal/drawer marks the document as locked (e.g. the
+    // mobile vendor-portal drawer). Otherwise the wrapper's translateY moves
+    // the page underneath while the position:fixed drawer stays put,
+    // creating the visual mismatch the user reported.
+    if (document.body.dataset.ptrDisabled === 'true') return;
     if (!isAtTopOfScrollChain(e.target)) return;
     startY.current = e.touches[0].clientY;
     pulling.current = true;

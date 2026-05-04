@@ -119,54 +119,35 @@ export const VendorPortal = () => {
     }
   }, [isRevisionMode, vendor?.id]);
 
-  // Lock the page (and iOS pull-to-refresh) while the mobile drawer is open.
-  // Pin BOTH html and body, attach a non-passive native touchmove blocker that
-  // only allows scroll inside the drawer's own scrollable region. React's
-  // onTouchMove uses passive listeners, so preventDefault there is a no-op.
+  // While the mobile drawer is open: disable our custom PullToRefresh
+  // (otherwise its translateY pulls the page out from under the fixed drawer)
+  // and pin body so iOS-native rubber-band can't shift the layout viewport.
   useEffect(() => {
     if (!drawerOpen) return;
-    const html = document.documentElement;
     const body = document.body;
     const scrollY = window.scrollY;
-    const prevHtml = { overflow: html.style.overflow, overscroll: html.style.overscrollBehavior };
-    const prevBody = {
-      position: body.style.position, top: body.style.top, width: body.style.width,
-      overflow: body.style.overflow, overscroll: body.style.overscrollBehavior,
-      touchAction: body.style.touchAction,
+    const prev = {
+      ptrDisabled: body.dataset.ptrDisabled,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+      overscroll: body.style.overscrollBehavior,
     };
-    html.style.overflow = 'hidden';
-    html.style.overscrollBehavior = 'none';
+    body.dataset.ptrDisabled = 'true';
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
-    body.style.touchAction = 'none';
-
-    // Allow scroll only inside elements marked as the drawer's scroll region.
-    const allow = (target: EventTarget | null): boolean => {
-      let el = target as HTMLElement | null;
-      while (el) {
-        if (el.dataset && el.dataset.drawerScroll === 'true') return true;
-        el = el.parentElement;
-      }
-      return false;
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!allow(e.target)) e.preventDefault();
-    };
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-
     return () => {
-      document.removeEventListener('touchmove', onTouchMove);
-      html.style.overflow = prevHtml.overflow;
-      html.style.overscrollBehavior = prevHtml.overscroll;
-      body.style.position = prevBody.position;
-      body.style.top = prevBody.top;
-      body.style.width = prevBody.width;
-      body.style.overflow = prevBody.overflow;
-      body.style.overscrollBehavior = prevBody.overscroll;
-      body.style.touchAction = prevBody.touchAction;
+      if (prev.ptrDisabled === undefined) delete body.dataset.ptrDisabled;
+      else body.dataset.ptrDisabled = prev.ptrDisabled;
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      body.style.overscrollBehavior = prev.overscroll;
       window.scrollTo(0, scrollY);
     };
   }, [drawerOpen]);
