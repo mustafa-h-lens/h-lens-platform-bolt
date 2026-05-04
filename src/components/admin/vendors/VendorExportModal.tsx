@@ -988,7 +988,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     const header = document.createElement('div');
     header.style.cssText = `display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid #1e3a5f;`;
     const titleDiv = document.createElement('div');
-    titleDiv.innerHTML = `<div style="font-size:28px;font-weight:700;color:#1e293b;">ملف المورد</div><div style="font-size:12px;color:#94a3b8;margin-top:4px;">تاريخ التصدير: ${new Date().toLocaleDateString('en-US')}</div>`;
+    titleDiv.innerHTML = `<div style="font-size:28px;font-weight:700;color:#1e293b;">فريق هاف لينس</div><div style="font-size:12px;color:#94a3b8;margin-top:4px;">تاريخ التصدير: ${new Date().toLocaleDateString('en-US')}</div>`;
     header.appendChild(titleDiv);
     if (logoBase64) {
       const logoImg = document.createElement('img');
@@ -1048,8 +1048,8 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       docsSection.appendChild(docsTitle);
 
       const docsGrid = document.createElement('div');
-      const docCols = Math.min(activeDocKeys.length, 2);
-      docsGrid.style.cssText = `display:grid;grid-template-columns:repeat(${docCols},1fr);gap:14px;`;
+      const docCols = activeDocKeys.length === 1 ? 1 : activeDocKeys.length <= 3 ? activeDocKeys.length : 2;
+      docsGrid.style.cssText = `display:grid;grid-template-columns:repeat(${docCols},1fr);gap:14px;${activeDocKeys.length === 1 ? 'max-width:400px;' : ''}`;
 
       const docLabels: Record<string, string> = {
         id_image: 'الهوية الوطنية',
@@ -1077,13 +1077,13 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
           if (b64) {
             const img = document.createElement('img');
             img.src = b64;
-            img.style.cssText = `width:100%;height:180px;object-fit:contain;border-radius:6px;`;
+            img.style.cssText = `max-width:100%;max-height:200px;object-fit:contain;border-radius:6px;display:block;margin:0 auto;`;
             card.appendChild(img);
           } else {
-            card.innerHTML += `<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+            card.innerHTML += `<div style="height:120px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
           }
         } else {
-          card.innerHTML += `<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
+          card.innerHTML += `<div style="height:120px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:13px;">غير متوفر</div>`;
         }
         docsGrid.appendChild(card);
       }
@@ -1103,21 +1103,21 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
         if (selectedFields.equipment_images) {
           const eqGrid = document.createElement('div');
-          eqGrid.style.cssText = `display:grid;grid-template-columns:repeat(4,1fr);gap:10px;`;
+          eqGrid.style.cssText = `display:grid;grid-template-columns:repeat(4,1fr);gap:8px;`;
           for (const eq of equipment) {
             const eqCard = document.createElement('div');
-            eqCard.style.cssText = `text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px;`;
+            eqCard.style.cssText = `text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 6px;`;
             if (eq.image) {
               const b64 = await convertImageToBase64(eq.image);
               if (b64) {
                 const img = document.createElement('img');
                 img.src = b64;
-                img.style.cssText = `width:100%;height:70px;object-fit:contain;border-radius:4px;margin-bottom:4px;`;
+                img.style.cssText = `width:80px;height:80px;object-fit:contain;border-radius:4px;margin:0 auto 6px;display:block;`;
                 eqCard.appendChild(img);
               }
             }
             const name = document.createElement('div');
-            name.style.cssText = `font-size:10px;color:#475569;line-height:1.3;overflow:hidden;`;
+            name.style.cssText = `font-size:9px;color:#475569;line-height:1.4;word-break:break-word;`;
             name.textContent = eq.name;
             eqCard.appendChild(name);
             eqGrid.appendChild(eqCard);
