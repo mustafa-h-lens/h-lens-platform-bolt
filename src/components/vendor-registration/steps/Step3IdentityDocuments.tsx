@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { VendorFormData } from '../VendorRegistrationForm';
 import DocumentCropper from '../../shared/DocumentCropper';
+import { autoCropDocument } from '../../../utils/autoCropDocument';
 
 const ID_ASPECT_RATIO = 1.586;
 
@@ -20,6 +21,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
+  const [autoCropping, setAutoCropping] = useState(false);
 
   // Restore previews from File objects or URLs when component mounts
   useEffect(() => {
@@ -47,9 +49,19 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const idInputRef = useRef<HTMLInputElement>(null);
   const profileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (file: File, type: 'id' | 'profile') => {
+  const handleFile = async (file: File, type: 'id' | 'profile') => {
     if (!file.type.startsWith('image/')) return;
     if (type === 'id') {
+      setAutoCropping(true);
+      try {
+        const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1 });
+        if (cropped) {
+          commitIdFile(cropped);
+          return;
+        }
+      } finally {
+        setAutoCropping(false);
+      }
       setPendingIdFile(file);
       return;
     }
@@ -206,6 +218,19 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
         onSkip={commitIdFile}
         onCancel={() => setPendingIdFile(null)}
       />
+
+      {autoCropping && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9998,
+          background: 'rgba(2,6,23,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#e2e8f0', fontFamily: 'Tajawal, sans-serif', fontSize: 14, gap: 10,
+        }}>
+          <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'spin 0.8s linear infinite' }} />
+          جاري الاقتطاع التلقائي…
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
     </>
   );
 };

@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom';
 import { formatNumber } from '../../../lib/formatters';
 import { COUNTRIES } from '../../../lib/shared-data';
 import DocumentCropper from '../../shared/DocumentCropper';
+import { autoCropDocument } from '../../../utils/autoCropDocument';
 
 const ID_ASPECT_RATIO = 1.586;
 
@@ -574,6 +575,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   const [idFile, setIdFile] = useState<File | null>(null);
   const [idPreview, setIdPreview] = useState('');
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
+  const [autoCropping, setAutoCropping] = useState(false);
   const [smartText, setSmartText] = useState('');
   const [showSmartParse, setShowSmartParse] = useState(false);
   const [formData, setFormData] = useState({
@@ -666,9 +668,19 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     showSuccess(`تم استخراج ${Object.keys(updates).length} حقل تلقائياً`);
   };
 
-  const handleFileSelect = (file: File, type: 'profile' | 'id') => {
+  const handleFileSelect = async (file: File, type: 'profile' | 'id') => {
     if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5MB'); return; }
     if (type === 'id') {
+      setAutoCropping(true);
+      try {
+        const cropped = await autoCropDocument(file, { aspectWidth: 1.586, aspectHeight: 1 });
+        if (cropped) {
+          commitIdFile(cropped);
+          return;
+        }
+      } finally {
+        setAutoCropping(false);
+      }
       setPendingIdFile(file);
       return;
     }
@@ -881,6 +893,18 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
         onSkip={commitIdFile}
         onCancel={() => setPendingIdFile(null)}
       />
+      {autoCropping && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(2,6,23,0.7)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#e2e8f0', fontFamily: 'Tajawal, sans-serif', fontSize: 14, gap: 10,
+        }}>
+          <span style={{ display: 'inline-block', width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.25)', borderTopColor: '#fff', animation: 'ac-spin 0.8s linear infinite' }} />
+          جاري الاقتطاع التلقائي…
+          <style>{`@keyframes ac-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      )}
     </div>,
     document.body
   );
