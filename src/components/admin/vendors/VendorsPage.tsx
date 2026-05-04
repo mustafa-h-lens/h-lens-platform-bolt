@@ -246,13 +246,27 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   };
 
   const hasActiveFilters = filters.nationality.length > 0 || filters.primary_city.length > 0 || filters.primary_field.length > 0 || filters.status.length > 0;
-  const uniqueNationalities = Array.from(new Set(vendors.filter(v => v.nationality).map(v => v.nationality!))).sort();
-  const uniqueCities = (() => {
-    const cities = Array.from(new Set(vendors.filter(v => v.primary_city).map(v => v.primary_city!)));
-    const priority = ['الرياض', 'جدة', 'الدمام'];
-    return [...priority.filter(c => cities.includes(c)), ...cities.filter(c => !priority.includes(c)).sort()];
-  })();
-  const uniqueFields = Array.from(new Set(vendors.filter(v => v.primary_field).map(v => v.primary_field!))).sort();
+  const [allFilterOptions, setAllFilterOptions] = useState<{ nationalities: string[]; cities: string[]; fields: string[] }>({ nationalities: [], cities: [], fields: [] });
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('vendors')
+        .select('nationality, primary_city, primary_field')
+        .in('status', ['active', 'inactive', 'blocked']);
+      if (!data) return;
+      const nationalities = Array.from(new Set(data.filter(v => v.nationality).map(v => v.nationality!))).sort();
+      const allCities = Array.from(new Set(data.filter(v => v.primary_city).map(v => v.primary_city!)));
+      const priority = ['الرياض', 'جدة', 'الدمام'];
+      const cities = [...priority.filter(c => allCities.includes(c)), ...allCities.filter(c => !priority.includes(c)).sort()];
+      const fields = Array.from(new Set(data.filter(v => v.primary_field).map(v => v.primary_field!))).sort();
+      setAllFilterOptions({ nationalities, cities, fields });
+    })();
+  }, []);
+
+  const uniqueNationalities = allFilterOptions.nationalities;
+  const uniqueCities = allFilterOptions.cities;
+  const uniqueFields = allFilterOptions.fields;
   const [vendorStats, setVendorStats] = useState({ total: 0, active: 0, pending: 0, inactive: 0 });
   const totalPages = Math.ceil(totalCount / pageSize);
 
