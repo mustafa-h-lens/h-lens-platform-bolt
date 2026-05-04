@@ -7,11 +7,31 @@ export function isAutoCropReady(): boolean {
   return scanner !== null;
 }
 
-/** Kick off OpenCV+jscanify load in the background. Safe to call repeatedly. */
+/** Kick off OpenCV+jscanify load in the background.
+ *
+ * IMPORTANT: the OpenCV WASM module initialization does heavy synchronous JIT
+ * work on the main thread when `import()` resolves and again when the runtime
+ * is being warmed. Calling this directly from a component's `useEffect` froze
+ * the page for several seconds while users were trying to fill fields.
+ *
+ * We defer the load until the browser is genuinely idle (requestIdleCallback)
+ * with a setTimeout fallback for browsers that don't have it. The user has
+ * plenty of time to fill out the document step before they actually upload,
+ * and on the off-chance they upload before idle fires, autoCropDocument's
+ * cold-path fallback opens the manual cropper instantly.
+ */
 export function prewarmAutoCrop(): void {
   if (scanner || scannerLoading) return;
   scannerLoading = true;
-  ensureScanner().finally(() => { scannerLoading = false; });
+  const idle: any = (window as any).requestIdleCallback;
+  const start = () => {
+    ensureScanner().finally(() => { scannerLoading = false; });
+  };
+  if (typeof idle === 'function') {
+    idle(start, { timeout: 4000 });
+  } else {
+    setTimeout(start, 1500);
+  }
 }
 
 async function ensureScanner(): Promise<any | null> {
