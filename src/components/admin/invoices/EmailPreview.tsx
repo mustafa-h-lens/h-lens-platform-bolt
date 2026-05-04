@@ -284,7 +284,7 @@ const EmailPreview: React.FC = () => {
                 color: '#2563eb',
                 textDecoration: 'none',
                 fontWeight: 500
-              }}>سياسة الخصوصية</a>
+              }}>سياسة السرّية</a>
               <a href="#" onClick={(e) => e.preventDefault()} style={{
                 fontSize: '13px',
                 color: '#2563eb',

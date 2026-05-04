@@ -651,7 +651,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <a onClick={() => onNavigate('/terms')} style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}>الشروط والأحكام</a>
-          <a onClick={() => onNavigate('/privacy')} style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}>سياسة الخصوصية</a>
+          <a onClick={() => onNavigate('/privacy')} style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', textDecoration: 'none' }}>سياسة السرّية</a>
         </div>
       </footer>
     </div>

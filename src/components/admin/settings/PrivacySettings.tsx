@@ -67,14 +67,14 @@ export const PrivacySettings = () => {
         } catch {
           setContent({
             lastUpdated: data.updated_at || '',
-            sections: [{ id: 'legacy', icon: '🔒', title: 'سياسة الخصوصية', body: data.content_ar }]
+            sections: [{ id: 'legacy', icon: '🔒', title: 'سياسة السرّية', body: data.content_ar }]
           });
         }
         setCurrentVersion(parseInt(data.version) || 1);
       }
     } catch (error) {
       console.error('Error loading privacy:', error);
-      showNotification('حدث خطأ أثناء تحميل سياسة الخصوصية', 'error');
+      showNotification('حدث خطأ أثناء تحميل سياسة السرّية', 'error');
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export const PrivacySettings = () => {
     } catch {
       setContent({
         lastUpdated: record.updated_at || '',
-        sections: [{ id: 'legacy', icon: '\u{1F512}', title: 'سياسة الخصوصية', body: record.content_ar }]
+        sections: [{ id: 'legacy', icon: '\u{1F512}', title: 'سياسة السرّية', body: record.content_ar }]
       });
       showNotification(`تم تحميل محتوى الإصدار ${record.version}`, 'success');
     }
@@ -139,7 +139,7 @@ export const PrivacySettings = () => {
         .from('terms_and_privacy_settings')
         .insert({
           type: 'privacy',
-          title_ar: 'سياسة الخصوصية',
+          title_ar: 'سياسة السرّية',
           content_ar: JSON.stringify(updatedContent),
           version: String(newVersion),
           is_active: true,
@@ -149,7 +149,7 @@ export const PrivacySettings = () => {
       if (error) throw error;
 
       setCurrentVersion(newVersion);
-      showNotification(`تم حفظ سياسة الخصوصية بنجاح! الإصدار: ${newVersion}`, 'success');
+      showNotification(`تم حفظ سياسة السرّية بنجاح! الإصدار: ${newVersion}`, 'success');
       loadVersionHistory();
     } catch (error) {
       console.error('Error saving privacy:', error);
@@ -218,7 +218,7 @@ export const PrivacySettings = () => {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة سياسة الخصوصية</h2>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">إدارة سياسة السرّية</h2>
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
             الإصدار الحالي: {currentVersion} | سيتم إنشاء إصدار {currentVersion + 1} عند الحفظ

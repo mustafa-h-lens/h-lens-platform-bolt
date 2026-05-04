@@ -60,7 +60,7 @@ const tabGroups: TabGroup[] = [
     color: '#7C3AED',
     tabs: [
       { id: 'terms', label: 'الشروط والأحكام', icon: FileText, component: TermsSettings },
-      { id: 'privacy', label: 'سياسة الخصوصية', icon: Shield, component: PrivacySettings }
+      { id: 'privacy', label: 'سياسة السرّية', icon: Shield, component: PrivacySettings }
     ]
   },
   {

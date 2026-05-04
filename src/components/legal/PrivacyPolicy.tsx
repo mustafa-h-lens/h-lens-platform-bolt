@@ -16,6 +16,64 @@ interface PrivacyContent {
 
 const LOGO = "/assets/logo-white.png";
 
+const DEFAULT_CONFIDENTIALITY_CONTENT: PrivacyContent = {
+  lastUpdated: '4 مايو 2026',
+  sections: [
+    {
+      id: 'intro',
+      icon: '🔐',
+      title: 'مقدمة',
+      body: 'اتفاقية عدم إفصاح وسرّية المعلومات تنظّم العلاقة بين Half Lens والطرف المتعاون أثناء العمل والتعاون. الهدف: حماية كل معلومة سرّية يتم الاطلاع عليها أو تبادلها بين الطرفين.'
+    },
+    {
+      id: 'definitions',
+      icon: '📖',
+      title: 'أولاً: التعريفات',
+      body: 'يُقصد بالمعلومات السرّية كل ما يخص Half Lens من بيانات أو مواد، سواء كانت مرئية أو سمعية أو مكتوبة أو رقمية، وتشمل على سبيل المثال لا الحصر:',
+      items: [
+        { title: 'المواد البصرية', desc: 'مقاطع الفيديو، الصور، التصاميم، الرسوم، العروض التقديمية، والهويات السمعية والبصرية.' },
+        { title: 'التسجيلات والاجتماعات', desc: 'التسجيلات الصوتية، المكالمات، الاجتماعات، والمقابلات.' },
+        { title: 'المحتوى الإبداعي والإعلامي', desc: 'أي مواد إعلامية أو إعلانية أو إبداعية يتم الاطلاع عليها أو سماعها أثناء العمل أو التعاون.' }
+      ]
+    },
+    {
+      id: 'confidentiality',
+      icon: '🤐',
+      title: 'ثانياً: السرّية',
+      body: 'يلتزم الطرف المتعاون بالمحافظة التامة على سرّية جميع المعلومات المرئية والسمعية، وعدم إفشائها أو مشاركتها أو نشرها أو استخدامها بأي شكل، سواء بشكل مباشر أو غير مباشر، إلا بموافقة خطية مسبقة من Half Lens.'
+    },
+    {
+      id: 'use',
+      icon: '🎯',
+      title: 'ثالثاً: استخدام المعلومات',
+      body: 'تُستخدم المعلومات حصراً لغرض العمل والتعاون المتفق عليه بين الطرفين، ويُمنع منعاً تاماً استخدامها لأي غرض شخصي أو تجاري أو إعلامي خارج هذا النطاق.'
+    },
+    {
+      id: 'restrictions',
+      icon: '⛔',
+      title: 'رابعاً: الحظر',
+      body: 'يُحظر على الطرف المتعاون ما يلي:',
+      items: [
+        { title: 'النسخ وإعادة الإنتاج', desc: 'نسخ أو تسجيل أو إعادة إنتاج أي مواد مرئية أو مسموعة.' },
+        { title: 'النشر العلني', desc: 'نشر أو مشاركة المحتوى عبر وسائل التواصل الاجتماعي أو أي منصات أخرى.' },
+        { title: 'تمكين طرف ثالث', desc: 'تمكين أي طرف ثالث من الاطلاع على المحتوى أو الاستماع إليه.' }
+      ]
+    },
+    {
+      id: 'breach',
+      icon: '⚖️',
+      title: 'خامساً: الإخلال بالاتفاقية',
+      body: 'في حال الإخلال بأي بند من بنود هذه السياسة، يحق لـ Half Lens المطالبة بالتعويض عن كافة الأضرار المادية والمعنوية، مع الاحتفاظ بحقها الكامل في اتخاذ الإجراءات النظامية وفق أنظمة المملكة العربية السعودية.'
+    },
+    {
+      id: 'general',
+      icon: '🇸🇦',
+      title: 'سادساً: أحكام عامة',
+      body: 'تخضع هذه السياسة وتُفسَّر وفق الأنظمة المعمول بها داخل المملكة العربية السعودية، وهي ملزمة للطرفين. أي تعديل لا يكون نافذاً إلا بموافقة خطية من الطرفين.'
+    }
+  ]
+};
+
 export const PrivacyPolicy: React.FC = () => {
   const [content, setContent] = useState<PrivacyContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,31 +115,11 @@ export const PrivacyPolicy: React.FC = () => {
       if (data) {
         setContent(data.content as PrivacyContent);
       } else {
-        setContent({
-          lastUpdated: '28 فبراير 2026',
-          sections: [
-            {
-              id: 'intro',
-              icon: '🛡️',
-              title: 'مقدمة',
-              body: `تلتزم منصة Half Lens بحماية خصوصيتك وصون بياناتك الشخصية. تُوضّح هذه السياسة كيفية جمع معلوماتك واستخدامها وحمايتها عند استخدامك لخدماتنا.`
-            }
-          ]
-        });
+        setContent(DEFAULT_CONFIDENTIALITY_CONTENT);
       }
     } catch (error) {
       console.error('Error loading privacy:', error);
-      setContent({
-        lastUpdated: '28 فبراير 2026',
-        sections: [
-          {
-            id: 'intro',
-            icon: '🛡️',
-            title: 'مقدمة',
-            body: `تلتزم منصة Half Lens بحماية خصوصيتك وصون بياناتك الشخصية.`
-          }
-        ]
-      });
+      setContent(DEFAULT_CONFIDENTIALITY_CONTENT);
     } finally {
       setLoading(false);
     }
@@ -211,11 +249,11 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
         <div style={{position:"relative",zIndex:1}}>
           <div className="hero-badge" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"5px 14px",borderRadius:20,background:"rgba(6,182,212,0.1)",border:"1px solid rgba(6,182,212,0.2)",marginBottom:16}}>
-            <span style={{fontSize:".95rem"}}>🛡️</span>
-            <span style={{fontSize:".75rem",fontWeight:600,color:"#67e8f9",letterSpacing:".06em"}}>PRIVACY POLICY</span>
+            <span style={{fontSize:".95rem"}}>🔐</span>
+            <span style={{fontSize:".75rem",fontWeight:600,color:"#67e8f9",letterSpacing:".06em"}}>CONFIDENTIALITY</span>
           </div>
-          <h1 style={{fontWeight:900,color:"white",marginBottom:10,lineHeight:1.2}}>سياسة الخصوصية</h1>
-          <p className="hero-sub" style={{color:"rgba(255,255,255,0.4)",margin:"0 auto 14px",lineHeight:1.7}}>نلتزم بشفافية كاملة حول كيفية تعاملنا مع بياناتك الشخصية وحمايتها</p>
+          <h1 style={{fontWeight:900,color:"white",marginBottom:10,lineHeight:1.2}}>سياسة السرّية</h1>
+          <p className="hero-sub" style={{color:"rgba(255,255,255,0.4)",margin:"0 auto 14px",lineHeight:1.7}}>اتفاقية عدم الإفصاح وسرّية المعلومات بين Half Lens والطرف المتعاون</p>
           <div className="hero-meta" style={{display:"inline-flex",alignItems:"center",gap:6,color:"rgba(255,255,255,0.3)"}}>
             <span>📅</span>
             <span>آخر تحديث: {content.lastUpdated}</span>
