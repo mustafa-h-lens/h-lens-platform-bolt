@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { VendorFormData, SelectedField } from '../VendorRegistrationForm';
+import { LegalAcceptanceModal } from '../LegalAcceptanceModal';
 
 interface Props {
   formData: VendorFormData;
@@ -9,19 +11,8 @@ interface Props {
 }
 
 export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepted, saveDraftNow }: Props) => {
-
-  const openLegal = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Persist current draft (step 7 + all filled data) before leaving this tab.
-    // Without this, the 2s debounced autosave may not have fired and a
-    // returning user could see an older step when the form re-mounts.
-    try { saveDraftNow?.(); } catch {}
-    // Force a new tab/window so the registration form stays mounted in the
-    // original tab. Even if the browser ignores this (popup blocker), the
-    // draft has already been persisted to Supabase.
-    window.open(href, '_blank', 'noopener,noreferrer');
-  };
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  void saveDraftNow;
 
   const vendorTypeLabel = formData.vendor_type === 'individual' ? 'فرد' : formData.vendor_type === 'company' ? 'شركة' : '—';
 
@@ -183,21 +174,75 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
           </div>
         )}
 
-        {/* Terms */}
-        <div
-          className={`terms-wrap ${termsAccepted ? 'checked' : ''}`}
-          onClick={() => setTermsAccepted(!termsAccepted)}
-        >
-          <div className="terms-checkbox" />
-          <div className="terms-text">
-            أوافق على{' '}
-            <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer" onClick={(e) => openLegal(e, '/terms-and-conditions')} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>الشروط والأحكام</a>
-            {' '}و{' '}
-            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" onClick={(e) => openLegal(e, '/privacy-policy')} style={{ color: 'var(--accent-lighter)', textDecoration: 'underline', fontWeight: 700 }}>سياسة الخصوصية</a>
-            {' '}الخاصة بمنصة Half Lens، وأقر بأن جميع البيانات المدخلة صحيحة ودقيقة.
+        {/* Terms — opens the forced-read modal. Direct toggling is no longer
+            possible; the user must scroll through the legal text first. */}
+        {termsAccepted ? (
+          <div
+            onClick={() => setLegalModalOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(16,185,129,0.10)',
+              border: '1px solid rgba(16,185,129,0.35)',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: '#10b981', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, fontWeight: 900, flexShrink: 0,
+            }}>✓</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#34d399' }}>
+                تم الموافقة على الشروط والأحكام وسياسة السرّية
+              </div>
+              <div style={{ fontSize: 11.5, color: 'rgba(110,231,183,0.75)', marginTop: 2 }}>
+                اضغط لإعادة القراءة
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setLegalModalOpen(true)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+              padding: '14px 16px', borderRadius: 12,
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px dashed rgba(59,130,246,0.5)',
+              color: 'var(--text-primary)',
+              cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right',
+            }}
+          >
+            <div style={{
+              width: 28, height: 28, borderRadius: '50%',
+              background: 'rgba(59,130,246,0.18)',
+              border: '1px solid rgba(59,130,246,0.35)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, flexShrink: 0,
+            }}>📜</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+                اقرأ ووافق على الشروط والأحكام وسياسة السرّية
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
+                مطلوب قبل إرسال الطلب — اقرأ النصوص حتى النهاية
+              </div>
+            </div>
+            <span style={{ fontSize: 16, color: 'var(--accent-lighter)' }}>←</span>
+          </button>
+        )}
       </div>
+
+      <LegalAcceptanceModal
+        open={legalModalOpen}
+        onAccept={() => {
+          setTermsAccepted(true);
+          setLegalModalOpen(false);
+        }}
+        onClose={() => setLegalModalOpen(false)}
+      />
     </>
   );
 };
