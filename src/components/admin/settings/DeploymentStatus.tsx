@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { GitCommit, RefreshCw, CheckCircle2, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { GitCommit, RefreshCw, CheckCircle2, AlertCircle, Clock, ExternalLink, Sparkles, Info } from 'lucide-react';
 
 const REPO = 'mustafa-h-lens/h-lens-platform-bolt';
 const BRANCH = 'main';
 const PER_PAGE = 12;
+const LAST_SEEN_KEY = 'hl-last-seen-build-sha';
 
 interface RemoteCommit {
   sha: string;
@@ -17,11 +18,37 @@ const BUILD_SHA = (typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : '').
 const BUILD_MSG = typeof __GIT_MSG__ !== 'undefined' ? __GIT_MSG__ : '';
 const BUILD_DATE = typeof __GIT_DATE__ !== 'undefined' ? __GIT_DATE__ : '';
 
+/** Map a SHA to a vivid HSL color. Same SHA -> same color, every push -> different color. */
+function colorForSha(sha: string): { fg: string; bg: string; ring: string; hue: number } {
+  let h = 0;
+  for (let i = 0; i < sha.length; i++) h = ((h << 5) - h + sha.charCodeAt(i)) | 0;
+  const hue = ((h % 360) + 360) % 360;
+  return {
+    fg: `hsl(${hue}, 78%, 62%)`,
+    bg: `hsl(${hue}, 70%, 14%)`,
+    ring: `hsl(${hue}, 80%, 55%)`,
+    hue,
+  };
+}
+
 export const DeploymentStatus = () => {
   const [commits, setCommits] = useState<RemoteCommit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+
+  const buildColor = useMemo(() => colorForSha(BUILD_SHA || 'unknown'), []);
+
+  // "New build since last visit?" — flips for one render after each successful deploy.
+  const previouslySeen = useMemo(() => {
+    try { return localStorage.getItem(LAST_SEEN_KEY) || ''; } catch { return ''; }
+  }, []);
+  const isNewSinceLastVisit = !!BUILD_SHA && !!previouslySeen && previouslySeen !== BUILD_SHA;
+  useEffect(() => {
+    if (BUILD_SHA && previouslySeen !== BUILD_SHA) {
+      try { localStorage.setItem(LAST_SEEN_KEY, BUILD_SHA); } catch { /* no-op */ }
+    }
+  }, [previouslySeen]);
 
   const load = async () => {
     setLoading(true);
@@ -59,9 +86,8 @@ export const DeploymentStatus = () => {
 
   const isUpToDate = deployedIndex === 0;
   const isStale = deployedIndex > 0;
-  const isUnknown = deployedIndex < 0;
 
-  const statusBadge = () => {
+  const status = (() => {
     if (loading && commits.length === 0) {
       return { label: 'جاري التحقق…', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.35)', Icon: Clock };
     }
@@ -72,57 +98,113 @@ export const DeploymentStatus = () => {
       return { label: `النشر متأخر بـ ${deployedIndex} كومت`, color: '#fbbf24', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.35)', Icon: AlertCircle };
     }
     return { label: 'بِنية غير معروفة', color: '#f87171', bg: 'rgba(239,68,68,0.12)', border: 'rgba(239,68,68,0.35)', Icon: AlertCircle };
-  };
-  const status = statusBadge();
+  })();
   const StatusIcon = status.Icon;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── HERO STATUS BAR ── */}
+      {/* ── BUILD-COLOR SIGNATURE BLOCK ──
+          Each push = a different color block. Open the page → if the color
+          changed since last time you looked, the new build is live. */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--bg-overlay), var(--bg-surface))',
+        position: 'relative',
+        background: buildColor.bg,
+        border: `2px solid ${buildColor.ring}`,
+        borderRadius: 'var(--radius-lg)',
+        padding: 22,
+        overflow: 'hidden',
+        boxShadow: `0 0 0 4px ${buildColor.ring}25, 0 12px 40px ${buildColor.ring}30`,
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `radial-gradient(circle at 30% 20%, ${buildColor.fg}40, transparent 60%)`,
+          pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+          <div style={{
+            width: 78, height: 78, borderRadius: 18,
+            background: buildColor.fg,
+            boxShadow: `0 6px 30px ${buildColor.ring}80, inset 0 0 24px rgba(255,255,255,0.18)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 900, fontSize: 24, fontFamily: 'monospace',
+            letterSpacing: '-0.02em',
+            flexShrink: 0,
+          }}>
+            #{(BUILD_SHA || '????').slice(0, 4)}
+          </div>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: buildColor.fg, letterSpacing: '0.12em', marginBottom: 4 }}>
+              BUILD SIGNATURE · بصمة الإصدار
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: '#fff', fontFamily: 'monospace', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+              {BUILD_SHA || '????????'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 6, lineHeight: 1.6 }}>
+              لكل نشر لون فريد. إذا تغير اللون منذ آخر زيارة فالنشر نجح ✓
+            </div>
+          </div>
+          {isNewSinceLastVisit && (
+            <div style={{
+              padding: '8px 14px', borderRadius: 999,
+              background: '#10b981', color: '#fff',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 12, fontWeight: 800,
+              boxShadow: '0 4px 16px rgba(16,185,129,0.5)',
+              animation: 'ds-pulse 1.5s ease-in-out 2',
+            }}>
+              <Sparkles size={14} /> نشر جديد منذ آخر زيارة
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── HOW IT WORKS HELPER ── */}
+      <div style={{
+        background: 'rgba(59,130,246,0.07)',
+        border: '1px solid rgba(59,130,246,0.22)',
+        borderRadius: 'var(--radius-md)',
+        padding: 12,
+        display: 'flex', gap: 10, alignItems: 'flex-start',
+      }}>
+        <Info size={16} style={{ color: 'var(--accent-lighter)', flexShrink: 0, marginTop: 2 }} />
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+          <strong style={{ color: 'var(--text-primary)' }}>كيف تعمل هذه الصفحة؟</strong>{' '}
+          المربع الملون أعلى الصفحة هو بصمة بناء التطبيق المُحمّل عندك حالياً ({BUILD_SHA?.slice(0, 7) || '????'}).
+          أسفل ذلك تجد آخر الكومتات على GitHub. الكومت المُحدد بشريط أخضر هو الكومت الذي تشاهده الآن في المتصفح.
+          الكومتات الموجودة <strong style={{ color: '#fbbf24' }}>فوقه</strong> دُفعت إلى GitHub لكن <strong>لم يتم نشرها بعد</strong> —
+          انتظر دقيقة أو دقيقتين واضغط "تحديث". إذا بقيت "غير منشور" لأكثر من 5 دقائق فعلى الأرجح أن Bolt لم يلتقط الدفعة.
+        </div>
+      </div>
+
+      {/* ── STATUS BAR ── */}
+      <div style={{
+        background: 'var(--bg-surface)',
         border: `1px solid ${status.border}`,
         borderRadius: 'var(--radius-lg)',
-        padding: 18,
-        display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap',
-        position: 'relative', overflow: 'hidden',
+        padding: 14,
+        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
       }}>
-        <div style={{ position: 'absolute', inset: 0, background: status.bg, opacity: 0.35, pointerEvents: 'none' }} />
         <div style={{
-          width: 52, height: 52, borderRadius: 14,
+          width: 38, height: 38, borderRadius: 11,
           background: status.bg, border: `1px solid ${status.border}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, position: 'relative', zIndex: 1,
+          flexShrink: 0,
         }}>
-          <StatusIcon size={24} style={{ color: status.color }} />
+          <StatusIcon size={18} style={{ color: status.color }} />
         </div>
-        <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-            <span style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>حالة النشر</span>
-            <span style={{
-              padding: '3px 10px', borderRadius: 999,
-              background: status.bg, border: `1px solid ${status.border}`,
-              color: status.color, fontSize: 11, fontWeight: 800,
-            }}>{status.label}</span>
-          </div>
-          <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent-lighter)' }}>{BUILD_SHA || '????'}</span>
-            <span style={{ color: 'var(--text-muted)' }}>·</span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 380 }} title={BUILD_MSG}>{BUILD_MSG || '—'}</span>
-            {BUILD_DATE && (
-              <>
-                <span style={{ color: 'var(--text-muted)' }}>·</span>
-                <span style={{ color: 'var(--text-muted)' }}>{relativeTime(BUILD_DATE)}</span>
-              </>
-            )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: status.color }}>{status.label}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }} title={BUILD_MSG}>
+            {BUILD_MSG ? truncate(BUILD_MSG, 80) : '—'}
+            {BUILD_DATE && ` · ${relativeTime(BUILD_DATE)}`}
           </div>
         </div>
         <button
           className="btn btn-ghost btn-sm"
           onClick={load}
           disabled={loading}
-          style={{ gap: 6, position: 'relative', zIndex: 1 }}
+          style={{ gap: 6 }}
           title="تحديث القائمة"
         >
           <RefreshCw size={13} className={loading ? 'ds-spin' : ''} />
@@ -168,6 +250,7 @@ export const DeploymentStatus = () => {
         {commits.map((c, i) => {
           const isDeployed = i === deployedIndex;
           const isAhead = deployedIndex > 0 && i < deployedIndex;
+          const c1 = colorForSha(c.sha);
           return (
             <div
               key={c.sha}
@@ -183,18 +266,20 @@ export const DeploymentStatus = () => {
                 position: 'relative',
               }}
             >
-              {/* Vertical timeline rail dot */}
+              {/* Color signature swatch — same color on the SHA, so the user can
+                  visually compare commit colors against the hero block. */}
               <div style={{
-                width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                background: c1.fg,
+                boxShadow: isDeployed ? `0 0 0 3px rgba(16,185,129,0.55)` : `0 0 0 1px rgba(255,255,255,0.06)`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: isDeployed ? 'rgba(16,185,129,0.18)' : isAhead ? 'rgba(245,158,11,0.15)' : 'rgba(148,163,184,0.08)',
-                border: `1px solid ${isDeployed ? 'rgba(16,185,129,0.5)' : isAhead ? 'rgba(245,158,11,0.4)' : 'rgba(148,163,184,0.18)'}`,
+                color: '#fff', fontWeight: 800, fontSize: 11, fontFamily: 'monospace',
               }}>
                 {isDeployed
-                  ? <CheckCircle2 size={14} color="#34d399" />
+                  ? <CheckCircle2 size={16} color="#fff" />
                   : isAhead
-                    ? <AlertCircle size={14} color="#fbbf24" />
-                    : <GitCommit size={13} color="#94a3b8" />}
+                    ? <AlertCircle size={15} color="#fff" />
+                    : <span>{c.sha.slice(0, 4)}</span>}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -207,14 +292,14 @@ export const DeploymentStatus = () => {
                       padding: '2px 8px', borderRadius: 999,
                       background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)',
                       color: '#34d399', fontSize: 10, fontWeight: 800,
-                    }}>قيد النشر</span>
+                    }}>قيد النشر — هذا ما تشاهده</span>
                   )}
                   {isAhead && (
                     <span style={{
                       padding: '2px 8px', borderRadius: 999,
                       background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.32)',
                       color: '#fbbf24', fontSize: 10, fontWeight: 800,
-                    }}>غير منشور</span>
+                    }}>غير منشور — في انتظار Bolt</span>
                   )}
                 </div>
                 <div style={{
@@ -250,11 +335,11 @@ export const DeploymentStatus = () => {
         })}
       </div>
 
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
-        إذا كان النشر متأخراً، انتظر دقيقة وحدّث الصفحة. GitHub API بدون مصادقة محدود بـ ٦٠ طلب/ساعة لكل IP.
-      </div>
-
-      <style>{`@keyframes ds-spin { to { transform: rotate(360deg); } } .ds-spin { animation: ds-spin 0.8s linear infinite; }`}</style>
+      <style>{`
+        @keyframes ds-spin { to { transform: rotate(360deg); } }
+        .ds-spin { animation: ds-spin 0.8s linear infinite; }
+        @keyframes ds-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      `}</style>
     </div>
   );
 };
@@ -272,6 +357,10 @@ function relativeTime(iso: string): string {
   const day = Math.round(hr / 24);
   if (day < 7) return `قبل ${day} يوم`;
   return d.toLocaleDateString('en-CA');
+}
+
+function truncate(s: string, n: number): string {
+  return s.length <= n ? s : s.slice(0, n - 1) + '…';
 }
 
 export default DeploymentStatus;
