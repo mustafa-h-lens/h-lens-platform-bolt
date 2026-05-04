@@ -246,27 +246,27 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   };
 
   const hasActiveFilters = filters.nationality.length > 0 || filters.primary_city.length > 0 || filters.primary_field.length > 0 || filters.status.length > 0;
-  const [allFilterOptions, setAllFilterOptions] = useState<{ nationalities: string[]; cities: string[]; fields: string[] }>({ nationalities: [], cities: [], fields: [] });
+  const [uniqueNationalities, setUniqueNationalities] = useState<string[]>([]);
+  const [uniqueCities, setUniqueCities] = useState<string[]>([]);
+  const [uniqueFields, setUniqueFields] = useState<string[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('vendors')
-        .select('nationality, primary_city, primary_field')
-        .in('status', ['active', 'inactive', 'blocked']);
-      if (!data) return;
-      const nationalities = Array.from(new Set(data.filter(v => v.nationality).map(v => v.nationality!))).sort();
-      const allCities = Array.from(new Set(data.filter(v => v.primary_city).map(v => v.primary_city!)));
-      const priority = ['الرياض', 'جدة', 'الدمام'];
-      const cities = [...priority.filter(c => allCities.includes(c)), ...allCities.filter(c => !priority.includes(c)).sort()];
-      const fields = Array.from(new Set(data.filter(v => v.primary_field).map(v => v.primary_field!))).sort();
-      setAllFilterOptions({ nationalities, cities, fields });
-    })();
-  }, []);
+  const fetchFilterOptions = async () => {
+    const [natRes, cityRes, fieldRes] = await Promise.all([
+      supabase.from('vendors').select('nationality').in('status', ['active', 'inactive', 'blocked']).not('nationality', 'is', null),
+      supabase.from('vendors').select('primary_city').in('status', ['active', 'inactive', 'blocked']).not('primary_city', 'is', null),
+      supabase.from('vendors').select('primary_field').in('status', ['active', 'inactive', 'blocked']).not('primary_field', 'is', null),
+    ]);
+    const nats = Array.from(new Set((natRes.data || []).map((v: any) => v.nationality))).sort() as string[];
+    const allCities = Array.from(new Set((cityRes.data || []).map((v: any) => v.primary_city))) as string[];
+    const priority = ['الرياض', 'جدة', 'الدمام'];
+    const cities = [...priority.filter(c => allCities.includes(c)), ...allCities.filter(c => !priority.includes(c)).sort()];
+    const fields = Array.from(new Set((fieldRes.data || []).map((v: any) => v.primary_field))).sort() as string[];
+    setUniqueNationalities(nats);
+    setUniqueCities(cities);
+    setUniqueFields(fields);
+  };
 
-  const uniqueNationalities = allFilterOptions.nationalities;
-  const uniqueCities = allFilterOptions.cities;
-  const uniqueFields = allFilterOptions.fields;
+  useEffect(() => { fetchFilterOptions(); }, []);
   const [vendorStats, setVendorStats] = useState({ total: 0, active: 0, pending: 0, inactive: 0 });
   const totalPages = Math.ceil(totalCount / pageSize);
 
