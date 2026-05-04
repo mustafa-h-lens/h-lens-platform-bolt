@@ -119,32 +119,54 @@ export const VendorPortal = () => {
     }
   }, [isRevisionMode, vendor?.id]);
 
-  // Lock the page (and the iOS pull-to-refresh gesture) while the mobile drawer is open.
-  // Without this, dragging on the dimmed backdrop pulls the underlying main scroll
-  // and Safari's rubber-band shifts the layout viewport down, leaving the drawer
-  // visually stranded.
+  // Lock the page (and iOS pull-to-refresh) while the mobile drawer is open.
+  // Pin BOTH html and body, attach a non-passive native touchmove blocker that
+  // only allows scroll inside the drawer's own scrollable region. React's
+  // onTouchMove uses passive listeners, so preventDefault there is a no-op.
   useEffect(() => {
     if (!drawerOpen) return;
+    const html = document.documentElement;
     const body = document.body;
     const scrollY = window.scrollY;
-    const prev = {
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overflow: body.style.overflow,
-      overscroll: body.style.overscrollBehavior,
+    const prevHtml = { overflow: html.style.overflow, overscroll: html.style.overscrollBehavior };
+    const prevBody = {
+      position: body.style.position, top: body.style.top, width: body.style.width,
+      overflow: body.style.overflow, overscroll: body.style.overscrollBehavior,
+      touchAction: body.style.touchAction,
     };
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.width = '100%';
     body.style.overflow = 'hidden';
-    body.style.overscrollBehavior = 'contain';
+    body.style.overscrollBehavior = 'none';
+    body.style.touchAction = 'none';
+
+    // Allow scroll only inside elements marked as the drawer's scroll region.
+    const allow = (target: EventTarget | null): boolean => {
+      let el = target as HTMLElement | null;
+      while (el) {
+        if (el.dataset && el.dataset.drawerScroll === 'true') return true;
+        el = el.parentElement;
+      }
+      return false;
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!allow(e.target)) e.preventDefault();
+    };
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+
     return () => {
-      body.style.position = prev.position;
-      body.style.top = prev.top;
-      body.style.width = prev.width;
-      body.style.overflow = prev.overflow;
-      body.style.overscrollBehavior = prev.overscroll;
+      document.removeEventListener('touchmove', onTouchMove);
+      html.style.overflow = prevHtml.overflow;
+      html.style.overscrollBehavior = prevHtml.overscroll;
+      body.style.position = prevBody.position;
+      body.style.top = prevBody.top;
+      body.style.width = prevBody.width;
+      body.style.overflow = prevBody.overflow;
+      body.style.overscrollBehavior = prevBody.overscroll;
+      body.style.touchAction = prevBody.touchAction;
       window.scrollTo(0, scrollY);
     };
   }, [drawerOpen]);
@@ -406,17 +428,22 @@ export const VendorPortal = () => {
           <div
             className="md:hidden"
             onClick={() => setDrawer(false)}
-            onTouchMove={(e) => e.preventDefault()}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 40, touchAction: 'none', overscrollBehavior: 'contain' }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 40, touchAction: 'none', overscrollBehavior: 'none' }}
           />
-          <aside className="md:hidden" style={{
-            position: 'fixed', top: 0, right: 0, width: 260, height: '100dvh', zIndex: 50,
-            display: 'flex', flexDirection: 'column',
-            background: isDarkMode ? 'rgba(4,10,24,0.98)' : 'linear-gradient(175deg, #1a3a6b 0%, #0e2247 100%)',
-            borderLeft: '1px solid rgba(255,255,255,0.06)',
-            animation: 'slideIn 0.25s ease',
-            overscrollBehavior: 'contain',
-          }}>
+          <aside
+            className="md:hidden"
+            data-drawer-scroll="true"
+            style={{
+              position: 'fixed', top: 0, right: 0, width: 260, height: '100dvh', zIndex: 50,
+              display: 'flex', flexDirection: 'column',
+              background: isDarkMode ? 'rgba(4,10,24,0.98)' : 'linear-gradient(175deg, #1a3a6b 0%, #0e2247 100%)',
+              borderLeft: '1px solid rgba(255,255,255,0.06)',
+              animation: 'slideIn 0.25s ease',
+              overscrollBehavior: 'contain',
+              overflowY: 'auto',
+              touchAction: 'pan-y',
+            }}
+          >
             <SidebarInner isMobile />
           </aside>
         </>
