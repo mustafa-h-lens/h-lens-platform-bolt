@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { detectDocumentBBox, BBox } from '../../utils/detectDocumentBBox';
@@ -113,7 +114,7 @@ export default function DocumentCropper({
 
   if (!open || !file) return null;
 
-  return (
+  return createPortal(
     <div style={overlayStyle} onClick={onCancel}>
       <div style={cardStyle} onClick={e => e.stopPropagation()} dir="rtl">
 
@@ -170,7 +171,8 @@ export default function DocumentCropper({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabaseClient';
 
 interface Section {
@@ -85,7 +86,7 @@ export const LegalAcceptanceModal = ({ open, onAccept, onClose }: Props) => {
     onAccept();
   };
 
-  return (
+  return createPortal(
     <div style={overlayStyle} onClick={onClose} dir="rtl">
       <div style={cardStyle} onClick={(e) => e.stopPropagation()}>
 
@@ -161,7 +162,8 @@ export const LegalAcceptanceModal = ({ open, onAccept, onClose }: Props) => {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
