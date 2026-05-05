@@ -16,14 +16,27 @@ export const usePullToRefresh = (callback: () => void) => {
   useEffect(() => onRefresh(callback), [callback, onRefresh]);
 };
 
-/** Pause/resume the global pull-to-refresh gesture (e.g. while a drawer or
- * full-screen modal is open). Returns a cleanup function. */
+/** Pause/resume the global pull-to-refresh gesture AND iOS Safari's native
+ * pull-to-refresh while active. Use on long forms / modals where pulling to
+ * scroll back to the top accidentally fires a refresh.
+ *
+ * Disables both:
+ *  - our app-level <PullToRefresh> wrapper (via the React context flag)
+ *  - the browser's native pull-to-refresh (via overscroll-behavior:none on
+ *    <html>, the only thing iOS Safari respects)
+ */
 export const useDisablePullToRefresh = (active: boolean) => {
   const { setDisabled } = useContext(PullToRefreshContext);
   useEffect(() => {
     if (!active) return;
     setDisabled(true);
-    return () => setDisabled(false);
+    const html = document.documentElement;
+    const prev = html.style.overscrollBehaviorY;
+    html.style.overscrollBehaviorY = 'none';
+    return () => {
+      setDisabled(false);
+      html.style.overscrollBehaviorY = prev;
+    };
   }, [active, setDisabled]);
 };
 
