@@ -94,6 +94,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
   const isSelectedSubset = initialVendors.length > 0 && initialVendors.length <= 20;
   const [selectedFields, setSelectedFields] = useState<ExportFields>(defaultFields);
   const [separatePages, setSeparatePages] = useState(false);
+  const [sortBy, setSortBy] = useState<'created_at' | 'full_name' | 'primary_city' | 'primary_field'>('created_at');
   const [equipmentData, setEquipmentData] = useState<Record<string, VendorEquipment[]>>({});
   const [travelDocs, setTravelDocs] = useState<Record<string, { passport_file?: string; visa_file?: string }>>({});
   const printRef = useRef<HTMLDivElement>(null);
@@ -628,6 +629,15 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       showError('جاري تحميل البيانات، يرجى الانتظار...');
       return;
     }
+
+    // Sort vendors before export
+    const sorted = [...vendors].sort((a, b) => {
+      if (sortBy === 'full_name') return (a.full_name || '').localeCompare(b.full_name || '', 'ar');
+      if (sortBy === 'primary_city') return (a.primary_city || '').localeCompare(b.primary_city || '', 'ar');
+      if (sortBy === 'primary_field') return (a.primary_field || '').localeCompare(b.primary_field || '', 'ar');
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+    setVendors(sorted);
 
     setLoading(true);
     savePreferences();
@@ -1267,6 +1277,33 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
                     <input type="checkbox" className="tbl-check" checked={selectedFields[key]} onChange={() => toggleField(key)} />
                     <span>{label}</span>
                   </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Sort Order */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>ترتيب الموردين</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                {([
+                  { id: 'created_at' as const, label: 'تاريخ الإضافة' },
+                  { id: 'full_name' as const, label: 'الاسم' },
+                  { id: 'primary_city' as const, label: 'المدينة' },
+                  { id: 'primary_field' as const, label: 'الخدمة' },
+                ]).map(opt => (
+                  <div
+                    key={opt.id}
+                    onClick={() => setSortBy(opt.id)}
+                    style={{
+                      padding: '10px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      textAlign: 'center', fontSize: 12, fontWeight: 600, transition: 'var(--transition-fast)',
+                      border: `2px solid ${sortBy === opt.id ? 'var(--accent)' : 'var(--border-soft)'}`,
+                      background: sortBy === opt.id ? 'var(--accent-glow)' : 'var(--bg-card)',
+                      color: sortBy === opt.id ? 'var(--accent-lighter)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    {opt.label}
+                  </div>
                 ))}
               </div>
             </div>
