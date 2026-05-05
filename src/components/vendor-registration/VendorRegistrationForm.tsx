@@ -4,6 +4,7 @@ import { Sun, Moon } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useDisablePullToRefresh } from '../shared/PullToRefresh';
 import '../../styles/half-lens-ds.css';
 import '../../styles/vendor-registration.css';
 
@@ -72,6 +73,11 @@ const STEPS = [
 ];
 
 export const VendorRegistrationForm = () => {
+  // Pull-to-refresh on a long form is hostile — pulling up to scroll back to
+  // the top fires a soft refresh that re-runs queries and feels broken. Off
+  // for the entire registration page.
+  useDisablePullToRefresh(true);
+
   const { showSuccess, showError } = useNotification();
   const { isDarkMode, toggleTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
