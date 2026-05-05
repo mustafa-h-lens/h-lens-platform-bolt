@@ -94,7 +94,6 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
   const isSelectedSubset = initialVendors.length > 0 && initialVendors.length <= 20;
   const [selectedFields, setSelectedFields] = useState<ExportFields>(defaultFields);
   const [separatePages, setSeparatePages] = useState(false);
-  const [sortBy, setSortBy] = useState<'created_at' | 'full_name' | 'primary_city' | 'primary_field'>('created_at');
   const [equipmentData, setEquipmentData] = useState<Record<string, VendorEquipment[]>>({});
   const [travelDocs, setTravelDocs] = useState<Record<string, { passport_file?: string; visa_file?: string }>>({});
   const printRef = useRef<HTMLDivElement>(null);
@@ -328,12 +327,36 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     URL.revokeObjectURL(url);
   };
 
+  const compressImage = (blob: Blob, maxSize = 200): Promise<{ buffer: ArrayBuffer; ext: 'jpeg' }> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => {
+          b!.arrayBuffer().then(buf => resolve({ buffer: buf, ext: 'jpeg' }));
+        }, 'image/jpeg', 0.8);
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(blob);
+    });
+  };
+
   const fetchAsBuffer = async (
     url: string,
+    compress = false,
   ): Promise<{ buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' } | null> => {
     try {
       const r = await fetch(url);
       if (!r.ok) return null;
+      if (compress) {
+        const blob = await r.blob();
+        return compressImage(blob);
+      }
       const ct = (r.headers.get('content-type') || '').toLowerCase();
       const ext: 'png' | 'jpeg' | 'gif' = ct.includes('png')
         ? 'png'
@@ -453,7 +476,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     const imageMap = new Map<string, { buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' }>();
     await Promise.all(
       Array.from(imageUrls).map(async url => {
-        const r = await fetchAsBuffer(url);
+        const r = await fetchAsBuffer(url, true);
         if (r) imageMap.set(url, r);
       }),
     );
@@ -630,15 +653,6 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       return;
     }
 
-    // Sort vendors before export
-    const sorted = [...vendors].sort((a, b) => {
-      if (sortBy === 'full_name') return (a.full_name || '').localeCompare(b.full_name || '', 'ar');
-      if (sortBy === 'primary_city') return (a.primary_city || '').localeCompare(b.primary_city || '', 'ar');
-      if (sortBy === 'primary_field') return (a.primary_field || '').localeCompare(b.primary_field || '', 'ar');
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-    setVendors(sorted);
-
     setLoading(true);
     savePreferences();
 
@@ -695,7 +709,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
           await new Promise(resolve => setTimeout(resolve, 400));
 
           const canvas = await html2canvas(printRef.current, {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
@@ -706,10 +720,10 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
           const pageH = orientation === 'portrait' ? 297 : 210;
           const imgWidth = pageW;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
-          const imgData = canvas.toDataURL('image/png');
+          const imgData = canvas.toDataURL('image/jpeg', 0.85);
 
           if (pageIdx > 0) doc.addPage();
-          doc.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageH));
+          doc.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pageH), undefined, 'FAST');
         }
       }
 
@@ -1281,28 +1295,41 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
               </div>
             </div>
 
-            {/* Sort Order */}
+            {/* Vendor Order (drag to reorder) */}
             <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>ترتيب الموردين</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {([
-                  { id: 'created_at' as const, label: 'تاريخ الإضافة' },
-                  { id: 'full_name' as const, label: 'الاسم' },
-                  { id: 'primary_city' as const, label: 'المدينة' },
-                  { id: 'primary_field' as const, label: 'الخدمة' },
-                ]).map(opt => (
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>ترتيب الموردين <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-muted)' }}>— اسحب لتغيير الترتيب</span></div>
+              <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
+                {vendors.map((v, idx) => (
                   <div
-                    key={opt.id}
-                    onClick={() => setSortBy(opt.id)}
-                    style={{
-                      padding: '10px 8px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                      textAlign: 'center', fontSize: 12, fontWeight: 600, transition: 'var(--transition-fast)',
-                      border: `2px solid ${sortBy === opt.id ? 'var(--accent)' : 'var(--border-soft)'}`,
-                      background: sortBy === opt.id ? 'var(--accent-glow)' : 'var(--bg-card)',
-                      color: sortBy === opt.id ? 'var(--accent-lighter)' : 'var(--text-secondary)',
+                    key={v.id}
+                    draggable
+                    onDragStart={(e) => { e.dataTransfer.setData('text/plain', idx.toString()); (e.target as HTMLElement).style.opacity = '0.4'; }}
+                    onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
+                    onDragOver={(e) => { e.preventDefault(); (e.target as HTMLElement).closest('[draggable]')?.classList.add('drag-over'); }}
+                    onDragLeave={(e) => { (e.target as HTMLElement).closest('[draggable]')?.classList.remove('drag-over'); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      (e.target as HTMLElement).closest('[draggable]')?.classList.remove('drag-over');
+                      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                      if (isNaN(fromIdx) || fromIdx === idx) return;
+                      const updated = [...vendors];
+                      const [moved] = updated.splice(fromIdx, 1);
+                      updated.splice(idx, 0, moved);
+                      setVendors(updated);
                     }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                      borderBottom: idx < vendors.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                      cursor: 'grab', fontSize: 13, color: 'var(--text-primary)', transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-overlay)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                   >
-                    {opt.label}
+                    <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'var(--font-mono)', minWidth: 22 }}>{idx + 1}</span>
+                    <span style={{ fontSize: 16, color: 'var(--text-disabled)', cursor: 'grab' }}>⠿</span>
+                    {v.profile_image && <img src={v.profile_image} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
+                    <span style={{ fontWeight: 500 }}>{v.full_name}</span>
+                    {v.primary_city && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 'auto' }}>{v.primary_city}</span>}
                   </div>
                 ))}
               </div>
