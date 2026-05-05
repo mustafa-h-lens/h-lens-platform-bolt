@@ -81,10 +81,25 @@ export const VendorPortal = () => {
     })();
   }, [vendor?.id]);
 
-  // Fetch unread notification count (items from last 7 days)
+  // Fetch unread notification count (items newer than the user's last visit
+  // to the notifications page, capped to a 7-day window). Opening the
+  // notifications page records "seen now" in localStorage and zeroes the
+  // badge immediately.
   useEffect(() => {
     if (!vendor?.id) return;
+    const LAST_SEEN_KEY = `vendor-last-notif-seen-${vendor.id}`;
+
+    if (currentPage === 'notifications') {
+      try { localStorage.setItem(LAST_SEEN_KEY, new Date().toISOString()); } catch { /* no-op */ }
+      setNotifCount(0);
+      return;
+    }
+
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    let lastSeen: string | null = null;
+    try { lastSeen = localStorage.getItem(LAST_SEEN_KEY); } catch { /* no-op */ }
+    const cutoff = lastSeen && lastSeen > sevenDaysAgo ? lastSeen : sevenDaysAgo;
+
     (async () => {
       const [sugRes, approvalRes] = await Promise.all([
         supabase
@@ -92,12 +107,12 @@ export const VendorPortal = () => {
           .select('id', { count: 'exact', head: true })
           .eq('vendor_id', vendor.id)
           .not('admin_response', 'is', null)
-          .gte('responded_at', sevenDaysAgo),
+          .gte('responded_at', cutoff),
         supabase
           .from('vendor_approval_log')
           .select('id', { count: 'exact', head: true })
           .eq('vendor_id', vendor.id)
-          .gte('created_at', sevenDaysAgo),
+          .gte('created_at', cutoff),
       ]);
       setNotifCount((sugRes.count || 0) + (approvalRes.count || 0));
     })();
