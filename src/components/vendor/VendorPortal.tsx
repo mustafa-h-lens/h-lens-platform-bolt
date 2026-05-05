@@ -473,7 +473,8 @@ export const VendorPortal = () => {
           </button>
           <span style={{
             fontSize: '.95rem', fontWeight: 700, color: 'var(--textPri)',
-            textAlign: 'center',
+            textAlign: 'right',
+            paddingInlineStart: 12,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {PAGE_TITLES[currentPage]}
