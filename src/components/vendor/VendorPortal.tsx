@@ -430,22 +430,48 @@ export const VendorPortal = () => {
 
       {/* ── Main ── */}
       <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        {/* Mobile header */}
-        <header className="flex md:hidden" style={{
-          height: 56, alignItems: 'center', gap: 12,
-          padding: '0 22px',
+        {/* Mobile header — 3-column grid keeps the title visually centered and
+            the side icons baseline-aligned regardless of RTL/LTR. */}
+        <header className="md:hidden" style={{
+          height: 56,
+          display: 'grid',
+          gridTemplateColumns: '44px 1fr 44px',
+          alignItems: 'center',
+          padding: '0 16px',
           borderBottom: '1px solid var(--border)',
           background: 'var(--hdr)',
           backdropFilter: 'blur(16px)',
           flexShrink: 0,
         }}>
-          <button onClick={() => setDrawer(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--textSec)', display: 'flex' }}>
+          <button
+            onClick={() => setDrawer(true)}
+            aria-label="القائمة"
+            style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'var(--textSec)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 0,
+            }}
+          >
             <Menu size={22} />
           </button>
-          <span style={{ fontSize: '.85rem', fontWeight: 600, color: 'var(--textPri)', flex: 1 }}>
+          <span style={{
+            fontSize: '.95rem', fontWeight: 700, color: 'var(--textPri)',
+            textAlign: 'center',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
             {PAGE_TITLES[currentPage]}
           </span>
-          <img src={LOGO} alt="Half Lens" onClick={() => navigateTo('dashboard')} style={{ height: 28, objectFit: 'contain', cursor: 'pointer' }} />
+          <img
+            src={LOGO}
+            alt="Half Lens"
+            onClick={() => navigateTo('dashboard')}
+            style={{
+              height: 30, width: 'auto', objectFit: 'contain', cursor: 'pointer',
+              justifySelf: 'end',
+            }}
+          />
         </header>
 
         {/* Page content */}
