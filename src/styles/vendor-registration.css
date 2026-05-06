@@ -749,9 +749,10 @@ body::after{display:none;
 
 /* ── Responsive ── */
 @media(max-width:500px){
-  .page-wrap{padding:calc(110px + env(safe-area-inset-top, 0px)) 12px 80px}
-  .reg-topbar{padding:10px 14px;padding-top:max(10px, env(safe-area-inset-top))}
-  .reg-topbar-logo img{height:36px;max-height:36px;max-width:96px}
+  .page-wrap{padding:calc(150px + env(safe-area-inset-top, 0px)) 12px 80px}
+  .reg-topbar{padding:8px 14px;padding-top:max(8px, env(safe-area-inset-top))}
+  .reg-topbar-logo img{height:32px;max-height:32px;max-width:88px}
+  .reg-header{scroll-margin-top:calc(120px + env(safe-area-inset-top, 0px))}
   .theme-toggle-btn{width:32px;height:32px;font-size:13px}
   .form-card{padding:20px 14px}
   .reg-header{margin-bottom:20px}

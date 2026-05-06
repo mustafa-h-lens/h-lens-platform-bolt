@@ -162,6 +162,101 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
         return;
       }
 
+      // ── REJECTED: hard-delete the vendor and everything tied to them so
+      // the email + phone are immediately free to re-register from scratch
+      // (no leftover row, no FK fragments, no orphan storage files).
+      if (action === 'rejected') {
+        const vendorEmail = vendor.email || '';
+        const vendorName  = vendor.full_name;
+        const idImageUrl       = vendor.id_image || '';
+        const profileImageUrl  = vendor.profile_image || '';
+
+        // Pull travel-doc file URLs before delete (their FK row dies with cascade)
+        const { data: travelDocs } = await supabase
+          .from('vendor_travel_documents')
+          .select('passport_file, visa_file')
+          .eq('vendor_id', vendorId);
+
+        // 1) Send the rejection email FIRST — once the row is gone, the edge
+        //    function can't look up the vendor.
+        try {
+          const { data: emailResult, error: emailInvokeError } = await supabase.functions.invoke('send-vendor-status-email', {
+            body: { vendor_id: vendorId, email_type: 'rejected', reason },
+          });
+          if (emailInvokeError || (emailResult && !emailResult.success)) {
+            showWarning('سيتم رفض وحذف المورد، لكن فشل إرسال البريد الإلكتروني. يرجى إبلاغه يدوياً.');
+          }
+        } catch (emailErr) {
+          console.warn('Rejection email send failed (non-fatal):', emailErr);
+          showWarning('سيتم رفض وحذف المورد، لكن فشل إرسال البريد الإلكتروني. يرجى إبلاغه يدوياً.');
+        }
+
+        // 2) Best-effort wipe of every child table (covers tables whose FK
+        //    might not have ON DELETE CASCADE).
+        await Promise.all([
+          supabase.from('equipment_suggestions').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_equipment').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_financial_data').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_approval_log').delete().eq('vendor_id', vendorId),
+          supabase.from('vendor_submission_snapshots').delete().eq('vendor_id', vendorId),
+        ]);
+
+        // 3) Drop the vendor row itself.
+        const { error: delErr } = await supabase
+          .from('vendors')
+          .delete()
+          .eq('id', vendorId);
+        if (delErr) {
+          console.error('Vendor hard-delete error:', delErr);
+          showError('حدث خطأ أثناء حذف بيانات المورد');
+          return;
+        }
+
+        // 4) Drafts — wipe by phone and (best-effort) by email so a clean
+        //    re-registration from the same email starts from scratch.
+        try {
+          await supabase.from('vendor_registration_drafts').delete().eq('phone', vendor.phone);
+          if (vendorEmail) {
+            await supabase.from('vendor_registration_drafts').delete().eq('email', vendorEmail);
+          }
+        } catch (draftErr) {
+          console.warn('Draft cleanup failed (non-fatal):', draftErr);
+        }
+
+        // 5) Storage files — best-effort.
+        try {
+          const paths: string[] = [];
+          const extract = (url: string) => {
+            if (!url) return null;
+            const idx = url.indexOf('/vendor-images/');
+            if (idx === -1) return null;
+            return url.slice(idx + '/vendor-images/'.length);
+          };
+          const ip = extract(idImageUrl);
+          const pp = extract(profileImageUrl);
+          if (ip) paths.push(ip);
+          if (pp) paths.push(pp);
+          for (const td of (travelDocs ?? []) as any[]) {
+            const tpp = extract(td.passport_file || '');
+            const tvp = extract(td.visa_file || '');
+            if (tpp) paths.push(tpp);
+            if (tvp) paths.push(tvp);
+          }
+          if (paths.length > 0) {
+            await supabase.storage.from('vendor-images').remove(paths);
+          }
+        } catch (storageErr) {
+          console.warn('Storage cleanup failed (non-fatal):', storageErr);
+        }
+
+        showSuccess(`تم رفض وحذف بيانات المورد ${vendorName} بالكامل — البريد الإلكتروني متاح لتسجيل جديد`);
+        onActionComplete();
+        return;
+      }
+
+      // ── APPROVED / REVISION_REQUESTED: status update path (unchanged) ──
       const newUpdatedAt = new Date().toISOString();
       const { data: updated, error: updateError } = await supabase
         .from('vendors')
@@ -195,13 +290,8 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
         performed_by: user?.id || null,
       }]);
 
-      // Delete draft if rejecting
-      if (action === 'rejected') {
-        await supabase.from('vendor_registration_drafts').delete().eq('phone', vendor.phone);
-      }
-
       // Send email notification
-      const emailType = action === 'approved' ? 'approved' : action === 'rejected' ? 'rejected' : 'revision_requested';
+      const emailType = action === 'approved' ? 'approved' : 'revision_requested';
       try {
         const { data: emailResult, error: emailInvokeError } = await supabase.functions.invoke('send-vendor-status-email', {
           body: { vendor_id: vendorId, email_type: emailType, reason },
@@ -222,10 +312,9 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
 
       const actionLabels = {
         approved: 'تمت الموافقة على',
-        rejected: 'تم رفض',
         revision_requested: 'تم طلب تعديلات من',
       };
-      showSuccess(`${actionLabels[action]} المورد ${vendor.full_name}`);
+      showSuccess(`${actionLabels[action as 'approved' | 'revision_requested']} المورد ${vendor.full_name}`);
       onActionComplete();
     } catch (error) {
       console.error('Error performing action:', error);
