@@ -28,27 +28,12 @@ function escapeHtml(str: string): string {
 }
 
 function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeColor: string): string {
+  // Blue logo on white header — readable in every email client.
   return `
   <tr>
-    <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
-        <tr>
-          <td align="center" style="padding:0;border-radius:14px;">
-            <!--[if !mso]><!-->
-            <span class="logo-light" style="display:inline-block;line-height:0;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            </span>
-            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            </span>
-            <!--<![endif]-->
-            <!--[if mso]>
-            <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            <![endif]-->
-          </td>
-        </tr>
-      </table>
-      <div style="margin-top:16px;">
+    <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 32px 24px;border-bottom:1px solid #e5e7eb;">
+      <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:inline-block;border:0;max-width:160px;height:auto;margin-bottom:16px;" />
+      <div>
         <span style="display:inline-block;padding:6px 18px;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;font-size:13px;font-weight:700;color:${badgeColor};">${badge}</span>
       </div>
     </td>
@@ -58,24 +43,8 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
 function baseFooter(): string {
   return `
   <tr>
-    <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-        <tr>
-          <td align="center" style="padding:0;border-radius:10px;">
-            <!--[if !mso]><!-->
-            <span class="logo-light" style="display:inline-block;line-height:0;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-            </span>
-            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
-            </span>
-            <!--<![endif]-->
-            <!--[if mso]>
-            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-            <![endif]-->
-          </td>
-        </tr>
-      </table>
+    <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid #e5e7eb;">
+      <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:inline-block;border:0;max-width:100px;height:auto;opacity:0.85;" />
       <div class="footer-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
         <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
       </div>

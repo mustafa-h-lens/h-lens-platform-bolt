@@ -80,19 +80,9 @@ function getEmailTemplate(
 
           <!-- Header -->
           <tr>
-            <td class="hdr" align="center" bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;">
-              <!--[if !mso]><!-->
-              <span class="logo-light" style="display:inline-block;line-height:0;">
-                <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              </span>
-              <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-                <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              </span>
-              <!--<![endif]-->
-              <!--[if mso]>
+            <td class="hdr" align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:28px 32px;border-bottom:1px solid #e5e7eb;">
               <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              <![endif]-->
-              <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#bfdbfe;" dir="rtl">&#128272; رمز التحقق</p>
+              <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#1e40af;" dir="rtl">&#128272; رمز التحقق</p>
             </td>
           </tr>
 
@@ -368,26 +358,10 @@ Deno.serve(async (req: Request) => {
 
           <!-- Header -->
           <tr>
-            <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
-                <tr>
-                  <td align="center" style="padding:0;border-radius:14px;">
-                    <!--[if !mso]><!-->
-                    <span class="logo-light" style="display:inline-block;line-height:0;">
-                      <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-                    </span>
-                    <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-                      <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-                    </span>
-                    <!--<![endif]-->
-                    <!--[if mso]>
-                    <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-                    <![endif]-->
-                  </td>
-                </tr>
-              </table>
+            <td class="hdr" align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 32px 24px;border-bottom:1px solid #e5e7eb;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:inline-block;border:0;max-width:160px;height:auto;" />
               <div style="margin-top:16px;">
-                <span style="display:inline-block;padding:6px 18px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);border-radius:20px;font-size:13px;font-weight:700;color:#34d399;">&#127881; دعوة لبوابة العميل</span>
+                <span style="display:inline-block;padding:6px 18px;background:#dcfce7;border:1px solid #86efac;border-radius:20px;font-size:13px;font-weight:700;color:#15803d;">&#127881; دعوة لبوابة العميل</span>
               </div>
             </td>
           </tr>
@@ -467,30 +441,14 @@ Deno.serve(async (req: Request) => {
 
           <!-- Footer -->
           <tr>
-            <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-                <tr>
-                  <td align="center" style="padding:0;border-radius:10px;">
-                    <!--[if !mso]><!-->
-                    <span class="logo-light" style="display:inline-block;line-height:0;">
-                      <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-                    </span>
-                    <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-                      <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
-                    </span>
-                    <!--<![endif]-->
-                    <!--[if mso]>
-                    <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-                    <![endif]-->
-                  </td>
-                </tr>
-              </table>
+            <td class="ftr" align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid #e5e7eb;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:inline-block;border:0;max-width:100px;height:auto;opacity:0.85;" />
               <div style="margin-top:12px;font-size:11px;color:#3b82f6;line-height:2;">
                 <a href="${appOrigin}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
                 <a href="${appOrigin}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
                 <a href="${appOrigin}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
               </div>
-              <p style="font-size:10px;color:rgba(200,215,255,0.3);margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 

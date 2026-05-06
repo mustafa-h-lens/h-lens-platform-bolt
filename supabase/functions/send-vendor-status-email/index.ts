@@ -135,26 +135,17 @@ function escapeHtml(str: string): string {
 const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
 function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeColor: string): string {
+  // Blue logo on a forced-light header. We dropped the .eh class (which carried
+  // a !important dark navy override in <style>) so the inline white bgcolor
+  // wins in every email client. Blue logo (dark-blue ink) is readable on
+  // white in every renderer including Gmail iOS / Outlook / Apple Mail.
   return `
   <tr>
-    <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-      <!-- Logo pill — light & dark variants so the logo stays visible whether
-           the email client renders our intended dark header or force-inverts it
-           to a light/white one (Gmail iOS is the common offender). -->
+    <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 32px 24px;">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
         <tr>
-          <td align="center" style="padding:0;border-radius:14px;">
-            <!--[if !mso]><!-->
-            <span class="logo-light" style="display:inline-block;line-height:0;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            </span>
-            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            </span>
-            <!--<![endif]-->
-            <!--[if mso]>
+          <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 28px;border-radius:14px;">
             <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
-            <![endif]-->
           </td>
         </tr>
       </table>
@@ -168,22 +159,11 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
 function baseFooter(): string {
   return `
   <tr>
-    <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <!-- Footer logo — light & dark variants so it renders on either background -->
+    <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid rgba(15,23,42,0.08);">
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
         <tr>
-          <td align="center" style="padding:0;border-radius:10px;">
-            <!--[if !mso]><!-->
-            <span class="logo-light" style="display:inline-block;line-height:0;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-            </span>
-            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
-            </span>
-            <!--<![endif]-->
-            <!--[if mso]>
-            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
-            <![endif]-->
+          <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:8px 16px;border-radius:10px;">
+            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.85;" />
           </td>
         </tr>
       </table>
@@ -455,19 +435,9 @@ function buildEmailChanged(
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
-            <td bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;text-align:center;">
-              <!--[if !mso]><!-->
-              <span class="logo-light" style="display:inline-block;line-height:0;">
-                <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              </span>
-              <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-                <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              </span>
-              <!--<![endif]-->
-              <!--[if mso]>
+            <td bgcolor="#ffffff" style="background-color:#ffffff;padding:28px 32px;text-align:center;border-bottom:1px solid #e5e7eb;">
               <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              <![endif]-->
-              <p style="margin:6px 0 0;font-size:13px;font-weight:600;color:#bfdbfe;" dir="rtl">تحديث البريد الإلكتروني</p>
+              <p style="margin:6px 0 0;font-size:13px;font-weight:600;color:#1e40af;" dir="rtl">تحديث البريد الإلكتروني</p>
             </td>
           </tr>
           <tr>

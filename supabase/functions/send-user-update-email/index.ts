@@ -78,24 +78,8 @@ function buildEmailHtml(
 </head>
 <body style="margin:0;padding:24px 0;background:#0b1437;">
 <div class="container">
-  <div style="background:#07112a;padding:32px 32px 24px;text-align:center;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
-      <tr>
-        <td align="center" style="padding:0;border-radius:14px;">
-          <!--[if !mso]><!-->
-          <span class="logo-light" style="display:inline-block;line-height:0;">
-            <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
-          </span>
-          <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
-            <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
-          </span>
-          <!--<![endif]-->
-          <!--[if mso]>
-          <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
-          <![endif]-->
-        </td>
-      </tr>
-    </table>
+  <div style="background:#ffffff;padding:32px 32px 24px;text-align:center;border-bottom:1px solid #e5e7eb;">
+    <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;" />
     <div style="margin-top:16px;">
       <span style="display:inline-block;padding:6px 18px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);border-radius:20px;font-size:13px;font-weight:700;color:#60a5fa;">تحديث الحساب</span>
     </div>
