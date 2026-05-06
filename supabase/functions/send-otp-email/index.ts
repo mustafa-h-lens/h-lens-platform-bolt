@@ -78,11 +78,17 @@ function getEmailTemplate(
       <td align="center" style="padding:24px 12px;">
         <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
 
-          <!-- Header -->
+          <!-- Header — dark navy banner card with white logo -->
           <tr>
-            <td class="hdr" align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:28px 32px;border-bottom:1px solid #e5e7eb;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#1e40af;" dir="rtl">&#128272; رمز التحقق</p>
+            <td class="hdr" bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
+                    <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">&#128272; رمز التحقق</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -356,13 +362,17 @@ Deno.serve(async (req: Request) => {
       <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
         <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
 
-          <!-- Header -->
+          <!-- Header — dark navy banner card with white logo -->
           <tr>
-            <td class="hdr" align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 32px 24px;border-bottom:1px solid #e5e7eb;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:inline-block;border:0;max-width:160px;height:auto;" />
-              <div style="margin-top:16px;">
-                <span style="display:inline-block;padding:6px 18px;background:#dcfce7;border:1px solid #86efac;border-radius:20px;font-size:13px;font-weight:700;color:#15803d;">&#127881; دعوة لبوابة العميل</span>
-              </div>
+            <td class="hdr" bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
+                    <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">&#127881; دعوة لبوابة العميل</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 

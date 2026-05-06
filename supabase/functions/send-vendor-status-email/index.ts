@@ -97,8 +97,8 @@ function renderFlagsHtml(flags: RevisionFlags): string {
     items.push(`
       <li style="margin-bottom:14px;">
         <div style="font-weight:700;color:#fbbf24;font-size:13px;">${stepLabel}</div>
-        ${fieldList ? `<div style="font-size:12px;color:rgba(200,215,255,0.55);margin-top:2px;">الحقول: ${fieldList}</div>` : ""}
-        ${step.comment ? `<div style="font-size:13px;color:rgba(200,215,255,0.8);margin-top:6px;line-height:1.7;">${escapeHtml(step.comment)}</div>` : ""}
+        ${fieldList ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">الحقول: ${fieldList}</div>` : ""}
+        ${step.comment ? `<div style="font-size:13px;color:#1e293b;margin-top:6px;line-height:1.7;">${escapeHtml(step.comment)}</div>` : ""}
       </li>`);
   }
   return `<ul style="margin:0;padding:0 20px 0 0;list-style:disc;">${items.join("")}</ul>`;
@@ -134,24 +134,22 @@ function escapeHtml(str: string): string {
 
 const baseUrl = Deno.env.get("APP_BASE_URL") || "#";
 
-function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeColor: string): string {
-  // Blue logo on a forced-light header. We dropped the .eh class (which carried
-  // a !important dark navy override in <style>) so the inline white bgcolor
-  // wins in every email client. Blue logo (dark-blue ink) is readable on
-  // white in every renderer including Gmail iOS / Outlook / Apple Mail.
+function baseHeader(badge: string, _badgeBg: string, _badgeBorder: string, _badgeColor: string): string {
+  // Dark navy banner CARD with the big white logo on top. Sits inside a white
+  // email body. The wrapTemplate locks color-scheme to "light only" so Gmail
+  // iOS / Outlook can't auto-invert the dark banner to white.
+  void _badgeBg; void _badgeBorder; void _badgeColor;
   return `
   <tr>
-    <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:32px 32px 24px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
+    <td bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
         <tr>
-          <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:14px 28px;border-radius:14px;">
-            <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+          <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:48px 32px;border-radius:18px;">
+            <img src="${logoWhiteUrl}" alt="Half Lens" width="220" style="display:block;border:0;width:220px;max-width:220px;height:auto;margin:0 auto 18px;" />
+            <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;line-height:1.3;">${badge}</span>
           </td>
         </tr>
       </table>
-      <div style="margin-top:16px;">
-        <span style="display:inline-block;padding:6px 18px;background:${badgeBg};border:1px solid ${badgeBorder};border-radius:20px;font-size:13px;font-weight:700;color:${badgeColor};">${badge}</span>
-      </div>
     </td>
   </tr>`;
 }
@@ -159,25 +157,20 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
 function baseFooter(): string {
   return `
   <tr>
-    <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid rgba(15,23,42,0.08);">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+    <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:0 24px 24px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
         <tr>
-          <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:8px 16px;border-radius:10px;">
-            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.85;" />
+          <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 24px;border-radius:12px;border:1px solid #e5e7eb;">
+            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:inline-block;border:0;max-width:100px;height:auto;opacity:0.9;" />
+            <div style="margin-top:12px;font-size:11px;color:#64748b;line-height:2;">
+              <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
+              <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
+              <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+            </div>
+            <p style="font-size:10px;color:#94a3b8;margin:8px 0 0;">هاف لينس &copy; 2026 — جميع الحقوق محفوظة</p>
           </td>
         </tr>
       </table>
-      <div class="footer-links-dark" style="margin-top:12px;font-size:11px;color:rgba(200,215,255,0.3);line-height:2;">
-        <a href="${baseUrl}" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-        <a href="${baseUrl}/privacy" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-        <a href="${baseUrl}/terms" style="color:rgba(200,215,255,0.4);text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
-      </div>
-      <div class="footer-links-light" style="display:none;margin-top:12px;font-size:11px;color:#64748b;line-height:2;">
-        <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-        <a href="${baseUrl}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-        <a href="${baseUrl}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
-      </div>
-      <p style="font-size:10px;color:rgba(200,215,255,0.2);margin:8px 0 0;">هاف لينس &copy; 2026 — جميع الحقوق محفوظة</p>
     </td>
   </tr>`;
 }
@@ -188,70 +181,32 @@ function wrapTemplate(content: string, title: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="supported-color-schemes" content="light dark" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
   <title>${title}</title>
   <!--[if mso]>
   <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
   <![endif]-->
   <style>
-    :root { color-scheme: light dark; supported-color-schemes: light dark; }
-    body, .ew { background-color: #030b1a !important; }
-    .ec { background-color: #060d1e !important; }
-    .eh { background-color: #07112a !important; }
-    .ef { background-color: #040910 !important; }
-    .et { color: #f0f4ff !important; }
-    .es { color: rgba(200,215,255,0.6) !important; }
-    [data-ogsc] body, [data-ogsc] .ew { background-color: #030b1a !important; }
-    [data-ogsc] .ec { background-color: #060d1e !important; }
-    [data-ogsc] .eh { background-color: #07112a !important; }
-    [data-ogsc] .ef { background-color: #040910 !important; }
-    [data-ogsc] .et { color: #f0f4ff !important; }
-    [data-ogsc] .es { color: rgba(200,215,255,0.6) !important; }
-    u + .eb .ew { background-color: #030b1a !important; }
-    u + .eb .ec { background-color: #060d1e !important; }
-    u + .eb .eh { background-color: #07112a !important; }
-    u + .eb .ef { background-color: #040910 !important; }
-    u + .eb .et { color: #f0f4ff !important; }
-    u + .eb .es { color: rgba(200,215,255,0.6) !important; }
-    @media (prefers-color-scheme: dark) {
-      body, .ew { background-color: #030b1a !important; }
-      .ec { background-color: #060d1e !important; }
-      .eh { background-color: #07112a !important; }
-      .ef { background-color: #040910 !important; }
-      .et { color: #f0f4ff !important; }
-      .es { color: rgba(200,215,255,0.6) !important; }
-    }
-    /* Logo dark/light swap so it stays visible in both light and dark email clients.
-       Default state: light mode → blue logo visible, white logo hidden.
-       Dark mode: white logo visible, blue logo hidden. */
-    @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; }
-      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
-    }
-    /* Gmail Android dark-mode prefix */
-    [data-ogsc] .logo-light { display: none !important; }
-    [data-ogsc] .logo-dark  { display: inline-block !important; }
-    /* iOS Mail dark mode (u + .eb) — already used elsewhere in this template */
-    u + .eb .logo-light { display: none !important; }
-    u + .eb .logo-dark  { display: inline-block !important; }
-    @media (prefers-color-scheme: light) {
-      .footer-links-dark { display: none !important; }
-      .footer-links-light { display: block !important; }
-    }
+    :root { color-scheme: light only; supported-color-schemes: light only; }
+    /* Light-only lock — prevents Gmail iOS / Outlook from auto-inverting the
+       dark navy banner card to light (which is what was killing the white
+       logo). Card body stays white, banner inside stays dark navy. */
+    body, .eb, .ew { background-color: #f3f4f6 !important; }
+    .ec { background-color: #ffffff !important; }
+    .et { color: #0f172a !important; }
+    .es { color: #475569 !important; }
     @media only screen and (max-width: 600px) {
       .ec { border-radius: 0 !important; }
       .ep { padding: 20px 16px !important; }
-      .eh { padding: 24px 16px 20px !important; }
-      .ef { padding: 20px 16px !important; }
     }
   </style>
 </head>
-<body class="eb" bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;margin:0;padding:0;">
+<body class="eb" bgcolor="#f3f4f6" style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;margin:0;padding:0;">
     <tr>
-      <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
-        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
+      <td align="center" bgcolor="#f3f4f6" style="padding:24px 12px;background-color:#f3f4f6;">
+        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
           ${content}
         </table>
       </td>
@@ -266,10 +221,10 @@ function infoBox(rows: { label: string; value: string }[]): string {
     .map(
       (r, i) => `
       <tr>
-        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid rgba(255,255,255,0.05);" : ""}font-size:12px;color:rgba(200,215,255,0.5);font-weight:600;width:140px;">
+        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid #e5e7eb;" : ""}font-size:12px;color:#64748b;font-weight:600;width:140px;">
           ${r.label}
         </td>
-        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid rgba(255,255,255,0.05);" : ""}font-size:12px;color:rgba(200,215,255,0.8);font-weight:600;text-align:left;" dir="rtl">
+        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid #e5e7eb;" : ""}font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="rtl">
           ${r.value}
         </td>
       </tr>`
@@ -277,7 +232,7 @@ function infoBox(rows: { label: string; value: string }[]): string {
     .join("");
 
   return `
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.08);border-radius:10px;margin-bottom:24px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
     <tr>
       <td style="padding:0;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -327,9 +282,9 @@ function buildRegistrationReceived(
   const content = `
     ${baseHeader("&#128230; تم استلام الطلب", "rgba(37,99,235,0.12)", "rgba(37,99,235,0.25)", "#60a5fa")}
     <tr>
-      <td style="padding:32px 32px 0;color:#f0f4ff;">
-        <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">شكراً لتسجيلك في منصة هاف لينس. تم استلام طلبك بنجاح وهو الآن قيد المراجعة من قبل فريقنا.</p>
+      <td style="padding:32px 32px 0;color:#0f172a;">
+        <p style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">شكراً لتسجيلك في منصة هاف لينس. تم استلام طلبك بنجاح وهو الآن قيد المراجعة من قبل فريقنا.</p>
       </td>
     </tr>
     <tr>
@@ -362,16 +317,16 @@ function buildApproved(
   const content = `
     ${baseHeader("&#9989; تمت الموافقة", "rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)", "#34d399")}
     <tr>
-      <td style="padding:32px 32px 0;text-align:center;color:#f0f4ff;">
+      <td style="padding:32px 32px 0;text-align:center;color:#0f172a;">
         <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);line-height:64px;font-size:28px;margin-bottom:20px;">&#10003;</div>
-        <p style="font-size:20px;font-weight:700;color:#f0f4ff;margin:0 0 12px;">تم اعتماد حسابك!</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، يسعدنا إبلاغك بأن حسابك على منصة هاف لينس قد تم اعتماده بنجاح.</p>
+        <p style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 12px;">تم اعتماد حسابك!</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، يسعدنا إبلاغك بأن حسابك على منصة هاف لينس قد تم اعتماده بنجاح.</p>
       </td>
     </tr>
     <tr>
       <td style="padding:0 32px 28px;">
-        <p style="font-size:14px;font-weight:600;color:#f0f4ff;margin:0 0 12px;">ما الخطوة التالية؟</p>
-        <ul style="margin:0;padding:0 18px;font-size:14px;color:rgba(200,215,255,0.6);line-height:2.2;">
+        <p style="font-size:14px;font-weight:600;color:#0f172a;margin:0 0 12px;">ما الخطوة التالية؟</p>
+        <ul style="margin:0;padding:0 18px;font-size:14px;color:#475569;line-height:2.2;">
           <li>سجّل الدخول عبر بريدك الالكتروني المسجل لاستعراض لوحة التحكم الخاصة بك</li>
           <li>أكمل ملفك الشخصي وأضف رابط البورتفوليو لزيادة فرص ترشيحك</li>
           <li>تأكد من تحديث خدماتك وأسعارك لاستقبال المشاريع المناسبة</li>
@@ -435,9 +390,15 @@ function buildEmailChanged(
       <td align="center" style="padding:24px 12px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
-            <td bgcolor="#ffffff" style="background-color:#ffffff;padding:28px 32px;text-align:center;border-bottom:1px solid #e5e7eb;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
-              <p style="margin:6px 0 0;font-size:13px;font-weight:600;color:#1e40af;" dir="rtl">تحديث البريد الإلكتروني</p>
+            <td bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+                <tr>
+                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
+                    <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">تحديث البريد الإلكتروني</span>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
           <tr>
@@ -518,10 +479,10 @@ function buildRejected(
   const content = `
     ${baseHeader("&#10060; لم تتم الموافقة", "rgba(239,68,68,0.1)", "rgba(239,68,68,0.25)", "#f87171")}
     <tr>
-      <td style="padding:32px 32px 0;text-align:center;color:#f0f4ff;">
+      <td style="padding:32px 32px 0;text-align:center;color:#0f172a;">
         <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);line-height:64px;font-size:28px;margin-bottom:20px;">&#10060;</div>
-        <p style="font-size:20px;font-weight:700;color:#f0f4ff;margin:0 0 12px;">لم تتم الموافقة على طلبك</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، نأسف لإبلاغك بأن طلب التسجيل الخاص بك لم تتم الموافقة عليه في الوقت الحالي.</p>
+        <p style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 12px;">لم تتم الموافقة على طلبك</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، نأسف لإبلاغك بأن طلب التسجيل الخاص بك لم تتم الموافقة عليه في الوقت الحالي.</p>
       </td>
     </tr>
     <tr>
@@ -530,11 +491,11 @@ function buildRejected(
           <tr>
             <td style="padding:16px 20px;">
               <p style="font-size:13px;font-weight:600;color:#f87171;margin:0 0 8px;">سبب الرفض:</p>
-              <p style="font-size:14px;color:rgba(200,215,255,0.7);line-height:1.8;margin:0;">${escapeHtml(reason)}</p>
+              <p style="font-size:14px;color:#334155;line-height:1.8;margin:0;">${escapeHtml(reason)}</p>
             </td>
           </tr>
         </table>
-        <p style="font-size:13px;color:rgba(200,215,255,0.4);line-height:1.8;margin:0;">إذا كنت تعتقد أن هذا القرار تم بالخطأ أو لديك استفسار، يرجى التواصل مع فريق الدعم.</p>
+        <p style="font-size:13px;color:#94a3b8;line-height:1.8;margin:0;">إذا كنت تعتقد أن هذا القرار تم بالخطأ أو لديك استفسار، يرجى التواصل مع فريق الدعم.</p>
       </td>
     </tr>
     ${baseFooter()}`;
@@ -572,17 +533,17 @@ function buildRevisionRequested(
   const content = `
     ${baseHeader("&#9888;&#65039; تعديلات مطلوبة", "rgba(245,158,11,0.1)", "rgba(245,158,11,0.25)", "#fbbf24")}
     <tr>
-      <td style="padding:32px 32px 0;text-align:center;color:#f0f4ff;">
+      <td style="padding:32px 32px 0;text-align:center;color:#0f172a;">
         <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);line-height:64px;font-size:28px;margin-bottom:20px;">&#9888;</div>
-        <p style="font-size:20px;font-weight:700;color:#f0f4ff;margin:0 0 12px;">حسابك يحتاج تعديلات</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، تمت مراجعة طلبك وهناك بعض البيانات التي تحتاج إلى تعديل قبل إتمام الموافقة.</p>
+        <p style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 12px;">حسابك يحتاج تعديلات</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، تمت مراجعة طلبك وهناك بعض البيانات التي تحتاج إلى تعديل قبل إتمام الموافقة.</p>
       </td>
     </tr>
     <tr>
       <td style="padding:0 32px 28px;">
         ${detailsBlock}
         ${ctaButton("تسجيل الدخول وتعديل البيانات", loginUrl, "#2563eb")}
-        <p style="font-size:13px;color:rgba(200,215,255,0.4);line-height:1.8;margin:16px 0 0;text-align:center;">
+        <p style="font-size:13px;color:#94a3b8;line-height:1.8;margin:16px 0 0;text-align:center;">
           بعد إجراء التعديلات المطلوبة، اضغط على "إعادة تقديم الطلب" لإرسال طلبك مرة أخرى للمراجعة.
         </p>
       </td>
@@ -603,9 +564,9 @@ function buildResubmitted(
   const content = `
     ${baseHeader("&#128260; تم إعادة التقديم", "rgba(37,99,235,0.12)", "rgba(37,99,235,0.25)", "#60a5fa")}
     <tr>
-      <td style="padding:32px 32px 0;color:#f0f4ff;">
-        <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم إعادة تقديم طلب التسجيل الخاص بك بنجاح وهو الآن قيد المراجعة مرة أخرى.</p>
+      <td style="padding:32px 32px 0;color:#0f172a;">
+        <p style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 8px;">مرحباً ${vendorName} &#128075;</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">تم إعادة تقديم طلب التسجيل الخاص بك بنجاح وهو الآن قيد المراجعة مرة أخرى.</p>
       </td>
     </tr>
     <tr>
@@ -641,9 +602,9 @@ function buildAdminNewRegistration(
   const content = `
     ${baseHeader("&#128276; طلب تسجيل جديد", "rgba(37,99,235,0.12)", "rgba(37,99,235,0.25)", "#60a5fa")}
     <tr>
-      <td style="padding:32px 32px 0;color:#f0f4ff;">
-        <p style="font-size:18px;font-weight:700;color:#f0f4ff;margin:0 0 8px;">طلب تسجيل مورد جديد</p>
-        <p style="font-size:14px;color:rgba(200,215,255,0.6);line-height:1.8;margin:0 0 24px;">تم استلام طلب تسجيل مورد جديد ويحتاج إلى مراجعتك.</p>
+      <td style="padding:32px 32px 0;color:#0f172a;">
+        <p style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 8px;">طلب تسجيل مورد جديد</p>
+        <p style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">تم استلام طلب تسجيل مورد جديد ويحتاج إلى مراجعتك.</p>
       </td>
     </tr>
     <tr>
