@@ -42,67 +42,63 @@ function getEmailTemplate(
   // so Gmail/Outlook dark modes don't auto-invert the OTP boxes into invisible
   // states. Each digit gets its own opaque-bg box with high contrast text — all
   // 6 are guaranteed to render.
-  const otpBox = (d) => `<td class="otp" align="center" valign="middle" width="48" height="56" bgcolor="#eff6ff" style="width:48px;height:56px;background-color:#eff6ff;border:2px solid #1e40af;border-radius:10px;font-family:'JetBrains Mono',Courier,monospace;font-size:26px;font-weight:800;color:#1e40af;">${d}</td>`;
+  const otpBox = (d) => `<td class="otp" align="center" valign="middle" width="48" height="56" bgcolor="#0a1024" style="width:48px;height:56px;background-color:#0a1024;border:2px solid #3b82f6;border-radius:10px;font-family:'JetBrains Mono',Courier,monospace;font-size:26px;font-weight:800;color:#60a5fa;">${d}</td>`;
 
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="light only" />
-  <meta name="supported-color-schemes" content="light only" />
+  <meta name="color-scheme" content="dark only" />
+  <meta name="supported-color-schemes" content="dark only" />
   <title>رمز التحقق - Half Lens</title>
   <style>
-    @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; }
-      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
-    }
-    [data-ogsc] .logo-light { display: none !important; }
-    [data-ogsc] .logo-dark  { display: inline-block !important; }
+    :root { color-scheme: dark only; supported-color-schemes: dark only; }
+    body { background-color: #0a1024 !important; }
     @media only screen and (max-width: 600px) {
-      .card { border-radius: 0 !important; }
-      .pad  { padding: 20px 16px !important; }
-      .hdr  { padding: 24px 16px 20px !important; }
-      .ftr  { padding: 20px 16px !important; }
+      .pad  { padding: 18px 16px !important; }
       .otp  { width: 40px !important; height: 48px !important; font-size: 20px !important; }
       .sp   { width: 5px !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;">
-  <div dir="ltr" style="display:none;font-size:1px;color:#f3f4f6;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
+<body style="margin:0;padding:0;background-color:#0a1024;font-family:'Cairo','Tajawal',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;">
+  <div dir="ltr" style="display:none;font-size:1px;color:#0a1024;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">
     رمز التحقق الخاص بك: ${otp} — صالح لمدة 10 دقائق
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0a1024" style="background-color:#0a1024;">
     <tr>
-      <td align="center" style="padding:24px 12px;">
-        <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+      <td align="center" style="padding:0;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1428" style="max-width:560px;background-color:#0d1428;">
 
-          <!-- Header — dark navy banner card with white logo -->
+          <!-- Hero: rounded brand-color logo card -->
           <tr>
-            <td class="hdr" bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+            <td align="center" style="padding:48px 24px 16px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
                 <tr>
-                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
-                    <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">&#128272; رمز التحقق</span>
+                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 36px;border-radius:24px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto;" />
                   </td>
                 </tr>
               </table>
+              <div style="margin-top:20px;">
+                <span style="display:inline-block;padding:8px 22px;border-radius:999px;border:1.5px solid rgba(96,165,250,0.5);color:#60a5fa;font-size:13px;font-weight:700;">&#128272; رمز التحقق</span>
+              </div>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td class="pad" style="padding:32px 32px 8px;background-color:#ffffff;">
-              <p style="font-size:18px;font-weight:700;color:#111827;margin:0 0 10px;" dir="rtl">مرحباً ${vendorName} &#128075;</p>
-              <p style="font-size:14px;color:#4b5563;line-height:1.85;margin:0 0 22px;" dir="rtl">تم طلب رمز تحقق لتسجيل الدخول إلى منصة هاف لينس. استخدم الرمز التالي:</p>
+            <td class="pad" align="center" style="padding:8px 32px 8px;">
+              <h1 style="font-size:22px;font-weight:800;color:#f8fafc;margin:0 0 6px;" dir="rtl">مرحباً ${vendorName} &#128075;</h1>
+              <p style="font-size:14px;color:#cbd5e1;line-height:1.85;margin:0 0 6px;" dir="rtl">تم طلب رمز تحقق لتسجيل الدخول إلى منصة هاف لينس.</p>
+              <p style="font-size:12px;color:#94a3b8;line-height:1.7;margin:0 0 22px;" dir="ltr">A login verification code has been requested for your account.</p>
             </td>
           </tr>
 
-          <!-- OTP Boxes (always 6, opaque bg + high contrast) -->
+          <!-- OTP Boxes -->
           <tr>
-            <td style="padding:4px 32px 8px;text-align:center;background-color:#ffffff;" dir="ltr">
+            <td style="padding:4px 32px 8px;text-align:center;" dir="ltr">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" dir="ltr" style="margin:0 auto;direction:ltr;">
                 <tr dir="ltr">
                   ${otpBox(digits[0])}<td class="sp" width="8" style="width:8px;"></td>
@@ -118,26 +114,26 @@ function getEmailTemplate(
 
           <!-- Expiry -->
           <tr>
-            <td style="padding:14px 32px 4px;text-align:center;background-color:#ffffff;">
-              <p style="font-size:13px;color:#6b7280;margin:0;" dir="rtl">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:#111827;">10 دقائق</strong></p>
+            <td style="padding:14px 32px 4px;text-align:center;">
+              <p style="font-size:13px;color:#94a3b8;margin:0;" dir="rtl">&#9201;&#65039; ينتهي هذا الرمز خلال <strong style="color:#f8fafc;">10 دقائق</strong></p>
             </td>
           </tr>
 
           <!-- Info Box -->
           <tr>
-            <td class="pad" style="padding:18px 32px 4px;background-color:#ffffff;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f9fafb" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;">
+            <td class="pad" style="padding:18px 24px 4px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(148,163,184,0.06);border:1px solid rgba(148,163,184,0.15);border-radius:12px;">
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;border-bottom:1px solid #e5e7eb;width:120px;" dir="rtl">&#128338; وقت الطلب</td>
-                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;text-align:left;" dir="ltr">${requestTime}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(148,163,184,0.10);width:120px;" dir="rtl">&#128338; وقت الطلب</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#e2e8f0;font-weight:600;border-bottom:1px solid rgba(148,163,184,0.10);text-align:left;" dir="ltr">${requestTime}</td>
                 </tr>
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;border-bottom:1px solid #e5e7eb;" dir="rtl">&#128231; البريد</td>
-                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;border-bottom:1px solid #e5e7eb;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${email}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(148,163,184,0.10);" dir="rtl">&#128231; البريد</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#e2e8f0;font-weight:600;border-bottom:1px solid rgba(148,163,184,0.10);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" dir="ltr">${email}</td>
                 </tr>
                 <tr>
-                  <td style="padding:12px 18px;font-size:12px;color:#6b7280;" dir="rtl">&#128187; الجهاز</td>
-                  <td style="padding:12px 18px;font-size:12px;color:#374151;font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#94a3b8;" dir="rtl">&#128187; الجهاز</td>
+                  <td style="padding:12px 18px;font-size:12px;color:#e2e8f0;font-weight:600;text-align:left;" dir="ltr">${deviceInfo}</td>
                 </tr>
               </table>
             </td>
@@ -145,44 +141,37 @@ function getEmailTemplate(
 
           <!-- Warning -->
           <tr>
-            <td class="pad" style="padding:14px 32px 0;background-color:#ffffff;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#fef3c7" style="background-color:#fef3c7;border:1px solid #fcd34d;border-radius:10px;">
+            <td class="pad" style="padding:14px 24px 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.25);border-radius:12px;">
                 <tr>
-                  <td style="padding:14px 18px;font-size:12px;color:#92400e;line-height:1.7;" dir="rtl">
-                    &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق هاف لينس لن يطلب منك رمز التحقق أبداً عبر الهاتف أو البريد.
+                  <td style="padding:14px 18px;font-size:12px;color:#fbbf24;line-height:1.7;" dir="rtl">
+                    &#9888;&#65039; لا تشارك هذا الرمز مع أي شخص. فريق هاف لينس لن يطلب منك رمز التحقق أبداً.
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- CTA Button -->
+          <!-- Outlined CTA -->
           <tr>
-            <td align="center" style="padding:22px 32px 28px;background-color:#ffffff;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                <tr>
-                  <td bgcolor="#1e40af" style="background-color:#1e40af;border-radius:10px;">
-                    <a href="${loginUrl}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;font-family:'Cairo',Arial,sans-serif;">
-                      الذهاب إلى صفحة تسجيل الدخول &#9665;
-                    </a>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="padding:22px 32px 8px;">
+              <a href="${loginUrl}" style="display:inline-block;padding:14px 56px;border-radius:12px;border:1.5px solid #60a5fa;color:#60a5fa;font-size:14px;font-weight:700;text-decoration:none;font-family:'Cairo','Tajawal',Arial,sans-serif;">
+                صفحة تسجيل الدخول &#9665;
+              </a>
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td class="ftr" align="center" bgcolor="#f9fafb" style="background-color:#f9fafb;padding:18px 32px;border-top:1px solid #e5e7eb;">
-              <p style="margin:0 0 6px;font-size:11px;color:#6b7280;line-height:1.7;" dir="rtl">
-                هذه الرسالة مرسلة تلقائياً من منصة Half Lens. لا ترد عليها مباشرةً.
-              </p>
-              <div style="font-size:11px;line-height:2;">
-                <a href="${baseUrl}" style="color:#2563eb;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a href="${baseUrl}/privacy" style="color:#2563eb;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a href="${baseUrl}/terms" style="color:#2563eb;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+            <td align="center" style="padding:32px 32px 36px;">
+              <div style="font-size:11px;color:#64748b;line-height:1.9;margin-bottom:6px;">
+                <a href="${baseUrl}" style="color:#60a5fa;text-decoration:none;margin:0 6px;">الموقع</a>
+                <span style="color:#475569;">·</span>
+                <a href="${baseUrl}/privacy" style="color:#60a5fa;text-decoration:none;margin:0 6px;">سياسة السرّية</a>
+                <span style="color:#475569;">·</span>
+                <a href="${baseUrl}/terms" style="color:#60a5fa;text-decoration:none;margin:0 6px;">الشروط</a>
               </div>
-              <p style="font-size:10px;color:#9ca3af;margin:6px 0 0;" dir="rtl">هاف لينس &copy; ${new Date().getFullYear()} — جميع الحقوق محفوظة</p>
+              <p style="font-size:11px;color:#64748b;margin:0;" dir="rtl">&copy; ${new Date().getFullYear()} Half Lens Production — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 
@@ -334,73 +323,66 @@ Deno.serve(async (req: Request) => {
   <meta name="supported-color-schemes" content="light dark" />
   <title>دعوة لبوابة العميل - Half Lens</title>
   <style>
-    :root { color-scheme: light dark; }
-    /* Logo dark/light swap so the logo stays visible whether the email client
-       renders our intended dark header or force-inverts it to light. */
-    @media (prefers-color-scheme: dark) {
-      .logo-light { display: none !important; }
-      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
-    }
-    [data-ogsc] .logo-light { display: none !important; }
-    [data-ogsc] .logo-dark  { display: inline-block !important; }
+    :root { color-scheme: dark only; supported-color-schemes: dark only; }
+    body { background-color: #0a1024 !important; }
     @media only screen and (max-width: 600px) {
-      .card { border-radius: 0 !important; }
-      .pad { padding: 20px 16px !important; }
-      .hdr { padding: 24px 16px 20px !important; }
-      .ftr { padding: 20px 16px !important; }
+      .pad { padding: 18px 16px !important; }
     }
   </style>
 </head>
-<body bgcolor="#030b1a" style="margin:0;padding:0;background-color:#030b1a;font-family:'Cairo',Arial,sans-serif;direction:rtl;">
+<body bgcolor="#0a1024" style="margin:0;padding:0;background-color:#0a1024;font-family:'Cairo','Tajawal',Arial,sans-serif;direction:rtl;">
   <!-- Preheader -->
-  <div dir="rtl" style="display:none;font-size:1px;color:#030b1a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+  <div dir="rtl" style="display:none;font-size:1px;color:#0a1024;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
     أهلاً ${entityName} — تم تفعيل بوابة العميل الخاصة بك
     ${"&zwnj;&nbsp;".repeat(30)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#030b1a" style="background-color:#030b1a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0a1024" style="background-color:#0a1024;">
     <tr>
-      <td align="center" bgcolor="#030b1a" style="padding:24px 12px;background-color:#030b1a;">
-        <table class="card" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#060d1e" style="max-width:600px;background-color:#060d1e;border-radius:8px;overflow:hidden;">
+      <td align="center" bgcolor="#0a1024" style="padding:0;background-color:#0a1024;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1428" style="max-width:560px;background-color:#0d1428;">
 
-          <!-- Header — dark navy banner card with white logo -->
+          <!-- Hero: rounded brand-color logo card -->
           <tr>
-            <td class="hdr" bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+            <td align="center" style="padding:48px 24px 16px;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
                 <tr>
-                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
-                    <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">&#127881; دعوة لبوابة العميل</span>
+                  <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 36px;border-radius:24px;">
+                    <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto;" />
                   </td>
                 </tr>
               </table>
+              <div style="margin-top:20px;">
+                <span style="display:inline-block;padding:8px 22px;border-radius:999px;border:1.5px solid rgba(52,211,153,0.5);color:#34d399;font-size:13px;font-weight:700;">&#127881; دعوة لبوابة العميل</span>
+              </div>
             </td>
           </tr>
 
           <!-- Greeting -->
           <tr>
-            <td class="pad" style="padding:32px 32px 0;">
-              <p style="font-size:20px;font-weight:800;color:#f0f4ff;margin:0 0 10px;text-align:right;">أهلاً وسهلاً ${entityName} &#128075;</p>
-              <p style="font-size:14px;color:rgba(200,215,255,0.65);line-height:1.9;margin:0 0 24px;text-align:right;">يسعدنا دعوتك للانضمام إلى بوابة العملاء الخاصة بنا. تم تفعيل حسابك ويمكنك الآن الاطلاع على كل ما يخص مشاريعك في مكان واحد.</p>
+            <td class="pad" align="center" style="padding:8px 32px 8px;">
+              <h1 style="font-size:22px;font-weight:800;color:#f8fafc;margin:0 0 6px;" dir="rtl">أهلاً وسهلاً ${entityName} &#128075;</h1>
+              <p style="font-size:14px;color:#cbd5e1;line-height:1.85;margin:0 0 6px;" dir="rtl">يسعدنا دعوتك للانضمام إلى بوابة العملاء الخاصة بنا. تم تفعيل حسابك ويمكنك الآن الاطلاع على كل ما يخص مشاريعك.</p>
+              <p style="font-size:12px;color:#94a3b8;line-height:1.7;margin:0 0 22px;" dir="ltr">Welcome ${entityName}! Your client portal is ready — track your projects, invoices, and deliverables in one place.</p>
             </td>
           </tr>
 
           <!-- Features -->
           <tr>
             <td class="pad" style="padding:0 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.06);border-radius:10px;overflow:hidden;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(148,163,184,0.15);border-radius:10px;overflow:hidden;">
                 <tr>
-                  <td style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="padding:14px 18px;border-bottom:1px solid rgba(148,163,184,0.10);">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
                       <td width="36" style="width:36px;height:36px;background:rgba(37,99,235,0.12);border-radius:10px;text-align:center;vertical-align:middle;font-size:16px;">&#128202;</td>
-                      <td style="padding-right:14px;font-size:14px;color:rgba(200,215,255,0.85);line-height:1.6;">متابعة حالة المشاريع ومراحل التنفيذ</td>
+                      <td style="padding-right:14px;font-size:14px;color:#cbd5e1;line-height:1.6;">متابعة حالة المشاريع ومراحل التنفيذ</td>
                     </tr></table>
                   </td>
                 </tr>
                 <tr>
-                  <td style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="padding:14px 18px;border-bottom:1px solid rgba(148,163,184,0.10);">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
                       <td width="36" style="width:36px;height:36px;background:rgba(16,185,129,0.12);border-radius:10px;text-align:center;vertical-align:middle;font-size:16px;">&#128179;</td>
-                      <td style="padding-right:14px;font-size:14px;color:rgba(200,215,255,0.85);line-height:1.6;">الاطلاع على الفواتير وحالة المدفوعات</td>
+                      <td style="padding-right:14px;font-size:14px;color:#cbd5e1;line-height:1.6;">الاطلاع على الفواتير وحالة المدفوعات</td>
                     </tr></table>
                   </td>
                 </tr>
@@ -408,7 +390,7 @@ Deno.serve(async (req: Request) => {
                   <td style="padding:14px 18px;">
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
                       <td width="36" style="width:36px;height:36px;background:rgba(124,58,237,0.12);border-radius:10px;text-align:center;vertical-align:middle;font-size:16px;">&#127919;</td>
-                      <td style="padding-right:14px;font-size:14px;color:rgba(200,215,255,0.85);line-height:1.6;">استعراض المراحل والتسليمات لكل مشروع</td>
+                      <td style="padding-right:14px;font-size:14px;color:#cbd5e1;line-height:1.6;">استعراض المراحل والتسليمات لكل مشروع</td>
                     </tr></table>
                   </td>
                 </tr>
@@ -416,32 +398,27 @@ Deno.serve(async (req: Request) => {
             </td>
           </tr>
 
-          <!-- CTA Button -->
+          <!-- Outlined CTA -->
           <tr>
-            <td style="padding:28px 32px;text-align:center;">
-              <!--[if mso]>
-              <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${portalUrl}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="19%" fillcolor="#2563eb" stroke="f">
-                <w:anchorlock/><center style="color:#ffffff;font-family:Cairo,Arial,sans-serif;font-size:15px;font-weight:bold;">الدخول إلى بوابة العميل</center>
-              </v:roundrect>
-              <![endif]-->
-              <!--[if !mso]><!-->
-              <a href="${portalUrl}" style="display:inline-block;padding:15px 48px;background:#2563eb;color:#ffffff !important;font-size:15px;font-weight:800;border-radius:10px;text-decoration:none;box-shadow:0 4px 20px rgba(37,99,235,0.35);mso-hide:all;letter-spacing:0.3px;"><span style="color:#ffffff !important;">&#127760; الدخول إلى بوابة العميل</span></a>
-              <!--<![endif]-->
+            <td align="center" style="padding:24px 32px 8px;">
+              <a href="${portalUrl}" style="display:inline-block;padding:14px 56px;border-radius:12px;border:1.5px solid #34d399;color:#34d399;font-size:14px;font-weight:700;text-decoration:none;font-family:'Cairo','Tajawal',Arial,sans-serif;">
+                &#127760; الدخول إلى بوابة العميل
+              </a>
             </td>
           </tr>
 
           <!-- How to login -->
           <tr>
             <td class="pad" style="padding:0 32px 28px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);border-radius:10px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(148,163,184,0.15);background:rgba(255,255,255,0.02);border-radius:10px;">
                 <tr>
                   <td style="padding:16px 18px;">
-                    <p style="font-size:13px;font-weight:700;color:rgba(200,215,255,0.85);margin:0 0 10px;text-align:right;">&#128161; كيفية تسجيل الدخول:</p>
+                    <p style="font-size:13px;font-weight:700;color:#cbd5e1;margin:0 0 10px;text-align:right;">&#128161; كيفية تسجيل الدخول:</p>
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                      <tr><td style="padding:4px 0;font-size:13px;color:rgba(200,215,255,0.6);line-height:1.8;text-align:right;">١. اضغط على الزر أعلاه للدخول إلى بوابة العميل</td></tr>
-                      <tr><td style="padding:4px 0;font-size:13px;color:rgba(200,215,255,0.6);line-height:1.8;text-align:right;">٢. أدخل بريدك الإلكتروني: <span dir="ltr" style="color:#60a5fa;font-weight:600;">${normalizedEmail}</span></td></tr>
-                      <tr><td style="padding:4px 0;font-size:13px;color:rgba(200,215,255,0.6);line-height:1.8;text-align:right;">٣. ستصلك رسالة برمز تحقق مكون من 6 أرقام</td></tr>
-                      <tr><td style="padding:4px 0;font-size:13px;color:rgba(200,215,255,0.6);line-height:1.8;text-align:right;">٤. أدخل الرمز وسيتم تسجيل دخولك تلقائياً</td></tr>
+                      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;line-height:1.8;text-align:right;">١. اضغط على الزر أعلاه للدخول إلى بوابة العميل</td></tr>
+                      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;line-height:1.8;text-align:right;">٢. أدخل بريدك الإلكتروني: <span dir="ltr" style="color:#60a5fa;font-weight:600;">${normalizedEmail}</span></td></tr>
+                      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;line-height:1.8;text-align:right;">٣. ستصلك رسالة برمز تحقق مكون من 6 أرقام</td></tr>
+                      <tr><td style="padding:4px 0;font-size:13px;color:#94a3b8;line-height:1.8;text-align:right;">٤. أدخل الرمز وسيتم تسجيل دخولك تلقائياً</td></tr>
                     </table>
                   </td>
                 </tr>
@@ -451,14 +428,15 @@ Deno.serve(async (req: Request) => {
 
           <!-- Footer -->
           <tr>
-            <td class="ftr" align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid #e5e7eb;">
-              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:inline-block;border:0;max-width:100px;height:auto;opacity:0.85;" />
-              <div style="margin-top:12px;font-size:11px;color:#3b82f6;line-height:2;">
-                <a href="${appOrigin}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-                <a href="${appOrigin}/privacy" style="color:#3b82f6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a>
-                <a href="${appOrigin}/terms" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+            <td align="center" style="padding:32px 32px 36px;">
+              <div style="font-size:11px;color:#64748b;line-height:1.9;margin-bottom:6px;">
+                <a href="${appOrigin}" style="color:#60a5fa;text-decoration:none;margin:0 6px;">الموقع</a>
+                <span style="color:#475569;">·</span>
+                <a href="${appOrigin}/privacy" style="color:#60a5fa;text-decoration:none;margin:0 6px;">سياسة السرّية</a>
+                <span style="color:#475569;">·</span>
+                <a href="${appOrigin}/terms" style="color:#60a5fa;text-decoration:none;margin:0 6px;">الشروط</a>
               </div>
-              <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Half Lens &copy; 2026 — جميع الحقوق محفوظة</p>
+              <p style="font-size:11px;color:#64748b;margin:0;">&copy; 2026 Half Lens Production — جميع الحقوق محفوظة</p>
             </td>
           </tr>
 

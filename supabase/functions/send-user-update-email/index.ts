@@ -53,9 +53,9 @@ function buildEmailHtml(
     .map(
       (c) => `
       <tr>
-        <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#475569;font-size:13px;text-align:right;">${escapeHtml(fieldLabels[c.field] || c.field)}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#dc2626;font-size:13px;text-align:right;text-decoration:line-through;">${escapeHtml(c.old_value || "—")}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid #e5e7eb;color:#16a34a;font-size:13px;text-align:right;">${escapeHtml(c.new_value || "—")}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid rgba(148,163,184,0.10);color:#cbd5e1;font-size:13px;text-align:right;">${escapeHtml(fieldLabels[c.field] || c.field)}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid rgba(148,163,184,0.10);color:#fca5a5;font-size:13px;text-align:right;text-decoration:line-through;">${escapeHtml(c.old_value || "—")}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid rgba(148,163,184,0.10);color:#86efac;font-size:13px;text-align:right;">${escapeHtml(c.new_value || "—")}</td>
       </tr>`,
     )
     .join("");
@@ -65,45 +65,69 @@ function buildEmailHtml(
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <meta name="color-scheme" content="light only" />
-  <meta name="supported-color-schemes" content="light only" />
+  <meta name="color-scheme" content="dark only" />
+  <meta name="supported-color-schemes" content="dark only" />
 </head>
-<body style="margin:0;padding:24px 0;background:#f3f4f6;font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;">
-<div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
-  <div style="background:#ffffff;padding:24px 24px 0;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
-      <tr>
-        <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
-          <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
-          <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">تحديث الحساب</span>
-        </td>
-      </tr>
-    </table>
-  </div>
-  <div style="padding:28px 32px;background:#ffffff;">
-    <p style="font-size:16px;font-weight:700;color:#0f172a;margin:0 0 8px;">مرحباً ${escapeHtml(userName)}،</p>
-    <p style="font-size:14px;color:#475569;margin:0 0 22px;line-height:1.7;">
-      تم تحديث بيانات حسابك بواسطة <strong style="color:#0f172a;">${escapeHtml(changedByName)}</strong> بتاريخ ${dateStr}.
-    </p>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;border-collapse:collapse;background:#f9fafb;">
-      <thead>
-        <tr style="background:#f1f5f9;">
-          <th style="padding:10px 16px;font-size:12px;color:#475569;text-align:right;font-weight:700;">الحقل</th>
-          <th style="padding:10px 16px;font-size:12px;color:#475569;text-align:right;font-weight:700;">القيمة السابقة</th>
-          <th style="padding:10px 16px;font-size:12px;color:#475569;text-align:right;font-weight:700;">القيمة الجديدة</th>
+<body style="margin:0;padding:0;background:#0a1024;font-family:'Cairo','Tajawal','Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0a1024" style="background-color:#0a1024;">
+  <tr>
+    <td align="center" style="padding:0;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1428" style="max-width:560px;background-color:#0d1428;">
+        <tr>
+          <td align="center" style="padding:48px 24px 16px;">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+              <tr>
+                <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 36px;border-radius:24px;">
+                  <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto;" />
+                </td>
+              </tr>
+            </table>
+            <div style="margin-top:20px;">
+              <span style="display:inline-block;padding:8px 22px;border-radius:999px;border:1.5px solid rgba(96,165,250,0.5);color:#60a5fa;font-size:13px;font-weight:700;">تحديث الحساب</span>
+            </div>
+          </td>
         </tr>
-      </thead>
-      <tbody>${changesRows}</tbody>
-    </table>
-    <p style="font-size:13px;color:#64748b;margin:22px 0 0;line-height:1.7;">
-      إذا لم تكن على علم بهذه التغييرات، يرجى التواصل مع مدير النظام.
-    </p>
-  </div>
-  <div style="background:#f8fafc;padding:18px 32px;text-align:center;border-top:1px solid #e5e7eb;">
-    <img src="${logoBlueUrl}" alt="Half Lens" width="80" style="display:inline-block;border:0;max-width:80px;height:auto;opacity:0.85;margin-bottom:6px;" />
-    <p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">© ${new Date().getFullYear()} Half Lens — جميع الحقوق محفوظة</p>
-  </div>
-</div>
+        <tr>
+          <td align="center" style="padding:8px 32px 8px;">
+            <h1 style="font-size:22px;font-weight:800;color:#f8fafc;margin:0 0 6px;" dir="rtl">مرحباً ${escapeHtml(userName)} &#128075;</h1>
+            <p style="font-size:14px;color:#cbd5e1;line-height:1.85;margin:0 0 6px;" dir="rtl">
+              تم تحديث بيانات حسابك بواسطة <strong style="color:#f8fafc;">${escapeHtml(changedByName)}</strong> بتاريخ ${dateStr}.
+            </p>
+            <p style="font-size:12px;color:#94a3b8;line-height:1.7;margin:0 0 22px;" dir="ltr">
+              Your account has been updated by an administrator.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 24px 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid rgba(148,163,184,0.15);border-radius:12px;overflow:hidden;border-collapse:collapse;background:rgba(148,163,184,0.06);">
+              <thead>
+                <tr style="background:rgba(148,163,184,0.10);">
+                  <th style="padding:10px 16px;font-size:12px;color:#94a3b8;text-align:right;font-weight:700;">الحقل</th>
+                  <th style="padding:10px 16px;font-size:12px;color:#94a3b8;text-align:right;font-weight:700;">القيمة السابقة</th>
+                  <th style="padding:10px 16px;font-size:12px;color:#94a3b8;text-align:right;font-weight:700;">القيمة الجديدة</th>
+                </tr>
+              </thead>
+              <tbody>${changesRows}</tbody>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:18px 32px 0;">
+            <p style="font-size:13px;color:#94a3b8;margin:0;line-height:1.7;">
+              إذا لم تكن على علم بهذه التغييرات، يرجى التواصل مع مدير النظام.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:32px 32px 36px;">
+            <p style="font-size:11px;color:#64748b;margin:0;line-height:1.7;">© ${new Date().getFullYear()} Half Lens Production — جميع الحقوق محفوظة</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
 </body>
 </html>`;
 }

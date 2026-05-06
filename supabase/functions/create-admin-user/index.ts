@@ -27,22 +27,21 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#039;");
 }
 
-function baseHeader(badge: string, _badgeBg: string, _badgeBorder: string, _badgeColor: string): string {
-  // Dark navy banner card with the big white logo on top, sitting on a white
-  // email card. wrapTemplate locks color-scheme: light only so the dark navy
-  // can't be auto-inverted by Gmail iOS / Outlook.
-  void _badgeBg; void _badgeBorder; void _badgeColor;
+function baseHeader(badge: string, _badgeBg: string, badgeBorder: string, badgeColor: string): string {
+  void _badgeBg;
   return `
   <tr>
-    <td bgcolor="#ffffff" style="background-color:#ffffff;padding:24px 24px 0;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
+    <td align="center" style="padding:48px 24px 16px;">
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
         <tr>
-          <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 32px;border-radius:18px;">
-            <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto 16px;" />
-            <span style="display:inline-block;padding:7px 20px;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.18);border-radius:999px;font-size:13px;font-weight:700;color:#ffffff;">${badge}</span>
+          <td align="center" bgcolor="#0a1024" style="background-color:#0a1024;padding:44px 36px;border-radius:24px;">
+            <img src="${logoWhiteUrl}" alt="Half Lens" width="200" style="display:block;border:0;width:200px;max-width:200px;height:auto;margin:0 auto;" />
           </td>
         </tr>
       </table>
+      <div style="margin-top:20px;">
+        <span style="display:inline-block;padding:8px 22px;border-radius:999px;border:1.5px solid ${badgeBorder};color:${badgeColor};font-size:13px;font-weight:700;">${badge}</span>
+      </div>
     </td>
   </tr>`;
 }
@@ -50,18 +49,11 @@ function baseHeader(badge: string, _badgeBg: string, _badgeBorder: string, _badg
 function baseFooter(): string {
   return `
   <tr>
-    <td align="center" bgcolor="#ffffff" style="background-color:#ffffff;padding:0 24px 24px;">
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="margin:0 auto;">
-        <tr>
-          <td align="center" bgcolor="#f8fafc" style="background-color:#f8fafc;padding:24px 24px;border-radius:12px;border:1px solid #e5e7eb;">
-            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:inline-block;border:0;max-width:100px;height:auto;opacity:0.85;" />
-            <div style="margin-top:12px;font-size:11px;color:#64748b;line-height:2;">
-              <a href="${baseUrl}" style="color:#3b82f6;text-decoration:none;margin:0 8px;">الموقع الالكتروني</a>
-            </div>
-            <p style="font-size:10px;color:#94a3b8;margin:8px 0 0;">هاف لينس &copy; ${new Date().getFullYear()} — جميع الحقوق محفوظة</p>
-          </td>
-        </tr>
-      </table>
+    <td align="center" style="padding:32px 32px 36px;">
+      <div style="font-size:11px;color:#64748b;line-height:1.9;margin-bottom:6px;">
+        <a href="${baseUrl}" style="color:#60a5fa;text-decoration:none;margin:0 6px;">الموقع</a>
+      </div>
+      <p style="font-size:11px;color:#64748b;margin:0;">&copy; ${new Date().getFullYear()} Half Lens Production — جميع الحقوق محفوظة</p>
     </td>
   </tr>`;
 }
@@ -74,7 +66,7 @@ function infoBox(rows: { label: string; value: string }[]): string {
         <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid #e5e7eb;" : ""}font-size:12px;color:#64748b;font-weight:600;width:140px;">
           ${r.label}
         </td>
-        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid #e5e7eb;" : ""}font-size:12px;color:#1e293b;font-weight:600;text-align:left;" dir="rtl">
+        <td style="padding:12px 18px;${i < rows.length - 1 ? "border-bottom:1px solid #e5e7eb;" : ""}font-size:12px;color:#e2e8f0;font-weight:600;text-align:left;" dir="rtl">
           ${r.value}
         </td>
       </tr>`
@@ -82,7 +74,7 @@ function infoBox(rows: { label: string; value: string }[]): string {
     .join("");
 
   return `
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border:1px solid rgba(148,163,184,0.15);border-radius:10px;margin-bottom:24px;">
     <tr>
       <td style="padding:0;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
@@ -93,12 +85,12 @@ function infoBox(rows: { label: string; value: string }[]): string {
   </table>`;
 }
 
-function ctaButton(text: string, url: string, color = "#2563eb"): string {
+function ctaButton(text: string, url: string, color = "#60a5fa"): string {
   return `
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:24px;">
     <tr>
       <td align="center">
-        <a href="${url}" style="display:inline-block;padding:14px 40px;background:linear-gradient(135deg,${color} 0%,${color}dd 100%);color:#ffffff;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 15px ${color}4d;">
+        <a href="${url}" style="display:inline-block;padding:14px 56px;border:1.5px solid ${color};color:${color};font-size:14px;font-weight:700;border-radius:12px;text-decoration:none;font-family:'Cairo','Tajawal',Arial,sans-serif;">
           ${text}
         </a>
       </td>
@@ -112,29 +104,29 @@ function wrapTemplate(content: string, title: string): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="light only" />
-  <meta name="supported-color-schemes" content="light only" />
+  <meta name="color-scheme" content="dark only" />
+  <meta name="supported-color-schemes" content="dark only" />
   <title>${title}</title>
   <!--[if mso]>
   <noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
   <![endif]-->
   <style>
-    :root { color-scheme: light only; supported-color-schemes: light only; }
-    body, .eb, .ew { background-color: #f3f4f6 !important; }
-    .ec { background-color: #ffffff !important; }
-    .et { color: #0f172a !important; }
-    .es { color: #475569 !important; }
+    :root { color-scheme: dark only; supported-color-schemes: dark only; }
+    body, .eb, .ew { background-color: #0a1024 !important; }
+    .ec { background-color: #0d1428 !important; }
+    .et { color: #f8fafc !important; }
+    .es { color: #cbd5e1 !important; }
     @media only screen and (max-width: 600px) {
       .ec { border-radius: 0 !important; }
-      .ep { padding: 20px 16px !important; }
+      .ep { padding: 18px 16px !important; }
     }
   </style>
 </head>
-<body class="eb" bgcolor="#f3f4f6" style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;margin:0;padding:0;">
+<body class="eb" bgcolor="#0a1024" style="margin:0;padding:0;background-color:#0a1024;font-family:'Cairo','Tajawal',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <table class="ew" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0a1024" style="background-color:#0a1024;margin:0;padding:0;">
     <tr>
-      <td align="center" bgcolor="#f3f4f6" style="padding:24px 12px;background-color:#f3f4f6;">
-        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb;">
+      <td align="center" style="padding:0;">
+        <table class="ec" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0d1428" style="max-width:560px;background-color:#0d1428;">
           ${content}
         </table>
       </td>
@@ -154,10 +146,10 @@ function buildInviteEmail(
   const content = `
     ${baseHeader("&#128100; دعوة للانضمام", "rgba(37,99,235,0.12)", "rgba(37,99,235,0.25)", "#60a5fa")}
     <tr>
-      <td class="ep" style="padding:32px 32px 0;color:#0f172a;">
-        <p class="et" style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 8px;">مرحباً ${escapeHtml(userName)} &#128075;</p>
-        <p class="es" style="font-size:14px;color:#475569;line-height:1.8;margin:0 0 24px;">
-          تمت دعوتك للانضمام إلى منصة <strong style="color:#60a5fa;">هاف لينس</strong> بواسطة <strong style="color:#0f172a;">${escapeHtml(inviterName)}</strong>.
+      <td class="ep" style="padding:32px 32px 0;color:#f8fafc;">
+        <p class="et" style="font-size:18px;font-weight:700;color:#f8fafc;margin:0 0 8px;">مرحباً ${escapeHtml(userName)} &#128075;</p>
+        <p class="es" style="font-size:14px;color:#94a3b8;line-height:1.8;margin:0 0 24px;">
+          تمت دعوتك للانضمام إلى منصة <strong style="color:#60a5fa;">هاف لينس</strong> بواسطة <strong style="color:#f8fafc;">${escapeHtml(inviterName)}</strong>.
           يمكنك البدء بتفعيل حسابك من خلال الزر أدناه.
         </p>
       </td>
