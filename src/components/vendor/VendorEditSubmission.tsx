@@ -527,50 +527,48 @@ export const VendorEditSubmission = () => {
   const activeFlag = flags?.steps?.[activeStepId];
 
   return (
-    <div className="space-y-5" dir="rtl">
-      {/* Header banner */}
-      <div
-        className="vp-edit-banner px-4 py-4 sm:px-5 rounded-2xl flex items-start gap-3"
-        data-stack-mobile="true"
-        style={{
-          background: 'linear-gradient(135deg, rgba(245,158,11,0.12) 0%, rgba(8,18,38,0.55) 100%)',
-          border: '1px solid rgba(245,158,11,0.35)',
-        }}
-      >
-        <div
-          className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(245,158,11,0.18)' }}
-        >
-          <AlertCircle size={18} style={{ color: '#fbbf24' }} />
+    <div className="vp-edit-root" dir="rtl">
+      {/* Banner — single row, OK on phones because content stays compact */}
+      <div className="vp-edit-banner">
+        <div className="vp-edit-banner-icon">
+          <AlertCircle size={16} style={{ color: '#fbbf24' }} />
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-extrabold" style={{ color: 'var(--color-text-primary)' }}>
-            التعديلات المطلوبة
-          </div>
-          <div className="text-xs mt-1 leading-[1.8]" style={{ color: 'var(--color-text-secondary)' }}>
-            يعرض هذا النموذج فقط الخطوات التي طلب المدير تعديلها. لن يتم حذف أي بيانات — سنقوم بتحديث الحقول التي قمت بتغييرها فقط.
+        <div className="vp-edit-banner-text">
+          <div className="vp-edit-banner-title">التعديلات المطلوبة</div>
+          <div className="vp-edit-banner-sub">
+            عدّل فقط الحقول المطلوبة. لن يتم حذف أي بيانات أخرى.
           </div>
         </div>
         <button
           type="button"
           onClick={() => navigateTo('dashboard')}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold cursor-pointer flex-shrink-0"
-          style={{
-            background: 'var(--color-background-hover, rgba(148,163,184,0.15))',
-            border: '1px solid var(--color-border)',
-            color: 'var(--color-text-primary)',
-          }}
+          className="vp-edit-back-btn"
+          aria-label="العودة"
         >
           <ArrowRight size={14} />
-          العودة
         </button>
       </div>
 
-      {/* Stepper — scrollable on phones via responsive.css */}
-      <div
-        className="vp-edit-stepper flex gap-2 flex-wrap px-2.5 py-2 rounded-xl overflow-x-auto"
-        style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
-      >
+      {/* Step progress — number + label, with mini-progress bar */}
+      <div className="vp-edit-progress">
+        <div className="vp-edit-progress-meta">
+          <span className="vp-edit-progress-step">
+            الخطوة {currentStepIdx + 1} من {visibleSteps.length}
+          </span>
+          <span className="vp-edit-progress-active">
+            {getStepLabel(activeStepId)}
+          </span>
+        </div>
+        <div className="vp-edit-progress-bar">
+          <div
+            className="vp-edit-progress-fill"
+            style={{ width: `${((currentStepIdx + 1) / Math.max(visibleSteps.length, 1)) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Stepper — horizontally scrollable chips */}
+      <div className="vp-edit-stepper" role="tablist">
         {visibleSteps.map((sid, idx) => {
           const done = idx < currentStepIdx;
           const active = idx === currentStepIdx;
@@ -579,15 +577,14 @@ export const VendorEditSubmission = () => {
               key={sid}
               type="button"
               onClick={() => setCurrentStepIdx(idx)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold cursor-pointer whitespace-nowrap flex-shrink-0"
-              style={{
-                background: active ? 'rgba(245,158,11,0.15)' : done ? 'rgba(34,197,94,0.1)' : 'transparent',
-                border: active ? '1px solid rgba(245,158,11,0.5)' : done ? '1px solid rgba(34,197,94,0.3)' : '1px solid var(--color-border)',
-                color: active ? '#b45309' : done ? '#16a34a' : 'var(--color-text-secondary)',
-              }}
+              className={`vp-edit-step-chip${active ? ' is-active' : ''}${done ? ' is-done' : ''}`}
+              role="tab"
+              aria-selected={active}
             >
-              {done && <CheckCircle2 size={13} />}
-              {getStepLabel(sid)}
+              <span className="vp-edit-step-num">
+                {done ? <CheckCircle2 size={12} /> : idx + 1}
+              </span>
+              <span className="vp-edit-step-label">{getStepLabel(sid)}</span>
             </button>
           );
         })}
@@ -595,22 +592,25 @@ export const VendorEditSubmission = () => {
 
       {/* Admin comment for the active step */}
       {activeFlag?.comment && (
-        <div
-          className="px-4 py-3 rounded-[10px]"
-          style={{
-            background: 'rgba(245,158,11,0.06)',
-            border: '1px solid rgba(245,158,11,0.25)',
-          }}
-        >
-          <div className="text-[11px] font-bold mb-1" style={{ color: '#fbbf24' }}>
-            ملاحظات المراجع لهذه الخطوة
+        <div className="vp-edit-note">
+          <div className="vp-edit-note-title">
+            <AlertCircle size={13} /> ملاحظات المراجع لهذه الخطوة
           </div>
-          <div className="text-[13px] leading-[1.8]" style={{ color: 'var(--color-text-primary)' }}>
-            {activeFlag.comment}
+          <div className="vp-edit-note-body">
+            {activeFlag.comment
+              .split(/\n+/)
+              .map(s => s.trim())
+              .filter(Boolean)
+              .map((line, i) => (
+                <div key={i} className="vp-edit-note-line">{line}</div>
+              ))}
           </div>
           {!!activeFlag.fields?.length && (
-            <div className="text-[11px] mt-1.5" style={{ color: 'var(--color-text-muted)' }}>
-              الحقول المطلوب مراجعتها: {activeFlag.fields.map((f) => getFieldLabel(activeStepId, f)).join('، ')}
+            <div className="vp-edit-note-fields">
+              <span className="vp-edit-note-fields-label">الحقول:</span>
+              {activeFlag.fields.map((f) => (
+                <span key={f} className="vp-edit-note-field-chip">{getFieldLabel(activeStepId, f)}</span>
+              ))}
             </div>
           )}
         </div>
@@ -643,20 +643,24 @@ export const VendorEditSubmission = () => {
           />
         )}
 
-        <div className="nav-buttons" data-action-bar>
+        <div className="vp-edit-actions">
           {currentStepIdx > 0 ? (
-            <button className="btn btn-secondary" onClick={prev} type="button" data-action="secondary">السابق</button>
-          ) : <div />}
+            <button className="vp-edit-btn vp-edit-btn-secondary" onClick={prev} type="button">
+              السابق
+            </button>
+          ) : <span />}
           {currentStepIdx < visibleSteps.length - 1 ? (
-            <button className="btn btn-primary" onClick={next} type="button">التالي</button>
+            <button className="vp-edit-btn vp-edit-btn-primary" onClick={next} type="button">
+              التالي
+            </button>
           ) : (
             <button
-              className="btn-submit"
+              className="vp-edit-btn vp-edit-btn-submit"
               onClick={handleResubmit}
               disabled={saving}
               type="button"
             >
-              {saving ? 'جاري الإرسال...' : 'إرسال التعديلات ↺'}
+              {saving ? 'جاري الإرسال...' : 'إرسال التعديلات'}
             </button>
           )}
         </div>
