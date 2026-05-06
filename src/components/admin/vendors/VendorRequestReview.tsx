@@ -4,6 +4,8 @@ import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { canTransition, STATUS_LABELS, VendorStatus } from '../../../lib/vendorStatusMachine';
+import { RevisionFlagModal } from './RevisionFlagModal';
+import type { RevisionFlags } from '../../../lib/vendorRegistrationSteps';
 
 interface ApprovalLogEntry {
   id: string;
@@ -129,7 +131,11 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
     }
   };
 
-  const performAction = async (action: 'approved' | 'rejected' | 'revision_requested', reason?: string) => {
+  const performAction = async (
+    action: 'approved' | 'rejected' | 'revision_requested',
+    reason?: string,
+    flags?: RevisionFlags,
+  ) => {
     if (!vendor || !capturedUpdatedAt) return;
 
     const newStatus: VendorStatus = action === 'approved' ? 'active' : action === 'rejected' ? 'rejected' : 'revision_requested';
@@ -178,11 +184,14 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
       // Update captured timestamp so subsequent actions on same page work
       setCapturedUpdatedAt(updated[0].updated_at);
 
-      // Log the action
+      // Log the action — for revision_requested we ALSO persist the structured
+      // per-step / per-field flags so the vendor's resubmit wizard knows which
+      // steps to surface and which fields to keep editable.
       await supabase.from('vendor_approval_log').insert([{
         vendor_id: vendorId,
         action,
         reason: reason || null,
+        flags: flags ?? null,
         performed_by: user?.id || null,
       }]);
 
@@ -594,18 +603,17 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
         />
       )}
 
-      {/* Revision Modal */}
+      {/* Revision Modal — structured per-step / per-field flagger */}
       {showRevisionModal && (
-        <ActionModalWithReason
-          title="طلب تعديلات"
-          message={`سيتم إرسال طلب تعديلات للمورد "${vendor.full_name}". يرجى إدخال الملاحظات والتعديلات المطلوبة.`}
-          placeholder="الملاحظات والتعديلات المطلوبة (مطلوب)..."
-          confirmText="إرسال طلب التعديلات"
-          confirmColor="#f59e0b"
+        <RevisionFlagModal
+          vendorName={vendor.full_name}
           loading={actionLoading === 'revision_requested'}
-          reason={actionReason}
-          onReasonChange={setActionReason}
-          onConfirm={() => performAction('revision_requested', actionReason)}
+          onConfirm={(flags, summary) => {
+            void performAction('revision_requested', summary, flags).then(() => {
+              setShowRevisionModal(false);
+              setActionReason('');
+            });
+          }}
           onClose={() => { setShowRevisionModal(false); setActionReason(''); }}
         />
       )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import {
   User, Phone, Mail, CreditCard, Globe, Building2,
   Wrench, Landmark, Hash, ChevronDown, ChevronUp,
@@ -17,6 +17,8 @@ import { getNationalityItems, getCountryCodeItems } from '../../lib/shared-data'
 import { SearchableSelect } from './profile/SearchableSelect';
 import { TravelDocsTab } from './profile/TravelDocsTab';
 import { OtherDocsTab } from './profile/OtherDocsTab';
+
+const DocumentCropper = lazy(() => import('../shared/DocumentCropper'));
 
 interface City { id: string; name_ar: string; }
 
@@ -61,6 +63,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingIdImage, setUploadingIdImage] = useState(false);
   const [uploadingVehicleImage, setUploadingVehicleImage] = useState(false);
+  const [pendingProfileFile, setPendingProfileFile] = useState<File | null>(null);
   const vehicleImageRef = useRef<HTMLInputElement>(null);
   const imageRef = useRef<HTMLInputElement>(null);
   const idImageRef = useRef<HTMLInputElement>(null);
@@ -439,7 +442,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
           ) : (
             <div style={{ width: 64, height: 64, borderRadius: 16, background: 'linear-gradient(135deg,#1d4ed8,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>{initials}</div>
           )}
-          <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadProfileImage(f); e.target.value = ''; }} />
+          <input ref={imageRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) setPendingProfileFile(f); e.target.value = ''; }} />
           <button className="vp-avatar-upload-btn" onClick={() => imageRef.current?.click()} disabled={uploadingImage} style={{ position: 'absolute', bottom: -4, left: -4, width: 26, height: 26, borderRadius: 8, background: '#3b82f6', border: '2px solid var(--card)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
             {uploadingImage ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
           </button>
@@ -853,6 +856,20 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteConfirm({ isOpen: false, docId: null, isTravelDoc: false })}
       />
+
+      {pendingProfileFile && (
+        <Suspense fallback={null}>
+          <DocumentCropper
+            open={!!pendingProfileFile}
+            file={pendingProfileFile}
+            aspect={1}
+            docLabel="الصورة الشخصية"
+            onSave={(cropped) => { setPendingProfileFile(null); uploadProfileImage(cropped); }}
+            onSkip={(orig) => { setPendingProfileFile(null); uploadProfileImage(orig); }}
+            onCancel={() => setPendingProfileFile(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

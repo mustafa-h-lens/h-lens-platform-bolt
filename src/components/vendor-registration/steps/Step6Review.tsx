@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VendorFormData, SelectedField } from '../VendorRegistrationForm';
 import { LegalAcceptanceModal } from '../LegalAcceptanceModal';
+import { supabase } from '../../../lib/supabaseClient';
 
 interface Props {
   formData: VendorFormData;
@@ -12,7 +13,39 @@ interface Props {
 
 export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepted, saveDraftNow }: Props) => {
   const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [equipExpanded, setEquipExpanded] = useState(false);
+  const [equipNames, setEquipNames] = useState<Record<string, { name: string; type?: string; brand?: string }>>({});
   void saveDraftNow;
+
+  // Lazy-fetch the names for selected_equipment_ids the first time the section expands.
+  useEffect(() => {
+    const ids = formData.selected_equipment_ids ?? [];
+    if (!equipExpanded || ids.length === 0) return;
+    const missing = ids.filter(id => !equipNames[id]);
+    if (missing.length === 0) return;
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('equipment_catalog')
+          .select('id, name, equipment_categories(name), equipment_brands(name)')
+          .in('id', missing);
+        if (!alive || !data) return;
+        const next = { ...equipNames };
+        for (const row of data as any[]) {
+          next[row.id] = {
+            name: row.name,
+            type: row.equipment_categories?.name,
+            brand: row.equipment_brands?.name,
+          };
+        }
+        setEquipNames(next);
+      } catch (err) {
+        console.error('Step6Review: load equipment names failed', err);
+      }
+    })();
+    return () => { alive = false; };
+  }, [equipExpanded, formData.selected_equipment_ids]);
 
   const vendorTypeLabel = formData.vendor_type === 'individual' ? 'فرد' : formData.vendor_type === 'company' ? 'شركة' : '—';
 
@@ -182,10 +215,69 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
                 <span className="review-card-title">🎥 المعدات</span>
                 <button className="review-card-edit" onClick={() => goToStep(7)} type="button">✏️ تعديل</button>
               </div>
-              <div className="review-row">
-                <span className="rv-label">من القائمة</span>
-                <span className="rv-value">{formData.selected_equipment_ids?.length ?? 0} معدة</span>
-              </div>
+
+              {(formData.selected_equipment_ids?.length ?? 0) > 0 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setEquipExpanded(v => !v)}
+                    className="review-row"
+                    style={{
+                      width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: 0, background: 'transparent', border: 'none',
+                      color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right',
+                    }}
+                    aria-expanded={equipExpanded}
+                  >
+                    <span className="rv-label">من القائمة</span>
+                    <span className="rv-value" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      {formData.selected_equipment_ids.length} معدة
+                      <span style={{
+                        display: 'inline-block',
+                        transition: 'transform 0.2s',
+                        transform: equipExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                        fontSize: 12,
+                        color: 'var(--text-muted)',
+                      }}>▾</span>
+                    </span>
+                  </button>
+
+                  {equipExpanded && (
+                    <div style={{
+                      display: 'flex', flexDirection: 'column', gap: 6,
+                      marginTop: 8, paddingTop: 10,
+                      borderTop: '1px dashed var(--border-soft)',
+                    }}>
+                      {formData.selected_equipment_ids.map(id => {
+                        const meta = equipNames[id];
+                        return (
+                          <div key={id} style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            padding: '6px 10px', borderRadius: 8,
+                            background: 'rgba(59,130,246,0.06)',
+                            fontSize: 13,
+                          }}>
+                            <span style={{ color: '#3b82f6', flexShrink: 0 }}>•</span>
+                            <span style={{ color: 'var(--text-primary)', fontWeight: 600, flex: 1, minWidth: 0 }}>
+                              {meta?.name ?? '...'}
+                            </span>
+                            {meta?.brand && (
+                              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{meta.brand}</span>
+                            )}
+                            {meta?.type && (
+                              <span style={{
+                                fontSize: 10, padding: '2px 8px', borderRadius: 6,
+                                background: 'rgba(148,163,184,0.10)', color: 'var(--text-muted)', fontWeight: 600,
+                              }}>{meta.type}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
               {(formData.custom_equipment_text?.length ?? 0) > 0 && (
                 <div className="review-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
                   <span className="rv-label">معدات أخرى</span>

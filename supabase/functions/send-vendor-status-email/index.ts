@@ -138,11 +138,23 @@ function baseHeader(badge: string, badgeBg: string, badgeBorder: string, badgeCo
   return `
   <tr>
     <td class="eh" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
-      <!-- Logo pill — keeps dark background even if the outer header is swapped to light by the email client -->
+      <!-- Logo pill — light & dark variants so the logo stays visible whether
+           the email client renders our intended dark header or force-inverts it
+           to a light/white one (Gmail iOS is the common offender). -->
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
         <tr>
-          <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
-            <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+          <td align="center" style="padding:0;border-radius:14px;">
+            <!--[if !mso]><!-->
+            <span class="logo-light" style="display:inline-block;line-height:0;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+            </span>
+            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+              <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+            </span>
+            <!--<![endif]-->
+            <!--[if mso]>
+            <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+            <![endif]-->
           </td>
         </tr>
       </table>
@@ -157,11 +169,21 @@ function baseFooter(): string {
   return `
   <tr>
     <td class="ef" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
-      <!-- Footer logo pill — always-dark container so the white logo stays visible -->
+      <!-- Footer logo — light & dark variants so it renders on either background -->
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
         <tr>
-          <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
-            <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+          <td align="center" style="padding:0;border-radius:10px;">
+            <!--[if !mso]><!-->
+            <span class="logo-light" style="display:inline-block;line-height:0;">
+              <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
+            </span>
+            <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+              <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+            </span>
+            <!--<![endif]-->
+            <!--[if mso]>
+            <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
+            <![endif]-->
           </td>
         </tr>
       </table>
@@ -220,7 +242,19 @@ function wrapTemplate(content: string, title: string): string {
       .et { color: #f0f4ff !important; }
       .es { color: rgba(200,215,255,0.6) !important; }
     }
-    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
+    /* Logo dark/light swap so it stays visible in both light and dark email clients.
+       Default state: light mode → blue logo visible, white logo hidden.
+       Dark mode: white logo visible, blue logo hidden. */
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: none !important; }
+      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
+    }
+    /* Gmail Android dark-mode prefix */
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark  { display: inline-block !important; }
+    /* iOS Mail dark mode (u + .eb) — already used elsewhere in this template */
+    u + .eb .logo-light { display: none !important; }
+    u + .eb .logo-dark  { display: inline-block !important; }
     @media (prefers-color-scheme: light) {
       .footer-links-dark { display: none !important; }
       .footer-links-light { display: block !important; }

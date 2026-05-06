@@ -15,6 +15,7 @@ import { VendorInvoices } from './VendorInvoices';
 import { VendorEquipment } from './VendorEquipment';
 import { VendorNotifications } from './VendorNotifications';
 import { VendorSuggestions } from './VendorSuggestions';
+import { VendorEditSubmission } from './VendorEditSubmission';
 import { ErrorBoundary } from '../shared/ErrorBoundary';
 import { useDisablePullToRefresh } from '../shared/PullToRefresh';
 import '../../styles/vendor-portal.css';
@@ -30,13 +31,14 @@ const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }
 ];
 
 const PAGE_TITLES: Record<VendorPage, string> = {
-  dashboard:     'الرئيسية',
-  profile:       'الملف الشخصي',
-  projects:      'مشاريعي',
-  invoices:      'الفواتير والمدفوعات',
-  equipment:     'المعدات',
-  notifications: 'الإشعارات',
-  suggestions:   'الاقتراحات',
+  dashboard:        'الرئيسية',
+  profile:          'الملف الشخصي',
+  projects:         'مشاريعي',
+  invoices:         'الفواتير والمدفوعات',
+  equipment:        'المعدات',
+  notifications:    'الإشعارات',
+  suggestions:      'الاقتراحات',
+  'edit-submission':'تعديل الطلب',
 };
 
 export const VendorPortal = () => {
@@ -51,7 +53,6 @@ export const VendorPortal = () => {
   const [sideOpen, setSideOpen] = useState(true);
   const [primaryService, setPrimaryService] = useState('');
   const [revisionNotes, setRevisionNotes] = useState<string | null>(null);
-  const [resubmitting, setResubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [pendingNav, setPendingNav] = useState<VendorPage | null>(null);
 
@@ -164,35 +165,6 @@ export const VendorPortal = () => {
       window.scrollTo(0, scrollY);
     };
   }, [drawerOpen]);
-
-  const handleResubmit = async () => {
-    if (!vendor?.id) return;
-    setResubmitting(true);
-    try {
-      const { error } = await supabase
-        .from('vendors')
-        .update({ status: 'pending_approval', updated_at: new Date().toISOString() })
-        .eq('id', vendor.id);
-      if (error) throw error;
-
-      await supabase.from('vendor_approval_log').insert([{
-        vendor_id: vendor.id, action: 'resubmitted', performed_by: null,
-      }]);
-
-      try {
-        await supabase.functions.invoke('send-vendor-status-email', { body: { vendor_id: vendor.id, email_type: 'resubmitted' } });
-        await supabase.functions.invoke('send-vendor-status-email', { body: { vendor_id: vendor.id, email_type: 'admin_new_registration' } });
-      } catch {}
-
-      showSuccess('تم إعادة تقديم طلبك بنجاح. سيتم مراجعته من قبل فريقنا.');
-      setTimeout(() => signOut(), 2000);
-    } catch (error) {
-      console.error('Error resubmitting:', error);
-      showError('حدث خطأ أثناء إعادة تقديم الطلب');
-    } finally {
-      setResubmitting(false);
-    }
-  };
 
   const navigate = (id: VendorPage) => {
     if (id === currentPage) return;
@@ -528,17 +500,15 @@ export const VendorPortal = () => {
                       </div>
                     )}
                     <button
-                      onClick={handleResubmit}
-                      disabled={resubmitting}
+                      onClick={() => navigateTo('edit-submission')}
                       style={{
                         marginTop: '0.75rem', backgroundColor: '#2563eb', color: 'white',
                         border: 'none', borderRadius: 8, padding: '0.5rem 1.25rem',
                         fontWeight: 600, fontSize: '0.85rem',
-                        cursor: resubmitting ? 'not-allowed' : 'pointer',
-                        opacity: resubmitting ? 0.6 : 1,
+                        cursor: 'pointer',
                       }}
                     >
-                      {resubmitting ? 'جاري إعادة التقديم...' : 'إعادة تقديم الطلب'}
+                      ابدأ التعديل وأعد التقديم ←
                     </button>
                   </div>
                 </div>
@@ -546,13 +516,14 @@ export const VendorPortal = () => {
             )}
 
             <ErrorBoundary key={currentPage}>
-              {currentPage === 'dashboard'      && <VendorDashboard />}
-              {currentPage === 'profile'        && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
-              {currentPage === 'projects'       && <VendorProjects />}
-              {currentPage === 'invoices'       && <VendorInvoices />}
-              {currentPage === 'equipment'      && <VendorEquipment />}
-              {currentPage === 'notifications'  && <VendorNotifications />}
-              {currentPage === 'suggestions'    && <VendorSuggestions />}
+              {currentPage === 'dashboard'        && <VendorDashboard />}
+              {currentPage === 'profile'          && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
+              {currentPage === 'projects'         && <VendorProjects />}
+              {currentPage === 'invoices'         && <VendorInvoices />}
+              {currentPage === 'equipment'        && <VendorEquipment />}
+              {currentPage === 'notifications'    && <VendorNotifications />}
+              {currentPage === 'suggestions'      && <VendorSuggestions />}
+              {currentPage === 'edit-submission'  && <VendorEditSubmission />}
             </ErrorBoundary>
           </div>
         </div>

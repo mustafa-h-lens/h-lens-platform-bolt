@@ -9,14 +9,10 @@ interface CatalogItem {
   image_url: string | null;
   category_id: string | null;
   brand_id: string | null;
-  equipment_categories?: { name: string } | null;
-  equipment_brands?: { name: string } | null;
 }
 
-interface Category {
-  id: string;
-  name: string;
-}
+interface Category { id: string; name: string; }
+interface Brand    { id: string; name: string; }
 
 interface Props {
   selectedIds: string[];
@@ -28,30 +24,34 @@ interface Props {
 const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCustomNames }: Props) => {
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [activeCat, setActiveCat] = useState<string>('');
+
+  // Cascading picker state
+  const [selCategory, setSelCategory] = useState('');
+  const [selBrand, setSelBrand] = useState('');
+  const [selItem, setSelItem] = useState('');
+
+  // Free-text textarea
   const [customDraft, setCustomDraft] = useState(() => customNames.join('\n'));
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [{ data: cat }, { data: cats }] = await Promise.all([
+        const [{ data: cat }, { data: cats }, { data: brs }] = await Promise.all([
           supabase
             .from('equipment_catalog')
-            .select('id, name, name_en, image_url, category_id, brand_id, equipment_categories(name), equipment_brands(name)')
+            .select('id, name, name_en, image_url, category_id, brand_id')
             .eq('is_active', true)
             .order('name'),
-          supabase
-            .from('equipment_categories')
-            .select('id, name')
-            .eq('is_active', true)
-            .order('name'),
+          supabase.from('equipment_categories').select('id, name').eq('is_active', true).order('name'),
+          supabase.from('equipment_brands').select('id, name').eq('is_active', true).order('name'),
         ]);
         if (!alive) return;
         setCatalog((cat ?? []) as any);
         setCategories((cats ?? []) as any);
+        setBrands((brs ?? []) as any);
       } catch (err) {
         console.error('Step7Equipment: catalog load failed', err);
       } finally {
@@ -61,53 +61,57 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
     return () => { alive = false; };
   }, []);
 
-  // Keep parent customNames in sync when the draft text changes (split per line, trim, dedupe)
+  // Sync free-text textarea → parent customNames
   useEffect(() => {
-    const lines = customDraft
-      .split('\n')
-      .map(s => s.trim())
-      .filter(Boolean);
-    // Drop dupes case-insensitively, keep first occurrence
+    const lines = customDraft.split('\n').map(s => s.trim()).filter(Boolean);
     const seen = new Set<string>();
     const deduped: string[] = [];
     for (const l of lines) {
       const key = normalizeArabic(l);
       if (!seen.has(key)) { seen.add(key); deduped.push(l); }
     }
-    if (deduped.join('\n') !== customNames.join('\n')) {
-      updateCustomNames(deduped);
-    }
+    if (deduped.join('\n') !== customNames.join('\n')) updateCustomNames(deduped);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customDraft]);
 
-  const selectedNorms = useMemo(() => {
-    const set = new Set<string>();
-    for (const id of selectedIds) {
-      const it = catalog.find(c => c.id === id);
-      if (it) set.add(normalizeArabic(it.name));
-    }
-    return set;
+  // Brands available for the chosen category (only brands that actually have items in that category)
+  const filteredBrands = useMemo(() => {
+    if (!selCategory) return brands;
+    const idsWithCat = new Set(catalog.filter(c => c.category_id === selCategory).map(c => c.brand_id).filter(Boolean) as string[]);
+    return brands.filter(b => idsWithCat.has(b.id));
+  }, [selCategory, brands, catalog]);
+
+  // Items in chosen category + brand, excluding ones already selected
+  const filteredItems = useMemo(() => {
+    return catalog.filter(c => {
+      if (selCategory && c.category_id !== selCategory) return false;
+      if (selBrand && c.brand_id !== selBrand) return false;
+      if (selectedIds.includes(c.id)) return false;
+      return true;
+    });
+  }, [catalog, selCategory, selBrand, selectedIds]);
+
+  // The currently-selected items, hydrated for the chips list
+  const selectedItems = useMemo(() => {
+    return selectedIds.map(id => catalog.find(c => c.id === id)).filter(Boolean) as CatalogItem[];
   }, [selectedIds, catalog]);
 
-  const customsClashingWithCatalog = useMemo(() => {
-    return customNames.filter(n => selectedNorms.has(normalizeArabic(n)));
-  }, [customNames, selectedNorms]);
+  const selectedNorms = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of selectedItems) set.add(normalizeArabic(it.name));
+    return set;
+  }, [selectedItems]);
 
-  const filteredCatalog = useMemo(() => {
-    const q = normalizeArabic(search);
-    return catalog.filter(it => {
-      if (activeCat && it.category_id !== activeCat) return false;
-      if (!q) return true;
-      const hay = normalizeArabic(`${it.name} ${it.name_en ?? ''}`);
-      return hay.includes(q);
-    });
-  }, [catalog, search, activeCat]);
+  const addItem = () => {
+    if (!selItem) return;
+    if (!selectedIds.includes(selItem)) {
+      updateSelectedIds([...selectedIds, selItem]);
+    }
+    setSelItem('');
+  };
 
-  const toggleItem = (id: string) => {
-    const next = selectedIds.includes(id)
-      ? selectedIds.filter(x => x !== id)
-      : [...selectedIds, id];
-    updateSelectedIds(next);
+  const removeItem = (id: string) => {
+    updateSelectedIds(selectedIds.filter(x => x !== id));
   };
 
   if (loading) {
@@ -120,134 +124,170 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
     );
   }
 
+  const catName = (id: string | null | undefined) => categories.find(c => c.id === id)?.name ?? '';
+  const brandName = (id: string | null | undefined) => brands.find(b => b.id === id)?.name ?? '';
+
   return (
     <>
       <h2 className="step-title">🎥 المعدات</h2>
       <p className="step-subtitle">
-        اختر المعدات التي تملكها. إذا كانت عندك معدّات لم تجدها في القائمة،
+        اختر المعدات التي تملكها من القائمة. إذا كانت عندك معدّات لم تجدها،
         اكتب أسماءها في الخانة بالأسفل وسيقوم المسؤول بإضافتها لاحقاً.
       </p>
 
       <div className="form-section">
-        {/* Search */}
-        <div className="input-group" style={{ marginBottom: 10 }}>
-          <input
-            className="input"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="ابحث بالعربي أو الإنجليزي..."
-          />
-        </div>
-
-        {/* Category chips */}
-        {categories.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-            <button
-              type="button"
-              onClick={() => setActiveCat('')}
-              className={`subfield-chip ${activeCat === '' ? 'selected' : ''}`}
-              style={{ cursor: 'pointer' }}
-            >
-              الكل
-            </button>
-            {categories.map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setActiveCat(c.id === activeCat ? '' : c.id)}
-                className={`subfield-chip ${activeCat === c.id ? 'selected' : ''}`}
-                style={{ cursor: 'pointer' }}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Selected count */}
+        {/* Selected counter */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 12px', borderRadius: 10,
+          padding: '10px 14px', borderRadius: 12, marginBottom: 16,
           background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
-          fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12,
+          fontSize: 13, color: 'var(--text-secondary)',
         }}>
-          <span>المعدات المختارة: <strong style={{ color: 'var(--text-primary)' }}>{selectedIds.length}</strong></span>
+          <span>المعدات المختارة: <strong style={{ color: 'var(--text-primary)' }}>{selectedItems.length}</strong></span>
           {customNames.length > 0 && (
             <span>معدات أخرى: <strong style={{ color: 'var(--text-primary)' }}>{customNames.length}</strong></span>
           )}
         </div>
 
-        {/* Items grid */}
+        {/* Cascading picker */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-          gap: 10,
-          maxHeight: 480,
-          overflowY: 'auto',
-          padding: 4,
+          padding: 16, borderRadius: 14,
+          background: 'var(--bg-surface)', border: '1px solid var(--border-soft)',
+          marginBottom: 18,
         }}>
-          {filteredCatalog.length === 0 && (
-            <div style={{ gridColumn: '1 / -1', padding: 20, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-              لا توجد معدات تطابق البحث. اكتبها في خانة "معدات أخرى" بالأسفل.
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12 }}>
+            اختر من كتالوج المعدات
+          </div>
+
+          {/* Step 1: Category */}
+          <div className="input-group" style={{ marginBottom: 12 }}>
+            <label className="input-label">1. التصنيف <span className="req">*</span></label>
+            <select
+              className="input"
+              value={selCategory}
+              onChange={e => { setSelCategory(e.target.value); setSelBrand(''); setSelItem(''); }}
+            >
+              <option value="">اختر التصنيف</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          {/* Step 2: Brand — only after category */}
+          {selCategory && (
+            <div className="input-group" style={{ marginBottom: 12 }}>
+              <label className="input-label">2. العلامة التجارية</label>
+              <select
+                className="input"
+                value={selBrand}
+                onChange={e => { setSelBrand(e.target.value); setSelItem(''); }}
+              >
+                <option value="">اختر العلامة التجارية</option>
+                {filteredBrands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              {filteredBrands.length === 0 && (
+                <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+                  لا توجد علامات تجارية متاحة في هذا التصنيف
+                </div>
+              )}
             </div>
           )}
-          {filteredCatalog.map(it => {
-            const sel = selectedIds.includes(it.id);
-            return (
-              <button
-                key={it.id}
-                type="button"
-                onClick={() => toggleItem(it.id)}
-                className="reg-equip-card"
-                aria-pressed={sel}
-                style={{
-                  position: 'relative',
-                  display: 'flex', flexDirection: 'column', alignItems: 'stretch',
-                  padding: 10, borderRadius: 12,
-                  background: sel ? 'rgba(59,130,246,0.10)' : 'var(--bg-surface)',
-                  border: `1.5px solid ${sel ? 'rgba(59,130,246,0.65)' : 'var(--border-soft)'}`,
-                  cursor: 'pointer',
-                  textAlign: 'right',
-                  transition: 'border-color 0.18s, background 0.18s, transform 0.18s',
-                  fontFamily: 'inherit',
-                }}
+
+          {/* Step 3: Item — only after brand */}
+          {selBrand && (
+            <div className="input-group" style={{ marginBottom: 12 }}>
+              <label className="input-label">3. المعدة ({filteredItems.length} متاح)</label>
+              <select
+                className="input"
+                value={selItem}
+                onChange={e => setSelItem(e.target.value)}
               >
-                {sel && (
-                  <span style={{
-                    position: 'absolute', top: 6, left: 6,
-                    width: 22, height: 22, borderRadius: '50%',
-                    background: '#3b82f6', color: '#fff',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 800,
-                  }}>✓</span>
-                )}
-                <div style={{
-                  width: '100%', aspectRatio: '4 / 3',
-                  borderRadius: 8, background: 'rgba(148,163,184,0.06)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 8, overflow: 'hidden',
-                }}>
-                  {it.image_url ? (
-                    <img src={it.image_url} alt={it.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                  ) : (
-                    <span style={{ fontSize: 22, opacity: 0.4 }}>📷</span>
-                  )}
+                <option value="">اختر المعدة</option>
+                {filteredItems.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {filteredItems.length === 0 && (
+                <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+                  لا توجد معدات متاحة في هذا التصنيف والعلامة التجارية. اكتبها بالأسفل.
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-                  {it.name}
-                </div>
-                {it.equipment_brands?.name && (
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                    {it.equipment_brands.name}
-                  </div>
-                )}
-              </button>
-            );
-          })}
+              )}
+            </div>
+          )}
+
+          {/* Add button */}
+          {selItem && (
+            <button
+              type="button"
+              onClick={addItem}
+              className="btn"
+              style={{
+                width: '100%', padding: '10px 16px', borderRadius: 10,
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                color: '#fff', border: 'none',
+                fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              ✓ إضافة المعدة إلى قائمتي
+            </button>
+          )}
         </div>
 
+        {/* Selected items list */}
+        {selectedItems.length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              قائمتك ({selectedItems.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {selectedItems.map(it => (
+                <div
+                  key={it.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', borderRadius: 10,
+                    background: 'rgba(59,130,246,0.08)',
+                    border: '1px solid rgba(59,130,246,0.30)',
+                  }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    background: 'rgba(148,163,184,0.10)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden', flexShrink: 0,
+                  }}>
+                    {it.image_url ? (
+                      <img src={it.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    ) : <span style={{ fontSize: 16, opacity: 0.4 }}>📷</span>}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {it.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6 }}>
+                      {catName(it.category_id) && <span>{catName(it.category_id)}</span>}
+                      {brandName(it.brand_id) && <span>· {brandName(it.brand_id)}</span>}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(it.id)}
+                    style={{
+                      width: 28, height: 28, borderRadius: 8,
+                      background: 'rgba(239,68,68,0.10)', color: '#ef4444',
+                      border: '1px solid rgba(239,68,68,0.25)',
+                      cursor: 'pointer', fontSize: 14, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                    aria-label="حذف"
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Free-text "other equipment" */}
-        <div className="input-group" style={{ marginTop: 18 }}>
+        <div className="input-group" style={{ marginTop: 8 }}>
           <label className="input-label">📝 معدات أخرى (غير موجودة في القائمة)</label>
           <textarea
             className="input"
@@ -281,16 +321,6 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
                   </span>
                 );
               })}
-            </div>
-          )}
-
-          {customsClashingWithCatalog.length > 0 && (
-            <div style={{
-              marginTop: 8, padding: '8px 12px', borderRadius: 10,
-              background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)',
-              fontSize: 11.5, color: '#f59e0b',
-            }}>
-              تنبيه: بعض المعدات التي كتبتها موجودة بالفعل في القائمة وتم اختيارها — لتجنب التكرار، احذفها من النص.
             </div>
           )}
         </div>

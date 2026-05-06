@@ -69,6 +69,19 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
     }
   }, [disabled]);
 
+  // Suppress iOS Safari's native pull-to-refresh chrome (the small spinning
+  // dotted-circle that appears at the top of the viewport) so the user sees
+  // ONLY our custom indicator. iOS Safari only respects `none` here, not
+  // `contain`.
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = html.style.overscrollBehaviorY;
+    html.style.overscrollBehaviorY = 'none';
+    return () => {
+      html.style.overscrollBehaviorY = prev;
+    };
+  }, []);
+
   const isMobile = useCallback(() => {
     return 'ontouchstart' in window && window.innerWidth <= 768;
   }, []);

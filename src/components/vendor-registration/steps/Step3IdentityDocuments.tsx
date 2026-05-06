@@ -7,6 +7,7 @@ import { VendorFormData } from '../VendorRegistrationForm';
 const DocumentCropper = lazy(() => import('../../shared/DocumentCropper'));
 
 const ID_ASPECT_RATIO = 1.586;
+const PROFILE_ASPECT_RATIO = 1;
 const PENDING_FILE_WATCHDOG_MS = 30000;
 
 interface Props {
@@ -25,6 +26,7 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
   const [idPreview, setIdPreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [profilePreview, setProfilePreview] = useState<{ url: string; name: string; size: string } | null>(null);
   const [pendingIdFile, setPendingIdFile] = useState<File | null>(null);
+  const [pendingProfileFile, setPendingProfileFile] = useState<File | null>(null);
 
   // Watchdog: if the cropper somehow gets stuck for >30s, force-clear the
   // pending file so the form can never permanently freeze.
@@ -36,6 +38,15 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
     }, PENDING_FILE_WATCHDOG_MS);
     return () => window.clearTimeout(t);
   }, [pendingIdFile]);
+
+  useEffect(() => {
+    if (!pendingProfileFile) return;
+    const t = window.setTimeout(() => {
+      console.warn('Step3: cropper pendingProfileFile watchdog tripped, clearing');
+      setPendingProfileFile(null);
+    }, PENDING_FILE_WATCHDOG_MS);
+    return () => window.clearTimeout(t);
+  }, [pendingProfileFile]);
 
   // Restore previews from File objects or URLs when component mounts
   useEffect(() => {
@@ -67,16 +78,9 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
     if (!file.type.startsWith('image/')) return;
     if (type === 'id') {
       setPendingIdFile(file);
-      return;
+    } else {
+      setPendingProfileFile(file);
     }
-    const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
-    const reader = new FileReader();
-    reader.onload = () => {
-      const preview = { url: reader.result as string, name: file.name, size: sizeStr };
-      setProfilePreview(preview);
-      updateFormData({ profile_image: file });
-    };
-    reader.readAsDataURL(file);
   };
 
   const commitIdFile = (file: File) => {
@@ -86,6 +90,17 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
       setIdPreview({ url: reader.result as string, name: file.name, size: sizeStr });
       updateFormData({ id_image: file });
       setPendingIdFile(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const commitProfileFile = (file: File) => {
+    const sizeStr = (file.size / 1024).toFixed(0) + ' KB';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfilePreview({ url: reader.result as string, name: file.name, size: sizeStr });
+      updateFormData({ profile_image: file });
+      setPendingProfileFile(null);
     };
     reader.readAsDataURL(file);
   };
@@ -223,6 +238,20 @@ export const Step3IdentityDocuments = ({ formData, updateFormData, errors = {} }
             onSave={commitIdFile}
             onSkip={commitIdFile}
             onCancel={() => setPendingIdFile(null)}
+          />
+        </Suspense>
+      )}
+
+      {pendingProfileFile && (
+        <Suspense fallback={null}>
+          <DocumentCropper
+            open={!!pendingProfileFile}
+            file={pendingProfileFile}
+            aspect={PROFILE_ASPECT_RATIO}
+            docLabel="الصورة الشخصية"
+            onSave={commitProfileFile}
+            onSkip={commitProfileFile}
+            onCancel={() => setPendingProfileFile(null)}
           />
         </Suspense>
       )}

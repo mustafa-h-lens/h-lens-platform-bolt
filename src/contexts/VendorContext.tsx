@@ -36,7 +36,8 @@ export type VendorPage =
   | 'invoices'
   | 'equipment'
   | 'notifications'
-  | 'suggestions';
+  | 'suggestions'
+  | 'edit-submission';
 
 interface VendorContextType {
   vendor: VendorProfile | null;
