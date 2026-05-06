@@ -123,9 +123,9 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
       <div className="form-section">
         {/* Portfolio URL */}
         <div className="input-group">
-          <label className="input-label">🔗 رابط البورتفوليو / معرض الأعمال</label>
+          <label className="input-label">🔗 رابط البورتفوليو / معرض الأعمال <span className="req">*</span></label>
           <input
-            className="input"
+            className={`input ${errors.portfolio_url ? 'has-error' : ''}`}
             type="url"
             value={portfolioUrl}
             onChange={(e) => updatePortfolioUrl(e.target.value)}
@@ -133,6 +133,7 @@ export const StepFieldsAndRates = ({ selectedFields, updateSelectedFields, portf
             dir="ltr"
             style={{ fontFamily: 'var(--font-mono)', textAlign: 'left' }}
           />
+          <FieldError msg={errors.portfolio_url} />
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>
             Google Drive, Behance, Vimeo, Instagram, أو موقعك الشخصي
           </div>

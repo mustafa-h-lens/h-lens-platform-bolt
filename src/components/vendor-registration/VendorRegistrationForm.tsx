@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
 import { supabase } from '../../lib/supabaseClient';
@@ -18,6 +18,8 @@ import { Step5Financial } from './steps/Step5Financial';
 import { StepFieldsAndRates } from './steps/StepFieldsAndRates';
 import { Step6Review } from './steps/Step6Review';
 import { SuccessScreen } from './SuccessScreen';
+
+const Step7Equipment = lazy(() => import('./steps/Step7Equipment'));
 
 export interface SelectedField {
   field_id: string;
@@ -58,9 +60,11 @@ export interface VendorFormData {
   vat_number: string;
   portfolio_url: string;
   selected_fields: SelectedField[];
+  selected_equipment_ids: string[];
+  custom_equipment_text: string[];
 }
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 const STEPS = [
   { n: 1, label: 'الهوية' },
@@ -69,7 +73,8 @@ const STEPS = [
   { n: 4, label: 'السفر' },
   { n: 5, label: 'المالية' },
   { n: 6, label: 'المجالات' },
-  { n: 7, label: 'المراجعة' },
+  { n: 7, label: 'المعدات' },
+  { n: 8, label: 'المراجعة' },
 ];
 
 export const VendorRegistrationForm = () => {
@@ -122,6 +127,8 @@ export const VendorRegistrationForm = () => {
     vat_number: '',
     portfolio_url: '',
     selected_fields: [],
+    selected_equipment_ids: [],
+    custom_equipment_text: [],
   });
 
   const saveDraftRef = useRef<() => Promise<void>>(null!);
@@ -236,10 +243,18 @@ export const VendorRegistrationForm = () => {
         }
         break;
       case 6:
+        if (!formData.portfolio_url || !formData.portfolio_url.trim()) {
+          errors.portfolio_url = 'رابط البورتفوليو مطلوب';
+        } else if (!/^https?:\/\/.+/i.test(formData.portfolio_url.trim())) {
+          errors.portfolio_url = 'الرابط يجب أن يبدأ بـ http:// أو https://';
+        }
         if (formData.selected_fields.length === 0) errors.selected_fields = 'اختر مجال واحد على الأقل';
         else if (!formData.selected_fields.every(f => f.rate_from && f.rate_to)) errors.selected_fields = 'حدد نطاق السعر لجميع المجالات المختارة';
         break;
       case 7:
+        // Equipment step is optional — vendors with no equipment can skip
+        break;
+      case 8:
         break;
     }
     return errors;
@@ -442,6 +457,8 @@ export const VendorRegistrationForm = () => {
             supabase.from('vendor_travel_documents').delete().eq('vendor_id', vendor.id),
             supabase.from('vendor_financial_data').delete().eq('vendor_id', vendor.id),
             supabase.from('vendor_selected_fields').delete().eq('vendor_id', vendor.id),
+            supabase.from('vendor_equipment').delete().eq('vendor_id', vendor.id),
+            supabase.from('equipment_suggestions').delete().eq('vendor_id', vendor.id).eq('status', 'pending'),
           ]);
         }
       } else {
@@ -507,6 +524,52 @@ export const VendorRegistrationForm = () => {
             }))
           );
           if (fieldsResult.error) console.error('Selected fields insert error:', fieldsResult.error);
+        }
+
+        // Equipment (optional step) — catalog selections → vendor_equipment
+        if (formData.selected_equipment_ids?.length > 0) {
+          try {
+            const { data: items, error: catErr } = await supabase
+              .from('equipment_catalog')
+              .select('id, name, equipment_categories(name)')
+              .in('id', formData.selected_equipment_ids);
+            if (catErr) {
+              console.error('Equipment catalog read error:', catErr);
+            } else {
+              const veRows = (items ?? []).map((it: any) => ({
+                vendor_id: vendor.id,
+                catalog_item_id: it.id,
+                name: it.name,
+                type: it.equipment_categories?.name ?? '',
+                quantity: 1,
+                condition: 'good',
+              }));
+              if (veRows.length) {
+                const veResult = await supabase.from('vendor_equipment').insert(veRows);
+                if (veResult.error) console.error('vendor_equipment insert error:', veResult.error);
+              }
+            }
+          } catch (eqErr) {
+            console.error('Equipment insert error:', eqErr);
+          }
+        }
+
+        // Free-text equipment names → equipment_suggestions (status='pending')
+        const customs = (formData.custom_equipment_text ?? [])
+          .map(s => (s ?? '').trim())
+          .filter(Boolean);
+        if (customs.length > 0) {
+          try {
+            const sRows = customs.map(text => ({
+              vendor_id: vendor.id,
+              suggestion_text: text,
+              status: 'pending' as const,
+            }));
+            const sResult = await supabase.from('equipment_suggestions').insert(sRows);
+            if (sResult.error) console.error('equipment_suggestions insert error:', sResult.error);
+          } catch (sgErr) {
+            console.error('Equipment suggestions insert error:', sgErr);
+          }
         }
       } catch (secondaryError) {
         console.error('Secondary inserts error:', secondaryError);
@@ -633,7 +696,17 @@ export const VendorRegistrationForm = () => {
               {currentStep === 4 && <Step4TravelInfo formData={formData} updateFormData={updateFormData} />}
               {currentStep === 5 && <Step5Financial formData={formData} updateFormData={updateFormData} errors={validationErrors} />}
               {currentStep === 6 && <StepFieldsAndRates selectedFields={formData.selected_fields} updateSelectedFields={(fields) => updateFormData({ selected_fields: fields })} portfolioUrl={formData.portfolio_url} updatePortfolioUrl={(url) => updateFormData({ portfolio_url: url })} errors={validationErrors} />}
-              {currentStep === 7 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} saveDraftNow={() => saveDraftRef.current?.()} />}
+              {currentStep === 7 && (
+                <Suspense fallback={<div className="page-loading-placeholder" />}>
+                  <Step7Equipment
+                    selectedIds={formData.selected_equipment_ids}
+                    customNames={formData.custom_equipment_text}
+                    updateSelectedIds={(ids) => updateFormData({ selected_equipment_ids: ids })}
+                    updateCustomNames={(names) => updateFormData({ custom_equipment_text: names })}
+                  />
+                </Suspense>
+              )}
+              {currentStep === 8 && <Step6Review formData={formData} goToStep={goToStep} termsAccepted={termsAccepted} setTermsAccepted={setTermsAccepted} saveDraftNow={() => saveDraftRef.current?.()} />}
 
               {/* Nav Buttons */}
               <div className="nav-buttons">

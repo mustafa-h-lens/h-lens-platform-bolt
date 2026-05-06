@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   Lightbulb, Send, Clock, CheckCircle, XCircle, Eye, Zap,
   MessageSquare, ChevronDown, ChevronUp, User, Camera, Package,
-  RotateCcw, Inbox,
+  RotateCcw, Inbox, Plus,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -91,7 +91,93 @@ export const AdminSuggestions = () => {
   const [esNewStatus, setEsNewStatus] = useState('');
   const [esSaving, setEsSaving] = useState(false);
 
-  useEffect(() => { fetchVendorSuggestions(); fetchEquipSuggestions(); }, []);
+  // Promote-to-catalog state (per expanded suggestion)
+  const [promoteOpen, setPromoteOpen] = useState<string | null>(null);
+  const [promoteForm, setPromoteForm] = useState({
+    name: '', name_en: '', category_id: '', brand_id: '',
+  });
+  const [promoteSaving, setPromoteSaving] = useState(false);
+  const [eqCategories, setEqCategories] = useState<{ id: string; name: string }[]>([]);
+  const [eqBrands, setEqBrands] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => { fetchVendorSuggestions(); fetchEquipSuggestions(); fetchEqMeta(); }, []);
+
+  const fetchEqMeta = async () => {
+    try {
+      const [cats, brs] = await Promise.all([
+        supabase.from('equipment_categories').select('id, name').eq('is_active', true).order('name'),
+        supabase.from('equipment_brands').select('id, name').eq('is_active', true).order('name'),
+      ]);
+      if (cats.data) setEqCategories(cats.data as any);
+      if (brs.data) setEqBrands(brs.data as any);
+    } catch (err) {
+      console.error('Equipment meta load error:', err);
+    }
+  };
+
+  const openPromote = (s: EquipSuggestion) => {
+    setPromoteOpen(s.id);
+    setPromoteForm({
+      name: s.suggestion_text.split('|')[0]?.trim() || s.suggestion_text,
+      name_en: '',
+      category_id: '',
+      brand_id: '',
+    });
+  };
+
+  const closePromote = () => {
+    setPromoteOpen(null);
+    setPromoteForm({ name: '', name_en: '', category_id: '', brand_id: '' });
+  };
+
+  const handlePromote = async (s: EquipSuggestion) => {
+    if (!promoteForm.name.trim()) return;
+    setPromoteSaving(true);
+    try {
+      // 1. Insert into equipment_catalog
+      const { data: catRow, error: catErr } = await supabase
+        .from('equipment_catalog')
+        .insert([{
+          name: promoteForm.name.trim(),
+          name_en: promoteForm.name_en.trim() || null,
+          category_id: promoteForm.category_id || null,
+          brand_id: promoteForm.brand_id || null,
+          is_active: true,
+        }])
+        .select('id, name, equipment_categories(name)')
+        .single();
+      if (catErr) throw catErr;
+
+      // 2. Attach to vendor
+      const catName = (catRow as any).equipment_categories?.name ?? '';
+      const { error: veErr } = await supabase
+        .from('vendor_equipment')
+        .insert([{
+          vendor_id: s.vendor_id,
+          catalog_item_id: catRow!.id,
+          name: catRow!.name,
+          type: catName,
+          quantity: 1,
+          condition: 'good',
+        }]);
+      if (veErr) throw veErr;
+
+      // 3. Mark suggestion as added
+      const { error: upErr } = await supabase
+        .from('equipment_suggestions')
+        .update({ status: 'added', updated_at: new Date().toISOString() })
+        .eq('id', s.id);
+      if (upErr) throw upErr;
+
+      closePromote();
+      setEsExpandedId(null);
+      await fetchEquipSuggestions();
+    } catch (err) {
+      console.error('Promote suggestion failed:', err);
+    } finally {
+      setPromoteSaving(false);
+    }
+  };
 
   // ── Vendor suggestions ──
   const fetchVendorSuggestions = async () => {
@@ -483,7 +569,7 @@ export const AdminSuggestions = () => {
                               style={{ resize: 'none', fontFamily: 'inherit' }}
                             />
                           </div>
-                          <div style={{ display: 'flex', gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <button
                               className="btn btn-primary btn-sm"
                               onClick={() => handleEsRespond(s)}
@@ -492,13 +578,95 @@ export const AdminSuggestions = () => {
                             >
                               <Send size={13} /> {esSaving ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
+                            {s.status !== 'added' && (
+                              <button
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => promoteOpen === s.id ? closePromote() : openPromote(s)}
+                                style={{ gap: 6, borderColor: 'var(--success)', color: 'var(--success-text)' }}
+                              >
+                                <Plus size={13} /> إضافة إلى الكتالوج وملف المورد
+                              </button>
+                            )}
                             <button
                               className="btn btn-ghost btn-sm"
-                              onClick={() => { setEsExpandedId(null); setEsNotes(''); setEsNewStatus(''); }}
+                              onClick={() => { setEsExpandedId(null); setEsNotes(''); setEsNewStatus(''); closePromote(); }}
                             >
                               إلغاء
                             </button>
                           </div>
+
+                          {promoteOpen === s.id && (
+                            <div style={{
+                              marginTop: 12, padding: 14, borderRadius: 10,
+                              background: 'var(--bg-base)', border: '1px solid var(--success)',
+                            }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--success-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Plus size={13} /> إضافة كمعدة جديدة في الكتالوج وربطها بحساب المورد
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                                <div className="input-group" style={{ margin: 0 }}>
+                                  <label className="input-label">الاسم بالعربي</label>
+                                  <input
+                                    className="input"
+                                    value={promoteForm.name}
+                                    onChange={e => setPromoteForm(f => ({ ...f, name: e.target.value }))}
+                                  />
+                                </div>
+                                <div className="input-group" style={{ margin: 0 }}>
+                                  <label className="input-label">Name (English)</label>
+                                  <input
+                                    className="input"
+                                    value={promoteForm.name_en}
+                                    onChange={e => setPromoteForm(f => ({ ...f, name_en: e.target.value }))}
+                                    dir="ltr"
+                                  />
+                                </div>
+                                <div className="input-group" style={{ margin: 0 }}>
+                                  <label className="input-label">التصنيف</label>
+                                  <select
+                                    className="input"
+                                    value={promoteForm.category_id}
+                                    onChange={e => setPromoteForm(f => ({ ...f, category_id: e.target.value }))}
+                                  >
+                                    <option value="">— بدون —</option>
+                                    {eqCategories.map(c => (
+                                      <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="input-group" style={{ margin: 0 }}>
+                                  <label className="input-label">الماركة</label>
+                                  <select
+                                    className="input"
+                                    value={promoteForm.brand_id}
+                                    onChange={e => setPromoteForm(f => ({ ...f, brand_id: e.target.value }))}
+                                  >
+                                    <option value="">— بدون —</option>
+                                    {eqBrands.map(b => (
+                                      <option key={b.id} value={b.id}>{b.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() => handlePromote(s)}
+                                  disabled={promoteSaving || !promoteForm.name.trim()}
+                                  style={{ gap: 6 }}
+                                >
+                                  <CheckCircle size={13} /> {promoteSaving ? 'جاري الإضافة...' : 'إضافة'}
+                                </button>
+                                <button
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={closePromote}
+                                  disabled={promoteSaving}
+                                >
+                                  إلغاء
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

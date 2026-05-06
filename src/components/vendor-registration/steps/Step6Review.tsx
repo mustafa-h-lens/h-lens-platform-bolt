@@ -174,6 +174,32 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
           </div>
         )}
 
+        {/* Equipment */}
+        {((formData.selected_equipment_ids?.length ?? 0) > 0 || (formData.custom_equipment_text?.length ?? 0) > 0) && (
+          <div className="review-section">
+            <div className="review-card">
+              <div className="review-card-hdr">
+                <span className="review-card-title">🎥 المعدات</span>
+                <button className="review-card-edit" onClick={() => goToStep(7)} type="button">✏️ تعديل</button>
+              </div>
+              <div className="review-row">
+                <span className="rv-label">من القائمة</span>
+                <span className="rv-value">{formData.selected_equipment_ids?.length ?? 0} معدة</span>
+              </div>
+              {(formData.custom_equipment_text?.length ?? 0) > 0 && (
+                <div className="review-row" style={{ alignItems: 'flex-start', flexDirection: 'column', gap: 6 }}>
+                  <span className="rv-label">معدات أخرى</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {formData.custom_equipment_text.map(n => (
+                      <span key={n} className="review-field-tag">{n}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Terms — opens the forced-read modal. Direct toggling is no longer
             possible; the user must scroll through the legal text first. */}
         {termsAccepted ? (

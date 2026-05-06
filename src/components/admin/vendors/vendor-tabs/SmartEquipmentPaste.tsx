@@ -3,6 +3,7 @@ import { Sparkles, Check, Plus } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { Modal } from '../../../shared/Modal';
+import { normalizeArabic } from '../../../../utils/arabicNormalize';
 
 interface CatalogRow {
   id: string;
@@ -25,18 +26,7 @@ interface Props {
   onSaved: () => void;
 }
 
-function normalize(s: string): string {
-  return s
-    .trim()
-    .toLowerCase()
-    .replace(/[ً-ْ]/g, '')
-    .replace(/[أإآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/ؤ/g, 'و')
-    .replace(/ئ/g, 'ي')
-    .replace(/[\s\-_/]+/g, ' ');
-}
+const normalize = normalizeArabic;
 
 export const SmartEquipmentPaste = ({ vendorId, isOpen, onClose, onSaved }: Props) => {
   const { showSuccess, showError } = useNotification();

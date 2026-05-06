@@ -46,6 +46,8 @@ const EMPTY_FORM: VendorFormData = {
   vat_number: '',
   portfolio_url: '',
   selected_fields: [],
+  selected_equipment_ids: [],
+  custom_equipment_text: [],
 };
 
 interface AuthoritativeRecords {
