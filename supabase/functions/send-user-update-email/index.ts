@@ -32,6 +32,9 @@ function escapeHtml(str: string): string {
 const logoWhiteUrl =
   Deno.env.get("EMAIL_LOGO_URL") ||
   "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-white.png";
+const logoBlueUrl =
+  Deno.env.get("EMAIL_LOGO_BLUE_URL") ||
+  "https://akcpkjzfhtmurtwzyzhn.supabase.co/storage/v1/object/public/email-assets/logo-blue.png";
 
 function buildEmailHtml(
   userName: string,
@@ -63,6 +66,14 @@ function buildEmailHtml(
 <style>
   body{margin:0;padding:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#0b1437;color:#e2e8f0;}
   .container{max-width:600px;margin:0 auto;background:#0f1b3d;border-radius:12px;overflow:hidden;border:1px solid #1e293b;}
+  /* Logo dark/light swap so the brand stays visible whether the client renders
+     our intended dark header or force-inverts it to a light/white one. */
+  @media (prefers-color-scheme: dark) {
+    .logo-light { display: none !important; }
+    .logo-dark  { display: inline-block !important; mso-hide: none !important; }
+  }
+  [data-ogsc] .logo-light { display: none !important; }
+  [data-ogsc] .logo-dark  { display: inline-block !important; }
 </style>
 </head>
 <body style="margin:0;padding:24px 0;background:#0b1437;">
@@ -70,8 +81,18 @@ function buildEmailHtml(
   <div style="background:#07112a;padding:32px 32px 24px;text-align:center;">
     <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
       <tr>
-        <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
-          <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
+        <td align="center" style="padding:0;border-radius:14px;">
+          <!--[if !mso]><!-->
+          <span class="logo-light" style="display:inline-block;line-height:0;">
+            <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
+          </span>
+          <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+            <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
+          </span>
+          <!--<![endif]-->
+          <!--[if mso]>
+          <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:block;border:0;max-width:140px;height:auto;" />
+          <![endif]-->
         </td>
       </tr>
     </table>

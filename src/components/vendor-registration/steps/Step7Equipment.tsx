@@ -164,6 +164,8 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
             <label className="input-label">1. التصنيف <span className="req">*</span></label>
             <select
               className="input"
+              dir="rtl"
+              style={{ height: 'auto', minHeight: 44, lineHeight: 1.5, padding: '10px 14px', textAlign: 'right' }}
               value={selCategory}
               onChange={e => { setSelCategory(e.target.value); setSelBrand(''); setSelItem(''); }}
             >
@@ -178,6 +180,8 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
               <label className="input-label">2. العلامة التجارية</label>
               <select
                 className="input"
+                dir="rtl"
+                style={{ height: 'auto', minHeight: 44, lineHeight: 1.5, padding: '10px 14px', textAlign: 'right' }}
                 value={selBrand}
                 onChange={e => { setSelBrand(e.target.value); setSelItem(''); }}
               >
@@ -198,6 +202,8 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
               <label className="input-label">3. المعدة ({filteredItems.length} متاح)</label>
               <select
                 className="input"
+                dir="rtl"
+                style={{ height: 'auto', minHeight: 44, lineHeight: 1.5, padding: '10px 14px', textAlign: 'right' }}
                 value={selItem}
                 onChange={e => setSelItem(e.target.value)}
               >

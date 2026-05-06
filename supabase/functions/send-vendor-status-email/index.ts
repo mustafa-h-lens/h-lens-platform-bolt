@@ -438,6 +438,16 @@ function buildEmailChanged(
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light only" />
   <title>${subject}</title>
+  <style>
+    /* Logo dark/light swap so it stays visible whether the email client renders
+       our intended dark header or force-inverts it to light. */
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: none !important; }
+      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
+    }
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark  { display: inline-block !important; }
+  </style>
 </head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:'Cairo',Arial,'Segoe UI',Tahoma,sans-serif;direction:rtl;-webkit-text-size-adjust:100%;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;margin:0;padding:0;">
@@ -446,7 +456,17 @@ function buildEmailChanged(
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#ffffff" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
           <tr>
             <td bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;text-align:center;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <!--[if !mso]><!-->
+              <span class="logo-light" style="display:inline-block;line-height:0;">
+                <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              </span>
+              <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+                <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              </span>
+              <!--<![endif]-->
+              <!--[if mso]>
+              <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <![endif]-->
               <p style="margin:6px 0 0;font-size:13px;font-weight:600;color:#bfdbfe;" dir="rtl">تحديث البريد الإلكتروني</p>
             </td>
           </tr>

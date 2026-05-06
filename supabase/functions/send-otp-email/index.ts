@@ -53,6 +53,12 @@ function getEmailTemplate(
   <meta name="supported-color-schemes" content="light only" />
   <title>رمز التحقق - Half Lens</title>
   <style>
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: none !important; }
+      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
+    }
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark  { display: inline-block !important; }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad  { padding: 20px 16px !important; }
@@ -75,7 +81,17 @@ function getEmailTemplate(
           <!-- Header -->
           <tr>
             <td class="hdr" align="center" bgcolor="#050d1e" style="background-color:#050d1e;padding:28px 32px;">
-              <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <!--[if !mso]><!-->
+              <span class="logo-light" style="display:inline-block;line-height:0;">
+                <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              </span>
+              <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+                <img src="${logoWhiteUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              </span>
+              <!--<![endif]-->
+              <!--[if mso]>
+              <img src="${logoBlueUrl}" alt="Half Lens" width="140" style="display:inline-block;border:0;max-width:140px;height:auto;margin-bottom:10px;" />
+              <![endif]-->
               <p style="margin:6px 0 0;font-size:13px;font-weight:700;color:#bfdbfe;" dir="rtl">&#128272; رمز التحقق</p>
             </td>
           </tr>
@@ -323,7 +339,14 @@ Deno.serve(async (req: Request) => {
   <title>دعوة لبوابة العميل - Half Lens</title>
   <style>
     :root { color-scheme: light dark; }
-    /* Logo is wrapped in a dark pill container in the HTML — no color-scheme swap needed */
+    /* Logo dark/light swap so the logo stays visible whether the email client
+       renders our intended dark header or force-inverts it to light. */
+    @media (prefers-color-scheme: dark) {
+      .logo-light { display: none !important; }
+      .logo-dark  { display: inline-block !important; mso-hide: none !important; }
+    }
+    [data-ogsc] .logo-light { display: none !important; }
+    [data-ogsc] .logo-dark  { display: inline-block !important; }
     @media only screen and (max-width: 600px) {
       .card { border-radius: 0 !important; }
       .pad { padding: 20px 16px !important; }
@@ -348,8 +371,18 @@ Deno.serve(async (req: Request) => {
             <td class="hdr" align="center" bgcolor="#07112a" style="background-color:#07112a;padding:32px 32px 24px;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto 16px auto;">
                 <tr>
-                  <td bgcolor="#07112a" align="center" style="background-color:#07112a;padding:14px 28px;border-radius:14px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                  <td align="center" style="padding:0;border-radius:14px;">
+                    <!--[if !mso]><!-->
+                    <span class="logo-light" style="display:inline-block;line-height:0;">
+                      <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                    </span>
+                    <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+                      <img src="${logoWhiteUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                    </span>
+                    <!--<![endif]-->
+                    <!--[if mso]>
+                    <img src="${logoBlueUrl}" alt="Half Lens" width="160" style="display:block;border:0;max-width:160px;height:auto;" />
+                    <![endif]-->
                   </td>
                 </tr>
               </table>
@@ -437,8 +470,18 @@ Deno.serve(async (req: Request) => {
             <td class="ftr" align="center" bgcolor="#040910" style="background-color:#040910;padding:24px 32px;border-top:1px solid rgba(255,255,255,0.05);">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
                 <tr>
-                  <td bgcolor="#040910" align="center" style="background-color:#040910;padding:8px 16px;border-radius:10px;">
-                    <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+                  <td align="center" style="padding:0;border-radius:10px;">
+                    <!--[if !mso]><!-->
+                    <span class="logo-light" style="display:inline-block;line-height:0;">
+                      <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
+                    </span>
+                    <span class="logo-dark" style="display:none;line-height:0;mso-hide:all;">
+                      <img src="${logoWhiteUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.55;" />
+                    </span>
+                    <!--<![endif]-->
+                    <!--[if mso]>
+                    <img src="${logoBlueUrl}" alt="Half Lens" width="100" style="display:block;border:0;max-width:100px;height:auto;opacity:0.7;" />
+                    <![endif]-->
                   </td>
                 </tr>
               </table>

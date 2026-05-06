@@ -342,7 +342,7 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
             }}>📜</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-                اقرأ ووافق على الشروط والأحكام وسياسة السرّية
+                اضغط لقراءة الشروط والأحكام وسياسة السرّية والموافقة عليها
               </div>
               <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>
                 مطلوب قبل إرسال الطلب — اقرأ النصوص حتى النهاية
