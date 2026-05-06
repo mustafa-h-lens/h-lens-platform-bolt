@@ -43,17 +43,19 @@ body::after{display:none;
     linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
   background-size:60px 60px;
 }
-/* Top bar — logo + theme */
+/* Top bar — logo + theme. Switched from position:fixed to position:sticky
+   so the topbar lives in document flow — the page content always starts
+   right below it, no hand-tuned padding gymnastics, no clipping. */
 .reg-topbar{
-  position:fixed;top:0;right:0;left:0;z-index:50;
+  position:sticky;top:0;z-index:50;
   display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;
-  padding-top:max(14px, env(safe-area-inset-top));
+  padding:12px 24px;
+  padding-top:max(12px, env(safe-area-inset-top));
   background:var(--bg-glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border-bottom:1px solid var(--border-subtle);
 }
 .reg-topbar-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
-.reg-topbar-logo img{height:44px;max-height:44px;width:auto;max-width:120px;object-fit:contain;display:block}
+.reg-topbar-logo img{height:40px;max-height:40px;width:auto;max-width:110px;object-fit:contain;display:block}
 .reg-topbar-logo .logo-white{display:block}
 .reg-topbar-logo .logo-blue{display:none}
 [data-theme="light"] .reg-topbar-logo .logo-white{display:none}
@@ -66,7 +68,7 @@ body::after{display:none;
 }
 .theme-toggle-btn:hover{background:var(--bg-card-hover);border-color:var(--border-medium);color:var(--text-primary)}
 
-.page-wrap{position:relative;z-index:1;max-width:660px;margin:0 auto;padding:calc(100px + env(safe-area-inset-top, 0px)) 16px 80px}
+.page-wrap{position:relative;z-index:1;max-width:660px;margin:0 auto;padding:32px 16px 80px}
 
 /* Header */
 .reg-header{text-align:center;margin-bottom:32px}
@@ -749,10 +751,9 @@ body::after{display:none;
 
 /* ── Responsive ── */
 @media(max-width:500px){
-  .page-wrap{padding:calc(150px + env(safe-area-inset-top, 0px)) 12px 80px}
+  .page-wrap{padding:20px 12px 80px}
   .reg-topbar{padding:8px 14px;padding-top:max(8px, env(safe-area-inset-top))}
-  .reg-topbar-logo img{height:32px;max-height:32px;max-width:88px}
-  .reg-header{scroll-margin-top:calc(120px + env(safe-area-inset-top, 0px))}
+  .reg-topbar-logo img{height:34px;max-height:34px;max-width:96px}
   .theme-toggle-btn{width:32px;height:32px;font-size:13px}
   .form-card{padding:20px 14px}
   .reg-header{margin-bottom:20px}
