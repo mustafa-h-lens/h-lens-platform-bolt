@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { runWithNavReveal } from '../lib/navTransition';
 
 export interface ClientProfile {
   id: string;
@@ -112,10 +113,12 @@ export const ClientPortalProvider = ({ children, initialClient, initialSession }
   };
 
   const signOut = () => {
-    localStorage.removeItem('client_session');
-    localStorage.removeItem('client_data');
-    window.history.pushState({}, '', '/client');
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    void runWithNavReveal(async () => {
+      localStorage.removeItem('client_session');
+      localStorage.removeItem('client_data');
+      window.history.pushState({}, '', '/client');
+      window.dispatchEvent(new PopStateEvent('popstate', { state: { __programmatic: true } }));
+    }, { targetPath: '/client', forceDark: true });
   };
 
   return (

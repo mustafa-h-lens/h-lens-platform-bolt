@@ -7,9 +7,10 @@ import { VendorProvider } from './contexts/VendorContext';
 import { ClientPortalProvider } from './contexts/ClientPortalContext';
 import { HideAmountsProvider } from './contexts/HideAmountsContext';
 import { getTheme } from './theme/tokens';
-import { useRouteTracking, getLastVisitedPage } from './lib/router';
+import { useRouteTracking, getLastVisitedPage, navigate } from './lib/router';
 import { supabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { NavTransitionOverlay } from './components/NavTransitionOverlay';
 
 // ─────────────────────────────────────────────────────────────
 // LAZY-LOADED PAGE COMPONENTS (code splitting)
@@ -142,10 +143,6 @@ function getStoredClientSession(): { client: ClientData; session: ClientSession 
   }
 }
 
-function navigate(path: string) {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
-}
 
 // ─────────────────────────────────────────────────────────────
 // LOADING FALLBACK FOR SUSPENSE
@@ -159,6 +156,7 @@ function LoadingFallback() {
       justifyContent: 'center',
       backgroundColor: '#f9fafb',
     }}>
+      <div className="page-loading-placeholder" />
       <div style={{
         display: 'flex',
         flexDirection: 'column' as const,
@@ -308,7 +306,7 @@ function AppContent() {
   // ── PUBLIC ROUTES ──
 
   if (currentPath === '/') {
-    return <Suspense fallback={null}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
+    return <Suspense fallback={<div className="page-loading-placeholder" />}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
   }
 
   if (currentPath === ROUTES.VENDOR_REGISTRATION) {
@@ -404,7 +402,7 @@ function AppContent() {
   if (!isAdminPath) {
     // Don't redirect public paths to admin — show landing page as fallback
     if (currentPath === '/' || currentPath === '') {
-      return <Suspense fallback={null}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
+      return <Suspense fallback={<div className="page-loading-placeholder" />}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
     }
     navigate(ROUTES.ADMIN_LOGIN);
     return null;
@@ -417,6 +415,7 @@ function AppContent() {
         backgroundColor: theme.background.page,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
+        <div className="page-loading-placeholder" />
         <div style={{ color: theme.text.secondary }}>جارٍ التحميل...</div>
       </div>
     );
@@ -447,6 +446,7 @@ function App() {
               <AppContent />
             </Suspense>
           </ErrorBoundary>
+          <NavTransitionOverlay />
         </NotificationProvider>
         </HideAmountsProvider>
         </PermissionsProvider>

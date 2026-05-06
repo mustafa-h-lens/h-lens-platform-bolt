@@ -198,16 +198,13 @@ export const TermsAndConditions: React.FC = () => {
 
     <div className="legal-page" dir="rtl" style={{minHeight:"100vh",fontFamily:"Cairo,sans-serif",background:"#040c1c",color:"#e2e8f0"}}>
       <header className="legal-header" style={{position:"sticky",top:0,zIndex:50,height:60,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,transition:"all .3s",background:scrolled?"rgba(4,12,28,0.97)":"transparent",backdropFilter:scrolled?"blur(16px)":"none",borderBottom:scrolled?"1px solid rgba(255,255,255,0.06)":"none"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
-          <button type="button" onClick={handleBack} className="legal-back" aria-label="رجوع">
-            <span aria-hidden>←</span>
-            <span>رجوع</span>
-          </button>
+        <a href="/" aria-label="الصفحة الرئيسية" style={{display:"flex",alignItems:"center",minWidth:0,cursor:"pointer",transition:"opacity .2s"}} onMouseEnter={e=>e.currentTarget.style.opacity="0.85"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
           <img src={LOGO} alt="Half Lens" style={{height:42,objectFit:"contain"}}/>
-        </div>
-        <a href="/" className="site-btn" style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:9,background:"rgba(37,99,235,0.12)",border:"1px solid rgba(59,130,246,0.2)",color:"#93c5fd",textDecoration:"none",fontSize:".78rem",fontWeight:600,whiteSpace:"nowrap",transition:"all .2s"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(37,99,235,0.2)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(37,99,235,0.12)"}>
-          🌐 الموقع الإلكتروني
         </a>
+        <button type="button" onClick={handleBack} className="legal-back" aria-label="رجوع">
+          <span aria-hidden>←</span>
+          <span>رجوع</span>
+        </button>
       </header>
 
       <div className="legal-hero" style={{textAlign:"center",background:"linear-gradient(180deg,rgba(29,78,216,0.1) 0%,transparent 100%)",animation:"fadeUp .5s ease",position:"relative",overflow:"hidden"}}>
@@ -284,7 +281,7 @@ export const TermsAndConditions: React.FC = () => {
         <div style={{fontSize:".75rem",color:"rgba(255,255,255,0.2)"}}>
           © 2026 Half Lens Production — جميع الحقوق محفوظة
           <span style={{margin:"0 8px"}}>·</span>
-          <a href="/privacy" style={{color:"#3b82f6",textDecoration:"none"}}>سياسة الخصوصية</a>
+          <a href="/privacy" style={{color:"#3b82f6",textDecoration:"none"}}>سياسة السرّية</a>
         </div>
       </div>
     </div>

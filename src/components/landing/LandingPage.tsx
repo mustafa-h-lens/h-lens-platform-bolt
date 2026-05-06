@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Camera, Users, Briefcase, Shield, ChevronLeft, ChevronDown, ArrowLeft, Zap, Globe, BarChart3, Clock, Star, CheckCircle2, Sun, Moon, TrendingUp, Bell } from 'lucide-react';
+import { Camera, Users, Briefcase, Shield, ChevronDown, ArrowLeft, Zap, Globe, BarChart3, Clock, Star, CheckCircle2, Sun, Moon, Bell } from 'lucide-react';
 
 interface LandingPageProps {
   onNavigate: (path: string) => void;
@@ -56,12 +56,25 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   });
   const [scrollY, setScrollY] = useState(0);
   const [visible, setVisible] = useState(false);
+  const [statsVisible, setStatsVisible] = useState(false);
+  const statsGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setVisible(true);
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const node = statsGridRef.current;
+    if (!node) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setStatsVisible(true); obs.disconnect(); } },
+      { threshold: 0.25 },
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -76,44 +89,11 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
     }
   }, [isDark]);
 
-  const portals = [
-    {
-      id: 'admin',
-      title: 'لوحة التحكم',
-      subtitle: 'إدارة المشاريع والفرق والتقارير',
-      icon: Shield,
-      color: '#2563eb',
-      gradient: 'linear-gradient(135deg, #1e40af, #3b82f6)',
-      path: '/admin',
-      features: ['إدارة المشاريع والعقود', 'متابعة الفواتير والمصروفات', 'تقارير الأداء والإيرادات', 'إدارة الموردين والعملاء'],
-    },
-    {
-      id: 'vendor',
-      title: 'بوابة الموردين',
-      subtitle: 'إدارة ملفك ومشاريعك ومعداتك',
-      icon: Camera,
-      color: '#059669',
-      gradient: 'linear-gradient(135deg, #047857, #10b981)',
-      path: '/vendor/login',
-      features: ['إدارة الملف الشخصي والمعدات', 'متابعة المشاريع والفواتير', 'رفع المستندات والشهادات', 'تحديث بيانات السفر والهوية'],
-    },
-    {
-      id: 'client',
-      title: 'بوابة العملاء',
-      subtitle: 'تتبع مشاريعك وفواتيرك بسهولة',
-      icon: Briefcase,
-      color: '#7c3aed',
-      gradient: 'linear-gradient(135deg, #6d28d9, #8b5cf6)',
-      path: '/client',
-      features: ['عرض حالة المشاريع', 'متابعة الفواتير والمدفوعات', 'التواصل مع فريق العمل', 'تحميل ملفات المشروع'],
-    },
-  ];
-
   const stats = [
-    { value: '+500', label: 'مشروع مكتمل', icon: Briefcase, color: '#3b82f6' },
-    { value: '+200', label: 'مورد موثق', icon: Users, color: '#8b5cf6' },
-    { value: '24/7', label: 'دعم متواصل', icon: Clock, color: '#10b981' },
-    { value: '99.9%', label: 'وقت التشغيل', icon: Zap, color: '#f59e0b' },
+    { value: '+200', label: 'مورد موثّق', icon: Users, color: '#3b82f6' },
+    { value: '+500', label: 'مشروع', icon: Briefcase, color: '#8b5cf6' },
+    { value: '4.9★', label: 'متوسط التقييم', icon: Star, color: '#f59e0b' },
+    { value: '24/7', label: 'دعم سريع', icon: Clock, color: '#10b981' },
   ];
 
   return (
@@ -131,38 +111,227 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         @keyframes card-fade-in { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes mockup-float { 0%, 100% { transform: rotateY(8deg) rotateX(4deg) rotateZ(-2deg) translateY(0); } 50% { transform: rotateY(8deg) rotateX(4deg) rotateZ(-2deg) translateY(-10px); } }
         @keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        @keyframes stat-ring-spin { to { transform: rotate(360deg); } }
+        @keyframes stat-shimmer { 0% { transform: translateX(-150%) skewX(-12deg); } 100% { transform: translateX(250%) skewX(-12deg); } }
+        @keyframes stat-aura-pulse { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.08); } }
+        @keyframes border-rotate {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes float-y {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
         .landing-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .landing-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-color: rgba(59,130,246,0.35) !important; }
         .landing-feature { opacity: 0; animation: slide-up 0.6s ease forwards; }
-        .landing-stat { opacity: 0; animation: slide-up 0.5s ease forwards; }
+
+        /* ── Stats redesign — editorial ribbon ── */
+        .landing-stats-section {
+          position: relative;
+          padding: 48px 32px 80px;
+          background: var(--bg-base);
+          z-index: 2;
+        }
+        .landing-stats-panel {
+          position: relative;
+          max-width: 1080px;
+          margin: 0 auto;
+          padding: 32px 24px;
+          border-radius: 24px;
+          background:
+            radial-gradient(900px 300px at 50% -10%, rgba(37,99,235,0.12), transparent 60%),
+            radial-gradient(700px 240px at 100% 110%, rgba(236,72,153,0.08), transparent 60%),
+            linear-gradient(180deg, rgba(8,15,32,0.85), rgba(8,15,32,0.55));
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          overflow: hidden;
+          isolation: isolate;
+        }
+        /* animated conic-gradient border */
+        .landing-stats-panel::before {
+          content: ''; position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            rgba(59,130,246,0.65) 60deg,
+            rgba(139,92,246,0.65) 130deg,
+            transparent 200deg,
+            rgba(236,72,153,0.55) 270deg,
+            transparent 360deg
+          );
+          animation: border-rotate 12s linear infinite;
+          z-index: -2;
+          opacity: 0.55;
+        }
+        /* mask the conic into a thin ring (only the border visible) */
+        .landing-stats-panel::after {
+          content: ''; position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: linear-gradient(180deg, rgba(8,15,32,0.95), rgba(8,15,32,0.92));
+          z-index: -1;
+        }
+        .landing-stats-panel-glow {
+          position: absolute; inset: 0; pointer-events: none;
+          background-image: radial-gradient(rgba(148,163,184,0.07) 1px, transparent 1px);
+          background-size: 32px 32px;
+          mask-image: radial-gradient(ellipse at center, black 0%, transparent 80%);
+          -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 80%);
+          opacity: 0.45;
+        }
+        .landing-stats-grid { position: relative; z-index: 1; }
+        .landing-section-divider {
+          position: relative;
+          display: flex; align-items: center; justify-content: center;
+          gap: 14px;
+          padding: 8px 0 56px;
+          color: var(--text-muted);
+        }
+        .landing-section-divider .line {
+          flex: 1; height: 1px;
+          background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
+          max-width: 220px;
+        }
+        .landing-section-divider .dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          box-shadow: 0 0 12px rgba(59,130,246,0.55);
+        }
+        .landing-features-section {
+          position: relative;
+          padding: 0 32px 110px;
+          background:
+            radial-gradient(1100px 500px at 50% 0%, rgba(37,99,235,0.06), transparent 60%),
+            radial-gradient(900px 400px at 100% 100%, rgba(124,58,237,0.05), transparent 60%),
+            var(--bg-overlay);
+          scroll-margin-top: 80px;
+          overflow: hidden;
+        }
+        .landing-features-section::before {
+          content: ''; position: absolute; inset: 0; pointer-events: none;
+          background-image: radial-gradient(rgba(148,163,184,0.06) 1px, transparent 1px);
+          background-size: 36px 36px;
+          mask-image: radial-gradient(ellipse at top, black 0%, transparent 80%);
+          -webkit-mask-image: radial-gradient(ellipse at top, black 0%, transparent 80%);
+          opacity: 0.4;
+        }
+        .landing-eyebrow {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 6px 16px; border-radius: 99px;
+          background: var(--accent-glow);
+          border: 1px solid var(--accent-glow-md);
+          color: var(--accent-lighter);
+          font-size: 12px; font-weight: 700;
+          letter-spacing: 0.04em;
+          margin-bottom: 18px;
+          text-transform: uppercase;
+        }
+        .landing-section-accent {
+          width: 64px; height: 4px; border-radius: 4px;
+          background: linear-gradient(90deg, #2563eb, #7c3aed, #ec4899);
+          margin: 22px auto 0;
+          box-shadow: 0 0 20px rgba(124,58,237,0.4);
+        }
         .landing-stat-card {
+          --c: #3b82f6;
           position: relative;
           display: flex; flex-direction: column; align-items: center; text-align: center;
-          padding: 20px 14px; border-radius: 16px;
-          transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+          padding: 12px 14px;
+          opacity: 0; transform: translateY(28px);
+          transition:
+            opacity 0.8s cubic-bezier(0.22,1,0.36,1),
+            transform 0.8s cubic-bezier(0.22,1,0.36,1);
+          transition-delay: calc(var(--i, 0) * 110ms);
           cursor: default;
         }
-        .landing-stat-card:hover { transform: translateY(-6px); }
-        .landing-stat-icon {
-          width: 54px; height: 54px; border-radius: 14px;
-          display: flex; align-items: center; justify-content: center;
+        .landing-stats-grid.is-visible .landing-stat-card {
+          opacity: 1; transform: translateY(0);
+        }
+        /* gradient vertical divider between cells (RTL-friendly: insert before each cell except the first) */
+        .landing-stat-card:not(:first-child)::before {
+          content: ''; position: absolute;
+          right: -1px; top: 18%; bottom: 18%;
+          width: 1px;
+          background: linear-gradient(180deg,
+            transparent,
+            color-mix(in srgb, var(--c) 35%, transparent),
+            color-mix(in srgb, var(--c) 8%, transparent),
+            transparent);
+        }
+        /* icon as glowing chip floating above the number */
+        .landing-stat-icon-wrap {
+          position: relative;
+          width: 44px; height: 44px;
           margin-bottom: 14px;
-          transition: transform 0.35s cubic-bezier(0.4,0,0.2,1), box-shadow 0.35s ease;
+          display: flex; align-items: center; justify-content: center;
+          animation: float-y 5s ease-in-out infinite;
+          animation-delay: calc(var(--i, 0) * 0.4s);
+        }
+        .landing-stat-icon-aura {
+          position: absolute; inset: -14px;
+          border-radius: 50%;
+          background: radial-gradient(circle, color-mix(in srgb, var(--c) 38%, transparent), transparent 60%);
+          filter: blur(14px);
+          animation: stat-aura-pulse 4s ease-in-out infinite;
+        }
+        .landing-stat-icon-ring {
+          position: absolute; inset: -2px;
+          border-radius: 16px;
+          background: conic-gradient(from 0deg, var(--c), transparent 30%, var(--c) 65%, transparent 100%);
+          opacity: 0; transition: opacity 0.4s ease;
+        }
+        .landing-stat-card:hover .landing-stat-icon-ring {
+          opacity: 0.9;
+          animation: stat-ring-spin 3s linear infinite;
+        }
+        .landing-stat-icon {
+          position: relative; z-index: 1;
+          width: 100%; height: 100%; border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          background: linear-gradient(160deg,
+            color-mix(in srgb, var(--c) 26%, transparent),
+            color-mix(in srgb, var(--c) 6%, transparent));
+          border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+          color: var(--c);
+          box-shadow:
+            0 8px 24px -10px color-mix(in srgb, var(--c) 70%, transparent),
+            inset 0 1px 0 color-mix(in srgb, var(--c) 30%, transparent);
+          transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
         }
         .landing-stat-card:hover .landing-stat-icon {
-          transform: scale(1.1) rotate(-4deg);
-          box-shadow: 0 10px 28px -6px currentColor;
+          transform: scale(1.08) rotate(-6deg);
         }
+        /* editorial number */
         .landing-stat-num {
-          font-size: clamp(26px, 3vw, 34px); font-weight: 900;
-          direction: ltr; letter-spacing: -0.02em;
+          position: relative;
+          font-size: clamp(28px, 3vw, 38px); font-weight: 900;
+          direction: ltr; letter-spacing: -0.03em;
           background-clip: text; -webkit-background-clip: text;
           color: transparent; -webkit-text-fill-color: transparent;
-          margin-bottom: 6px; line-height: 1;
+          margin-bottom: 8px; line-height: 1;
           font-variant-numeric: tabular-nums;
+          text-shadow: 0 0 30px color-mix(in srgb, var(--c) 20%, transparent);
+          transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+        }
+        .landing-stat-card:hover .landing-stat-num { transform: scale(1.05); }
+        /* tiny color accent dot under number */
+        .landing-stat-divider {
+          width: 5px; height: 5px; border-radius: 50%;
+          background: var(--c);
+          box-shadow: 0 0 10px color-mix(in srgb, var(--c) 80%, transparent);
+          margin: 0 auto 10px;
+          transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+        .landing-stat-card:hover .landing-stat-divider {
+          transform: scale(1.6);
+          box-shadow: 0 0 18px color-mix(in srgb, var(--c) 95%, transparent);
         }
         .landing-stat-label {
-          font-size: 13px; color: var(--text-muted); font-weight: 500;
+          font-size: 12px; color: var(--text-muted); font-weight: 600;
+          letter-spacing: 0.05em;
         }
         .landing-blob { position: absolute; border-radius: 50%; filter: blur(100px); pointer-events: none; animation: pulse-glow 8s ease-in-out infinite; }
         .landing-grid-pattern {
@@ -211,7 +380,24 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
 
         /* ── Mobile responsive ── */
         @media (max-width: 768px) {
-          .landing-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
+          .landing-stats-section { padding: 40px 16px 70px !important; }
+          .landing-stats-panel { padding: 32px 14px !important; border-radius: 24px !important; }
+          .landing-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px 0 !important; }
+          .landing-stat-card { padding: 16px 10px !important; }
+          .landing-stat-card:nth-child(2)::before,
+          .landing-stat-card:nth-child(4)::before { display: none; }
+          .landing-stat-card:nth-child(3)::before,
+          .landing-stat-card:nth-child(4)::before {
+            content: '' !important; position: absolute !important;
+            top: -1px !important; right: 10% !important; left: 10% !important;
+            width: auto !important; height: 1px !important; bottom: auto !important;
+            background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--c) 30%, transparent), transparent) !important;
+          }
+          .landing-stat-icon-wrap { width: 48px !important; height: 48px !important; margin-bottom: 14px !important; }
+          .landing-stat-num { font-size: clamp(32px, 9vw, 44px) !important; }
+          .landing-features-section { padding: 0 16px 70px !important; }
+          .landing-section-divider { padding-bottom: 36px !important; }
+          .landing-section-divider .line { max-width: 80px !important; }
           .landing-portals-grid { grid-template-columns: 1fr !important; }
           .landing-features-grid { grid-template-columns: 1fr !important; }
           .landing-hero-section { padding: 100px 20px 60px !important; }
@@ -279,17 +465,17 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
               fontSize: 13, fontWeight: 600, color: 'var(--accent-lighter)',
               marginBottom: 24,
             }}>
-              <Star size={14} /> منصة إدارة الإنتاج المتكاملة
+              <Star size={14} /> بوابة الموردين الإنتاجيين
             </div>
 
             <h1 style={{
               fontSize: 'clamp(32px, 4.4vw, 56px)', fontWeight: 900, lineHeight: 1.15,
               color: 'var(--text-primary)', marginBottom: 22,
             }}>
-              أدر مشاريعك الإنتاجية
+              مساحتك الاحترافية
               <br />
               <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                بكفاءة واحترافية
+                لإدارة أعمالك كمورد
               </span>
             </h1>
 
@@ -297,15 +483,13 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
               fontSize: 17, color: 'var(--text-secondary)', lineHeight: 1.75,
               marginBottom: 36, maxWidth: 540,
             }}>
-              منصة Half Lens تجمع فريقك وعملاءك ومورديك في مكان واحد.
-              تتبع المشاريع، أدر الفواتير، وحلل الأداء — كل ذلك بتصميم عربي متكامل.
+              سجّل ملفك، اعرض معداتك ومهاراتك، واستقبل المهام مباشرة من شركات الإنتاج.
+              تابع فواتيرك، حدّث وثائقك، واترك انطباعاً احترافياً — كل ذلك من بوابة عربية واحدة.
             </p>
 
             <div className="landing-mockup-cta-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button
-                onClick={() => {
-                  document.getElementById('portals-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
+                onClick={() => onNavigate('/vendor/login')}
                 style={{
                   padding: '14px 32px', borderRadius: 14, border: 'none',
                   background: 'linear-gradient(135deg, #1e40af, #3b82f6)',
@@ -361,7 +545,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                   background: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)',
                   fontSize: 11, color: 'var(--text-muted)', textAlign: 'center',
                   fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                }}>half-lens.app/admin</div>
+                }}>half-lens.app/vendor</div>
               </div>
 
               {/* Dashboard body */}
@@ -371,19 +555,19 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>أهلاً، أحمد 👋</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>ملخص آخر 30 يوم</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>بوابتك كمورد إنتاجي</div>
                   </div>
                   <div style={{ padding: '5px 11px', borderRadius: 8, background: 'rgba(37,99,235,0.14)', color: 'var(--accent-lighter)', fontSize: 10.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Bell size={11} /> 3 جديد
+                    <Bell size={11} /> 2 مهام جديدة
                   </div>
                 </div>
 
                 {/* Stats grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
                   {[
-                    { label: 'مشاريع نشطة', value: '24', color: '#3b82f6', icon: Briefcase, trend: '+8.2%' },
-                    { label: 'الموردين', value: '208', color: '#8b5cf6', icon: Users, trend: '+12%' },
-                    { label: 'الإيرادات', value: '842K', color: '#10b981', icon: TrendingUp, trend: '+18%' },
+                    { label: 'مهام نشطة', value: '5', color: '#3b82f6', icon: Briefcase, trend: '+2' },
+                    { label: 'مهام مُنجزة', value: '47', color: '#8b5cf6', icon: CheckCircle2, trend: '+9%' },
+                    { label: 'تقييمي', value: '4.9', color: '#f59e0b', icon: Star, trend: '★★★★★' },
                   ].map((s, i) => {
                     const I = s.icon;
                     return (
@@ -396,7 +580,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                           <div style={{ width: 24, height: 24, borderRadius: 7, background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <I size={12} color={s.color} />
                           </div>
-                          <div style={{ fontSize: 9.5, color: '#10b981', fontWeight: 800, direction: 'ltr' }}>↑ {s.trend}</div>
+                          <div style={{ fontSize: 9.5, color: '#10b981', fontWeight: 800, direction: 'ltr' }}>{s.trend}</div>
                         </div>
                         <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1.1, direction: 'ltr', textAlign: 'right' }}>{s.value}</div>
                         <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>{s.label}</div>
@@ -405,27 +589,44 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                   })}
                 </div>
 
-                {/* Chart */}
+                {/* Profile completeness */}
                 <div style={{
                   padding: '12px 14px', borderRadius: 12, marginBottom: 14,
                   background: isDark ? 'rgba(148,163,184,0.04)' : 'rgba(15,23,42,0.02)',
                   border: `1px solid ${isDark ? 'rgba(148,163,184,0.06)' : 'rgba(15,23,42,0.03)'}`,
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)' }}>الإيرادات الشهرية</span>
-                    <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>آخر 6 أشهر</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)' }}>اكتمال الملف الشخصي</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', direction: 'ltr' }}>92%</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 64, direction: 'ltr' }}>
-                    {[42, 65, 50, 80, 70, 95].map((h, i) => (
-                      <div key={i} className="landing-bar" style={{
-                        flex: 1,
-                        height: `${h}%`,
-                        background: i === 5
-                          ? 'linear-gradient(180deg, #3b82f6, #1e40af)'
-                          : 'linear-gradient(180deg, rgba(59,130,246,0.45), rgba(59,130,246,0.18))',
-                        borderRadius: '5px 5px 2px 2px',
-                        animationDelay: `${0.6 + i * 0.07}s`,
-                      }} />
+                  <div style={{
+                    height: 7, borderRadius: 4, overflow: 'hidden',
+                    background: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.08)',
+                    marginBottom: 10,
+                  }}>
+                    <div className="landing-bar" style={{
+                      height: '100%', width: '92%',
+                      background: 'linear-gradient(90deg, #10b981, #3b82f6)',
+                      transformOrigin: 'right',
+                      animationDelay: '0.6s',
+                    }} />
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {[
+                      { l: 'الهوية', ok: true },
+                      { l: 'المعدات', ok: true },
+                      { l: 'جواز السفر', ok: true },
+                      { l: 'المحفظة', ok: false },
+                    ].map((p, i) => (
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        padding: '3px 8px', borderRadius: 6,
+                        background: p.ok ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                        color: p.ok ? '#10b981' : '#f59e0b',
+                        fontSize: 9.5, fontWeight: 700,
+                      }}>
+                        <CheckCircle2 size={9} /> {p.l}
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -433,8 +634,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 {/* Activity rows */}
                 <div>
                   {[
-                    { icon: CheckCircle2, color: '#10b981', t: 'تمت الموافقة على فاتورة #1284', s: 'منذ 5 دقائق' },
-                    { icon: Camera, color: '#06b6d4', t: 'مورد جديد بانتظار المراجعة', s: 'منذ 22 دقيقة' },
+                    { icon: CheckCircle2, color: '#10b981', t: 'تم قبول عرضك على مشروع "الرياض ٢٠٢٦"', s: 'منذ 5 دقائق' },
+                    { icon: Camera, color: '#06b6d4', t: 'تذكير: تحديث صور المعدات قبل ٣ أيام', s: 'منذ 22 دقيقة' },
                   ].map((a, i) => {
                     const I = a.icon;
                     return (
@@ -469,116 +670,36 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ STATS BAR ═══ */}
-      <section className="landing-section-pad" style={{
-        padding: '40px 32px',
-        background: 'var(--bg-overlay)',
-        borderTop: '1px solid var(--border-soft)',
-        borderBottom: '1px solid var(--border-soft)',
-      }}>
-        <div className="landing-stats-grid" style={{ maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-          {stats.map((stat, i) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={i}
-                className="landing-stat landing-stat-card"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              >
-                <div className="landing-stat-icon" style={{
-                  background: `${stat.color}1a`,
-                  border: `1px solid ${stat.color}40`,
-                  color: stat.color,
-                  boxShadow: `0 0 0 0 ${stat.color}00`,
-                }}>
-                  <Icon size={22} />
-                </div>
-                <div className="landing-stat-num" style={{
-                  backgroundImage: `linear-gradient(135deg, ${stat.color}, ${stat.color}b3)`,
-                }}>
-                  <AnimatedStat value={stat.value} />
-                </div>
-                <div className="landing-stat-label">{stat.label}</div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ═══ PORTALS SECTION ═══ */}
-      <section id="portals-section" className="landing-section-pad" style={{ padding: '80px 32px', position: 'relative', scrollMarginTop: 80 }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12 }}>
-              بوابة لكل مستخدم
-            </h2>
-            <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto' }}>
-              كل فريق لديه بوابته الخاصة مصممة لتلبية احتياجاته
-            </p>
-          </div>
-
-          <div className="landing-portals-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
-            {portals.map((portal, i) => {
-              const Icon = portal.icon;
+      <section className="landing-stats-section landing-section-pad">
+        <div className="landing-stats-panel">
+          <span className="landing-stats-panel-glow" />
+          <div
+            ref={statsGridRef}
+            className={`landing-stats-grid${statsVisible ? ' is-visible' : ''}`}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}
+          >
+            {stats.map((stat, i) => {
+              const Icon = stat.icon;
               return (
                 <div
-                  key={portal.id}
-                  className="landing-card landing-feature"
-                  style={{
-                    background: 'var(--bg-surface)',
-                    border: '1px solid var(--border-soft)',
-                    borderRadius: 20, padding: 0, overflow: 'hidden',
-                    animationDelay: `${i * 0.2}s`,
-                  }}
+                  key={i}
+                  className="landing-stat-card"
+                  style={{ ['--c' as string]: stat.color, ['--i' as string]: i }}
                 >
-                  {/* Card header gradient */}
-                  <div style={{
-                    background: portal.gradient, padding: '32px 28px 24px',
-                    position: 'relative', overflow: 'hidden', textAlign: 'center',
-                  }}>
-                    <div style={{
-                      position: 'absolute', top: -20, left: -20,
-                      width: 100, height: 100, borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.1)',
-                    }} />
-                    <div style={{
-                      width: 52, height: 52, borderRadius: 16,
-                      background: 'rgba(255,255,255,0.2)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      margin: '0 auto 16px', backdropFilter: 'blur(10px)',
-                    }}>
-                      <Icon size={24} color="#fff" />
+                  <div className="landing-stat-icon-wrap">
+                    <span className="landing-stat-icon-aura" />
+                    <span className="landing-stat-icon-ring" />
+                    <div className="landing-stat-icon">
+                      <Icon size={20} strokeWidth={2.2} />
                     </div>
-                    <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{portal.title}</h3>
-                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)' }}>{portal.subtitle}</p>
                   </div>
-
-                  {/* Features list */}
-                  <div style={{ padding: '24px 28px' }}>
-                    {portal.features.map((feature, fi) => (
-                      <div key={fi} style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 0',
-                        borderBottom: fi < portal.features.length - 1 ? '1px solid var(--border-soft)' : 'none',
-                      }}>
-                        <CheckCircle2 size={16} style={{ color: portal.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{feature}</span>
-                      </div>
-                    ))}
-                    <button
-                      onClick={() => onNavigate(portal.path)}
-                      style={{
-                        marginTop: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                        padding: '12px', borderRadius: 12, width: '100%',
-                        background: `${portal.color}15`, color: portal.color,
-                        fontSize: 14, fontWeight: 700, transition: 'all 0.25s',
-                        border: `1px solid ${portal.color}30`, cursor: 'pointer', fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = portal.color; e.currentTarget.style.color = '#fff'; e.currentTarget.style.boxShadow = `0 4px 20px ${portal.color}40`; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = `${portal.color}15`; e.currentTarget.style.color = portal.color; e.currentTarget.style.boxShadow = 'none'; }}
-                    >
-                      الدخول <ChevronLeft size={16} />
-                    </button>
+                  <div className="landing-stat-num" style={{
+                    backgroundImage: `linear-gradient(135deg, ${stat.color}, color-mix(in srgb, ${stat.color} 50%, #ffffff))`,
+                  }}>
+                    <AnimatedStat value={stat.value} />
                   </div>
+                  <div className="landing-stat-divider" />
+                  <div className="landing-stat-label">{stat.label}</div>
                 </div>
               );
             })}
@@ -587,25 +708,35 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ FEATURES SECTION ═══ */}
-      <section className="landing-section-pad" style={{ padding: '80px 32px', background: 'var(--bg-overlay)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 900, color: 'var(--text-primary)', marginBottom: 12 }}>
-              لماذا Half Lens؟
+      <section id="features-section" className="landing-features-section landing-section-pad">
+        <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div className="landing-section-divider">
+            <span className="line" />
+            <span className="dot" />
+            <span className="line" />
+          </div>
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <div className="landing-eyebrow">
+              <Star size={13} /> لماذا نحن
+            </div>
+            <h2 style={{ fontSize: 'clamp(28px, 3.4vw, 40px)', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 16, lineHeight: 1.2 }}>
+              لماذا الموردون يختارون{' '}
+              <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Half Lens؟</span>
             </h2>
-            <p style={{ fontSize: 16, color: 'var(--text-secondary)' }}>
-              أدوات متكاملة مصممة خصيصاً لشركات الإنتاج
+            <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 580, margin: '0 auto', lineHeight: 1.7 }}>
+              كل ما تحتاجه لإدارة أعمالك كمورد إنتاجي — في مكان واحد
             </p>
+            <div className="landing-section-accent" />
           </div>
 
           <div className="landing-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
             {[
-              { icon: BarChart3, title: 'تقارير متقدمة', desc: 'تحليلات مالية وتقارير أداء تفصيلية لمشاريعك', color: '#2563eb' },
-              { icon: Globe, title: 'دعم كامل للعربية', desc: 'واجهة عربية متكاملة مع دعم RTL بالكامل', color: '#059669' },
-              { icon: Shield, title: 'أمان متقدم', desc: 'تسجيل دخول آمن مع OTP وصلاحيات مخصصة', color: '#7c3aed' },
-              { icon: Zap, title: 'أداء فائق', desc: 'واجهة سريعة ومتجاوبة تعمل على جميع الأجهزة', color: '#f59e0b' },
-              { icon: Users, title: 'إدارة الفريق', desc: 'أدوار وصلاحيات مخصصة لكل عضو في الفريق', color: '#ec4899' },
-              { icon: Camera, title: 'كتالوج المعدات', desc: 'إدارة كاملة لمعدات التصوير والإنتاج', color: '#06b6d4' },
+              { icon: Briefcase, title: 'مهام جاهزة لك', desc: 'استقبل طلبات شركات الإنتاج مباشرة، وقدّم عروضك بضغطة زر', color: '#2563eb' },
+              { icon: Camera, title: 'استعرض معداتك', desc: 'كتالوج كامل لمعداتك ومهاراتك يطّلع عليه العملاء قبل التعاقد', color: '#06b6d4' },
+              { icon: BarChart3, title: 'فواتيرك تحت السيطرة', desc: 'أصدر فواتيرك، وتابع المدفوعات، وحمّل التقارير في أي وقت', color: '#10b981' },
+              { icon: Shield, title: 'ملف موثّق وآمن', desc: 'هويتك ومستنداتك محفوظة بأمان، ومتاحة للعملاء عند الحاجة', color: '#7c3aed' },
+              { icon: Zap, title: 'سريع ومن الجوال', desc: 'أنجز كل شيء من هاتفك — تحديثات فورية وإشعارات لحظية', color: '#f59e0b' },
+              { icon: Star, title: 'سمعة تبنيها معنا', desc: 'تقييمات حقيقية من شركات الإنتاج تعزّز فرصك في مهام جديدة', color: '#ec4899' },
             ].map((feature, i) => {
               const Icon = feature.icon;
               return (

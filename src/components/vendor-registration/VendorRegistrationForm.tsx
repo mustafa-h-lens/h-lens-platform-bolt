@@ -353,7 +353,7 @@ export const VendorRegistrationForm = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return;
     if (!termsAccepted) {
-      showError('يرجى الموافقة على الشروط والأحكام وسياسة الخصوصية');
+      showError('يرجى الموافقة على الشروط والأحكام وسياسة السرّية');
       return;
     }
 
