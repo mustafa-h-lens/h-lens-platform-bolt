@@ -476,17 +476,17 @@ export const VendorPortal = () => {
 
             {/* Revision Banner */}
             {isRevisionMode && (
-              <div style={{
+              <div className="vp-revision-banner" style={{
                 backgroundColor: '#fef3c7', border: '1px solid #f59e0b',
                 borderRadius: 12, padding: '1rem 1.25rem', marginBottom: 22,
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                   <AlertCircle size={20} style={{ color: '#d97706', flexShrink: 0, marginTop: 2 }} />
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, color: '#92400e', marginBottom: 4, fontSize: '0.95rem' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p className="vp-revision-title" style={{ fontWeight: 700, color: '#92400e', marginBottom: 4, fontSize: '0.95rem' }}>
                       مطلوب تعديلات على طلب التسجيل
                     </p>
-                    <p style={{ color: '#a16207', fontSize: '0.85rem', lineHeight: 1.7 }}>
+                    <p className="vp-revision-sub" style={{ color: '#a16207', fontSize: '0.85rem', lineHeight: 1.7 }}>
                       يرجى مراجعة الملاحظات أدناه وتعديل بياناتك ثم إعادة تقديم الطلب.
                     </p>
                     {revisionNotes && (
@@ -495,11 +495,22 @@ export const VendorPortal = () => {
                         padding: '0.75rem 1rem', marginTop: '0.75rem',
                         border: '1px solid rgba(245,158,11,0.3)',
                       }}>
-                        <p style={{ fontWeight: 600, color: '#92400e', fontSize: '0.8rem', marginBottom: 4 }}>ملاحظات المراجع:</p>
-                        <p style={{ color: '#78350f', fontSize: '0.85rem', lineHeight: 1.8 }}>{revisionNotes}</p>
+                        <p className="vp-revision-notes-title" style={{ fontWeight: 700, color: '#92400e', fontSize: '0.78rem', marginBottom: 6 }}>ملاحظات المراجع:</p>
+                        <div className="vp-revision-notes" style={{ color: '#78350f', fontSize: '0.82rem', lineHeight: 1.75, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {revisionNotes
+                            .split(/\n+|(?=•\s)/)
+                            .map(s => s.trim())
+                            .filter(Boolean)
+                            .map((line, i) => (
+                              <div key={i} style={{ paddingInlineStart: line.startsWith('•') ? 0 : 10 }}>
+                                {line}
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     )}
                     <button
+                      className="vp-revision-start-btn"
                       onClick={() => navigateTo('edit-submission')}
                       style={{
                         marginTop: '0.75rem', backgroundColor: '#2563eb', color: 'white',

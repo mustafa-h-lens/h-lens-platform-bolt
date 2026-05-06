@@ -490,8 +490,8 @@ function buildRejected(
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;margin-bottom:24px;">
           <tr>
             <td style="padding:16px 20px;">
-              <p style="font-size:13px;font-weight:600;color:#f87171;margin:0 0 8px;">سبب الرفض:</p>
-              <p style="font-size:14px;color:#334155;line-height:1.8;margin:0;">${escapeHtml(reason)}</p>
+              <p style="font-size:13px;font-weight:700;color:#dc2626;margin:0 0 8px;">سبب الرفض:</p>
+              <p style="font-size:14px;color:#334155;line-height:1.8;margin:0;white-space:pre-wrap;">${escapeHtml(reason)}</p>
             </td>
           </tr>
         </table>
@@ -524,7 +524,7 @@ function buildRevisionRequested(
           </tr>
         </table>`
     : alertBox(
-        `<strong>ملاحظات المراجع:</strong><br/>${escapeHtml(reason)}`,
+        `<strong>ملاحظات المراجع:</strong><br/><span style="white-space:pre-wrap;">${escapeHtml(reason)}</span>`,
         "rgba(245,158,11,0.05)",
         "rgba(245,158,11,0.3)",
         "#fbbf24"

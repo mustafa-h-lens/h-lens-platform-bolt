@@ -233,3 +233,39 @@
 @media(max-width:380px){
   .vp-page-scroll{padding:12px 10px!important}
 }
+
+/* ── Mobile typography pass — keep sizes consistent and a touch smaller across
+   the vendor dashboard (revision banner, greeting card, completion card,
+   stat tiles) so the same element doesn't render at three different scales. */
+@media(max-width:640px){
+  /* Page H1 */
+  .vp-content h1{font-size:1.1rem!important;margin-bottom:16px!important}
+
+  /* Revision banner */
+  .vp-revision-banner{padding:0.85rem 0.95rem!important;border-radius:10px!important}
+  .vp-revision-banner .vp-revision-title{font-size:0.85rem!important}
+  .vp-revision-banner .vp-revision-sub{font-size:0.78rem!important;line-height:1.65!important}
+  .vp-revision-banner .vp-revision-notes{font-size:0.75rem!important;line-height:1.7!important}
+  .vp-revision-banner .vp-revision-notes-title{font-size:0.72rem!important}
+  .vp-revision-start-btn{font-size:0.78rem!important;padding:0.45rem 0.95rem!important;border-radius:8px!important}
+
+  /* Stat tiles + dashboard cards: consistent type scale */
+  .vp-stat-num{font-size:1.35rem!important;line-height:1.1!important}
+  .vp-stat-label{font-size:0.78rem!important}
+  .vp-stat-sub{font-size:0.68rem!important}
+
+  /* Buttons inside cards */
+  .vp-btn-primary,.vp-btn-secondary{font-size:0.78rem!important;padding:8px 14px!important;border-radius:8px!important}
+
+  /* Card bodies */
+  .vp-card{padding:13px 13px!important}
+  .vp-card h2,.vp-card h3{font-size:0.95rem!important}
+}
+@media(max-width:380px){
+  .vp-content h1{font-size:1.02rem!important}
+  .vp-stat-num{font-size:1.25rem!important}
+  .vp-revision-banner .vp-revision-title{font-size:0.82rem!important}
+  .vp-revision-banner .vp-revision-sub{font-size:0.75rem!important}
+  .vp-revision-banner .vp-revision-notes{font-size:0.72rem!important}
+  .vp-revision-start-btn{font-size:0.74rem!important;padding:0.4rem 0.85rem!important}
+}
