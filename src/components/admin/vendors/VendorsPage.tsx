@@ -52,6 +52,7 @@ interface VendorsPageProps {
   onViewProject?: (projectId: string) => void;
   initialShowAdd?: boolean;
   onShowAddConsumed?: () => void;
+  onTitleChange?: (title: string) => void;
 }
 
 const VENDOR_COLORS = [
@@ -90,7 +91,7 @@ const getFieldBadge = (field: string | undefined): string => {
   return map[field] || 'badge badge-gray';
 };
 
-export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange, onViewProject, initialShowAdd, onShowAddConsumed }: VendorsPageProps = {}) => {
+export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTabChange, onViewProject, initialShowAdd, onShowAddConsumed, onTitleChange }: VendorsPageProps = {}) => {
   const { showSuccess, showError } = useNotification();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -277,7 +278,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   if (selectedVendorId) {
     return (
       <Suspense fallback={<VendorLazyFallback />}>
-        <VendorDetails vendorId={selectedVendorId} onBack={() => { setSelectedVendorId(null); onVendorSelect?.(null); onTabChange?.(null); fetchVendors(); }} initialTab={initialTab} onTabChange={onTabChange} onViewProject={onViewProject} />
+        <VendorDetails vendorId={selectedVendorId} onBack={() => { setSelectedVendorId(null); onVendorSelect?.(null); onTabChange?.(null); fetchVendors(); }} initialTab={initialTab} onTabChange={onTabChange} onViewProject={onViewProject} onTitleChange={onTitleChange} />
       </Suspense>
     );
   }
@@ -803,7 +804,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
 
   return createPortal(
     <div className="modal-overlay show" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" data-mobile-modal="true" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
         <div className="modal-hdr">
           <div>
             <div className="modal-ttl">إضافة مورد جديد</div>

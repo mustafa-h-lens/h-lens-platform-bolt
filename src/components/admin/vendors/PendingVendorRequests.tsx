@@ -120,7 +120,7 @@ export const PendingVendorRequests = ({ onSelectVendor, refreshTrigger }: Pendin
         </div>
       ) : (
         <div
-          className="rounded-lg border overflow-hidden"
+          className="rounded-lg border overflow-hidden table-wrap"
           style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', boxShadow: 'var(--shadow-sm)' }}
         >
           <table className="w-full">

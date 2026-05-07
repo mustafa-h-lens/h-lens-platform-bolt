@@ -832,6 +832,37 @@ h2.step-title {
     height: 56px !important;
     font-size: 18px !important;
   }
+
+  /* ── Admin mobile shell (mobile parity additions) ───────────────────
+     All rules below are MOBILE-ONLY by virtue of living inside this
+     `@media (max-width: 640px)` block. Adding the matching className
+     in JSX is a no-op on desktop because no desktop selector exists. */
+
+  /* Mobile top header — flips on `display: grid`. The element ships
+     with Tailwind `hidden` so it's `display: none` everywhere by
+     default; this rule promotes it to grid only on phones. */
+  .admin-mobile-topbar {
+    display: grid !important;
+  }
+
+  /* Image card on البيانات الشخصية (admin → vendor edit). Inline
+     desktop grid stays as-is; phones flip to a single column. */
+  .admin-img-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Welcome banner (.dash-welcome): on long admin names, wrap the
+     icon bubble below the title instead of pushing it off-screen. */
+  .dash-welcome .dash-welcome-content {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+  }
+  .dash-welcome .dash-welcome-icon {
+    flex-shrink: 0 !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
 }
 
 /* Tiny phones (≤ 400) — admin final tightening */

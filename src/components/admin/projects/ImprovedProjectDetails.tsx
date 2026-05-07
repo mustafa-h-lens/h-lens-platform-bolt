@@ -44,6 +44,7 @@ interface ImprovedProjectDetailsProps {
   onViewVendor?: (vendorId: string) => void;
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 type TabType = 'basic' | 'items' | 'invoices' | 'expenses' | 'vendors' | 'files';
@@ -59,7 +60,7 @@ const TABS = [
 
 const VALID_TAB_IDS: string[] = TABS.map(t => t.id);
 
-export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initialTab, onTabChange }: ImprovedProjectDetailsProps) => {
+export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initialTab, onTabChange, onTitleChange }: ImprovedProjectDetailsProps) => {
   const [project, setProject] = useState<Project | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [projectManager, setProjectManager] = useState<ProjectManager | null>(null);
@@ -107,6 +108,7 @@ export const ImprovedProjectDetails = ({ projectId, onBack, onViewVendor, initia
       setProject(projectData);
       setClient(clientData);
       setProjectManager(managerData);
+      if (projectData?.name) onTitleChange?.(projectData.name);
     } catch (error) {
       console.error('Error loading project:', error);
     } finally {

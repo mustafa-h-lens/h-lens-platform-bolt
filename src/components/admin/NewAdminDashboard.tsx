@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../contexts/PermissionsContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabaseClient';
 import { FolderOpen, Users, FileText, Wallet, CreditCard, Sparkles, Menu, Plus, AlertTriangle, ChevronLeft, Clock, UserCheck, Receipt, ArrowLeft } from 'lucide-react';
 import { Sidebar } from '../shared/Sidebar';
@@ -8,6 +9,7 @@ import { ProjectsList } from './projects/ProjectsList';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../lib/formatters';
 import { useHideAmounts } from '../../contexts/HideAmountsContext';
 import { usePageTransition } from '../../lib/usePageTransition';
+import { useDisablePullToRefresh } from '../shared/PullToRefresh';
 
 // Lazy-loaded section components
 const UserManagement = lazy(() => import('./UserManagement').then(m => ({ default: m.UserManagement })));
@@ -30,6 +32,20 @@ const LazyFallback = () => (
 );
 
 const VALID_PAGES = ['dashboard', 'projects', 'clients', 'vendors', 'expenses', 'users', 'settings', 'activity', 'suggestions', 'profile'];
+
+// Mobile-only top bar fallback labels (when no entity is loaded yet).
+const PAGE_TITLES: Record<string, string> = {
+  dashboard: 'الرئيسية',
+  clients: 'العملاء',
+  vendors: 'الموردين',
+  projects: 'المشاريع',
+  expenses: 'المصروفات',
+  suggestions: 'الاقتراحات',
+  activity: 'سجل النشاط',
+  settings: 'الإعدادات',
+  users: 'إدارة المستخدمين',
+  profile: 'الملف الشخصي',
+};
 
 const parseHash = (): { page: string; id: string | null; tab: string | null } => {
   const hash = window.location.hash.slice(1); // remove '#'
@@ -86,6 +102,7 @@ interface ActivityEntry {
 export const NewAdminDashboard = () => {
   const { profile } = useAuth();
   const { hasAccess, isSuperAdmin, loading: permissionsLoading } = usePermissions();
+  const { isDarkMode } = useTheme();
   const initialHash = parseHash();
 
   // Always initialize from hash — don't check permissions yet (they may still be loading)
@@ -279,13 +296,81 @@ export const NewAdminDashboard = () => {
 
   const sidebarMargin = sidebarCollapsed ? 'md:mr-[68px]' : 'md:mr-60';
 
-  const mobileMenuButton = (
-    <button
-      onClick={() => setSidebarOpen(true)}
-      className="fixed top-4 right-4 z-30 md:hidden btn btn-secondary btn-icon"
+  // Mobile-only top bar — entity name on detail pages, generic page label
+  // otherwise. Reset entity title whenever the active record changes so the
+  // bar never shows a stale name during navigation.
+  const [entityTitle, setEntityTitle] = useState<string | null>(null);
+  useEffect(() => {
+    setEntityTitle(null);
+  }, [currentPage, selectedProjectId, selectedClientId, selectedVendorId]);
+
+  // Lock body scroll while the mobile drawer is open so iOS rubber-banding
+  // doesn't shift the layout viewport behind the open sidebar.
+  useDisablePullToRefresh(sidebarOpen);
+
+  const onDetailPage = !!(selectedProjectId || selectedClientId || selectedVendorId);
+  const topBarTitle = onDetailPage && entityTitle
+    ? entityTitle
+    : (PAGE_TITLES[currentPage] || PAGE_TITLES.dashboard);
+
+  // Mobile-only sticky header. The element ships with Tailwind `hidden`
+  // (`display: none`) so it's invisible everywhere by default — the
+  // `.admin-mobile-topbar` rule inside the mobile media query in
+  // responsive.css flips it to `display: grid` only at ≤640px. This avoids
+  // the inline `display:` vs `md:hidden` conflict that previously leaked
+  // the bar onto desktop.
+  const mobileTopBar = (
+    <header
+      className="hidden admin-mobile-topbar"
+      dir="rtl"
+      style={{
+        gridTemplateColumns: '44px 1fr 44px',
+        alignItems: 'center',
+        padding: '0 16px',
+        height: 56,
+        borderBottom: '1px solid var(--border-soft)',
+        background: 'var(--bg-page)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        zIndex: 30,
+      }}
     >
-      <Menu size={20} />
-    </button>
+      <button
+        onClick={() => setSidebarOpen(true)}
+        aria-label="القائمة"
+        style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--text-secondary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 0,
+        }}
+      >
+        <Menu size={22} />
+      </button>
+      <span
+        style={{
+          fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)',
+          textAlign: 'right',
+          paddingInlineStart: 12,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}
+      >
+        {topBarTitle}
+      </span>
+      <img
+        src={isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png'}
+        alt="Half Lens"
+        onClick={() => handleNavigation('dashboard')}
+        style={{
+          height: 30, width: 'auto', objectFit: 'contain', cursor: 'pointer',
+          justifySelf: 'end',
+        }}
+      />
+    </header>
   );
 
   // Smooth crossfade between pages. The sidebar uses `currentPage` so the
@@ -318,6 +403,7 @@ export const NewAdminDashboard = () => {
             onViewVendor={handleViewVendor}
             initialTab={activeSubTab}
             onTabChange={setActiveSubTab}
+            onTitleChange={setEntityTitle}
           />
         </Suspense>
       );
@@ -343,6 +429,7 @@ export const NewAdminDashboard = () => {
                 onViewProject={handleViewProject}
                 initialShowAdd={showAddVendor}
                 onShowAddConsumed={() => setShowAddVendor(false)}
+                onTitleChange={setEntityTitle}
               />
             </Suspense>
           </div>
@@ -398,6 +485,7 @@ export const NewAdminDashboard = () => {
                 }}
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
+                onTitleChange={setEntityTitle}
               />
             </Suspense>
           );
@@ -628,7 +716,7 @@ export const NewAdminDashboard = () => {
       />
 
       <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-        {mobileMenuButton}
+        {mobileTopBar}
 
         <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
           <div

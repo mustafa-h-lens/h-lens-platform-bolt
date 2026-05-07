@@ -34,6 +34,7 @@ interface VendorDetailsProps {
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
   onViewProject?: (projectId: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 const VALID_VENDOR_TABS = ['dashboard', 'personal', 'travel', 'equipment', 'financial', 'invoices', 'documents'];
@@ -62,7 +63,7 @@ const getVendorColor = (id: string) => {
   return VENDOR_COLORS[Math.abs(hash) % VENDOR_COLORS.length];
 };
 
-export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onViewProject }: VendorDetailsProps) => {
+export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onViewProject, onTitleChange }: VendorDetailsProps) => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(
@@ -87,6 +88,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onVie
         .single();
       if (error) throw error;
       setVendor(data);
+      if (data?.full_name) onTitleChange?.(data.full_name);
     } catch (error) {
       console.error('Error fetching vendor:', error);
     } finally {

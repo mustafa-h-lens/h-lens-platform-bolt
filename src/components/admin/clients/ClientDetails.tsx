@@ -22,6 +22,7 @@ interface ClientDetailsProps {
   onViewProject?: (projectId: string) => void;
   initialTab?: string | null;
   onTabChange?: (tab: string | null) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 type TabType = 'projects' | 'purchase-orders' | 'documents';
@@ -56,7 +57,7 @@ const getStatusInfo = (status: string) => {
   }
 };
 
-export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onTabChange }: ClientDetailsProps) => {
+export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onTabChange, onTitleChange }: ClientDetailsProps) => {
   const { showSuccess, showError } = useNotification();
   const [client, setClient] = useState<Client | null>(null);
   const [inviting, setInviting] = useState(false);
@@ -87,6 +88,7 @@ export const ClientDetails = ({ clientId, onBack, onViewProject, initialTab, onT
 
       if (error) throw error;
       setClient(data);
+      if (data?.name) onTitleChange?.(data.name);
     } catch (error) {
       console.error('Error loading client:', error);
     } finally {

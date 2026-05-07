@@ -529,7 +529,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       </div>
 
       <div className="card" style={{ cursor: 'default' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 24, alignItems: 'start' }}>
+        <div className="admin-img-grid" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 24, alignItems: 'start' }}>
           {/* Profile Image */}
           <div className="input-group" style={{ textAlign: 'center' }}>
             <label className="input-label">الصورة الشخصية</label>

@@ -44,6 +44,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '4xl' }: Mo
     <div className="modal-bg" onClick={onClose}>
       <div
         className="modal"
+        data-mobile-modal="true"
         style={{ maxWidth: maxWidthMap[maxWidth] }}
         onClick={(e) => e.stopPropagation()}
       >
