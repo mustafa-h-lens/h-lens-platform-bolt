@@ -91,7 +91,7 @@ export function EmptyState({ icon: Icon, message }: { icon: React.ComponentType<
 
 export function LoadingSpinner({ text = 'جارٍ التحميل...' }: { text?: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--textMut)' }}>
+    <div className="vp-loading-soft" style={{ textAlign: 'center', padding: '3rem', color: 'var(--textMut)' }}>
       <Loader2 size={28} className="animate-spin" style={{ margin: '0 auto 8px' }} />
       <div style={{ fontSize: '.85rem' }}>{text}</div>
     </div>

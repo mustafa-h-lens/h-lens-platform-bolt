@@ -9,6 +9,7 @@ import '../../styles/half-lens-ds.css';
 import '../../styles/vendor-registration.css';
 
 import { isValidEmail } from '../../lib/validators';
+import { checkVendorDuplicates, duplicateMessage } from '../../lib/vendorDuplicates';
 
 import { Step1BasicIdentity } from './steps/Step1BasicIdentity';
 import { Step2Contact } from './steps/Step2Contact';
@@ -415,29 +416,29 @@ export const VendorRegistrationForm = () => {
 
       // Step 1: Insert/update vendor as 'draft' so RLS allows secondary inserts
       let vendor: any = null;
-      // Check for existing vendor by phone
+
+      // Reject duplicates on email / phone / id_number (active, pending,
+      // inactive, blocked). Rejected rows are intentionally allowed through so
+      // the re-application flow below can reuse them.
+      const dup = await checkVendorDuplicates({
+        email: formData.email,
+        phone,
+        id_number: formData.id_number,
+        ignoreRejected: true,
+      });
+      if (dup) {
+        throw new Error(duplicateMessage(dup));
+      }
+
+      // Check for existing rejected vendor by phone — that row gets reused.
       const { data: existingVendor, error: checkErr } = await supabase
         .from('vendors')
         .select('id, status')
         .eq('phone', phone)
+        .eq('status', 'rejected')
         .maybeSingle();
 
       if (checkErr) console.error('Vendor check error:', checkErr);
-
-      // Check for existing vendor by email (unique constraint)
-      if (!existingVendor && formData.email) {
-        const { data: emailVendor } = await supabase
-          .from('vendors')
-          .select('id, status')
-          .eq('email', formData.email)
-          .maybeSingle();
-
-        if (emailVendor) {
-          if (emailVendor.status === 'pending_approval' || emailVendor.status === 'active') {
-            throw new Error('هذا البريد الإلكتروني مسجل بالفعل. إذا كنت قد تقدمت سابقاً، يرجى انتظار مراجعة طلبك.');
-          }
-        }
-      }
 
       if (existingVendor && existingVendor.status === 'rejected') {
         const { data: updatedVendor, error: updateErr } = await supabase

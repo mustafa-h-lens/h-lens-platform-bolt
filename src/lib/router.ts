@@ -1,5 +1,5 @@
 import { useSyncExternalStore, useEffect } from 'react';
-import { navigateWithReveal, popstateReveal, prefersReducedMotion } from './navTransition';
+import { navigateWithReveal, prefersReducedMotion } from './navTransition';
 
 // ── CONSTANTS ─────────────────────────────────────────────────
 const LAST_VISITED_PAGE_KEY = 'lastVisitedPage';
@@ -21,34 +21,23 @@ function rawSwap(path: string, replace: boolean) {
   window.dispatchEvent(new PopStateEvent('popstate', { state: { __programmatic: true } }));
 }
 
-export function navigate(path: string, replace = false, opts: { forceDark?: boolean } = {}) {
+export function navigate(
+  path: string,
+  replace = false,
+  opts: { forceDark?: boolean; reveal?: boolean } = {},
+) {
   // No-op if already on the same path
   if (window.location.pathname === path && !window.location.search && !window.location.hash) return;
 
-  if (prefersReducedMotion()) {
+  // Fast path: no overlay for in-app navigation. Reveal is opt-in for
+  // brand moments (login success / logout) — see App.tsx and the contexts.
+  if (!opts.reveal || prefersReducedMotion()) {
     rawSwap(path, replace);
     return;
   }
 
   navigateWithReveal(path, () => rawSwap(path, replace), opts);
 }
-
-// Hook the browser back/forward gesture. We can't intercept the actual route
-// swap (the URL has already changed by the time popstate fires), but we can
-// flash the overlay so the new page mount happens behind the veil.
-let popstateHookInstalled = false;
-function installPopstateHook() {
-  if (popstateHookInstalled || typeof window === 'undefined') return;
-  popstateHookInstalled = true;
-  window.addEventListener('popstate', (ev: PopStateEvent) => {
-    // Skip our own programmatic popstate events; navigateWithReveal already
-    // handles those via the overlay.
-    const state = ev.state as { __programmatic?: boolean } | null;
-    if (state && state.__programmatic) return;
-    popstateReveal();
-  });
-}
-installPopstateHook();
 
 // ── useRouter ─────────────────────────────────────────────────
 function subscribe(cb: () => void) {

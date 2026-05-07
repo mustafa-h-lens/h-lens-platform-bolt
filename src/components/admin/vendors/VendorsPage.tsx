@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabaseClient';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { SearchableDropdown } from '../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { checkVendorDuplicates, duplicateMessage } from '../../../lib/vendorDuplicates';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../shared/ConfirmationModal';
 import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
@@ -596,6 +597,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     full_name: '', phone: '', email: '', primary_field: '', primary_city: '',
     id_number: '', nationality: '', status: 'active' as 'active' | 'inactive' | 'blocked',
   });
+  const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true);
 
   useEffect(() => {
     supabase.from('supplier_fields').select('*').eq('is_active', true).order('name').then(({ data }) => setAllFields(data || []));
@@ -729,6 +731,16 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     if (!formData.phone.trim()) { showError('يرجى إدخال رقم الجوال'); return; }
     setLoading(true);
     try {
+      const dup = await checkVendorDuplicates({
+        email: formData.email,
+        phone: formData.phone,
+        id_number: formData.id_number,
+      });
+      if (dup) {
+        showError(`${duplicateMessage(dup)} (${dup.vendor.full_name})`);
+        setLoading(false);
+        return;
+      }
       const { data: vendor, error } = await supabase.from('vendors').insert([{
         full_name: formData.full_name.trim(),
         phone: toEnglishNumbers(formData.phone.trim()),
@@ -757,6 +769,20 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
         await supabase.storage.from('vendor-images').upload(path, new Uint8Array(buf), { contentType: idFile.type, cacheControl: '3600', upsert: true });
         const { data: { publicUrl } } = supabase.storage.from('vendor-images').getPublicUrl(path);
         await supabase.from('vendors').update({ id_image: publicUrl }).eq('id', vendor.id);
+      }
+
+      if (vendor && sendWelcomeEmail && formData.email.trim()) {
+        supabase.functions
+          .invoke('send-vendor-status-email', {
+            body: { vendor_id: vendor.id, email_type: 'account_created' },
+          })
+          .then(async ({ error }) => {
+            if (error) { console.error('welcome email failed:', error); return; }
+            await supabase.from('vendors')
+              .update({ welcome_email_sent_at: new Date().toISOString() })
+              .eq('id', vendor.id);
+          })
+          .catch(err => console.error('welcome email exception:', err));
       }
 
       showSuccess('تم إضافة المورد بنجاح');
@@ -867,6 +893,33 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
               <div className="input-group">
                 <label className="input-label">البريد الإلكتروني</label>
                 <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" dir="ltr" />
+                <label
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
+                    padding: '10px 12px', borderRadius: 10,
+                    background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
+                    fontSize: 13,
+                    color: formData.email.trim() ? 'var(--text-primary)' : 'var(--text-muted)',
+                    cursor: formData.email.trim() ? 'pointer' : 'not-allowed',
+                    opacity: formData.email.trim() ? 1 : 0.6,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={sendWelcomeEmail && !!formData.email.trim()}
+                    disabled={!formData.email.trim()}
+                    onChange={e => setSendWelcomeEmail(e.target.checked)}
+                    style={{ width: 18, height: 18, cursor: formData.email.trim() ? 'pointer' : 'not-allowed', accentColor: 'var(--accent)' }}
+                  />
+                  <span>
+                    إرسال إيميل ترحيبي للمورد بإنشاء حسابه
+                    {!formData.email.trim() && (
+                      <span style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                        (أضف بريداً إلكترونياً لتفعيل الإرسال)
+                      </span>
+                    )}
+                  </span>
+                </label>
               </div>
 
               {/* ID Number + Nationality */}

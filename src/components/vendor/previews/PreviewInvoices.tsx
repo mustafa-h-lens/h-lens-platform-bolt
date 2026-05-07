@@ -10,7 +10,7 @@ const statusStyle = (status: string) => {
   }
 };
 
-const fmt = (n: number) => new Intl.NumberFormat('ar-SA', { maximumFractionDigits: 2 }).format(n);
+const fmt = (n: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
 
 export const PreviewInvoices = ({ isApproved = false }: { isApproved?: boolean }) => {
   return (

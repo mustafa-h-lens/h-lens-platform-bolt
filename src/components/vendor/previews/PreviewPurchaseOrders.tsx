@@ -8,7 +8,7 @@ const statusStyle = (s: string) => {
   return { bg: 'rgba(245,158,11,0.14)', border: 'rgba(245,158,11,0.4)',  color: '#b45309', Icon: Clock }; // قيد التحضير
 };
 
-const fmt = (n: number) => new Intl.NumberFormat('ar-SA').format(n);
+const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
 export const PreviewPurchaseOrders = () => (
   <div style={{ padding: 16, color: 'var(--color-text-primary)' }}>

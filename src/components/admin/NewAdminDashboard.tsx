@@ -7,6 +7,7 @@ import { Sidebar } from '../shared/Sidebar';
 import { ProjectsList } from './projects/ProjectsList';
 import { formatNumber, formatCurrency, formatDateArabic } from '../../lib/formatters';
 import { useHideAmounts } from '../../contexts/HideAmountsContext';
+import { usePageTransition } from '../../lib/usePageTransition';
 
 // Lazy-loaded section components
 const UserManagement = lazy(() => import('./UserManagement').then(m => ({ default: m.UserManagement })));
@@ -287,83 +288,55 @@ export const NewAdminDashboard = () => {
     </button>
   );
 
-  if (selectedProjectId) {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage="projects"
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto">
-            <Suspense fallback={<LazyFallback />}>
-              <ImprovedProjectDetails
-                projectId={selectedProjectId}
-                onBack={() => {
-                  setSelectedProjectId(null);
-                  setActiveSubTab(null);
-                  if (projectFromClientId) {
-                    setCurrentPage('clients');
-                    setSelectedClientId(projectFromClientId);
-                    setProjectFromClientId(null);
-                  }
-                }}
-                onViewVendor={handleViewVendor}
-                initialTab={activeSubTab}
-                onTabChange={setActiveSubTab}
-              />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+  // Smooth crossfade between pages. The sidebar uses `currentPage` so the
+  // active item highlights immediately on click; the main content reads the
+  // displayed* values so the outgoing page stays visible during the fade-out.
+  const transitionKey =
+    `${currentPage}|${selectedProjectId ?? ''}|${selectedClientId ?? ''}|${selectedVendorId ?? ''}`;
+  const { displayedKey, phase } = usePageTransition(transitionKey);
+  const _tParts = displayedKey.split('|');
+  const displayedPage = _tParts[0] || 'dashboard';
+  const displayedProjectId = _tParts[1] || null;
+  const displayedClientId = _tParts[2] || null;
+  const displayedVendorId = _tParts[3] || null;
 
-  if (currentPage === 'users') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto">
-            <Suspense fallback={<LazyFallback />}>
-              <UserManagement onBack={() => setCurrentPage('dashboard')} />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+  const renderActivePage = () => {
+    if (displayedProjectId) {
+      return (
+        <Suspense fallback={<LazyFallback />}>
+          <ImprovedProjectDetails
+            projectId={displayedProjectId}
+            onBack={() => {
+              setSelectedProjectId(null);
+              setActiveSubTab(null);
+              if (projectFromClientId) {
+                setCurrentPage('clients');
+                setSelectedClientId(projectFromClientId);
+                setProjectFromClientId(null);
+              }
+            }}
+            onViewVendor={handleViewVendor}
+            initialTab={activeSubTab}
+            onTabChange={setActiveSubTab}
+          />
+        </Suspense>
+      );
+    }
 
-  if (currentPage === 'vendors') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto p-6">
+    switch (displayedPage) {
+      case 'users':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <UserManagement onBack={() => setCurrentPage('dashboard')} />
+          </Suspense>
+        );
+
+      case 'vendors':
+        return (
+          <div className="p-6">
             <Suspense fallback={<LazyFallback />}>
               <VendorsPage
-                initialVendorId={selectedVendorId}
+                initialVendorId={displayedVendorId}
                 onVendorSelect={setSelectedVendorId}
                 initialTab={activeSubTab}
                 onTabChange={setActiveSubTab}
@@ -372,189 +345,100 @@ export const NewAdminDashboard = () => {
                 onShowAddConsumed={() => setShowAddVendor(false)}
               />
             </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+          </div>
+        );
 
-  if (currentPage === 'profile') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
-            <Suspense fallback={<LazyFallback />}>
-              <ProfilePage onBack={() => handleNavigation('dashboard')} />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+      case 'profile':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <ProfilePage onBack={() => handleNavigation('dashboard')} />
+          </Suspense>
+        );
 
-  if (currentPage === 'settings') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }}>
-            <Suspense fallback={<LazyFallback />}>
-              <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+      case 'settings':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <SettingsPage initialTab={activeSubTab} onTabChange={setActiveSubTab} />
+          </Suspense>
+        );
 
-  if (currentPage === 'activity') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto">
-            <Suspense fallback={<LazyFallback />}>
-              <ActivityLogPage />
-            </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+      case 'activity':
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <ActivityLogPage />
+          </Suspense>
+        );
 
-  if (currentPage === 'suggestions') {
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto p-6">
+      case 'suggestions':
+        return (
+          <div className="p-6">
             <Suspense fallback={<LazyFallback />}>
               <AdminSuggestions />
             </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentPage === 'clients') {
-    if (selectedClientId) {
-      return (
-        <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-          <Sidebar
-            currentPage={currentPage}
-            onNavigate={handleNavigation}
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-          />
-          <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-            {mobileMenuButton}
-            <main className="flex-1 overflow-auto">
-              <Suspense fallback={<LazyFallback />}>
-                <ClientDetails
-                  clientId={selectedClientId}
-                  onBack={() => {
-                    setSelectedClientId(null);
-                    setClientView(null);
-                    setActiveSubTab(null);
-                  }}
-                  onViewProject={(projectId) => {
-                    setProjectFromClientId(selectedClientId);
-                    setCurrentPage('projects');
-                    setSelectedProjectId(projectId);
-                    setSelectedClientId(null);
-                    setActiveSubTab(null);
-                  }}
-                  initialTab={activeSubTab}
-                  onTabChange={setActiveSubTab}
-                />
-              </Suspense>
-            </main>
           </div>
-        </div>
-      );
-    }
+        );
 
-    return (
-      <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigation}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-        />
-        <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-          {mobileMenuButton}
-          <main className="flex-1 overflow-auto">
+      case 'clients':
+        if (displayedClientId) {
+          return (
             <Suspense fallback={<LazyFallback />}>
-              <ClientsPage
-                onViewClient={(clientId) => {
-                  setSelectedClientId(clientId);
+              <ClientDetails
+                clientId={displayedClientId}
+                onBack={() => {
+                  setSelectedClientId(null);
+                  setClientView(null);
+                  setActiveSubTab(null);
                 }}
-                initialShowAdd={showAddClient}
-                onShowAddConsumed={() => setShowAddClient(false)}
+                onViewProject={(projectId) => {
+                  setProjectFromClientId(displayedClientId);
+                  setCurrentPage('projects');
+                  setSelectedProjectId(projectId);
+                  setSelectedClientId(null);
+                  setActiveSubTab(null);
+                }}
+                initialTab={activeSubTab}
+                onTabChange={setActiveSubTab}
               />
             </Suspense>
-          </main>
-        </div>
-      </div>
-    );
-  }
+          );
+        }
+        return (
+          <Suspense fallback={<LazyFallback />}>
+            <ClientsPage
+              onViewClient={(clientId) => {
+                setSelectedClientId(clientId);
+              }}
+              initialShowAdd={showAddClient}
+              onShowAddConsumed={() => setShowAddClient(false)}
+            />
+          </Suspense>
+        );
 
-  return (
-    <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
-      <Sidebar
-        currentPage={currentPage}
-        onNavigate={handleNavigation}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
-      />
+      case 'projects':
+        return (
+          <div style={{ padding: 28 }}>
+            <Suspense fallback={<LazyFallback />}>
+              <EnhancedProjectsPage
+                onSelectProject={setSelectedProjectId}
+                onCreateProject={() => setShowCreateProjectModal(true)}
+              />
+            </Suspense>
+          </div>
+        );
 
-      <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
-        {mobileMenuButton}
+      case 'expenses':
+        return (
+          <div style={{ padding: 28 }}>
+            <Suspense fallback={<LazyFallback />}>
+              <ExpensesPage onViewProject={setSelectedProjectId} />
+            </Suspense>
+          </div>
+        );
 
-        <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
-          {currentPage === 'dashboard' && (
-            <div className="page-section active" style={{ display: 'block' }}>
+      case 'dashboard':
+      default:
+        return (
+          <div className="page-section active" style={{ display: 'block' }}>
               {/* ═══ WELCOME BANNER ═══ */}
               <div className="dash-welcome">
                 <div className="dash-welcome-content">
@@ -728,26 +612,31 @@ export const NewAdminDashboard = () => {
                 </div>
               </div>
             </div>
-          )}
+        );
+    }
+  };
 
-        {currentPage === 'projects' && (
-  <div style={{ padding: 28 }}>
-    <Suspense fallback={<LazyFallback />}>
-      <EnhancedProjectsPage
-        onSelectProject={setSelectedProjectId}
-        onCreateProject={() => setShowCreateProjectModal(true)}
+  return (
+    <div className="flex h-screen" style={{ background: 'var(--bg-base)' }}>
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={handleNavigation}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(c => !c)}
       />
-    </Suspense>
-  </div>
-)}
 
-{currentPage === 'expenses' && (
-  <div style={{ padding: 28 }}>
-    <Suspense fallback={<LazyFallback />}>
-      <ExpensesPage onViewProject={setSelectedProjectId} />
-    </Suspense>
-  </div>
-)}
+      <div className={`flex-1 flex flex-col min-w-0 ${sidebarMargin}`}>
+        {mobileMenuButton}
+
+        <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
+          <div
+            key={displayedKey + ':' + phase}
+            className={phase === 'out' ? 'page-fade-out' : 'page-fade-in'}
+          >
+            {renderActivePage()}
+          </div>
         </main>
       </div>
 

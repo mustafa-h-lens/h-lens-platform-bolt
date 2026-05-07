@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Save, Upload, X } from 'lucide-react';
+import { Save, Upload, X, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { SearchableDropdown } from '../../../shared/SearchableDropdown';
+import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { getNationalityOptions } from '../../../../lib/countries';
+import { formatDateArabic } from '../../../../lib/formatters';
 import { DatePicker } from '../../../ui/DatePicker';
 
 interface Vendor {
@@ -29,6 +31,7 @@ interface Vendor {
   internal_notes?: string;
   primary_field?: string;
   estimated_cost?: number;
+  welcome_email_sent_at?: string | null;
 }
 
 interface VendorPersonalInfoProps {
@@ -75,7 +78,6 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
     estimated_cost: vendor.estimated_cost?.toString() || '',
   });
 
-  const [notifyEmailChange, setNotifyEmailChange] = useState(false);
   const [vendorFields, setVendorFields] = useState<VendorField[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [countries, setCountries] = useState<Array<{ value: string; label: string }>>([]);
@@ -85,6 +87,8 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingIdImage, setUploadingIdImage] = useState(false);
   const [uploadingVehicleRegImage, setUploadingVehicleRegImage] = useState(false);
+  const [showWelcomeConfirm, setShowWelcomeConfirm] = useState(false);
+  const [sendingWelcome, setSendingWelcome] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const idImageInputRef = useRef<HTMLInputElement>(null);
   const vehicleRegImageInputRef = useRef<HTMLInputElement>(null);
@@ -183,36 +187,9 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
 
       if (error) throw error;
 
-      const trimmedEmail = formData.email.trim();
-      const oldEmail = (vendor.email || '').trim();
-      const emailChanged = trimmedEmail && trimmedEmail.toLowerCase() !== oldEmail.toLowerCase();
-      if (emailChanged && notifyEmailChange) {
-        try {
-          const { error: emailErr } = await supabase.functions.invoke('send-vendor-status-email', {
-            body: {
-              vendor_id: vendor.id,
-              email_type: 'email_changed',
-              new_email: trimmedEmail,
-              old_email: oldEmail || undefined,
-              portal_type: 'vendor',
-            },
-          });
-          if (emailErr) {
-            console.error('Notify-email error:', emailErr);
-            showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
-          } else {
-            showSuccess('تم حفظ التعديلات وإرسال إشعار للبريد الجديد');
-          }
-        } catch (emailErr) {
-          console.error('Notify-email exception:', emailErr);
-          showError('تم حفظ التعديلات لكن فشل إرسال إشعار البريد الجديد');
-        }
-      } else {
-        showSuccess('تم حفظ التعديلات بنجاح');
-      }
+      showSuccess('تم حفظ التعديلات بنجاح');
 
       setIsEditing(false);
-      setNotifyEmailChange(false);
       onUpdate();
     } catch (error) {
       console.error('Error updating vendor:', error);
@@ -246,6 +223,32 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       estimated_cost: vendor.estimated_cost?.toString() || '',
     });
     setIsEditing(false);
+  };
+
+  const handleSendWelcomeEmail = async () => {
+    setShowWelcomeConfirm(false);
+    if (!vendor.email) return;
+    setSendingWelcome(true);
+    try {
+      const { error: invokeErr } = await supabase.functions.invoke('send-vendor-status-email', {
+        body: { vendor_id: vendor.id, email_type: 'account_created' },
+      });
+      if (invokeErr) throw invokeErr;
+
+      const sentAt = new Date().toISOString();
+      const { error: updateErr } = await supabase.from('vendors')
+        .update({ welcome_email_sent_at: sentAt })
+        .eq('id', vendor.id);
+      if (updateErr) console.error('failed to record welcome_email_sent_at:', updateErr);
+
+      showSuccess('تم إرسال الإشعار للمورد');
+      onUpdate();
+    } catch (err) {
+      console.error('send welcome email failed:', err);
+      showError('فشل إرسال الإشعار. حاول مرة أخرى');
+    } finally {
+      setSendingWelcome(false);
+    }
   };
 
   const addCity = (city: string) => {
@@ -486,6 +489,46 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
       </div>
 
       <div className="card" style={{ cursor: 'default' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <div className="card-icon ci-blue" style={{ width: 44, height: 44, flexShrink: 0 }}>
+            {vendor.welcome_email_sent_at ? <CheckCircle size={22} /> : <Mail size={22} />}
+          </div>
+          <div style={{ flex: 1, minWidth: 220 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+              إشعار المورد بإنشاء الحساب
+            </div>
+            {!vendor.email ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                لا يوجد بريد إلكتروني لهذا المورد. أضف بريداً ثم احفظ لتفعيل الإرسال.
+              </div>
+            ) : vendor.welcome_email_sent_at ? (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                تم إرسال إشعار إنشاء الحساب بتاريخ {formatDateArabic(vendor.welcome_email_sent_at)}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                لم يتم إرسال إشعار للمورد بعد. سيحتوي الإيميل على بريده ورابط تسجيل الدخول.
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className={vendor.welcome_email_sent_at ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
+            onClick={() => setShowWelcomeConfirm(true)}
+            disabled={!vendor.email || sendingWelcome}
+            style={{ gap: 6 }}
+          >
+            <Mail size={14} />
+            {sendingWelcome
+              ? 'جاري الإرسال...'
+              : vendor.welcome_email_sent_at
+                ? 'إعادة الإرسال'
+                : 'إرسال إشعار بإنشاء الحساب'}
+          </button>
+        </div>
+      </div>
+
+      <div className="card" style={{ cursor: 'default' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr', gap: 24, alignItems: 'start' }}>
           {/* Profile Image */}
           <div className="input-group" style={{ textAlign: 'center' }}>
@@ -667,26 +710,6 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
               disabled={!isEditing}
               dir="ltr"
             />
-            {isEditing && formData.email.trim() && formData.email.trim().toLowerCase() !== (vendor.email || '').trim().toLowerCase() && (
-              <label
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
-                  padding: '10px 12px', borderRadius: 10,
-                  background: 'var(--accent-glow)', border: '1px solid var(--accent-glow-md)',
-                  fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={notifyEmailChange}
-                  onChange={(e) => setNotifyEmailChange(e.target.checked)}
-                  style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)' }}
-                />
-                <span>
-                  إشعار المورد بالبريد الجديد عبر إيميل يحتوي على رابط تسجيل الدخول
-                </span>
-              </label>
-            )}
           </div>
 
           <div className="input-group">
@@ -941,6 +964,22 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showWelcomeConfirm}
+        type="info"
+        title={vendor.welcome_email_sent_at ? 'إعادة إرسال الإشعار' : 'إرسال إشعار بإنشاء الحساب'}
+        message={
+          <>
+            سيتم إرسال إيميل إلى <strong dir="ltr" style={{ unicodeBidi: 'isolate' }}>{vendor.email}</strong> يحتوي على رابط تسجيل الدخول وتعليمات الدخول إلى الحساب.
+            <br />
+            هل تريد المتابعة؟
+          </>
+        }
+        confirmText="إرسال الآن"
+        onConfirm={handleSendWelcomeEmail}
+        onCancel={() => setShowWelcomeConfirm(false)}
+      />
     </div>
   );
 };

@@ -18,6 +18,7 @@ import { VendorSuggestions } from './VendorSuggestions';
 import { VendorEditSubmission } from './VendorEditSubmission';
 import { ErrorBoundary } from '../shared/ErrorBoundary';
 import { useDisablePullToRefresh } from '../shared/PullToRefresh';
+import { usePageTransition } from '../../lib/usePageTransition';
 import '../../styles/vendor-portal.css';
 
 const NAV_ITEMS: { id: VendorPage; label: string; icon: typeof LayoutDashboard }[] = [
@@ -43,6 +44,7 @@ const PAGE_TITLES: Record<VendorPage, string> = {
 
 export const VendorPortal = () => {
   const { vendor, currentPage, navigateTo, signOut } = useVendor();
+  const { displayedKey: displayedPage, phase } = usePageTransition(currentPage);
   const { isDarkMode, toggleTheme } = useTheme();
   const LOGO = isDarkMode ? '/assets/logo-white.png' : '/assets/logo-blue.png';
   const { showSuccess, showError } = useNotification();
@@ -215,7 +217,7 @@ export const VendorPortal = () => {
           display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
           justifyContent: isOpen ? 'flex-start' : 'center',
         }}>
-          <img src={LOGO} alt="Half Lens" onClick={() => navigateTo('dashboard')} style={{
+          <img src="/assets/logo-white.png" alt="Half Lens" onClick={() => navigateTo('dashboard')} style={{
             height: isOpen ? 42 : 24, objectFit: 'contain', flexShrink: 0,
             minWidth: isOpen ? 'auto' : 24, transition: 'height 0.25s ease', cursor: 'pointer',
           }} />
@@ -526,15 +528,20 @@ export const VendorPortal = () => {
               </div>
             )}
 
-            <ErrorBoundary key={currentPage}>
-              {currentPage === 'dashboard'        && <VendorDashboard />}
-              {currentPage === 'profile'          && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
-              {currentPage === 'projects'         && <VendorProjects />}
-              {currentPage === 'invoices'         && <VendorInvoices />}
-              {currentPage === 'equipment'        && <VendorEquipment />}
-              {currentPage === 'notifications'    && <VendorNotifications />}
-              {currentPage === 'suggestions'      && <VendorSuggestions />}
-              {currentPage === 'edit-submission'  && <VendorEditSubmission />}
+            <ErrorBoundary key={displayedPage}>
+              <div
+                key={displayedPage + ':' + phase}
+                className={phase === 'out' ? 'page-fade-out' : 'page-fade-in'}
+              >
+                {displayedPage === 'dashboard'        && <VendorDashboard />}
+                {displayedPage === 'profile'          && <VendorProfile onDirtyChange={markDirty} onSaved={clearDirty} />}
+                {displayedPage === 'projects'         && <VendorProjects />}
+                {displayedPage === 'invoices'         && <VendorInvoices />}
+                {displayedPage === 'equipment'        && <VendorEquipment />}
+                {displayedPage === 'notifications'    && <VendorNotifications />}
+                {displayedPage === 'suggestions'      && <VendorSuggestions />}
+                {displayedPage === 'edit-submission'  && <VendorEditSubmission />}
+              </div>
             </ErrorBoundary>
           </div>
         </div>

@@ -16,7 +16,8 @@ type EmailType =
   | "revision_requested"
   | "resubmitted"
   | "admin_new_registration"
-  | "email_changed";
+  | "email_changed"
+  | "account_created";
 
 interface RevisionFlags {
   steps: Record<string, { comment: string; fields: string[] }>;
@@ -341,6 +342,50 @@ function buildApproved(
   return {
     subject: "تمت الموافقة على طلب التسجيل - Half Lens",
     html: wrapTemplate(content, "تمت الموافقة على طلب التسجيل - Half Lens"),
+  };
+}
+
+function buildAccountCreated(
+  vendorName: string,
+  vendorEmail: string,
+  loginUrl: string,
+  date: string
+): { subject: string; html: string } {
+  const content = `
+    ${baseHeader("&#127881; تم إنشاء حسابك", "rgba(16,185,129,0.12)", "rgba(16,185,129,0.25)", "#34d399")}
+    <tr>
+      <td style="padding:32px 32px 0;text-align:center;color:#f8fafc;">
+        <div style="display:inline-block;width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);line-height:64px;font-size:28px;margin-bottom:20px;">&#127881;</div>
+        <p style="font-size:20px;font-weight:700;color:#f8fafc;margin:0 0 12px;">مرحباً بك في Half Lens!</p>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.8;margin:0 0 24px;">مرحباً ${vendorName}، تم إنشاء حسابك على منصة هاف لينس بواسطة فريق الإدارة. أصبح بإمكانك الآن الدخول إلى حسابك واستعراض المشاريع المسندة إليك.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 32px 16px;">
+        ${infoBox([
+          { label: "&#128231; البريد الإلكتروني للحساب", value: vendorEmail },
+          { label: "&#128197; تاريخ إنشاء الحساب", value: date },
+          { label: "&#128203; طريقة تسجيل الدخول", value: "رمز تحقق يُرسل إلى بريدك" },
+        ])}
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:0 32px 28px;">
+        <p style="font-size:14px;font-weight:600;color:#f8fafc;margin:0 0 12px;">كيف تسجل الدخول؟</p>
+        <ul style="margin:0 0 8px;padding:0 18px;font-size:14px;color:#94a3b8;line-height:2.2;">
+          <li>اضغط على زر "الدخول إلى حسابي" أدناه</li>
+          <li>أدخل بريدك الإلكتروني المسجل (الموضح أعلاه)</li>
+          <li>سيصلك رمز تحقق مكوّن من 6 أرقام، أدخله لإكمال تسجيل الدخول</li>
+          <li>أكمل ملفك الشخصي بإضافة الصور والبيانات الناقصة</li>
+        </ul>
+        ${ctaButton("الدخول إلى حسابي", loginUrl, "#10b981")}
+      </td>
+    </tr>
+    ${baseFooter()}`;
+
+  return {
+    subject: "تم إنشاء حسابك على Half Lens",
+    html: wrapTemplate(content, "تم إنشاء حسابك على Half Lens"),
   };
 }
 
@@ -842,6 +887,25 @@ Deno.serve(async (req: Request) => {
           );
         }
         emailContent = buildApproved(vendor.full_name, loginUrl);
+        recipients = [vendor.email];
+        break;
+
+      case "account_created":
+        if (!vendor.email) {
+          return new Response(
+            JSON.stringify({ error: "Vendor has no email address" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        emailContent = buildAccountCreated(
+          vendor.full_name,
+          vendor.email,
+          loginUrl,
+          dateStr
+        );
         recipients = [vendor.email];
         break;
 

@@ -89,7 +89,7 @@ export const VendorSuggestions = () => {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+      <div className="vp-loading-soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
         <div style={{ color: 'var(--textSec)', fontSize: '.9rem' }}>جاري التحميل...</div>
       </div>
     );

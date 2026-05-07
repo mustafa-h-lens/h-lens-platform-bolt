@@ -2,7 +2,7 @@ import { Camera, Lock, CircleDot } from 'lucide-react';
 import { DEMO_EQUIPMENT } from './fixtures';
 import { PreviewBanner, PreviewRibbon, LockedActionHint } from './PreviewRibbon';
 
-const fmt = (n: number) => new Intl.NumberFormat('ar-SA').format(n);
+const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
 export const PreviewEquipment = ({ isApproved = false }: { isApproved?: boolean }) => (
   <div style={{ padding: 16, color: 'var(--color-text-primary)' }}>

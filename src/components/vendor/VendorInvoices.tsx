@@ -136,7 +136,9 @@ export function VendorInvoices() {
 
       {/* Table — sample whenever there's no real invoice yet,
           filtered-empty if filters hide them all, real table otherwise */}
-      {loading ? <LoadingSpinner /> : invoices.length === 0 ? (
+      {loading ? <LoadingSpinner /> : (
+      <div className="vp-content-soft-in">
+      {invoices.length === 0 ? (
         <PreviewInvoices isApproved={vendor?.status === 'active'} />
       ) : filtered.length === 0 ? (
         <EmptyState icon={FileText} message="لا توجد نتائج تطابق الفلاتر" />
@@ -208,6 +210,8 @@ export function VendorInvoices() {
           })}
           <Pagination currentPage={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </div>
+      )}
+      </div>
       )}
     </div>
   );

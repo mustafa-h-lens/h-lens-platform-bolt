@@ -8,7 +8,7 @@ const statusStyle = (s: string) => {
   return { bg: 'rgba(22,163,74,0.12)', border: 'rgba(22,163,74,0.35)', color: '#15803d' }; // مكتمل
 };
 
-const fmt = (n: number) => new Intl.NumberFormat('ar-SA').format(n);
+const fmt = (n: number) => new Intl.NumberFormat('en-US').format(n);
 
 export const PreviewProjects = ({ isApproved = false }: { isApproved?: boolean }) => (
   <div style={{ padding: 16, color: 'var(--color-text-primary)' }}>

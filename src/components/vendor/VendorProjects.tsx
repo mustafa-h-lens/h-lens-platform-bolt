@@ -131,7 +131,9 @@ export function VendorProjects() {
       {/* Table — show samples whenever there's no real data yet,
           a filtered-empty view if filters hide all real rows,
           and the real table once at least one project exists and matches */}
-      {loading ? <LoadingSpinner /> : projects.length === 0 ? (
+      {loading ? <LoadingSpinner /> : (
+      <div className="vp-content-soft-in">
+      {projects.length === 0 ? (
         <PreviewProjects isApproved={vendor?.status === 'active'} />
       ) : filtered.length === 0 ? (
         <EmptyState icon={Folder} message="لا توجد نتائج تطابق الفلاتر" />
@@ -229,6 +231,8 @@ export function VendorProjects() {
           })}
           <Pagination currentPage={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </div>
+      )}
+      </div>
       )}
     </div>
   );

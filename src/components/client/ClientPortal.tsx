@@ -10,6 +10,7 @@ import { ClientProjectView } from './ClientProjectView';
 import { ClientInvoices } from './ClientInvoices';
 import { ClientProjectsList } from './ClientProjectsList';
 import { ErrorBoundary } from '../shared/ErrorBoundary';
+import { usePageTransition } from '../../lib/usePageTransition';
 
 const NAV_ITEMS: { id: ClientPage; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'الرئيسية', icon: LayoutDashboard },
@@ -23,6 +24,10 @@ export const ClientPortal = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const transitionKey = `${currentPage}|${selectedProjectId ?? ''}`;
+  const { displayedKey: displayedTransitionKey, phase } = usePageTransition(transitionKey);
+  const [displayedPage, displayedProjectIdRaw] = displayedTransitionKey.split('|');
+  const displayedProjectId = displayedProjectIdRaw || null;
 
   const handleNavigate = (page: ClientPage) => {
     setSelectedProjectId(null);
@@ -36,10 +41,10 @@ export const ClientPortal = () => {
   };
 
   const renderPage = () => {
-    if (currentPage === 'projects' && selectedProjectId) {
-      return <ClientProjectView projectId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />;
+    if (displayedPage === 'projects' && displayedProjectId) {
+      return <ClientProjectView projectId={displayedProjectId} onBack={() => setSelectedProjectId(null)} />;
     }
-    switch (currentPage) {
+    switch (displayedPage) {
       case 'dashboard': return <ClientDashboardHome onViewProject={handleViewProject} />;
       case 'projects':  return <ClientProjectsList onViewProject={handleViewProject} />;
       case 'invoices':  return <ClientInvoices />;
@@ -197,7 +202,12 @@ export const ClientPortal = () => {
         <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-base)' }} dir="rtl">
           <div style={{ padding: 28 }}>
             <ErrorBoundary>
-              {renderPage()}
+              <div
+                key={displayedTransitionKey + ':' + phase}
+                className={phase === 'out' ? 'page-fade-out' : 'page-fade-in'}
+              >
+                {renderPage()}
+              </div>
             </ErrorBoundary>
           </div>
         </main>

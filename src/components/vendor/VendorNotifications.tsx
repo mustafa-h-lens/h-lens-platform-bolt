@@ -226,7 +226,9 @@ export function VendorNotifications() {
       </div>
 
       {/* List */}
-      {loading ? <LoadingSpinner /> : filtered.length === 0 ? (
+      {loading ? <LoadingSpinner /> : (
+      <div className="vp-content-soft-in">
+      {filtered.length === 0 ? (
         <EmptyState icon={Bell} message="لا توجد إشعارات" />
       ) : (
         <PageCard style={{ padding: 0, overflow: 'hidden' }}>
@@ -270,6 +272,8 @@ export function VendorNotifications() {
           })}
           <Pagination currentPage={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         </PageCard>
+      )}
+      </div>
       )}
     </div>
   );

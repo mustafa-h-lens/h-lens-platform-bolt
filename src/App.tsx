@@ -11,6 +11,7 @@ import { useRouteTracking, getLastVisitedPage, navigate } from './lib/router';
 import { supabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { NavTransitionOverlay } from './components/NavTransitionOverlay';
+import { BootSplash } from './components/BootSplash';
 
 // ─────────────────────────────────────────────────────────────
 // LAZY-LOADED PAGE COMPONENTS (code splitting)
@@ -345,7 +346,7 @@ function AppContent() {
     localStorage.removeItem('vendor_data');
     return (
       <SupplierAuth
-        onSuccess={() => navigate(ROUTES.VENDOR_PORTAL)}
+        onSuccess={() => navigate(ROUTES.VENDOR_PORTAL, false, { reveal: true, forceDark: true })}
       />
     );
   }
@@ -388,7 +389,7 @@ function AppContent() {
     localStorage.removeItem('client_data');
     return (
       <ClientAuth
-        onSuccess={() => navigate(ROUTES.CLIENT_PORTAL)}
+        onSuccess={() => navigate(ROUTES.CLIENT_PORTAL, false, { reveal: true, forceDark: true })}
       />
     );
   }
@@ -447,6 +448,7 @@ function App() {
             </Suspense>
           </ErrorBoundary>
           <NavTransitionOverlay />
+          <BootSplash />
         </NotificationProvider>
         </HideAmountsProvider>
         </PermissionsProvider>
