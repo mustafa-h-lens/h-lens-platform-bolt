@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "emails:logos": "node scripts/generate-email-logos.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",
@@ -35,6 +36,7 @@
     "globals": "^15.9.0",
     "pg": "^8.20.0",
     "postcss": "^8.4.35",
+    "sharp": "^0.34.5",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
