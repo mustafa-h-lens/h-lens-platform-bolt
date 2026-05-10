@@ -149,7 +149,10 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
   const loadVendorStats = async () => {
     try {
       const [totalRes, activeRes, pendingRes, inactiveRes] = await Promise.all([
-        supabase.from('vendors').select('id', { count: 'exact', head: true }),
+        // "Total" matches the All Vendors listing — onboarded vendors only.
+        // Pending registration requests live in their own tab + stat card; rejected
+        // vendors are not part of the active roster.
+        supabase.from('vendors').select('id', { count: 'exact', head: true }).in('status', ['active', 'inactive', 'blocked']),
         supabase.from('vendors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('vendors').select('id', { count: 'exact', head: true }).in('status', ['pending_approval', 'revision_requested']),
         supabase.from('vendors').select('id', { count: 'exact', head: true }).in('status', ['inactive', 'blocked']),
