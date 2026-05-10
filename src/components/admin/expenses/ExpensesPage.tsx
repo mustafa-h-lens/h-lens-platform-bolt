@@ -8,6 +8,20 @@ import { formatCurrency, formatDateArabic, formatNumber } from '../../../lib/for
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { useHideAmounts } from '../../../contexts/HideAmountsContext';
 import type { VendorField } from '../../../types/database';
+import {
+  createBrandedWorkbook,
+  applyHeaderRow,
+  applyDataRow,
+  applyStatusBadge,
+  applyTotalsRow,
+  applyTableFinish,
+  formatCurrencyCell,
+  formatNumberCell,
+  formatPercentCell,
+  formatDateCell,
+  downloadWorkbook,
+  type StatusKey,
+} from '../../../lib/excelExport';
 
 interface ExpenseRow {
   id: string;
@@ -452,57 +466,163 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Export filtered expenses as CSV
-  const exportExpensesCSV = () => {
-    const headers = ['المورد / الوصف', 'العميل', 'المشروع', 'مدير المشروع', 'الدور', 'البند', 'المبلغ', 'المدفوع', 'المتبقي', 'حالة الاعتماد', 'الاستحقاق'];
-    const rows = filteredExpenses.map(e => [
-      e.expense_type === 'vendor' ? e.vendor_name : (e.expense_description || '-'),
-      e.client_name,
-      e.project_name,
-      e.project_manager_name,
-      getCategoryLabel(e.category),
-      e.project_item_name || '-',
-      e.amount.toFixed(2),
-      e.amount_paid.toFixed(2),
-      e.amount_remaining.toFixed(2),
-      getApprovalStatusLabel(e.approval_status),
-      e.due_date || '-',
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `expenses_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const approvalStatusKey = (status: string): StatusKey => {
+    if (status === 'paid') return 'paid';
+    if (status === 'approved') return 'approved';
+    return 'neutral';
   };
 
-  // Export vendor summary as CSV
-  const exportVendorsCSV = () => {
-    const headers = ['المورد', 'المشاريع', 'الفواتير', 'الإجمالي', 'المدفوع', 'المتبقي', 'نسبة السداد'];
-    const rows = vendorSummaries.map(v => {
-      const pct = v.total_amount > 0 ? Math.round((v.total_paid / v.total_amount) * 100) : 0;
-      return [v.vendor_name, v.project_count, v.invoice_count, v.total_amount.toFixed(2), v.total_paid.toFixed(2), v.total_remaining.toFixed(2), `${pct}%`];
+  const exportExpensesXLSX = async () => {
+    const cols = [
+      { key: 'name',     label: 'المورد / الوصف',  width: 30 },
+      { key: 'client',   label: 'العميل',          width: 22 },
+      { key: 'project',  label: 'المشروع',         width: 26 },
+      { key: 'manager',  label: 'مدير المشروع',    width: 22 },
+      { key: 'category', label: 'الدور',           width: 20 },
+      { key: 'item',     label: 'البند',           width: 24 },
+      { key: 'amount',   label: 'المبلغ',          width: 16 },
+      { key: 'paid',     label: 'المدفوع',         width: 16 },
+      { key: 'remaining',label: 'المتبقي',         width: 16 },
+      { key: 'status',   label: 'حالة الاعتماد',   width: 16 },
+      { key: 'due',      label: 'الاستحقاق',       width: 16 },
+    ];
+
+    const today = new Date().toISOString().split('T')[0];
+    const { wb, ws, headerRowIdx, dataStartRow } = await createBrandedWorkbook({
+      title: 'كشف المصروفات',
+      subtitle: `تاريخ التصدير: ${today}    |    عدد المصروفات: ${toEnglishNumbers(String(filteredExpenses.length))}`,
+      sheetName: 'المصروفات',
+      columns: cols,
     });
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
+    applyHeaderRow(ws, headerRowIdx, cols.map(c => c.label));
 
-    const bom = '\uFEFF';
-    const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `vendors_summary_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    let totalAmount = 0;
+    let totalPaid = 0;
+    let totalRemaining = 0;
+
+    filteredExpenses.forEach((e, i) => {
+      const rowIdx = dataStartRow + i;
+      applyDataRow(ws, rowIdx, cols.length, i % 2 === 1, { numberCols: [7, 8, 9, 11] });
+      const row = ws.getRow(rowIdx);
+
+      row.getCell(1).value = e.expense_type === 'vendor' ? e.vendor_name : (e.expense_description || '-');
+      row.getCell(2).value = e.client_name;
+      row.getCell(3).value = e.project_name;
+      row.getCell(4).value = e.project_manager_name;
+      row.getCell(5).value = getCategoryLabel(e.category);
+      row.getCell(6).value = e.project_item_name || '-';
+      formatCurrencyCell(row.getCell(7), e.amount, e.currency);
+      formatCurrencyCell(row.getCell(8), e.amount_paid, e.currency);
+      formatCurrencyCell(row.getCell(9), e.amount_remaining, e.currency);
+      applyStatusBadge(row.getCell(10), approvalStatusKey(e.approval_status), getApprovalStatusLabel(e.approval_status));
+      formatDateCell(row.getCell(11), e.due_date);
+
+      totalAmount += e.amount;
+      totalPaid += e.amount_paid;
+      totalRemaining += e.amount_remaining;
+    });
+
+    const lastDataRow = filteredExpenses.length === 0
+      ? dataStartRow - 1
+      : dataStartRow + filteredExpenses.length - 1;
+
+    if (filteredExpenses.length > 0) {
+      const totalsRowIdx = lastDataRow + 1;
+      applyTotalsRow(ws, totalsRowIdx, cols.length, {}, 'الإجمالي العام');
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(7), totalAmount);
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(8), totalPaid);
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(9), totalRemaining);
+      for (let c = 7; c <= 9; c++) {
+        const cell = ws.getRow(totalsRowIdx).getCell(c);
+        cell.font = { ...(cell.font || {}), bold: true };
+      }
+    }
+
+    applyTableFinish(ws, {
+      firstDataRow: dataStartRow,
+      lastDataRow,
+      firstCol: 1,
+      lastCol: cols.length,
+      autoFilter: filteredExpenses.length > 0,
+      outerBorder: true,
+    });
+
+    await downloadWorkbook(wb, `كشف_المصروفات_${today}.xlsx`);
+  };
+
+  const exportVendorsXLSX = async () => {
+    const cols = [
+      { key: 'vendor',   label: 'المورد',     width: 28 },
+      { key: 'projects', label: 'المشاريع',   width: 14 },
+      { key: 'invoices', label: 'الفواتير',   width: 14 },
+      { key: 'total',    label: 'الإجمالي',   width: 18 },
+      { key: 'paid',     label: 'المدفوع',    width: 18 },
+      { key: 'remaining',label: 'المتبقي',    width: 18 },
+      { key: 'pct',      label: 'نسبة السداد',width: 16 },
+    ];
+
+    const today = new Date().toISOString().split('T')[0];
+    const { wb, ws, headerRowIdx, dataStartRow } = await createBrandedWorkbook({
+      title: 'ملخص الموردين',
+      subtitle: `تاريخ التصدير: ${today}    |    عدد الموردين: ${toEnglishNumbers(String(vendorSummaries.length))}`,
+      sheetName: 'الموردون',
+      columns: cols,
+    });
+
+    applyHeaderRow(ws, headerRowIdx, cols.map(c => c.label));
+
+    let totalAmount = 0;
+    let totalPaid = 0;
+    let totalRemaining = 0;
+
+    vendorSummaries.forEach((v, i) => {
+      const rowIdx = dataStartRow + i;
+      applyDataRow(ws, rowIdx, cols.length, i % 2 === 1, { numberCols: [2, 3, 4, 5, 6, 7] });
+      const row = ws.getRow(rowIdx);
+
+      row.getCell(1).value = v.vendor_name;
+      formatNumberCell(row.getCell(2), v.project_count, 0);
+      formatNumberCell(row.getCell(3), v.invoice_count, 0);
+      formatCurrencyCell(row.getCell(4), v.total_amount);
+      formatCurrencyCell(row.getCell(5), v.total_paid);
+      formatCurrencyCell(row.getCell(6), v.total_remaining);
+      const pct = v.total_amount > 0 ? (v.total_paid / v.total_amount) * 100 : 0;
+      formatPercentCell(row.getCell(7), pct);
+
+      totalAmount += v.total_amount;
+      totalPaid += v.total_paid;
+      totalRemaining += v.total_remaining;
+    });
+
+    const lastDataRow = vendorSummaries.length === 0
+      ? dataStartRow - 1
+      : dataStartRow + vendorSummaries.length - 1;
+
+    if (vendorSummaries.length > 0) {
+      const totalsRowIdx = lastDataRow + 1;
+      applyTotalsRow(ws, totalsRowIdx, cols.length, {}, 'الإجمالي العام');
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(4), totalAmount);
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(5), totalPaid);
+      formatCurrencyCell(ws.getRow(totalsRowIdx).getCell(6), totalRemaining);
+      const weightedPct = totalAmount > 0 ? (totalPaid / totalAmount) * 100 : 0;
+      formatPercentCell(ws.getRow(totalsRowIdx).getCell(7), weightedPct);
+      for (let c = 4; c <= 7; c++) {
+        const cell = ws.getRow(totalsRowIdx).getCell(c);
+        cell.font = { ...(cell.font || {}), bold: true };
+      }
+    }
+
+    applyTableFinish(ws, {
+      firstDataRow: dataStartRow,
+      lastDataRow,
+      firstCol: 1,
+      lastCol: cols.length,
+      autoFilter: vendorSummaries.length > 0,
+      outerBorder: true,
+    });
+
+    await downloadWorkbook(wb, `ملخص_الموردين_${today}.xlsx`);
   };
 
   if (loading) {
@@ -565,9 +685,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
         <>
           {/* Export toolbar */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-            <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportVendorsCSV}>
+            <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportVendorsXLSX}>
               <Download size={13} />
-              تصدير CSV
+              تصدير Excel
             </button>
           </div>
 
@@ -861,9 +981,9 @@ export const ExpensesPage = ({ onViewProject }: ExpensesPageProps) => {
 
         {/* Export button */}
         <div style={{ marginRight: 'auto' }}>
-          <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportExpensesCSV}>
+          <button className="btn btn-secondary btn-sm" style={{ gap: 6 }} onClick={exportExpensesXLSX}>
             <Download size={13} />
-            تصدير CSV
+            تصدير Excel
           </button>
         </div>
       </div>
