@@ -5,6 +5,7 @@ import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { SearchableDropdown } from '../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { checkVendorDuplicates, duplicateMessage } from '../../../lib/vendorDuplicates';
+import { isValidEmail } from '../../../lib/validators';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../shared/ConfirmationModal';
 import { isOperationalStatus } from '../../../lib/vendorStatusMachine';
@@ -730,6 +731,8 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
     e.preventDefault();
     if (!formData.full_name.trim()) { showError('يرجى إدخال الاسم الكامل'); return; }
     if (!formData.phone.trim()) { showError('يرجى إدخال رقم الجوال'); return; }
+    if (!formData.email.trim()) { showError('يرجى إدخال البريد الإلكتروني'); return; }
+    if (!isValidEmail(formData.email)) { showError('البريد الإلكتروني غير صالح'); return; }
     setLoading(true);
     try {
       const dup = await checkVendorDuplicates({
@@ -745,7 +748,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
       const { data: vendor, error } = await supabase.from('vendors').insert([{
         full_name: formData.full_name.trim(),
         phone: toEnglishNumbers(formData.phone.trim()),
-        email: formData.email.trim() || null,
+        email: formData.email.trim(),
         primary_field: formData.primary_field.trim() || null,
         primary_city: formData.primary_city.trim() || null,
         nationality: formData.nationality.trim() || null,
@@ -892,8 +895,8 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
                 <input className="input" type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })} placeholder="05xxxxxxxx" dir="ltr" />
               </div>
               <div className="input-group">
-                <label className="input-label">البريد الإلكتروني</label>
-                <input className="input" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" dir="ltr" />
+                <label className="input-label">البريد الإلكتروني <span className="req">*</span></label>
+                <input className="input" type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="email@example.com" dir="ltr" />
                 <label
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10, marginTop: 10,
