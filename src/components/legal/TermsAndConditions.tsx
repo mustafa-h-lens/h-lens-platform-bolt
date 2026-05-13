@@ -16,6 +16,23 @@ interface TermsContent {
 
 const LOGO = "/assets/logo-white.png";
 
+// Pick a tint for the section-icon container based on the emoji.
+// Phone-themed icons get green (contact / call us); everything else stays blue.
+const iconPalette = (icon: string): { bg: string; border: string; bar: string } => {
+  if (icon && /[📞☎📱📲]/.test(icon)) {
+    return {
+      bg: 'rgba(16,185,129,0.14)',
+      border: 'rgba(16,185,129,0.28)',
+      bar: 'linear-gradient(135deg,rgba(16,185,129,0.07) 0%,transparent 100%)',
+    };
+  }
+  return {
+    bg: 'rgba(37,99,235,0.12)',
+    border: 'rgba(59,130,246,0.18)',
+    bar: 'linear-gradient(135deg,rgba(29,78,216,0.05) 0%,transparent 100%)',
+  };
+};
+
 export const TermsAndConditions: React.FC = () => {
   const [content, setContent] = useState<TermsContent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -244,11 +261,13 @@ export const TermsAndConditions: React.FC = () => {
         </div>
 
         <div className="legal-content">
-          {content.sections.map((sec,i)=>(
+          {content.sections.map((sec,i)=>{
+            const pal = iconPalette(sec.icon);
+            return (
             <div id={sec.id} key={sec.id} className="sec-card"
               style={{borderRadius:16,background:"rgba(8,18,38,0.7)",border:"1px solid rgba(255,255,255,0.06)",overflow:"hidden",animation:`fadeUp .4s ease ${i*.05}s both`}}>
-              <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,rgba(29,78,216,0.05) 0%,transparent 100%)"}}>
-                <div style={{width:36,height:36,borderRadius:10,background:"rgba(37,99,235,0.12)",border:"1px solid rgba(59,130,246,0.18)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{sec.icon}</div>
+              <div style={{padding:"16px 20px",borderBottom:"1px solid rgba(255,255,255,0.05)",display:"flex",alignItems:"center",gap:10,background:pal.bar}}>
+                <div style={{width:36,height:36,borderRadius:10,background:pal.bg,border:`1px solid ${pal.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{sec.icon}</div>
                 <div style={{minWidth:0}}>
                   <div className="sec-title" style={{fontSize:".95rem",fontWeight:800,color:"#e2e8f0"}}>{sec.title}</div>
                 </div>
@@ -272,7 +291,8 @@ export const TermsAndConditions: React.FC = () => {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
