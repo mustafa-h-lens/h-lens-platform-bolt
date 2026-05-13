@@ -58,6 +58,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
   const [visible, setVisible] = useState(false);
   const [statsVisible, setStatsVisible] = useState(false);
   const statsGridRef = useRef<HTMLDivElement>(null);
+  const [rolesVisible, setRolesVisible] = useState(false);
+  const rolesGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setVisible(true);
@@ -66,7 +68,12 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Temporarily hidden — flip to `true` to bring the stats ribbon back.
+  // Trigger phrase for Claude: "show the landing stats" (or "bring back the stats section").
+  const SHOW_STATS_SECTION = false;
+
   useEffect(() => {
+    if (!SHOW_STATS_SECTION) return;
     const node = statsGridRef.current;
     if (!node) return;
     const obs = new IntersectionObserver(
@@ -75,6 +82,46 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
     );
     obs.observe(node);
     return () => obs.disconnect();
+  }, []);
+
+  // Role cards: reveal on scroll into viewport (staggered + 3D rise).
+  // Three redundant triggers because preview iframes / mobile webviews are
+  // notoriously inconsistent about firing scroll events and IntersectionObserver
+  // callbacks. In any real browser, the first signal that arrives wins.
+  useEffect(() => {
+    const node = rolesGridRef.current;
+    if (!node) return;
+    let triggered = false;
+    const trigger = () => {
+      if (triggered) return;
+      triggered = true;
+      setRolesVisible(true);
+    };
+    const checkInView = () => {
+      const rect = node.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.85 && rect.bottom > 0) trigger();
+    };
+
+    // 1. IntersectionObserver — primary path in real browsers.
+    let obs: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      obs = new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) trigger();
+      }, { threshold: 0.15 });
+      obs.observe(node);
+    }
+    // 2. Scroll event — catches user scrolls if IO is flaky.
+    window.addEventListener('scroll', checkInView, { passive: true });
+    // 3. Initial synchronous check — catches "grid already in view on page load".
+    checkInView();
+    // 4. Last-resort timer — guarantees the cards eventually appear.
+    const fallback = window.setTimeout(trigger, 3500);
+
+    return () => {
+      obs?.disconnect();
+      window.removeEventListener('scroll', checkInView);
+      window.clearTimeout(fallback);
+    };
   }, []);
 
   useEffect(() => {
@@ -369,6 +416,263 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           pointer-events: none;
         }
 
+        /* ── Role cards (3 perspectives side-by-side) ── */
+        .landing-roles-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 22px;
+          perspective: 1200px;
+        }
+        .landing-role-card {
+          --c: #2563eb;
+          position: relative;
+          padding: 32px 28px;
+          border-radius: 22px;
+          background: var(--bg-surface);
+          border: 1.5px solid var(--border-soft);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          isolation: isolate;
+          cursor: default;
+          /* Resting (off-viewport) state — rise from below with subtle 3D tilt + blur */
+          opacity: 0;
+          transform: translateY(70px) scale(0.94) rotateX(8deg);
+          filter: blur(2px);
+          transform-origin: 50% 100%;
+          transition:
+            transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity 0.7s ease,
+            filter 0.6s ease,
+            border-color 0.3s ease,
+            box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-roles-grid.is-visible .landing-role-card {
+          opacity: 1;
+          transform: translateY(0) scale(1) rotateX(0);
+          filter: blur(0);
+        }
+        .landing-role-card::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(140% 110% at 50% 0%, color-mix(in srgb, var(--c) 12%, transparent), transparent 65%);
+          opacity: 0;
+          transition: opacity 0.4s;
+          z-index: -1;
+          pointer-events: none;
+        }
+        .landing-role-card::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 45%, #ffffff));
+          transform: scaleX(0);
+          transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+        .landing-role-card:hover {
+          transform: translateY(-8px);
+          border-color: var(--c);
+          box-shadow: 0 18px 44px -14px color-mix(in srgb, var(--c) 38%, transparent);
+        }
+        .landing-role-card:hover::before { opacity: 1; }
+        .landing-role-card:hover::after { transform: scaleX(1); }
+        .landing-role-icon {
+          width: 56px; height: 56px;
+          border-radius: 16px;
+          background: color-mix(in srgb, var(--c) 14%, transparent);
+          color: var(--c);
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 20px;
+          transition: transform 0.4s cubic-bezier(0.4,0,0.2,1),
+                      background 0.3s, color 0.3s, box-shadow 0.3s;
+          box-shadow: 0 6px 18px color-mix(in srgb, var(--c) 20%, transparent);
+        }
+        .landing-role-card:hover .landing-role-icon {
+          transform: scale(1.08) rotate(-4deg);
+          background: var(--c);
+          color: #ffffff;
+        }
+        .landing-role-title {
+          font-size: 22px;
+          font-weight: 900;
+          color: var(--text-primary);
+          margin-bottom: 10px;
+          line-height: 1.2;
+        }
+        .landing-role-tagline {
+          font-size: 13.5px;
+          color: var(--text-muted);
+          line-height: 1.7;
+          margin-bottom: 20px;
+        }
+        .landing-role-divider {
+          height: 1px;
+          background: linear-gradient(90deg, transparent, var(--border-soft), transparent);
+          margin: 0 -4px 18px;
+        }
+        .landing-role-features {
+          list-style: none; padding: 0; margin: 0;
+          display: flex; flex-direction: column; gap: 12px;
+        }
+        .landing-role-features li {
+          display: flex; align-items: flex-start; gap: 10px;
+          font-size: 13.5px;
+          color: var(--text-secondary);
+          line-height: 1.55;
+        }
+        .landing-role-check {
+          flex-shrink: 0;
+          width: 22px; height: 22px;
+          border-radius: 7px;
+          background: color-mix(in srgb, var(--c) 14%, transparent);
+          color: var(--c);
+          display: flex; align-items: center; justify-content: center;
+          transition: background 0.3s, color 0.3s, transform 0.3s;
+          margin-top: 1px;
+        }
+        .landing-role-card:hover .landing-role-check {
+          background: var(--c);
+          color: #ffffff;
+        }
+        .landing-role-features li:hover .landing-role-check {
+          transform: scale(1.15);
+        }
+
+        /* ── Mockup interactivity (cursor-tracked glow, soft hover lift, micro-animations) ── */
+        /* NOTE: the parent .landing-mockup already runs the mockup-float keyframe
+           (rotateY/rotateX/rotateZ + translateY). Touching transform on :hover
+           fights that animation and causes a visible jerk on mouse enter, so the
+           hover state only enhances filter/box-shadow, which compose cleanly with
+           the running float. */
+        .landing-mockup {
+          position: relative;
+          transition: filter 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-mockup::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%),
+            rgba(96, 165, 250, 0.22), transparent 55%);
+          opacity: 0;
+          transition: opacity 0.45s ease;
+          pointer-events: none;
+          z-index: 5;
+        }
+        @media (hover: hover) {
+          .landing-mockup:hover {
+            filter: brightness(1.04) saturate(1.05);
+            box-shadow:
+              0 60px 110px -20px rgba(0,0,0,0.65),
+              0 32px 64px -12px rgba(37,99,235,0.42);
+          }
+          .landing-mockup:hover::before { opacity: 1; }
+        }
+
+        /* Stat cards inside mockup — color-aware lift */
+        .landing-mockup-stat {
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                      border-color 0.3s,
+                      box-shadow 0.35s,
+                      background 0.3s;
+          cursor: pointer;
+        }
+        .landing-mockup-stat:hover {
+          transform: translateY(-3px);
+          border-color: var(--c) !important;
+          box-shadow: 0 12px 26px color-mix(in srgb, var(--c) 32%, transparent);
+          background: color-mix(in srgb, var(--c) 6%, var(--bg-surface)) !important;
+        }
+        .landing-mockup-stat-icon {
+          transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-mockup-stat:hover .landing-mockup-stat-icon {
+          transform: scale(1.18) rotate(-6deg);
+        }
+
+        /* Activity rows inside mockup */
+        .landing-mockup-activity {
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s;
+          border-radius: 9px;
+          margin-inline: -6px;
+          padding-inline: 6px !important;
+          cursor: pointer;
+        }
+        .landing-mockup-activity:hover {
+          background: rgba(148, 163, 184, 0.09);
+          transform: translateX(-5px);
+        }
+
+        /* Notification badge — gentle pulse to signal new items */
+        @keyframes mockup-notif-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.45); }
+          50%      { box-shadow: 0 0 0 7px rgba(96, 165, 250, 0); }
+        }
+        .landing-mockup-notif {
+          animation: mockup-notif-pulse 2.4s ease-in-out infinite;
+        }
+
+        /* Progress bar — shimmer sweep */
+        .landing-mockup-progress-track { position: relative; overflow: hidden; }
+        .landing-mockup-progress-track::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.32) 50%, transparent 100%);
+          transform: translateX(-100%);
+          animation: mockup-progress-shimmer 3.6s ease-in-out infinite;
+          pointer-events: none;
+        }
+        @keyframes mockup-progress-shimmer {
+          0%, 55%, 100% { transform: translateX(-100%); }
+          28%           { transform: translateX(100%); }
+        }
+
+        /* Completion chips — micro feedback on hover */
+        .landing-mockup-chip {
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s;
+          cursor: pointer;
+        }
+        .landing-mockup-chip:hover {
+          transform: translateY(-1px) scale(1.05);
+          filter: brightness(1.15);
+        }
+
+        /* Traffic-light dots — macOS-style hover reveal */
+        .landing-mockup-traffic { display: flex; gap: 6px; }
+        .landing-mockup-traffic-dot {
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          font-weight: 900;
+          line-height: 1;
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          color: rgba(0, 0, 0, 0);
+          user-select: none;
+          cursor: pointer;
+          transition: filter 0.2s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+                      box-shadow 0.25s ease;
+        }
+        .landing-mockup-traffic:hover .landing-mockup-traffic-dot {
+          color: rgba(0, 0, 0, 0.65);
+        }
+        .landing-mockup-traffic-dot:hover {
+          transform: scale(1.22);
+          filter: brightness(1.12) saturate(1.15);
+          box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08), 0 4px 10px rgba(0, 0, 0, 0.35);
+        }
+        .landing-mockup-traffic-dot:active {
+          transform: scale(0.92);
+        }
+
         /* ── Tablet ── */
         @media (max-width: 1024px) {
           .landing-hero-grid { grid-template-columns: 1fr; gap: 48px; }
@@ -376,6 +680,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           .landing-mockup { animation: none !important; transform: none !important; }
           .landing-trust-row { justify-content: center !important; }
           .landing-grid-pattern { opacity: 0.25; }
+          .landing-roles-grid { gap: 16px; }
         }
 
         /* ── Mobile responsive ── */
@@ -400,6 +705,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           .landing-section-divider .line { max-width: 80px !important; }
           .landing-portals-grid { grid-template-columns: 1fr !important; }
           .landing-features-grid { grid-template-columns: 1fr !important; }
+          .landing-roles-grid { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .landing-role-card { padding: 26px 22px !important; }
           .landing-hero-section { padding: 100px 20px 60px !important; }
           .landing-section-pad { padding-left: 20px !important; padding-right: 20px !important; }
           .landing-cta-inner { padding: 40px 24px !important; }
@@ -465,17 +772,17 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
               fontSize: 13, fontWeight: 600, color: 'var(--accent-lighter)',
               marginBottom: 24,
             }}>
-              <Star size={14} /> بوابة الموردين الإنتاجيين
+              <Users size={14} /> منصة هاف لينس المتكاملة
             </div>
 
             <h1 style={{
               fontSize: 'clamp(32px, 4.4vw, 56px)', fontWeight: 900, lineHeight: 1.15,
               color: 'var(--text-primary)', marginBottom: 22,
             }}>
-              مساحتك الاحترافية
+              منصة واحدة
               <br />
               <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                لإدارة أعمالك كمورد
+                تجمع الموردين والعملاء والإدارة
               </span>
             </h1>
 
@@ -483,8 +790,8 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
               fontSize: 17, color: 'var(--text-secondary)', lineHeight: 1.75,
               marginBottom: 36, maxWidth: 540,
             }}>
-              سجّل ملفك، اعرض معداتك ومهاراتك، واستقبل المهام مباشرة من شركات الإنتاج.
-              تابع فواتيرك، حدّث وثائقك، واترك انطباعاً احترافياً — كل ذلك من بوابة عربية واحدة.
+              بوابة Half Lens الموحّدة — للموردين، العملاء، وفريق الإدارة. استقبل المهام، تابع مشاريعك،
+              وأدر العمل بسلاسة. سجّل دخولك وادخل إلى تجربتك المخصّصة.
             </p>
 
             <div className="landing-mockup-cta-row" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -525,7 +832,15 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
 
           {/* ── DASHBOARD MOCKUP COLUMN (left in RTL) ── */}
           <div className="landing-mockup-wrap">
-            <div className="landing-mockup" style={{ background: isDark ? 'rgba(15,23,42,0.92)' : '#fff' }}>
+            <div
+              className="landing-mockup"
+              style={{ background: isDark ? 'rgba(15,23,42,0.92)' : '#fff' }}
+              onMouseMove={e => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mx', `${((e.clientX - rect.left) / rect.width) * 100}%`);
+                e.currentTarget.style.setProperty('--my', `${((e.clientY - rect.top) / rect.height) * 100}%`);
+              }}
+            >
 
               {/* Browser chrome */}
               <div style={{
@@ -535,17 +850,17 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 borderBottom: `1px solid ${isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.06)'}`,
                 direction: 'ltr',
               }}>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#ef4444' }} />
-                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#f59e0b' }} />
-                  <div style={{ width: 11, height: 11, borderRadius: '50%', background: '#10b981' }} />
+                <div className="landing-mockup-traffic">
+                  <div className="landing-mockup-traffic-dot" style={{ background: '#ef4444' }}>×</div>
+                  <div className="landing-mockup-traffic-dot" style={{ background: '#f59e0b' }}>−</div>
+                  <div className="landing-mockup-traffic-dot" style={{ background: '#10b981' }}>+</div>
                 </div>
                 <div style={{
                   flex: 1, marginInline: 12, padding: '5px 14px', borderRadius: 8,
                   background: isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)',
                   fontSize: 11, color: 'var(--text-muted)', textAlign: 'center',
                   fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                }}>half-lens.app/vendor</div>
+                }}>half-lens.app</div>
               </div>
 
               {/* Dashboard body */}
@@ -555,29 +870,30 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>أهلاً، أحمد 👋</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>بوابتك كمورد إنتاجي</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>مساحتك في Half Lens</div>
                   </div>
-                  <div style={{ padding: '5px 11px', borderRadius: 8, background: 'rgba(37,99,235,0.14)', color: 'var(--accent-lighter)', fontSize: 10.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Bell size={11} /> 2 مهام جديدة
+                  <div className="landing-mockup-notif" style={{ padding: '5px 11px', borderRadius: 8, background: 'rgba(37,99,235,0.14)', color: 'var(--accent-lighter)', fontSize: 10.5, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Bell size={11} /> 2 إشعارات جديدة
                   </div>
                 </div>
 
                 {/* Stats grid */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 18 }}>
                   {[
-                    { label: 'مهام نشطة', value: '5', color: '#3b82f6', icon: Briefcase, trend: '+2' },
-                    { label: 'مهام مُنجزة', value: '47', color: '#8b5cf6', icon: CheckCircle2, trend: '+9%' },
-                    { label: 'تقييمي', value: '4.9', color: '#f59e0b', icon: Star, trend: '★★★★★' },
+                    { label: 'مشاريع نشطة', value: '5', color: '#3b82f6', icon: Briefcase, trend: '+2' },
+                    { label: 'مشاريع مكتملة', value: '47', color: '#8b5cf6', icon: CheckCircle2, trend: '+9%' },
+                    { label: 'التقييم', value: '4.9', color: '#f59e0b', icon: Star, trend: '★★★★★' },
                   ].map((s, i) => {
                     const I = s.icon;
                     return (
-                      <div key={i} style={{
+                      <div key={i} className="landing-mockup-stat" style={{
                         padding: 11, borderRadius: 11,
                         background: isDark ? 'rgba(148,163,184,0.05)' : 'rgba(15,23,42,0.025)',
                         border: `1px solid ${isDark ? 'rgba(148,163,184,0.08)' : 'rgba(15,23,42,0.04)'}`,
+                        ['--c' as string]: s.color,
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <div style={{ width: 24, height: 24, borderRadius: 7, background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div className="landing-mockup-stat-icon" style={{ width: 24, height: 24, borderRadius: 7, background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <I size={12} color={s.color} />
                           </div>
                           <div style={{ fontSize: 9.5, color: '#10b981', fontWeight: 800, direction: 'ltr' }}>{s.trend}</div>
@@ -599,7 +915,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                     <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text-primary)' }}>اكتمال الملف الشخصي</span>
                     <span style={{ fontSize: 11, fontWeight: 800, color: '#10b981', direction: 'ltr' }}>92%</span>
                   </div>
-                  <div style={{
+                  <div className="landing-mockup-progress-track" style={{
                     height: 7, borderRadius: 4, overflow: 'hidden',
                     background: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(15,23,42,0.08)',
                     marginBottom: 10,
@@ -614,11 +930,11 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {[
                       { l: 'الهوية', ok: true },
-                      { l: 'المعدات', ok: true },
-                      { l: 'جواز السفر', ok: true },
-                      { l: 'المحفظة', ok: false },
+                      { l: 'البيانات الأساسية', ok: true },
+                      { l: 'وسائل التواصل', ok: true },
+                      { l: 'الإشعارات', ok: false },
                     ].map((p, i) => (
-                      <div key={i} style={{
+                      <div key={i} className="landing-mockup-chip" style={{
                         display: 'flex', alignItems: 'center', gap: 4,
                         padding: '3px 8px', borderRadius: 6,
                         background: p.ok ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
@@ -634,12 +950,12 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 {/* Activity rows */}
                 <div>
                   {[
-                    { icon: CheckCircle2, color: '#10b981', t: 'تم قبول عرضك على مشروع "الرياض ٢٠٢٦"', s: 'منذ 5 دقائق' },
-                    { icon: Camera, color: '#06b6d4', t: 'تذكير: تحديث صور المعدات قبل ٣ أيام', s: 'منذ 22 دقيقة' },
+                    { icon: CheckCircle2, color: '#10b981', t: 'تحديث جديد على مشروع "الرياض ٢٠٢٦"', s: 'منذ 5 دقائق' },
+                    { icon: BarChart3, color: '#06b6d4', t: 'دفعة جديدة بانتظار المراجعة', s: 'منذ 22 دقيقة' },
                   ].map((a, i) => {
                     const I = a.icon;
                     return (
-                      <div key={i} style={{
+                      <div key={i} className="landing-mockup-activity" style={{
                         display: 'flex', alignItems: 'center', gap: 10,
                         padding: '8px 0',
                         borderBottom: i < 1 ? `1px solid ${isDark ? 'rgba(148,163,184,0.06)' : 'rgba(15,23,42,0.04)'}` : 'none',
@@ -670,42 +986,44 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
       </section>
 
       {/* ═══ STATS BAR ═══ */}
-      <section className="landing-stats-section landing-section-pad">
-        <div className="landing-stats-panel">
-          <span className="landing-stats-panel-glow" />
-          <div
-            ref={statsGridRef}
-            className={`landing-stats-grid${statsVisible ? ' is-visible' : ''}`}
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}
-          >
-            {stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div
-                  key={i}
-                  className="landing-stat-card"
-                  style={{ ['--c' as string]: stat.color, ['--i' as string]: i }}
-                >
-                  <div className="landing-stat-icon-wrap">
-                    <span className="landing-stat-icon-aura" />
-                    <span className="landing-stat-icon-ring" />
-                    <div className="landing-stat-icon">
-                      <Icon size={20} strokeWidth={2.2} />
+      {SHOW_STATS_SECTION && (
+        <section className="landing-stats-section landing-section-pad">
+          <div className="landing-stats-panel">
+            <span className="landing-stats-panel-glow" />
+            <div
+              ref={statsGridRef}
+              className={`landing-stats-grid${statsVisible ? ' is-visible' : ''}`}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}
+            >
+              {stats.map((stat, i) => {
+                const Icon = stat.icon;
+                return (
+                  <div
+                    key={i}
+                    className="landing-stat-card"
+                    style={{ ['--c' as string]: stat.color, ['--i' as string]: i }}
+                  >
+                    <div className="landing-stat-icon-wrap">
+                      <span className="landing-stat-icon-aura" />
+                      <span className="landing-stat-icon-ring" />
+                      <div className="landing-stat-icon">
+                        <Icon size={20} strokeWidth={2.2} />
+                      </div>
                     </div>
+                    <div className="landing-stat-num" style={{
+                      backgroundImage: `linear-gradient(135deg, ${stat.color}, color-mix(in srgb, ${stat.color} 50%, #ffffff))`,
+                    }}>
+                      <AnimatedStat value={stat.value} />
+                    </div>
+                    <div className="landing-stat-divider" />
+                    <div className="landing-stat-label">{stat.label}</div>
                   </div>
-                  <div className="landing-stat-num" style={{
-                    backgroundImage: `linear-gradient(135deg, ${stat.color}, color-mix(in srgb, ${stat.color} 50%, #ffffff))`,
-                  }}>
-                    <AnimatedStat value={stat.value} />
-                  </div>
-                  <div className="landing-stat-divider" />
-                  <div className="landing-stat-label">{stat.label}</div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ FEATURES SECTION ═══ */}
       <section id="features-section" className="landing-features-section landing-section-pad">
@@ -715,51 +1033,91 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
             <span className="dot" />
             <span className="line" />
           </div>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <div className="landing-eyebrow">
-              <Star size={13} /> لماذا نحن
+              <Users size={13} /> ثلاث تجارب، منصة واحدة
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 3.4vw, 40px)', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 16, lineHeight: 1.2 }}>
-              لماذا الموردون يختارون{' '}
-              <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Half Lens؟</span>
+              تجربة مصمّمة{' '}
+              <span style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>لكل دور</span>
             </h2>
-            <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 580, margin: '0 auto', lineHeight: 1.7 }}>
-              كل ما تحتاجه لإدارة أعمالك كمورد إنتاجي — في مكان واحد
+            <p style={{ fontSize: 16, color: 'var(--text-secondary)', maxWidth: 600, margin: '0 auto', lineHeight: 1.7 }}>
+              كل دور في Half Lens له مساحته الخاصة — مع تكامل سلس بين الجميع
             </p>
             <div className="landing-section-accent" />
           </div>
 
-          <div className="landing-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div
+            ref={rolesGridRef}
+            className={`landing-roles-grid${rolesVisible ? ' is-visible' : ''}`}
+          >
             {[
-              { icon: Briefcase, title: 'مهام جاهزة لك', desc: 'استقبل طلبات شركات الإنتاج مباشرة، وقدّم عروضك بضغطة زر', color: '#2563eb' },
-              { icon: Camera, title: 'استعرض معداتك', desc: 'كتالوج كامل لمعداتك ومهاراتك يطّلع عليه العملاء قبل التعاقد', color: '#06b6d4' },
-              { icon: BarChart3, title: 'فواتيرك تحت السيطرة', desc: 'أصدر فواتيرك، وتابع المدفوعات، وحمّل التقارير في أي وقت', color: '#10b981' },
-              { icon: Shield, title: 'ملف موثّق وآمن', desc: 'هويتك ومستنداتك محفوظة بأمان، ومتاحة للعملاء عند الحاجة', color: '#7c3aed' },
-              { icon: Zap, title: 'سريع ومن الجوال', desc: 'أنجز كل شيء من هاتفك — تحديثات فورية وإشعارات لحظية', color: '#f59e0b' },
-              { icon: Star, title: 'سمعة تبنيها معنا', desc: 'تقييمات حقيقية من شركات الإنتاج تعزّز فرصك في مهام جديدة', color: '#ec4899' },
-            ].map((feature, i) => {
-              const Icon = feature.icon;
+              {
+                icon: Briefcase,
+                title: 'للموردين',
+                tagline: 'منصة احترافية تجمع كل ما يحتاجه المورد لينمو مع Half Lens',
+                color: '#2563eb',
+                features: [
+                  'ملف احترافي يعرض معداتك ومهاراتك',
+                  'استقبال المهام مباشرة من فريق Half Lens',
+                  'متابعة الفواتير والمدفوعات بدقّة',
+                  'إدارة المستندات والمعدات بسهولة',
+                  'إشعارات فورية لكل تحديث',
+                ],
+              },
+              {
+                icon: Users,
+                title: 'للعملاء',
+                tagline: 'تابع مشاريعك مع Half Lens من بوابة شفّافة ومنظمة',
+                color: '#06b6d4',
+                features: [
+                  'متابعة المشاريع لحظة بلحظة',
+                  'الاطّلاع على الفواتير وحالة المدفوعات',
+                  'الوصول لوثائق ومخرجات المشاريع',
+                  'تواصل مباشر مع فريق Half Lens',
+                  'تاريخ كامل لمشاريعك السابقة',
+                ],
+              },
+              {
+                icon: BarChart3,
+                title: 'لفريق الإدارة',
+                tagline: 'لوحة تحكم موحّدة تُدير دورة العمل بالكامل داخل Half Lens',
+                color: '#7c3aed',
+                features: [
+                  'إدارة المشاريع والموردين والعملاء',
+                  'متابعة المدفوعات والمصروفات',
+                  'تقارير ربحية وأداء لحظية',
+                  'سجل نشاطات شامل وقابل للتصفية',
+                  'تخصيص الأدوار والصلاحيات',
+                ],
+              },
+            ].map((role, i) => {
+              const Icon = role.icon;
               return (
-                <div key={i} className="landing-feature" style={{
-                  padding: 24, borderRadius: 16,
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-soft)',
-                  animationDelay: `${i * 0.1}s`,
-                  transition: 'all 0.3s', textAlign: 'center',
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = feature.color; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-soft)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                <div
+                  key={i}
+                  className="landing-role-card"
+                  style={{
+                    ['--c' as string]: role.color,
+                    transitionDelay: `${i * 0.14}s`,
+                  }}
                 >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: `${feature.color}15`, color: feature.color,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 16px',
-                  }}>
-                    <Icon size={22} />
+                  <div className="landing-role-icon">
+                    <Icon size={26} strokeWidth={2.2} />
                   </div>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>{feature.title}</h4>
-                  <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>{feature.desc}</p>
+                  <h3 className="landing-role-title">{role.title}</h3>
+                  <p className="landing-role-tagline">{role.tagline}</p>
+                  <div className="landing-role-divider" />
+                  <ul className="landing-role-features">
+                    {role.features.map((f, j) => (
+                      <li key={j}>
+                        <span className="landing-role-check">
+                          <CheckCircle2 size={13} strokeWidth={2.6} />
+                        </span>
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               );
             })}
