@@ -39,3 +39,20 @@ BEGIN
     ALTER TABLE public.vendor_registration_drafts ADD COLUMN bank_id uuid REFERENCES public.banks(id);
   END IF;
 END $$;
+
+-- vendor_notifications — in-app notifications for vendor portal. Table was
+-- created manually on prod and the schema was never captured here.
+CREATE TABLE IF NOT EXISTS public.vendor_notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid NOT NULL REFERENCES public.vendors(id) ON DELETE CASCADE,
+  type text DEFAULT 'general',
+  title text,
+  message text,
+  read boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_vendor_id ON public.vendor_notifications(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_created_at ON public.vendor_notifications(created_at DESC);
+
+ALTER TABLE public.vendor_notifications ENABLE ROW LEVEL SECURITY;
