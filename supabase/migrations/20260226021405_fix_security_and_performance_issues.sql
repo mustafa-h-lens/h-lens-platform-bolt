@@ -57,6 +57,17 @@ BEGIN
   END IF;
 END $$;
 
+-- vendors.user_id (auth-user link — referenced by RLS policies below)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendors' AND column_name='user_id'
+  ) THEN
+    ALTER TABLE public.vendors ADD COLUMN user_id uuid REFERENCES public.users(id);
+  END IF;
+END $$;
+
 -- vendor_registration_drafts.bank_id
 DO $$
 BEGIN
@@ -72,12 +83,22 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.vendor_notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   vendor_id uuid NOT NULL REFERENCES public.vendors(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
   type text DEFAULT 'general',
   title text,
   message text,
   read boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
 );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendor_notifications' AND column_name='user_id'
+  ) THEN
+    ALTER TABLE public.vendor_notifications ADD COLUMN user_id uuid REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_vendor_notifications_vendor_id ON public.vendor_notifications(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_notifications_created_at ON public.vendor_notifications(created_at DESC);
 ALTER TABLE public.vendor_notifications ENABLE ROW LEVEL SECURITY;
