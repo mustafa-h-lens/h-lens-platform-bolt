@@ -13,3 +13,5 @@ export function isValidEmail(value: string): boolean {
   if (local.endsWith('+') || local.endsWith('.')) return false;
   return EMAIL_REGEX.test(v);
 }
+
+export { isValidSaudiPhone } from './phoneUtils';

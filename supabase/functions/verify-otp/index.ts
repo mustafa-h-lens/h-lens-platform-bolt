@@ -8,12 +8,31 @@ const corsHeaders = {
 };
 
 interface VerifyOTPRequest {
-  email: string;
+  email?: string;
+  phone?: string;
   code: string;
-  portal_type?: 'vendor' | 'client';
+  portal_type?: "vendor" | "client";
 }
 
 const MAX_FAILED_ATTEMPTS = 5;
+
+// ── Phone normalization (mirrors src/lib/phoneUtils.ts) ──
+const SAUDI_9_DIGIT = /^5\d{8}$/;
+const AR_DIGITS = ["٠","١","٢","٣","٤","٥","٦","٧","٨","٩"];
+const toEnDigits = (s: string): string => {
+  let r = s || "";
+  for (let i = 0; i < 10; i++) r = r.replace(new RegExp(AR_DIGITS[i], "g"), String(i));
+  return r;
+};
+const saudiNineDigits = (input: string): string | null => {
+  if (!input) return null;
+  let d = toEnDigits(input).replace(/[\s\-()]/g, "");
+  if (d.startsWith("+966")) d = d.slice(4);
+  else if (d.startsWith("00966")) d = d.slice(5);
+  else if (d.startsWith("966")) d = d.slice(3);
+  else if (d.startsWith("0")) d = d.slice(1);
+  return SAUDI_9_DIGIT.test(d) ? d : null;
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -33,30 +52,48 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email, code, portal_type = "vendor" }: VerifyOTPRequest = await req.json();
+    const { email, phone, code, portal_type = "vendor" }: VerifyOTPRequest = await req.json();
 
-    if (!email || !code || !email.includes("@")) {
-      return new Response(
-        JSON.stringify({ error: "البريد الإلكتروني ورمز التحقق مطلوبان" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const normalizedEmail = email.toLowerCase().trim();
-
-    // Validate code format (6 digits)
-    if (!/^\d{6}$/.test(code)) {
+    if (!code || !/^\d{6}$/.test(code)) {
       return new Response(
         JSON.stringify({ error: "رمز التحقق يجب أن يكون 6 أرقام" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get the most recent unused OTP for this email
+    // Pick channel: phone takes priority if provided, otherwise email.
+    let lookupCol: "phone" | "email";
+    let lookupVal: string;
+    let normalizedEmail = "";
+    let normalizedPhoneNine = "";
+
+    if (phone) {
+      const nine = saudiNineDigits(phone);
+      if (!nine) {
+        return new Response(
+          JSON.stringify({ error: "رقم الجوال غير صالح" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      normalizedPhoneNine = nine;
+      lookupCol = "phone";
+      lookupVal = nine;
+    } else if (email && email.includes("@")) {
+      normalizedEmail = email.toLowerCase().trim();
+      lookupCol = "email";
+      lookupVal = normalizedEmail;
+    } else {
+      return new Response(
+        JSON.stringify({ error: "البريد الإلكتروني أو رقم الجوال ورمز التحقق مطلوبان" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Get the most recent unused OTP for this identifier
     const { data: otpRecord, error: otpError } = await supabase
       .from("otp_codes")
       .select("*")
-      .eq("email", normalizedEmail)
+      .eq(lookupCol, lookupVal)
       .eq("used", false)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -69,11 +106,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if OTP has expired
+    // Expiry check
     const now = new Date();
     const expiresAt = new Date(otpRecord.expires_at);
     if (now > expiresAt) {
-      // Mark expired OTP as used
       await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
       return new Response(
         JSON.stringify({ error: "رمز التحقق منتهي الصلاحية. يرجى طلب رمز جديد" }),
@@ -81,10 +117,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Brute-force protection: check failed attempts
+    // Brute-force protection
     const failedAttempts = otpRecord.failed_attempts || 0;
     if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
-      // Invalidate the OTP after too many failed attempts
       await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
       return new Response(
         JSON.stringify({ error: "تم تجاوز عدد المحاولات المسموحة. يرجى طلب رمز جديد" }),
@@ -94,7 +129,6 @@ Deno.serve(async (req: Request) => {
 
     // Verify the code
     if (otpRecord.code !== code) {
-      // Increment failed attempts
       await supabase
         .from("otp_codes")
         .update({ failed_attempts: failedAttempts + 1 })
@@ -105,39 +139,47 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           error: remaining > 0
             ? `رمز التحقق غير صحيح. المحاولات المتبقية: ${remaining}`
-            : "رمز التحقق غير صحيح. تم استنفاد المحاولات. يرجى طلب رمز جديد"
+            : "رمز التحقق غير صحيح. تم استنفاد المحاولات. يرجى طلب رمز جديد",
+          remainingAttempts: remaining,
         }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Mark OTP as used
-    await supabase
-      .from("otp_codes")
-      .update({ used: true })
-      .eq("id", otpRecord.id);
+    await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
 
-    // Create session based on portal type
+    // Create session
     const sessionToken = crypto.randomUUID();
-    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
 
     if (portal_type === "client") {
-      // Get client details
-      const { data: client, error: clientError } = await supabase
-        .from("clients")
-        .select("id, email, name, client_image, portal_email")
-        .or(`email.eq.${normalizedEmail},portal_email.eq.${normalizedEmail}`)
-        .maybeSingle();
+      // Look up client by phone or email depending on which was used
+      let client: { id: string; email: string | null; name: string; client_image: string | null; portal_email: string | null } | null = null;
 
-      if (clientError || !client) {
+      if (lookupCol === "phone") {
+        const { data: clients } = await supabase
+          .from("clients")
+          .select("id, email, name, client_image, portal_email, phone")
+          .not("phone", "is", null);
+        client = (clients || []).find((c) => saudiNineDigits((c as { phone: string | null }).phone || "") === normalizedPhoneNine) || null;
+      } else {
+        const { data } = await supabase
+          .from("clients")
+          .select("id, email, name, client_image, portal_email")
+          .or(`email.eq.${normalizedEmail},portal_email.eq.${normalizedEmail}`)
+          .maybeSingle();
+        client = data;
+      }
+
+      if (!client) {
         return new Response(
           JSON.stringify({ error: "العميل غير موجود" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      // Create client session
       const { error: sessionError } = await supabase
         .from("client_sessions")
         .insert({
@@ -146,12 +188,9 @@ Deno.serve(async (req: Request) => {
           expires_at: sessionExpiry.toISOString(),
           ip_address: ipAddress,
         });
+      if (sessionError) console.error("Client session creation error:", sessionError);
 
-      if (sessionError) {
-        console.error("Client session creation error:", sessionError);
-      }
-
-      // Activate client on first login (pending → active)
+      // Activate on first successful login (pending → active)
       await supabase
         .from("clients")
         .update({ invitation_status: "active" })
@@ -169,20 +208,20 @@ Deno.serve(async (req: Request) => {
             name: client.name,
             client_image: client.client_image,
           },
-          session: {
-            token: sessionToken,
-            expiresAt: sessionExpiry.toISOString(),
-          }
+          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else {
-      // Get vendor details
-      const { data: vendor, error: vendorError } = await supabase
+      // Vendor
+      const vendorQuery = supabase
         .from("vendors")
-        .select("id, email, full_name, vendor_type")
-        .eq("email", normalizedEmail)
-        .maybeSingle();
+        .select("id, email, full_name, vendor_type, phone");
+      const { data: vendor, error: vendorError } = await (
+        lookupCol === "phone"
+          ? vendorQuery.eq("phone", normalizedPhoneNine).maybeSingle()
+          : vendorQuery.eq("email", normalizedEmail).maybeSingle()
+      );
 
       if (vendorError || !vendor) {
         return new Response(
@@ -191,7 +230,6 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Create vendor session
       const { error: sessionError } = await supabase
         .from("vendor_sessions")
         .insert({
@@ -200,10 +238,7 @@ Deno.serve(async (req: Request) => {
           expires_at: sessionExpiry.toISOString(),
           ip_address: ipAddress,
         });
-
-      if (sessionError) {
-        console.error("Vendor session creation error:", sessionError);
-      }
+      if (sessionError) console.error("Vendor session creation error:", sessionError);
 
       return new Response(
         JSON.stringify({
@@ -216,15 +251,11 @@ Deno.serve(async (req: Request) => {
             name: vendor.full_name,
             vendor_type: vendor.vendor_type,
           },
-          session: {
-            token: sessionToken,
-            expiresAt: sessionExpiry.toISOString(),
-          }
+          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
   } catch (error) {
     console.error("Error in verify-otp:", error);
     return new Response(

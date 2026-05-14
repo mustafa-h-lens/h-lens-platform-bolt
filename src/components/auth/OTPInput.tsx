@@ -3,14 +3,15 @@ import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Sun, Moon } from 'lucide
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface OTPInputProps {
-  email: string;
+  email?: string;
+  phone?: string;
   onBack: () => void;
   onSuccess: (vendorData: any) => void;
   devOTP?: string | null;
   portalType?: 'vendor' | 'client';
 }
 
-export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType = 'vendor' }: OTPInputProps) {
+export default function OTPInput({ email, phone, onBack, onSuccess, devOTP, portalType = 'vendor' }: OTPInputProps) {
   const [otp, setOtp]         = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -19,23 +20,46 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType 
   const inputRefs = useRef<(HTMLInputElement|null)[]>([]);
   const { isDarkMode, toggleTheme } = useTheme();
 
+  // Phone path is preferred when both are provided.
+  const usingSms = !!phone;
+  const identifierDisplay = phone || email || '';
+
   useEffect(() => { inputRefs.current[0]?.focus(); }, []);
 
+  // Shared digit-fan-out: used by iOS one-time-code autofill, paste, and WebOTP.
+  const fanOutDigits = (raw: string) => {
+    const digits = (raw || '').replace(/\D/g, '').slice(0, 6);
+    if (digits.length === 0) return;
+    const newOtp = ['', '', '', '', '', ''];
+    for (let i = 0; i < digits.length; i++) newOtp[i] = digits[i];
+    setOtp(newOtp);
+    setError(''); setRemainingAttempts(null);
+    if (digits.length === 6) verifyOTP(digits);
+    else inputRefs.current[Math.min(digits.length, 5)]?.focus();
+  };
+
+  // Android Chrome WebOTP API — listens for the SMS that ends with
+  // `@<origin> #<otp>` and dispatches the code into our inputs.
+  useEffect(() => {
+    if (!('OTPCredential' in window)) return;
+    const ac = new AbortController();
+    // WebOTP options aren't in lib.dom yet; cast through unknown.
+    const opts = { otp: { transport: ['sms'] }, signal: ac.signal } as unknown as CredentialRequestOptions;
+    navigator.credentials
+      .get(opts)
+      .then((cred) => {
+        const code = (cred as unknown as { code?: string } | null)?.code;
+        if (code) fanOutDigits(code);
+      })
+      .catch(() => { /* user denied or unsupported — silent */ });
+    return () => ac.abort();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleChange = (index: number, value: string) => {
-    // iOS Safari one-time-code autofill dispatches the entire 6-digit code in
-    // a single change event — fan it out across every box and auto-verify,
-    // matching what handlePaste already does for clipboard input.
-    if (value.length > 1) {
-      const digits = value.replace(/\D/g, '').slice(0, 6);
-      if (digits.length === 0) return;
-      const newOtp = ['', '', '', '', '', ''];
-      for (let i = 0; i < digits.length; i++) newOtp[i] = digits[i];
-      setOtp(newOtp);
-      setError(''); setRemainingAttempts(null);
-      if (digits.length === 6) verifyOTP(digits);
-      else inputRefs.current[Math.min(digits.length, 5)]?.focus();
-      return;
-    }
+    // iOS Safari autofill drops the full 6-digit code into one box as a single
+    // change event — fan it out instead of treating it as one character.
+    if (value.length > 1) { fanOutDigits(value); return; }
     if (!/^\d*$/.test(value)) return;
     const newOtp = [...otp];
     newOtp[index] = value.slice(-1);
@@ -51,21 +75,19 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType 
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
-    const newOtp = [...otp];
-    for (let i = 0; i < pasted.length; i++) newOtp[i] = pasted[i];
-    setOtp(newOtp);
-    if (pasted.length === 6) verifyOTP(pasted);
-    else if (pasted.length > 0) inputRefs.current[Math.min(pasted.length,5)]?.focus();
+    fanOutDigits(e.clipboardData.getData('text'));
   };
 
   const verifyOTP = async (code: string) => {
     setLoading(true); setError('');
     try {
+      const body = usingSms
+        ? { phone, code, portal_type: portalType }
+        : { email, code, portal_type: portalType };
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, code, portal_type: portalType }),
+        body: JSON.stringify(body),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -85,10 +107,14 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType 
     setLoading(true); setError(''); setOtp(['','','','','','']); setRemainingAttempts(null);
     try {
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
+      const endpoint = usingSms ? 'send-otp-sms' : 'send-otp-email';
+      const body = usingSms
+        ? { phone, deviceInfo, portal_type: portalType }
+        : { email, deviceInfo, portal_type: portalType };
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, deviceInfo, portal_type: portalType }),
+        body: JSON.stringify(body),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'حدث خطأ');
@@ -138,14 +164,18 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType 
           <div className="sl-card">
             <div className="sl-card-shine" />
 
-            {/* Email indicator */}
+            {/* Identifier indicator (email or phone) */}
             <div className="otp-header">
               <div className="otp-email-badge">
                 <div className="otp-email-dot" />
-                <span dir="ltr">{email}</span>
+                <span dir="ltr">{identifierDisplay}</span>
               </div>
               <h1 className="sl-title">أدخل رمز التحقق</h1>
-              <p className="sl-subtitle">تم إرسال رمز مكون من 6 أرقام إلى بريدك</p>
+              <p className="sl-subtitle">
+                {usingSms
+                  ? 'تم إرسال رمز مكون من 6 أرقام إلى جوالك'
+                  : 'تم إرسال رمز مكون من 6 أرقام إلى بريدك'}
+              </p>
             </div>
 
             {/* DEV OTP */}
@@ -221,7 +251,7 @@ export default function OTPInput({ email, onBack, onSuccess, devOTP, portalType 
             {/* Back */}
             <button onClick={onBack} disabled={loading || success} className="otp-back">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
-              العودة لتغيير البريد الإلكتروني
+              {usingSms ? 'العودة لتغيير رقم الجوال' : 'العودة لتغيير البريد الإلكتروني'}
             </button>
           </div>
 
