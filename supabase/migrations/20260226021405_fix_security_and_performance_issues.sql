@@ -50,7 +50,14 @@ CREATE INDEX IF NOT EXISTS idx_project_tasks_created_by ON public.project_tasks(
 CREATE INDEX IF NOT EXISTS idx_projects_created_by ON public.projects(created_by);
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_created_by ON public.purchase_orders(created_by);
 CREATE INDEX IF NOT EXISTS idx_settings_config_updated_by ON public.settings_config(updated_by);
-CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_performed_by ON public.vendor_activity_log(performed_by);
+-- vendor_activity_log is created in a LATER migration (20260314170000); guard so
+-- a from-scratch replay (e.g. Supabase Branching) doesn't blow up here.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='vendor_activity_log') THEN
+    CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_performed_by ON public.vendor_activity_log(performed_by);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_vendor_documents_uploaded_by ON public.vendor_documents(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_vendor_financial_data_bank_id ON public.vendor_financial_data(bank_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_invoices_client_id ON public.vendor_invoices(client_id);
@@ -1427,18 +1434,24 @@ CREATE POLICY "يمكن تحديث رموز التفعيل عند الاستخ"
 -- الجزء 36: إصلاح Policies - Vendor Activity Log
 -- ========================================
 
-DROP POLICY IF EXISTS "المسؤولون يمكنهم إنشاء سجلات أنشط" ON public.vendor_activity_log;
-CREATE POLICY "المسؤولون يمكنهم إنشاء سجلات أنشط"
-  ON public.vendor_activity_log
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE users.id = (select auth.uid())
-      AND users.role IN ('admin', 'super_admin')
-    )
-  );
+-- vendor_activity_log is created in a LATER migration; guard for from-scratch replay.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='vendor_activity_log') THEN
+    DROP POLICY IF EXISTS "المسؤولون يمكنهم إنشاء سجلات أنشط" ON public.vendor_activity_log;
+    CREATE POLICY "المسؤولون يمكنهم إنشاء سجلات أنشط"
+      ON public.vendor_activity_log
+      FOR INSERT
+      TO authenticated
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM public.users
+          WHERE users.id = (select auth.uid())
+          AND users.role IN ('admin', 'super_admin')
+        )
+      );
+  END IF;
+END $$;
 
 -- ========================================
 -- الجزء 37: إصلاح Policies - Vendor Registration Drafts (Public)
