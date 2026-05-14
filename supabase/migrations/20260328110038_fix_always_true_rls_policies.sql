@@ -60,8 +60,8 @@ DROP POLICY IF EXISTS "System can insert OTP codes" ON public.otp_codes;
 DROP POLICY IF EXISTS "System can delete expired OTP codes" ON public.otp_codes;
 DROP POLICY IF EXISTS "System can read OTP codes for verification" ON public.otp_codes;
 
-CREATE POLICY "Service role can insert OTP codes"
-  ON public.otp_codes
+DROP POLICY IF EXISTS "Service role can insert OTP codes" ON public.otp_codes;
+CREATE POLICY "Service role can insert OTP codes" ON public.otp_codes
   FOR INSERT
   TO service_role
   WITH CHECK (true);
@@ -90,8 +90,8 @@ DROP POLICY IF EXISTS "Anon can delete vendor_equipment" ON public.vendor_equipm
 DROP POLICY IF EXISTS "Anon can insert vendor_equipment" ON public.vendor_equipment;
 DROP POLICY IF EXISTS "Anon can update vendor_equipment" ON public.vendor_equipment;
 
-CREATE POLICY "Anon can delete vendor_equipment during registration"
-  ON public.vendor_equipment
+DROP POLICY IF EXISTS "Anon can delete vendor_equipment during registration" ON public.vendor_equipment;
+CREATE POLICY "Anon can delete vendor_equipment during registration" ON public.vendor_equipment
   FOR DELETE
   TO anon
   USING (

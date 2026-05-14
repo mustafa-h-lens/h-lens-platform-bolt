@@ -29,8 +29,8 @@
 DROP POLICY IF EXISTS "Admins view all activity logs" ON public.activity_logs;
 DROP POLICY IF EXISTS "Clients view own project activity" ON public.activity_logs;
 
-CREATE POLICY "View activity logs"
-  ON public.activity_logs
+DROP POLICY IF EXISTS "View activity logs" ON public.activity_logs;
+CREATE POLICY "View activity logs" ON public.activity_logs
   FOR SELECT
   TO authenticated
   USING (
@@ -94,8 +94,8 @@ CREATE POLICY "Admins can manage client documents"
 DROP POLICY IF EXISTS "Admins view all clients" ON public.clients;
 DROP POLICY IF EXISTS "Clients view own data" ON public.clients;
 
-CREATE POLICY "View clients"
-  ON public.clients
+DROP POLICY IF EXISTS "View clients" ON public.clients;
+CREATE POLICY "View clients" ON public.clients
   FOR SELECT
   TO authenticated
   USING (
@@ -114,8 +114,8 @@ CREATE POLICY "View clients"
 DROP POLICY IF EXISTS "Admins view all invoices" ON public.invoices;
 DROP POLICY IF EXISTS "Clients view own invoices" ON public.invoices;
 
-CREATE POLICY "View invoices"
-  ON public.invoices
+DROP POLICY IF EXISTS "View invoices" ON public.invoices;
+CREATE POLICY "View invoices" ON public.invoices
   FOR SELECT
   TO authenticated
   USING (
@@ -280,8 +280,8 @@ CREATE POLICY "View project tasks" ON public.project_tasks
 DROP POLICY IF EXISTS "Admins view all projects" ON public.projects;
 DROP POLICY IF EXISTS "Clients view own projects" ON public.projects;
 
-CREATE POLICY "View projects"
-  ON public.projects
+DROP POLICY IF EXISTS "View projects" ON public.projects;
+CREATE POLICY "View projects" ON public.projects
   FOR SELECT
   TO authenticated
   USING (

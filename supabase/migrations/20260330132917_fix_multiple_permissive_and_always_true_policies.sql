@@ -41,8 +41,8 @@ CREATE POLICY "Authenticated users can view client document types"
 -- with explicit INSERT/UPDATE/DELETE for admins.
 DROP POLICY IF EXISTS "Admins manage project files" ON public.project_files;
 
-CREATE POLICY "Admins can insert project files"
-  ON public.project_files
+DROP POLICY IF EXISTS "Admins can insert project files" ON public.project_files;
+CREATE POLICY "Admins can insert project files" ON public.project_files
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
@@ -63,8 +63,8 @@ CREATE POLICY "Admins can delete project files" ON public.project_files
 -- ── project_items ──────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Admins can manage project items" ON public.project_items;
 
-CREATE POLICY "Admins can insert project items"
-  ON public.project_items
+DROP POLICY IF EXISTS "Admins can insert project items" ON public.project_items;
+CREATE POLICY "Admins can insert project items" ON public.project_items
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
@@ -85,8 +85,8 @@ CREATE POLICY "Admins can delete project items" ON public.project_items
 -- ── project_milestones ─────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Admins manage milestones" ON public.project_milestones;
 
-CREATE POLICY "Admins can insert project milestones"
-  ON public.project_milestones
+DROP POLICY IF EXISTS "Admins can insert project milestones" ON public.project_milestones;
+CREATE POLICY "Admins can insert project milestones" ON public.project_milestones
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
@@ -107,8 +107,8 @@ CREATE POLICY "Admins can delete project milestones" ON public.project_milestone
 -- ── project_tasks ──────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Admins manage project tasks" ON public.project_tasks;
 
-CREATE POLICY "Admins can insert project tasks"
-  ON public.project_tasks
+DROP POLICY IF EXISTS "Admins can insert project tasks" ON public.project_tasks;
+CREATE POLICY "Admins can insert project tasks" ON public.project_tasks
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
@@ -231,8 +231,8 @@ CREATE POLICY "Super admin can delete roles" ON public.roles
 -- "Admins can manage service items" (ALL) + "View service items" (SELECT) overlap.
 DROP POLICY IF EXISTS "Admins can manage service items" ON public.service_items;
 
-CREATE POLICY "Admins can insert service items"
-  ON public.service_items
+DROP POLICY IF EXISTS "Admins can insert service items" ON public.service_items;
+CREATE POLICY "Admins can insert service items" ON public.service_items
   FOR INSERT
   TO authenticated
   WITH CHECK (is_admin());
@@ -259,8 +259,8 @@ CREATE POLICY "Admins can delete service items" ON public.service_items
 DROP POLICY IF EXISTS "Admins can insert users" ON public.users;
 DROP POLICY IF EXISTS "Allow insert for authenticated users" ON public.users;
 
-CREATE POLICY "Users can insert own profile or admins can insert"
-  ON public.users
+DROP POLICY IF EXISTS "Users can insert own profile or admins can insert" ON public.users;
+CREATE POLICY "Users can insert own profile or admins can insert" ON public.users
   FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -270,8 +270,8 @@ CREATE POLICY "Users can insert own profile or admins can insert"
 DROP POLICY IF EXISTS "Admins can view all users" ON public.users;
 DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
 
-CREATE POLICY "Users can view own profile or admins view all"
-  ON public.users
+DROP POLICY IF EXISTS "Users can view own profile or admins view all" ON public.users;
+CREATE POLICY "Users can view own profile or admins view all" ON public.users
   FOR SELECT
   TO authenticated
   USING (
@@ -281,8 +281,8 @@ CREATE POLICY "Users can view own profile or admins view all"
 DROP POLICY IF EXISTS "Admins can update all users" ON public.users;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 
-CREATE POLICY "Users can update own profile or admins update all"
-  ON public.users
+DROP POLICY IF EXISTS "Users can update own profile or admins update all" ON public.users;
+CREATE POLICY "Users can update own profile or admins update all" ON public.users
   FOR UPDATE
   TO authenticated
   USING (
@@ -299,8 +299,8 @@ CREATE POLICY "Users can update own profile or admins update all"
 -- Fix: drop ALL, replace with explicit non-SELECT admin operations.
 DROP POLICY IF EXISTS "Admins can manage vendor fields" ON public.vendor_fields;
 
-CREATE POLICY "Admins can insert vendor fields"
-  ON public.vendor_fields
+DROP POLICY IF EXISTS "Admins can insert vendor fields" ON public.vendor_fields;
+CREATE POLICY "Admins can insert vendor fields" ON public.vendor_fields
   FOR INSERT
   TO authenticated
   WITH CHECK (EXISTS (
@@ -352,8 +352,8 @@ DROP POLICY IF EXISTS "Allow anon insert vendor_travel_documents" ON public.vend
 -- ── vendor_approval_log: fix always-true anon INSERT ──────────────────────
 DROP POLICY IF EXISTS "Allow anon insert vendor_approval_log" ON public.vendor_approval_log;
 
-CREATE POLICY "Anon can insert vendor approval log for pending vendors"
-  ON public.vendor_approval_log
+DROP POLICY IF EXISTS "Anon can insert vendor approval log for pending vendors" ON public.vendor_approval_log;
+CREATE POLICY "Anon can insert vendor approval log for pending vendors" ON public.vendor_approval_log
   FOR INSERT
   TO anon
   WITH CHECK (

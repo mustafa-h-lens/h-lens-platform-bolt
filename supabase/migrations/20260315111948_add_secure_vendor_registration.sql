@@ -157,8 +157,8 @@ DROP POLICY IF EXISTS "Users can insert vendor financial data" ON public.vendor_
 DROP POLICY IF EXISTS "Users can update vendor financial data" ON public.vendor_financial_data;
 DROP POLICY IF EXISTS "Users can delete vendor financial data" ON public.vendor_financial_data;
 
-CREATE POLICY "Admins can manage vendor financial data"
-  ON public.vendor_financial_data FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor financial data" ON public.vendor_financial_data;
+CREATE POLICY "Admins can manage vendor financial data" ON public.vendor_financial_data FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -230,8 +230,8 @@ DROP POLICY IF EXISTS "Users can insert vendor travel documents" ON public.vendo
 DROP POLICY IF EXISTS "Users can update vendor travel documents" ON public.vendor_travel_documents;
 DROP POLICY IF EXISTS "Users can delete vendor travel documents" ON public.vendor_travel_documents;
 
-CREATE POLICY "Admins can manage vendor travel documents"
-  ON public.vendor_travel_documents FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor travel documents" ON public.vendor_travel_documents;
+CREATE POLICY "Admins can manage vendor travel documents" ON public.vendor_travel_documents FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -303,8 +303,8 @@ DROP POLICY IF EXISTS "Users can insert vendor documents" ON public.vendor_docum
 DROP POLICY IF EXISTS "Users can update vendor documents" ON public.vendor_documents;
 DROP POLICY IF EXISTS "Users can delete vendor documents" ON public.vendor_documents;
 
-CREATE POLICY "Admins can manage vendor documents"
-  ON public.vendor_documents FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor documents" ON public.vendor_documents;
+CREATE POLICY "Admins can manage vendor documents" ON public.vendor_documents FOR ALL
   TO authenticated
   USING (
     EXISTS (

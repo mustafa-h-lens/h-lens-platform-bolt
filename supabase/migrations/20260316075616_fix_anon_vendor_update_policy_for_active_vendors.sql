@@ -25,8 +25,8 @@
 
 DROP POLICY IF EXISTS "Anon can update draft vendors" ON public.vendors;
 
-CREATE POLICY "Anon can update editable vendors"
-  ON public.vendors
+DROP POLICY IF EXISTS "Anon can update editable vendors" ON public.vendors;
+CREATE POLICY "Anon can update editable vendors" ON public.vendors
   FOR UPDATE
   TO anon
   USING (status IN ('draft', 'active', 'revision_requested'))
