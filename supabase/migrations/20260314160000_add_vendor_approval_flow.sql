@@ -7,6 +7,9 @@
 UPDATE vendors SET status = 'active' WHERE status IS NULL;
 UPDATE vendors SET status = 'active' WHERE status NOT IN ('active', 'inactive', 'blocked');
 
+-- Drop any prior constraint by the same name first so a re-run / fresh
+-- replay where it was already added doesn't error.
+ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
 ALTER TABLE vendors
 ADD CONSTRAINT vendors_status_check
 CHECK (status IN ('pending_approval', 'revision_requested', 'rejected', 'active', 'inactive', 'blocked'));
