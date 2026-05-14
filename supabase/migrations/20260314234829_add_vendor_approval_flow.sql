@@ -33,8 +33,8 @@ UPDATE vendors SET status = 'active' WHERE status IS NULL;
 UPDATE vendors SET status = 'active' WHERE status NOT IN ('active', 'inactive', 'blocked');
 
 ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
-ALTER TABLE vendors
-ADD CONSTRAINT vendors_status_check
+ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
+ALTER TABLE vendors ADD CONSTRAINT vendors_status_check
 CHECK (status IN ('pending_approval', 'revision_requested', 'rejected', 'active', 'inactive', 'blocked'));
 
 -- 2. Create vendor_approval_log table
@@ -52,9 +52,9 @@ CREATE TABLE IF NOT EXISTS vendor_approval_log (
   )
 );
 
-CREATE INDEX idx_vendor_approval_log_vendor_id ON vendor_approval_log(vendor_id);
-CREATE INDEX idx_vendor_approval_log_action ON vendor_approval_log(action);
-CREATE INDEX idx_vendor_approval_log_created_at ON vendor_approval_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_vendor_approval_log_vendor_id ON vendor_approval_log(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_approval_log_action ON vendor_approval_log(action);
+CREATE INDEX IF NOT EXISTS idx_vendor_approval_log_created_at ON vendor_approval_log(created_at DESC);
 
 -- 3. Change vendor_invoices FK from CASCADE to RESTRICT
 DO $$
@@ -65,7 +65,8 @@ BEGIN
     AND table_name = 'vendor_invoices'
   ) THEN
     ALTER TABLE vendor_invoices DROP CONSTRAINT vendor_invoices_vendor_id_fkey;
-    ALTER TABLE vendor_invoices ADD CONSTRAINT vendor_invoices_vendor_id_fkey
+    ALTER TABLE vendor_invoices DROP CONSTRAINT IF EXISTS vendor_invoices_vendor_id_fkey;
+ALTER TABLE vendor_invoices ADD CONSTRAINT vendor_invoices_vendor_id_fkey
       FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE RESTRICT;
   END IF;
 END $$;
@@ -73,8 +74,8 @@ END $$;
 -- 4. RLS policies for vendor_approval_log
 ALTER TABLE vendor_approval_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can read all approval logs"
-  ON vendor_approval_log FOR SELECT
+DROP POLICY IF EXISTS "Admins can read all approval logs" ON vendor_approval_log;
+CREATE POLICY "Admins can read all approval logs" ON vendor_approval_log FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -84,8 +85,8 @@ CREATE POLICY "Admins can read all approval logs"
     )
   );
 
-CREATE POLICY "Admins can insert approval logs"
-  ON vendor_approval_log FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert approval logs" ON vendor_approval_log;
+CREATE POLICY "Admins can insert approval logs" ON vendor_approval_log FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -95,8 +96,8 @@ CREATE POLICY "Admins can insert approval logs"
     )
   );
 
-CREATE POLICY "Service role can manage approval logs"
-  ON vendor_approval_log FOR ALL
+DROP POLICY IF EXISTS "Service role can manage approval logs" ON vendor_approval_log;
+CREATE POLICY "Service role can manage approval logs" ON vendor_approval_log FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);

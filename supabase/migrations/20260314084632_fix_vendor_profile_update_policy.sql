@@ -20,8 +20,8 @@
 DROP POLICY IF EXISTS "Users can update vendors" ON public.vendors;
 
 -- إنشاء السياسة الجديدة
-CREATE POLICY "Users can update vendors"
-  ON public.vendors
+DROP POLICY IF EXISTS "Users can update vendors" ON public.vendors;
+CREATE POLICY "Users can update vendors" ON public.vendors
   FOR UPDATE
   TO authenticated
   USING (

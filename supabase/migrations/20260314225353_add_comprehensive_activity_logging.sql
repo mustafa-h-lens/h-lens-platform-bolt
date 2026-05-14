@@ -117,8 +117,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_changes_trigger ON public.vendors;
-CREATE TRIGGER vendor_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendors
+DROP TRIGGER IF EXISTS vendor_changes_trigger ON public.vendors;
+CREATE TRIGGER vendor_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendors
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_changes();
 
 -- 4. Vendor equipment triggers
@@ -144,8 +144,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_equipment_changes_trigger ON public.vendor_equipment;
-CREATE TRIGGER vendor_equipment_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_equipment
+DROP TRIGGER IF EXISTS vendor_equipment_changes_trigger ON public.vendor_equipment;
+CREATE TRIGGER vendor_equipment_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_equipment
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_equipment_changes();
 
 -- 5. Vendor documents triggers
@@ -170,8 +170,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_document_changes_trigger ON public.vendor_documents;
-CREATE TRIGGER vendor_document_changes_trigger
-AFTER INSERT OR DELETE ON public.vendor_documents
+DROP TRIGGER IF EXISTS vendor_document_changes_trigger ON public.vendor_documents;
+CREATE TRIGGER vendor_document_changes_trigger AFTER INSERT OR DELETE ON public.vendor_documents
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_document_changes();
 
 -- 6. Vendor invoices / expenses triggers
@@ -203,8 +203,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_invoice_changes_trigger ON public.vendor_invoices;
-CREATE TRIGGER vendor_invoice_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
+DROP TRIGGER IF EXISTS vendor_invoice_changes_trigger ON public.vendor_invoices;
+CREATE TRIGGER vendor_invoice_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_invoice_changes();
 
 -- 7. Purchase orders triggers
@@ -234,8 +234,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS purchase_order_changes_trigger ON public.purchase_orders;
-CREATE TRIGGER purchase_order_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.purchase_orders
+DROP TRIGGER IF EXISTS purchase_order_changes_trigger ON public.purchase_orders;
+CREATE TRIGGER purchase_order_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.purchase_orders
 FOR EACH ROW EXECUTE FUNCTION public.log_purchase_order_changes();
 
 -- 8. Production tasks triggers
@@ -264,8 +264,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS production_task_changes_trigger ON public.production_tasks;
-CREATE TRIGGER production_task_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.production_tasks
+DROP TRIGGER IF EXISTS production_task_changes_trigger ON public.production_tasks;
+CREATE TRIGGER production_task_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.production_tasks
 FOR EACH ROW EXECUTE FUNCTION public.log_production_task_changes();
 
 -- 9. Settings triggers
@@ -280,8 +280,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS settings_config_changes_trigger ON public.settings_config;
-CREATE TRIGGER settings_config_changes_trigger
-AFTER INSERT OR UPDATE ON public.settings_config
+DROP TRIGGER IF EXISTS settings_config_changes_trigger ON public.settings_config;
+CREATE TRIGGER settings_config_changes_trigger AFTER INSERT OR UPDATE ON public.settings_config
 FOR EACH ROW EXECUTE FUNCTION public.log_settings_changes();
 
 -- 10. Create global_activity_log view
