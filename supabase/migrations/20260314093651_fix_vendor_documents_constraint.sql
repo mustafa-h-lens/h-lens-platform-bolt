@@ -28,6 +28,7 @@ DROP CONSTRAINT IF EXISTS vendor_documents_document_type_check;
 
 -- Add the new constraint with all supported document types
 ALTER TABLE vendor_documents DROP CONSTRAINT IF EXISTS vendor_documents_document_type_check;
+ALTER TABLE vendor_documents DROP CONSTRAINT IF EXISTS vendor_documents_document_type_check;
 ALTER TABLE vendor_documents ADD CONSTRAINT vendor_documents_document_type_check
 CHECK (
   document_type IN (

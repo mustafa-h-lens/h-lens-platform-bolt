@@ -99,21 +99,21 @@ ALTER TABLE equipment_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE equipment_catalog ENABLE ROW LEVEL SECURITY;
 
 -- سياسات القراءة للجميع المصادق عليهم
-CREATE POLICY "Authenticated users can view equipment categories"
-  ON equipment_categories
+DROP POLICY IF EXISTS "Authenticated users can view equipment categories" ON equipment_categories;
+CREATE POLICY "Authenticated users can view equipment categories" ON equipment_categories
   FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Authenticated users can view equipment catalog"
-  ON equipment_catalog
+DROP POLICY IF EXISTS "Authenticated users can view equipment catalog" ON equipment_catalog;
+CREATE POLICY "Authenticated users can view equipment catalog" ON equipment_catalog
   FOR SELECT
   TO authenticated
   USING (true);
 
 -- سياسات الإدراج للمسؤولين
-CREATE POLICY "Admins can insert equipment categories"
-  ON equipment_categories
+DROP POLICY IF EXISTS "Admins can insert equipment categories" ON equipment_categories;
+CREATE POLICY "Admins can insert equipment categories" ON equipment_categories
   FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -124,8 +124,8 @@ CREATE POLICY "Admins can insert equipment categories"
     )
   );
 
-CREATE POLICY "Admins can insert equipment catalog"
-  ON equipment_catalog
+DROP POLICY IF EXISTS "Admins can insert equipment catalog" ON equipment_catalog;
+CREATE POLICY "Admins can insert equipment catalog" ON equipment_catalog
   FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -137,8 +137,8 @@ CREATE POLICY "Admins can insert equipment catalog"
   );
 
 -- سياسات التحديث للمسؤولين
-CREATE POLICY "Admins can update equipment categories"
-  ON equipment_categories
+DROP POLICY IF EXISTS "Admins can update equipment categories" ON equipment_categories;
+CREATE POLICY "Admins can update equipment categories" ON equipment_categories
   FOR UPDATE
   TO authenticated
   USING (
@@ -156,8 +156,8 @@ CREATE POLICY "Admins can update equipment categories"
     )
   );
 
-CREATE POLICY "Admins can update equipment catalog"
-  ON equipment_catalog
+DROP POLICY IF EXISTS "Admins can update equipment catalog" ON equipment_catalog;
+CREATE POLICY "Admins can update equipment catalog" ON equipment_catalog
   FOR UPDATE
   TO authenticated
   USING (
@@ -176,8 +176,8 @@ CREATE POLICY "Admins can update equipment catalog"
   );
 
 -- سياسات الحذف للمسؤولين
-CREATE POLICY "Admins can delete equipment categories"
-  ON equipment_categories
+DROP POLICY IF EXISTS "Admins can delete equipment categories" ON equipment_categories;
+CREATE POLICY "Admins can delete equipment categories" ON equipment_categories
   FOR DELETE
   TO authenticated
   USING (
@@ -188,8 +188,8 @@ CREATE POLICY "Admins can delete equipment categories"
     )
   );
 
-CREATE POLICY "Admins can delete equipment catalog"
-  ON equipment_catalog
+DROP POLICY IF EXISTS "Admins can delete equipment catalog" ON equipment_catalog;
+CREATE POLICY "Admins can delete equipment catalog" ON equipment_catalog
   FOR DELETE
   TO authenticated
   USING (

@@ -66,8 +66,8 @@ CREATE POLICY "Admins can manage client document types"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Authenticated users can view client document types"
-  ON public.client_document_types
+DROP POLICY IF EXISTS "Authenticated users can view client document types" ON public.client_document_types;
+CREATE POLICY "Authenticated users can view client document types" ON public.client_document_types
   FOR SELECT
   TO authenticated
   USING (
@@ -147,8 +147,8 @@ CREATE POLICY "Admins manage project files"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "View project files"
-  ON public.project_files
+DROP POLICY IF EXISTS "View project files" ON public.project_files;
+CREATE POLICY "View project files" ON public.project_files
   FOR SELECT
   TO authenticated
   USING (
@@ -182,8 +182,8 @@ CREATE POLICY "Admins can manage project items"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "View project items"
-  ON public.project_items
+DROP POLICY IF EXISTS "View project items" ON public.project_items;
+CREATE POLICY "View project items" ON public.project_items
   FOR SELECT
   TO authenticated
   USING (
@@ -217,8 +217,8 @@ CREATE POLICY "Admins manage milestones"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "View project milestones"
-  ON public.project_milestones
+DROP POLICY IF EXISTS "View project milestones" ON public.project_milestones;
+CREATE POLICY "View project milestones" ON public.project_milestones
   FOR SELECT
   TO authenticated
   USING (
@@ -252,8 +252,8 @@ CREATE POLICY "Admins manage project tasks"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "View project tasks"
-  ON public.project_tasks
+DROP POLICY IF EXISTS "View project tasks" ON public.project_tasks;
+CREATE POLICY "View project tasks" ON public.project_tasks
   FOR SELECT
   TO authenticated
   USING (
@@ -314,8 +314,8 @@ CREATE POLICY "Authenticated users can view role_permissions"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Only super_admin can manage role_permissions"
-  ON public.role_permissions
+DROP POLICY IF EXISTS "Only super_admin can manage role_permissions" ON public.role_permissions;
+CREATE POLICY "Only super_admin can manage role_permissions" ON public.role_permissions
   FOR ALL
   TO authenticated
   USING (
@@ -347,8 +347,8 @@ CREATE POLICY "Authenticated users can view roles"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Only super_admin can manage roles"
-  ON public.roles
+DROP POLICY IF EXISTS "Only super_admin can manage roles" ON public.roles;
+CREATE POLICY "Only super_admin can manage roles" ON public.roles
   FOR ALL
   TO authenticated
   USING (
@@ -382,8 +382,8 @@ CREATE POLICY "Admins can manage service items"
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "View service items"
-  ON public.service_items
+DROP POLICY IF EXISTS "View service items" ON public.service_items;
+CREATE POLICY "View service items" ON public.service_items
   FOR SELECT
   TO authenticated
   USING (

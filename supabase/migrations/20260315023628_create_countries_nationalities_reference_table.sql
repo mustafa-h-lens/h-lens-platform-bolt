@@ -39,13 +39,13 @@ CREATE TABLE IF NOT EXISTS countries (
 
 ALTER TABLE countries ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can view countries"
-  ON countries FOR SELECT
+DROP POLICY IF EXISTS "Anyone can view countries" ON countries;
+CREATE POLICY "Anyone can view countries" ON countries FOR SELECT
   TO public
   USING (true);
 
-CREATE POLICY "Authenticated users can manage countries"
-  ON countries FOR ALL
+DROP POLICY IF EXISTS "Authenticated users can manage countries" ON countries;
+CREATE POLICY "Authenticated users can manage countries" ON countries FOR ALL
   TO authenticated
   USING (true)
   WITH CHECK (true);

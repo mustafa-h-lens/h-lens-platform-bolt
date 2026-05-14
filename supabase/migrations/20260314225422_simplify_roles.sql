@@ -30,11 +30,13 @@ BEGIN
   ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
   ALTER TABLE users DROP CONSTRAINT IF EXISTS check_role;
   ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check
     CHECK (role IN ('super_admin', 'project_manager', 'client'));
 EXCEPTION
   WHEN others THEN
     ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check
       CHECK (role IN ('super_admin', 'project_manager', 'client'));
 END $$;

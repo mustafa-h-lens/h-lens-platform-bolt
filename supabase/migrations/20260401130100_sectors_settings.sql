@@ -25,5 +25,7 @@ ON CONFLICT DO NOTHING;
 
 -- RLS policies
 ALTER TABLE sectors ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated users can read sectors" ON sectors;
 CREATE POLICY "Authenticated users can read sectors" ON sectors FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Admins can manage sectors" ON sectors;
 CREATE POLICY "Admins can manage sectors" ON sectors FOR ALL TO authenticated USING (true);

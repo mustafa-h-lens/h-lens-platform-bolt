@@ -11,6 +11,7 @@ UPDATE vendors SET status = 'active' WHERE status NOT IN ('active', 'inactive', 
 -- replay where it was already added doesn't error.
 ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
 ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
+ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_status_check;
 ALTER TABLE vendors ADD CONSTRAINT vendors_status_check
 CHECK (status IN ('pending_approval', 'revision_requested', 'rejected', 'active', 'inactive', 'blocked'));
 
@@ -45,6 +46,7 @@ BEGIN
   ) THEN
     ALTER TABLE vendor_invoices DROP CONSTRAINT vendor_invoices_vendor_id_fkey;
     ALTER TABLE vendor_invoices DROP CONSTRAINT IF EXISTS vendor_invoices_vendor_id_fkey;
+ALTER TABLE vendor_invoices DROP CONSTRAINT IF EXISTS vendor_invoices_vendor_id_fkey;
 ALTER TABLE vendor_invoices ADD CONSTRAINT vendor_invoices_vendor_id_fkey
       FOREIGN KEY (vendor_id) REFERENCES vendors(id) ON DELETE RESTRICT;
   END IF;

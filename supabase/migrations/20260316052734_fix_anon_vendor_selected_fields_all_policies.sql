@@ -24,8 +24,8 @@ CREATE POLICY "Anon can view selected fields during registration"
     )
   );
 
-CREATE POLICY "Anon can update selected fields during registration"
-  ON public.vendor_selected_fields FOR UPDATE TO anon
+DROP POLICY IF EXISTS "Anon can update selected fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anon can update selected fields during registration" ON public.vendor_selected_fields FOR UPDATE TO anon
   USING (
     vendor_id IN (
       SELECT id FROM vendors
@@ -39,8 +39,8 @@ CREATE POLICY "Anon can update selected fields during registration"
     )
   );
 
-CREATE POLICY "Anon can delete selected fields during registration"
-  ON public.vendor_selected_fields FOR DELETE TO anon
+DROP POLICY IF EXISTS "Anon can delete selected fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anon can delete selected fields during registration" ON public.vendor_selected_fields FOR DELETE TO anon
   USING (
     vendor_id IN (
       SELECT id FROM vendors

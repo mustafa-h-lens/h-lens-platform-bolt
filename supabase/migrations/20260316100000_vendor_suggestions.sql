@@ -22,9 +22,9 @@ CREATE TABLE IF NOT EXISTS vendor_suggestions (
 );
 
 -- Indexes
-CREATE INDEX idx_vendor_suggestions_vendor_id ON vendor_suggestions(vendor_id);
-CREATE INDEX idx_vendor_suggestions_status ON vendor_suggestions(status);
-CREATE INDEX idx_vendor_suggestions_created_at ON vendor_suggestions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_vendor_suggestions_vendor_id ON vendor_suggestions(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_suggestions_status ON vendor_suggestions(status);
+CREATE INDEX IF NOT EXISTS idx_vendor_suggestions_created_at ON vendor_suggestions(created_at DESC);
 
 -- Enable RLS
 ALTER TABLE vendor_suggestions ENABLE ROW LEVEL SECURITY;

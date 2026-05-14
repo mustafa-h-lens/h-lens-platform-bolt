@@ -25,18 +25,18 @@ ALTER TABLE public.clients ADD COLUMN IF NOT EXISTS portal_email text;
 ALTER TABLE public.client_sessions ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS policies for client_sessions
-CREATE POLICY "Service role can manage client sessions"
-  ON public.client_sessions FOR ALL
+DROP POLICY IF EXISTS "Service role can manage client sessions" ON public.client_sessions;
+CREATE POLICY "Service role can manage client sessions" ON public.client_sessions FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Anon can insert client sessions"
-  ON public.client_sessions FOR INSERT
+DROP POLICY IF EXISTS "Anon can insert client sessions" ON public.client_sessions;
+CREATE POLICY "Anon can insert client sessions" ON public.client_sessions FOR INSERT
   TO anon
   WITH CHECK (true);
 
-CREATE POLICY "Anon can read client sessions"
-  ON public.client_sessions FOR SELECT
+DROP POLICY IF EXISTS "Anon can read client sessions" ON public.client_sessions;
+CREATE POLICY "Anon can read client sessions" ON public.client_sessions FOR SELECT
   TO anon
   USING (true);

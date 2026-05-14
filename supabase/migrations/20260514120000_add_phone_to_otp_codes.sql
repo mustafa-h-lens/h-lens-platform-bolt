@@ -31,8 +31,8 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'otp_codes_email_xor_phone'
   ) THEN
-    ALTER TABLE otp_codes
-      ADD CONSTRAINT otp_codes_email_xor_phone
+    ALTER TABLE otp_codes DROP CONSTRAINT IF EXISTS otp_codes_email_xor_phone;
+ALTER TABLE otp_codes ADD CONSTRAINT otp_codes_email_xor_phone
       CHECK ((email IS NOT NULL) <> (phone IS NOT NULL));
   END IF;
 END $$;

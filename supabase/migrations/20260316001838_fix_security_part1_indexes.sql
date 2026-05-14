@@ -22,35 +22,35 @@ BEGIN
     SELECT 1 FROM pg_indexes 
     WHERE tablename = 'expense_payments' AND indexname = 'idx_expense_payments_created_by'
   ) THEN
-    CREATE INDEX idx_expense_payments_created_by ON public.expense_payments(created_by);
+    CREATE INDEX IF NOT EXISTS idx_expense_payments_created_by ON public.expense_payments(created_by);
   END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
     WHERE tablename = 'legal_pages' AND indexname = 'idx_legal_pages_created_by'
   ) THEN
-    CREATE INDEX idx_legal_pages_created_by ON public.legal_pages(created_by);
+    CREATE INDEX IF NOT EXISTS idx_legal_pages_created_by ON public.legal_pages(created_by);
   END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
     WHERE tablename = 'legal_pages_history' AND indexname = 'idx_legal_pages_history_created_by'
   ) THEN
-    CREATE INDEX idx_legal_pages_history_created_by ON public.legal_pages_history(created_by);
+    CREATE INDEX IF NOT EXISTS idx_legal_pages_history_created_by ON public.legal_pages_history(created_by);
   END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
     WHERE tablename = 'terms_and_privacy_settings' AND indexname = 'idx_terms_and_privacy_settings_updated_by'
   ) THEN
-    CREATE INDEX idx_terms_and_privacy_settings_updated_by ON public.terms_and_privacy_settings(updated_by);
+    CREATE INDEX IF NOT EXISTS idx_terms_and_privacy_settings_updated_by ON public.terms_and_privacy_settings(updated_by);
   END IF;
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes 
     WHERE tablename = 'vendor_approval_log' AND indexname = 'idx_vendor_approval_log_performed_by'
   ) THEN
-    CREATE INDEX idx_vendor_approval_log_performed_by ON public.vendor_approval_log(performed_by);
+    CREATE INDEX IF NOT EXISTS idx_vendor_approval_log_performed_by ON public.vendor_approval_log(performed_by);
   END IF;
 END $$;
 

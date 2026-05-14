@@ -11,6 +11,6 @@
 */
 
 DROP TRIGGER IF EXISTS project_file_upload_trigger ON public.project_files;
-CREATE TRIGGER project_file_upload_trigger
-  AFTER INSERT ON public.project_files
+DROP TRIGGER IF EXISTS project_file_upload_trigger ON public.project_files;
+CREATE TRIGGER project_file_upload_trigger AFTER INSERT ON public.project_files
   FOR EACH ROW EXECUTE FUNCTION log_project_file_upload();

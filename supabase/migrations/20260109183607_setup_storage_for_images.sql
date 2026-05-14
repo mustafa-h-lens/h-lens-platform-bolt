@@ -27,25 +27,25 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- سياسة القراءة للجميع
-CREATE POLICY "Anyone can read vendor images"
-ON storage.objects FOR SELECT
+DROP POLICY IF EXISTS "Anyone can read vendor images" ON storage.objects;
+CREATE POLICY "Anyone can read vendor images" ON storage.objects FOR SELECT
 USING (bucket_id = 'vendor-images');
 
 -- سياسة الرفع للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can upload vendor images"
-ON storage.objects FOR INSERT
+DROP POLICY IF EXISTS "Authenticated users can upload vendor images" ON storage.objects;
+CREATE POLICY "Authenticated users can upload vendor images" ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (bucket_id = 'vendor-images');
 
 -- سياسة التحديث للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can update vendor images"
-ON storage.objects FOR UPDATE
+DROP POLICY IF EXISTS "Authenticated users can update vendor images" ON storage.objects;
+CREATE POLICY "Authenticated users can update vendor images" ON storage.objects FOR UPDATE
 TO authenticated
 USING (bucket_id = 'vendor-images')
 WITH CHECK (bucket_id = 'vendor-images');
 
 -- سياسة الحذف للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can delete vendor images"
-ON storage.objects FOR DELETE
+DROP POLICY IF EXISTS "Authenticated users can delete vendor images" ON storage.objects;
+CREATE POLICY "Authenticated users can delete vendor images" ON storage.objects FOR DELETE
 TO authenticated
 USING (bucket_id = 'vendor-images');

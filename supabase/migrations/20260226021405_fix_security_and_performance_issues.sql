@@ -117,6 +117,30 @@ CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_vendor_id ON public.vendor_ac
 CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_created_at ON public.vendor_activity_log(created_at DESC);
 ALTER TABLE public.vendor_activity_log ENABLE ROW LEVEL SECURITY;
 
+-- legal_pages — terms & privacy content (prod-drift, manually added)
+CREATE TABLE IF NOT EXISTS public.legal_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  type text NOT NULL,
+  content jsonb DEFAULT '{}'::jsonb,
+  version text,
+  is_active boolean DEFAULT true,
+  created_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.legal_pages ENABLE ROW LEVEL SECURITY;
+
+-- legal_pages_history — version history for legal_pages (prod-drift)
+CREATE TABLE IF NOT EXISTS public.legal_pages_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  legal_page_id uuid REFERENCES public.legal_pages(id) ON DELETE CASCADE,
+  content jsonb,
+  version text,
+  created_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.legal_pages_history ENABLE ROW LEVEL SECURITY;
+
 -- ========================================
 -- الجزء 1: إضافة Indexes للـ Foreign Keys
 -- ========================================

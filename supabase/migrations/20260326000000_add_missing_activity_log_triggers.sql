@@ -50,8 +50,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS project_changes_trigger ON public.projects;
-CREATE TRIGGER project_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.projects
+DROP TRIGGER IF EXISTS project_changes_trigger ON public.projects;
+CREATE TRIGGER project_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.projects
 FOR EACH ROW EXECUTE FUNCTION public.log_project_changes();
 
 -- ============================================================
@@ -80,8 +80,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS project_item_changes_trigger ON public.project_items;
-CREATE TRIGGER project_item_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.project_items
+DROP TRIGGER IF EXISTS project_item_changes_trigger ON public.project_items;
+CREATE TRIGGER project_item_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.project_items
 FOR EACH ROW EXECUTE FUNCTION public.log_project_item_changes();
 
 -- ============================================================
@@ -108,8 +108,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS project_file_changes_trigger ON public.project_files;
-CREATE TRIGGER project_file_changes_trigger
-AFTER INSERT OR DELETE ON public.project_files
+DROP TRIGGER IF EXISTS project_file_changes_trigger ON public.project_files;
+CREATE TRIGGER project_file_changes_trigger AFTER INSERT OR DELETE ON public.project_files
 FOR EACH ROW EXECUTE FUNCTION public.log_project_file_changes();
 
 -- ============================================================
@@ -153,8 +153,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS invoice_changes_trigger ON public.invoices;
-CREATE TRIGGER invoice_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.invoices
+DROP TRIGGER IF EXISTS invoice_changes_trigger ON public.invoices;
+CREATE TRIGGER invoice_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.invoices
 FOR EACH ROW EXECUTE FUNCTION public.log_invoice_changes();
 
 -- ============================================================
@@ -186,8 +186,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_financial_changes_trigger ON public.vendor_financial_data;
-CREATE TRIGGER vendor_financial_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_financial_data
+DROP TRIGGER IF EXISTS vendor_financial_changes_trigger ON public.vendor_financial_data;
+CREATE TRIGGER vendor_financial_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_financial_data
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_financial_changes();
 
 -- ============================================================
@@ -216,8 +216,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_travel_doc_changes_trigger ON public.vendor_travel_documents;
-CREATE TRIGGER vendor_travel_doc_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_travel_documents
+DROP TRIGGER IF EXISTS vendor_travel_doc_changes_trigger ON public.vendor_travel_documents;
+CREATE TRIGGER vendor_travel_doc_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_travel_documents
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_travel_doc_changes();
 
 -- ============================================================
@@ -255,8 +255,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_suggestion_changes_trigger ON public.vendor_suggestions;
-CREATE TRIGGER vendor_suggestion_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_suggestions
+DROP TRIGGER IF EXISTS vendor_suggestion_changes_trigger ON public.vendor_suggestions;
+CREATE TRIGGER vendor_suggestion_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_suggestions
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_suggestion_changes();
 
 -- ============================================================
@@ -292,8 +292,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS service_item_changes_trigger ON public.service_items;
-CREATE TRIGGER service_item_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.service_items
+DROP TRIGGER IF EXISTS service_item_changes_trigger ON public.service_items;
+CREATE TRIGGER service_item_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.service_items
 FOR EACH ROW EXECUTE FUNCTION public.log_service_item_changes();
 
 -- ============================================================
@@ -324,8 +324,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS task_po_allocation_changes_trigger ON public.task_po_allocations;
-CREATE TRIGGER task_po_allocation_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.task_po_allocations
+DROP TRIGGER IF EXISTS task_po_allocation_changes_trigger ON public.task_po_allocations;
+CREATE TRIGGER task_po_allocation_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.task_po_allocations
 FOR EACH ROW EXECUTE FUNCTION public.log_task_po_allocation_changes();
 
 -- ============================================================
@@ -352,8 +352,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS equipment_brand_changes_trigger ON public.equipment_brands;
-CREATE TRIGGER equipment_brand_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.equipment_brands
+DROP TRIGGER IF EXISTS equipment_brand_changes_trigger ON public.equipment_brands;
+CREATE TRIGGER equipment_brand_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.equipment_brands
 FOR EACH ROW EXECUTE FUNCTION public.log_equipment_brand_changes();
 
 -- ============================================================
@@ -380,8 +380,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS equipment_category_changes_trigger ON public.equipment_categories;
-CREATE TRIGGER equipment_category_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.equipment_categories
+DROP TRIGGER IF EXISTS equipment_category_changes_trigger ON public.equipment_categories;
+CREATE TRIGGER equipment_category_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.equipment_categories
 FOR EACH ROW EXECUTE FUNCTION public.log_equipment_category_changes();
 
 -- ============================================================
@@ -400,8 +400,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS po_settings_changes_trigger ON public.po_settings;
-CREATE TRIGGER po_settings_changes_trigger
-AFTER INSERT OR UPDATE ON public.po_settings
+DROP TRIGGER IF EXISTS po_settings_changes_trigger ON public.po_settings;
+CREATE TRIGGER po_settings_changes_trigger AFTER INSERT OR UPDATE ON public.po_settings
 FOR EACH ROW EXECUTE FUNCTION public.log_po_settings_changes();
 
 -- ============================================================
@@ -420,6 +420,6 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS terms_privacy_changes_trigger ON public.terms_and_privacy_settings;
-CREATE TRIGGER terms_privacy_changes_trigger
-AFTER INSERT OR UPDATE ON public.terms_and_privacy_settings
+DROP TRIGGER IF EXISTS terms_privacy_changes_trigger ON public.terms_and_privacy_settings;
+CREATE TRIGGER terms_privacy_changes_trigger AFTER INSERT OR UPDATE ON public.terms_and_privacy_settings
 FOR EACH ROW EXECUTE FUNCTION public.log_terms_privacy_changes();

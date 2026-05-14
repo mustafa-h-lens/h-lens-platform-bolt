@@ -20,18 +20,18 @@
 -- OTP Codes Policies
 -- =====================================================
 
-CREATE POLICY "System can insert OTP codes"
-  ON public.otp_codes FOR INSERT
+DROP POLICY IF EXISTS "System can insert OTP codes" ON public.otp_codes;
+CREATE POLICY "System can insert OTP codes" ON public.otp_codes FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "System can read OTP codes for verification"
-  ON public.otp_codes FOR SELECT
+DROP POLICY IF EXISTS "System can read OTP codes for verification" ON public.otp_codes;
+CREATE POLICY "System can read OTP codes for verification" ON public.otp_codes FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "System can delete expired OTP codes"
-  ON public.otp_codes FOR DELETE
+DROP POLICY IF EXISTS "System can delete expired OTP codes" ON public.otp_codes;
+CREATE POLICY "System can delete expired OTP codes" ON public.otp_codes FOR DELETE
   TO authenticated
   USING (true);
 
@@ -110,8 +110,8 @@ CREATE POLICY "Anon can insert vendor documents during registration"
     )
   );
 
-CREATE POLICY "Anon can view vendor documents during registration"
-  ON public.vendor_documents FOR SELECT
+DROP POLICY IF EXISTS "Anon can view vendor documents during registration" ON public.vendor_documents;
+CREATE POLICY "Anon can view vendor documents during registration" ON public.vendor_documents FOR SELECT
   TO anon
   USING (
     vendor_id IN (
@@ -120,8 +120,8 @@ CREATE POLICY "Anon can view vendor documents during registration"
     )
   );
 
-CREATE POLICY "Anon can update vendor documents during registration"
-  ON public.vendor_documents FOR UPDATE
+DROP POLICY IF EXISTS "Anon can update vendor documents during registration" ON public.vendor_documents;
+CREATE POLICY "Anon can update vendor documents during registration" ON public.vendor_documents FOR UPDATE
   TO anon
   USING (
     vendor_id IN (
@@ -136,8 +136,8 @@ CREATE POLICY "Anon can update vendor documents during registration"
     )
   );
 
-CREATE POLICY "Anon can delete vendor documents during registration"
-  ON public.vendor_documents FOR DELETE
+DROP POLICY IF EXISTS "Anon can delete vendor documents during registration" ON public.vendor_documents;
+CREATE POLICY "Anon can delete vendor documents during registration" ON public.vendor_documents FOR DELETE
   TO anon
   USING (
     vendor_id IN (
@@ -162,8 +162,8 @@ CREATE POLICY "Anon can insert financial data during registration"
     )
   );
 
-CREATE POLICY "Anon can view financial data during registration"
-  ON public.vendor_financial_data FOR SELECT
+DROP POLICY IF EXISTS "Anon can view financial data during registration" ON public.vendor_financial_data;
+CREATE POLICY "Anon can view financial data during registration" ON public.vendor_financial_data FOR SELECT
   TO anon
   USING (
     vendor_id IN (
@@ -172,8 +172,8 @@ CREATE POLICY "Anon can view financial data during registration"
     )
   );
 
-CREATE POLICY "Anon can update financial data during registration"
-  ON public.vendor_financial_data FOR UPDATE
+DROP POLICY IF EXISTS "Anon can update financial data during registration" ON public.vendor_financial_data;
+CREATE POLICY "Anon can update financial data during registration" ON public.vendor_financial_data FOR UPDATE
   TO anon
   USING (
     vendor_id IN (
@@ -188,8 +188,8 @@ CREATE POLICY "Anon can update financial data during registration"
     )
   );
 
-CREATE POLICY "Anon can delete financial data during registration"
-  ON public.vendor_financial_data FOR DELETE
+DROP POLICY IF EXISTS "Anon can delete financial data during registration" ON public.vendor_financial_data;
+CREATE POLICY "Anon can delete financial data during registration" ON public.vendor_financial_data FOR DELETE
   TO anon
   USING (
     vendor_id IN (
@@ -214,8 +214,8 @@ CREATE POLICY "Anon can insert selected fields during registration"
     )
   );
 
-CREATE POLICY "Anon can view selected fields during registration"
-  ON public.vendor_selected_fields FOR SELECT
+DROP POLICY IF EXISTS "Anon can view selected fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anon can view selected fields during registration" ON public.vendor_selected_fields FOR SELECT
   TO anon
   USING (
     vendor_id IN (
@@ -224,8 +224,8 @@ CREATE POLICY "Anon can view selected fields during registration"
     )
   );
 
-CREATE POLICY "Anon can update selected fields during registration"
-  ON public.vendor_selected_fields FOR UPDATE
+DROP POLICY IF EXISTS "Anon can update selected fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anon can update selected fields during registration" ON public.vendor_selected_fields FOR UPDATE
   TO anon
   USING (
     vendor_id IN (
@@ -240,8 +240,8 @@ CREATE POLICY "Anon can update selected fields during registration"
     )
   );
 
-CREATE POLICY "Anon can delete selected fields during registration"
-  ON public.vendor_selected_fields FOR DELETE
+DROP POLICY IF EXISTS "Anon can delete selected fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anon can delete selected fields during registration" ON public.vendor_selected_fields FOR DELETE
   TO anon
   USING (
     vendor_id IN (
@@ -266,8 +266,8 @@ CREATE POLICY "Anon can insert travel documents during registration"
     )
   );
 
-CREATE POLICY "Anon can view travel documents during registration"
-  ON public.vendor_travel_documents FOR SELECT
+DROP POLICY IF EXISTS "Anon can view travel documents during registration" ON public.vendor_travel_documents;
+CREATE POLICY "Anon can view travel documents during registration" ON public.vendor_travel_documents FOR SELECT
   TO anon
   USING (
     vendor_id IN (
@@ -276,8 +276,8 @@ CREATE POLICY "Anon can view travel documents during registration"
     )
   );
 
-CREATE POLICY "Anon can update travel documents during registration"
-  ON public.vendor_travel_documents FOR UPDATE
+DROP POLICY IF EXISTS "Anon can update travel documents during registration" ON public.vendor_travel_documents;
+CREATE POLICY "Anon can update travel documents during registration" ON public.vendor_travel_documents FOR UPDATE
   TO anon
   USING (
     vendor_id IN (
@@ -292,8 +292,8 @@ CREATE POLICY "Anon can update travel documents during registration"
     )
   );
 
-CREATE POLICY "Anon can delete travel documents during registration"
-  ON public.vendor_travel_documents FOR DELETE
+DROP POLICY IF EXISTS "Anon can delete travel documents during registration" ON public.vendor_travel_documents;
+CREATE POLICY "Anon can delete travel documents during registration" ON public.vendor_travel_documents FOR DELETE
   TO anon
   USING (
     vendor_id IN (

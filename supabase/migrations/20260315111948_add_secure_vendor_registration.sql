@@ -31,8 +31,8 @@ DROP POLICY IF EXISTS "Users can update vendors" ON public.vendors;
 DROP POLICY IF EXISTS "Users can delete vendors" ON public.vendors;
 
 -- Secure policies for vendors table
-CREATE POLICY "Admins can manage all vendors"
-  ON public.vendors FOR ALL
+DROP POLICY IF EXISTS "Admins can manage all vendors" ON public.vendors;
+CREATE POLICY "Admins can manage all vendors" ON public.vendors FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -42,15 +42,15 @@ CREATE POLICY "Admins can manage all vendors"
     )
   );
 
-CREATE POLICY "Anonymous can register new vendors"
-  ON public.vendors FOR INSERT
+DROP POLICY IF EXISTS "Anonymous can register new vendors" ON public.vendors;
+CREATE POLICY "Anonymous can register new vendors" ON public.vendors FOR INSERT
   TO anon
   WITH CHECK (
     status = 'pending_approval'
   );
 
-CREATE POLICY "Vendors can view own profile"
-  ON public.vendors FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own profile" ON public.vendors;
+CREATE POLICY "Vendors can view own profile" ON public.vendors FOR SELECT
   TO authenticated
   USING (
     phone IN (
@@ -63,8 +63,8 @@ CREATE POLICY "Vendors can view own profile"
     )
   );
 
-CREATE POLICY "Vendors can update own profile"
-  ON public.vendors FOR UPDATE
+DROP POLICY IF EXISTS "Vendors can update own profile" ON public.vendors;
+CREATE POLICY "Vendors can update own profile" ON public.vendors FOR UPDATE
   TO authenticated
   USING (
     phone IN (
@@ -95,8 +95,8 @@ CREATE POLICY "Admins can manage vendor selected fields"
     )
   );
 
-CREATE POLICY "Anonymous can insert fields during registration"
-  ON public.vendor_selected_fields FOR INSERT
+DROP POLICY IF EXISTS "Anonymous can insert fields during registration" ON public.vendor_selected_fields;
+CREATE POLICY "Anonymous can insert fields during registration" ON public.vendor_selected_fields FOR INSERT
   TO anon
   WITH CHECK (
     EXISTS (
@@ -107,8 +107,8 @@ CREATE POLICY "Anonymous can insert fields during registration"
     )
   );
 
-CREATE POLICY "Vendors can view own selected fields"
-  ON public.vendor_selected_fields FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own selected fields" ON public.vendor_selected_fields;
+CREATE POLICY "Vendors can view own selected fields" ON public.vendor_selected_fields FOR SELECT
   TO authenticated
   USING (
     vendor_id IN (
@@ -122,8 +122,8 @@ CREATE POLICY "Vendors can view own selected fields"
     )
   );
 
-CREATE POLICY "Vendors can update own selected fields"
-  ON public.vendor_selected_fields FOR UPDATE
+DROP POLICY IF EXISTS "Vendors can update own selected fields" ON public.vendor_selected_fields;
+CREATE POLICY "Vendors can update own selected fields" ON public.vendor_selected_fields FOR UPDATE
   TO authenticated
   USING (
     vendor_id IN (
@@ -138,8 +138,8 @@ CREATE POLICY "Vendors can update own selected fields"
     )
   );
 
-CREATE POLICY "Vendors can delete own selected fields"
-  ON public.vendor_selected_fields FOR DELETE
+DROP POLICY IF EXISTS "Vendors can delete own selected fields" ON public.vendor_selected_fields;
+CREATE POLICY "Vendors can delete own selected fields" ON public.vendor_selected_fields FOR DELETE
   TO authenticated
   USING (
     vendor_id IN (
@@ -168,8 +168,8 @@ CREATE POLICY "Admins can manage vendor financial data"
     )
   );
 
-CREATE POLICY "Anonymous can insert financial data during registration"
-  ON public.vendor_financial_data FOR INSERT
+DROP POLICY IF EXISTS "Anonymous can insert financial data during registration" ON public.vendor_financial_data;
+CREATE POLICY "Anonymous can insert financial data during registration" ON public.vendor_financial_data FOR INSERT
   TO anon
   WITH CHECK (
     EXISTS (
@@ -180,8 +180,8 @@ CREATE POLICY "Anonymous can insert financial data during registration"
     )
   );
 
-CREATE POLICY "Vendors can view own financial data"
-  ON public.vendor_financial_data FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own financial data" ON public.vendor_financial_data;
+CREATE POLICY "Vendors can view own financial data" ON public.vendor_financial_data FOR SELECT
   TO authenticated
   USING (
     vendor_id IN (
@@ -195,8 +195,8 @@ CREATE POLICY "Vendors can view own financial data"
     )
   );
 
-CREATE POLICY "Vendors can update own financial data"
-  ON public.vendor_financial_data FOR UPDATE
+DROP POLICY IF EXISTS "Vendors can update own financial data" ON public.vendor_financial_data;
+CREATE POLICY "Vendors can update own financial data" ON public.vendor_financial_data FOR UPDATE
   TO authenticated
   USING (
     vendor_id IN (
@@ -211,8 +211,8 @@ CREATE POLICY "Vendors can update own financial data"
     )
   );
 
-CREATE POLICY "Vendors can delete own financial data"
-  ON public.vendor_financial_data FOR DELETE
+DROP POLICY IF EXISTS "Vendors can delete own financial data" ON public.vendor_financial_data;
+CREATE POLICY "Vendors can delete own financial data" ON public.vendor_financial_data FOR DELETE
   TO authenticated
   USING (
     vendor_id IN (
@@ -241,8 +241,8 @@ CREATE POLICY "Admins can manage vendor travel documents"
     )
   );
 
-CREATE POLICY "Anonymous can insert travel docs during registration"
-  ON public.vendor_travel_documents FOR INSERT
+DROP POLICY IF EXISTS "Anonymous can insert travel docs during registration" ON public.vendor_travel_documents;
+CREATE POLICY "Anonymous can insert travel docs during registration" ON public.vendor_travel_documents FOR INSERT
   TO anon
   WITH CHECK (
     EXISTS (
@@ -253,8 +253,8 @@ CREATE POLICY "Anonymous can insert travel docs during registration"
     )
   );
 
-CREATE POLICY "Vendors can view own travel documents"
-  ON public.vendor_travel_documents FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own travel documents" ON public.vendor_travel_documents;
+CREATE POLICY "Vendors can view own travel documents" ON public.vendor_travel_documents FOR SELECT
   TO authenticated
   USING (
     vendor_id IN (
@@ -268,8 +268,8 @@ CREATE POLICY "Vendors can view own travel documents"
     )
   );
 
-CREATE POLICY "Vendors can update own travel documents"
-  ON public.vendor_travel_documents FOR UPDATE
+DROP POLICY IF EXISTS "Vendors can update own travel documents" ON public.vendor_travel_documents;
+CREATE POLICY "Vendors can update own travel documents" ON public.vendor_travel_documents FOR UPDATE
   TO authenticated
   USING (
     vendor_id IN (
@@ -284,8 +284,8 @@ CREATE POLICY "Vendors can update own travel documents"
     )
   );
 
-CREATE POLICY "Vendors can delete own travel documents"
-  ON public.vendor_travel_documents FOR DELETE
+DROP POLICY IF EXISTS "Vendors can delete own travel documents" ON public.vendor_travel_documents;
+CREATE POLICY "Vendors can delete own travel documents" ON public.vendor_travel_documents FOR DELETE
   TO authenticated
   USING (
     vendor_id IN (
@@ -314,8 +314,8 @@ CREATE POLICY "Admins can manage vendor documents"
     )
   );
 
-CREATE POLICY "Anonymous can insert documents during registration"
-  ON public.vendor_documents FOR INSERT
+DROP POLICY IF EXISTS "Anonymous can insert documents during registration" ON public.vendor_documents;
+CREATE POLICY "Anonymous can insert documents during registration" ON public.vendor_documents FOR INSERT
   TO anon
   WITH CHECK (
     EXISTS (
@@ -326,8 +326,8 @@ CREATE POLICY "Anonymous can insert documents during registration"
     )
   );
 
-CREATE POLICY "Vendors can view own documents"
-  ON public.vendor_documents FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own documents" ON public.vendor_documents;
+CREATE POLICY "Vendors can view own documents" ON public.vendor_documents FOR SELECT
   TO authenticated
   USING (
     vendor_id IN (
@@ -341,8 +341,8 @@ CREATE POLICY "Vendors can view own documents"
     )
   );
 
-CREATE POLICY "Vendors can manage own documents"
-  ON public.vendor_documents FOR ALL
+DROP POLICY IF EXISTS "Vendors can manage own documents" ON public.vendor_documents;
+CREATE POLICY "Vendors can manage own documents" ON public.vendor_documents FOR ALL
   TO authenticated
   USING (
     vendor_id IN (
@@ -363,8 +363,8 @@ CREATE POLICY "Anyone can view active vendor fields"
   TO public
   USING (is_active = true);
 
-CREATE POLICY "Admins can manage vendor fields"
-  ON public.vendor_fields FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor fields" ON public.vendor_fields;
+CREATE POLICY "Admins can manage vendor fields" ON public.vendor_fields FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -386,8 +386,8 @@ CREATE POLICY "Anyone can view banks"
   TO public
   USING (is_active = true);
 
-CREATE POLICY "Admins can manage banks"
-  ON public.banks FOR ALL
+DROP POLICY IF EXISTS "Admins can manage banks" ON public.banks;
+CREATE POLICY "Admins can manage banks" ON public.banks FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -409,8 +409,8 @@ CREATE POLICY "Anyone can view cities"
   TO public
   USING (is_active = true);
 
-CREATE POLICY "Admins can manage cities"
-  ON public.cities FOR ALL
+DROP POLICY IF EXISTS "Admins can manage cities" ON public.cities;
+CREATE POLICY "Admins can manage cities" ON public.cities FOR ALL
   TO authenticated
   USING (
     EXISTS (

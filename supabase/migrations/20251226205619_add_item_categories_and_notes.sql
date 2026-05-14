@@ -65,14 +65,14 @@ DROP POLICY IF EXISTS "Admins can delete categories" ON item_categories;
 -- Policies for item_categories
 
 -- Authenticated users can read active categories
-CREATE POLICY "Authenticated users can read active categories"
-  ON item_categories FOR SELECT
+DROP POLICY IF EXISTS "Authenticated users can read active categories" ON item_categories;
+CREATE POLICY "Authenticated users can read active categories" ON item_categories FOR SELECT
   TO authenticated
   USING (is_active = true);
 
 -- Admins can insert categories
-CREATE POLICY "Admins can insert categories"
-  ON item_categories FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert categories" ON item_categories;
+CREATE POLICY "Admins can insert categories" ON item_categories FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -83,8 +83,8 @@ CREATE POLICY "Admins can insert categories"
   );
 
 -- Admins can update categories
-CREATE POLICY "Admins can update categories"
-  ON item_categories FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update categories" ON item_categories;
+CREATE POLICY "Admins can update categories" ON item_categories FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -102,8 +102,8 @@ CREATE POLICY "Admins can update categories"
   );
 
 -- Admins can delete categories
-CREATE POLICY "Admins can delete categories"
-  ON item_categories FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete categories" ON item_categories;
+CREATE POLICY "Admins can delete categories" ON item_categories FOR DELETE
   TO authenticated
   USING (
     EXISTS (

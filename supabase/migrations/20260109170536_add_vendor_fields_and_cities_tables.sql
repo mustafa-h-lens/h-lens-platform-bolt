@@ -56,40 +56,40 @@ ALTER TABLE vendor_fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cities ENABLE ROW LEVEL SECURITY;
 
 -- سياسات القراءة للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can read vendor fields"
-  ON vendor_fields
+DROP POLICY IF EXISTS "Authenticated users can read vendor fields" ON vendor_fields;
+CREATE POLICY "Authenticated users can read vendor fields" ON vendor_fields
   FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Authenticated users can read cities"
-  ON cities
+DROP POLICY IF EXISTS "Authenticated users can read cities" ON cities;
+CREATE POLICY "Authenticated users can read cities" ON cities
   FOR SELECT
   TO authenticated
   USING (true);
 
 -- سياسات الإدارة (يمكن تعديلها لاحقاً لتحديد الإداريين فقط)
-CREATE POLICY "Authenticated users can insert vendor fields"
-  ON vendor_fields
+DROP POLICY IF EXISTS "Authenticated users can insert vendor fields" ON vendor_fields;
+CREATE POLICY "Authenticated users can insert vendor fields" ON vendor_fields
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Authenticated users can update vendor fields"
-  ON vendor_fields
+DROP POLICY IF EXISTS "Authenticated users can update vendor fields" ON vendor_fields;
+CREATE POLICY "Authenticated users can update vendor fields" ON vendor_fields
   FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Authenticated users can insert cities"
-  ON cities
+DROP POLICY IF EXISTS "Authenticated users can insert cities" ON cities;
+CREATE POLICY "Authenticated users can insert cities" ON cities
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Authenticated users can update cities"
-  ON cities
+DROP POLICY IF EXISTS "Authenticated users can update cities" ON cities;
+CREATE POLICY "Authenticated users can update cities" ON cities
   FOR UPDATE
   TO authenticated
   USING (true)

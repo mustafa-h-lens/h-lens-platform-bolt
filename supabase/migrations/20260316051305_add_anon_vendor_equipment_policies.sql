@@ -14,14 +14,14 @@
   - vendor_equipment: SELECT, INSERT, UPDATE, DELETE policies for anon role
 */
 
-CREATE POLICY "Anon can read vendor_equipment"
-  ON public.vendor_equipment FOR SELECT TO anon USING (true);
+DROP POLICY IF EXISTS "Anon can read vendor_equipment" ON public.vendor_equipment;
+CREATE POLICY "Anon can read vendor_equipment" ON public.vendor_equipment FOR SELECT TO anon USING (true);
 
-CREATE POLICY "Anon can insert vendor_equipment"
-  ON public.vendor_equipment FOR INSERT TO anon WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon can insert vendor_equipment" ON public.vendor_equipment;
+CREATE POLICY "Anon can insert vendor_equipment" ON public.vendor_equipment FOR INSERT TO anon WITH CHECK (true);
 
-CREATE POLICY "Anon can update vendor_equipment"
-  ON public.vendor_equipment FOR UPDATE TO anon USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Anon can update vendor_equipment" ON public.vendor_equipment;
+CREATE POLICY "Anon can update vendor_equipment" ON public.vendor_equipment FOR UPDATE TO anon USING (true) WITH CHECK (true);
 
-CREATE POLICY "Anon can delete vendor_equipment"
-  ON public.vendor_equipment FOR DELETE TO anon USING (true);
+DROP POLICY IF EXISTS "Anon can delete vendor_equipment" ON public.vendor_equipment;
+CREATE POLICY "Anon can delete vendor_equipment" ON public.vendor_equipment FOR DELETE TO anon USING (true);

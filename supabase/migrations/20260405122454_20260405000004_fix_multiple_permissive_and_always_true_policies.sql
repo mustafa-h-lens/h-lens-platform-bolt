@@ -65,8 +65,8 @@ CREATE POLICY "Authenticated users can read sectors"
   TO authenticated
   USING ((select auth.uid()) IS NOT NULL);
 
-CREATE POLICY "Admins can manage sectors"
-  ON public.sectors
+DROP POLICY IF EXISTS "Admins can manage sectors" ON public.sectors;
+CREATE POLICY "Admins can manage sectors" ON public.sectors
   FOR ALL
   TO authenticated
   USING (
@@ -94,8 +94,8 @@ CREATE POLICY "Authenticated users can read team_entities"
   TO authenticated
   USING ((select auth.uid()) IS NOT NULL);
 
-CREATE POLICY "Admins can manage team_entities"
-  ON public.team_entities
+DROP POLICY IF EXISTS "Admins can manage team_entities" ON public.team_entities;
+CREATE POLICY "Admins can manage team_entities" ON public.team_entities
   FOR ALL
   TO authenticated
   USING (

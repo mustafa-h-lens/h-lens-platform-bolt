@@ -72,13 +72,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view own profile"
-  ON users FOR SELECT
+DROP POLICY IF EXISTS "Users can view own profile" ON users;
+CREATE POLICY "Users can view own profile" ON users FOR SELECT
   TO authenticated
   USING (auth.uid() = id);
 
-CREATE POLICY "Admins can view all users"
-  ON users FOR SELECT
+DROP POLICY IF EXISTS "Admins can view all users" ON users;
+CREATE POLICY "Admins can view all users" ON users FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -88,14 +88,14 @@ CREATE POLICY "Admins can view all users"
     )
   );
 
-CREATE POLICY "Users can update own profile"
-  ON users FOR UPDATE
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+CREATE POLICY "Users can update own profile" ON users FOR UPDATE
   TO authenticated
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "Admins can insert users"
-  ON users FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert users" ON users;
+CREATE POLICY "Admins can insert users" ON users FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -120,8 +120,8 @@ CREATE TABLE IF NOT EXISTS clients (
 
 ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view all clients"
-  ON clients FOR SELECT
+DROP POLICY IF EXISTS "Admins can view all clients" ON clients;
+CREATE POLICY "Admins can view all clients" ON clients FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -131,13 +131,13 @@ CREATE POLICY "Admins can view all clients"
     )
   );
 
-CREATE POLICY "Clients can view own data"
-  ON clients FOR SELECT
+DROP POLICY IF EXISTS "Clients can view own data" ON clients;
+CREATE POLICY "Clients can view own data" ON clients FOR SELECT
   TO authenticated
   USING (user_id = auth.uid());
 
-CREATE POLICY "Admins can insert clients"
-  ON clients FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert clients" ON clients;
+CREATE POLICY "Admins can insert clients" ON clients FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -147,8 +147,8 @@ CREATE POLICY "Admins can insert clients"
     )
   );
 
-CREATE POLICY "Admins can update clients"
-  ON clients FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update clients" ON clients;
+CREATE POLICY "Admins can update clients" ON clients FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -165,8 +165,8 @@ CREATE POLICY "Admins can update clients"
     )
   );
 
-CREATE POLICY "Admins can delete clients"
-  ON clients FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete clients" ON clients;
+CREATE POLICY "Admins can delete clients" ON clients FOR DELETE
   TO authenticated
   USING (
     EXISTS (
@@ -195,8 +195,8 @@ CREATE TABLE IF NOT EXISTS projects (
 
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view all projects"
-  ON projects FOR SELECT
+DROP POLICY IF EXISTS "Admins can view all projects" ON projects;
+CREATE POLICY "Admins can view all projects" ON projects FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -206,8 +206,8 @@ CREATE POLICY "Admins can view all projects"
     )
   );
 
-CREATE POLICY "Clients can view own projects"
-  ON projects FOR SELECT
+DROP POLICY IF EXISTS "Clients can view own projects" ON projects;
+CREATE POLICY "Clients can view own projects" ON projects FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -217,8 +217,8 @@ CREATE POLICY "Clients can view own projects"
     )
   );
 
-CREATE POLICY "Admins can insert projects"
-  ON projects FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert projects" ON projects;
+CREATE POLICY "Admins can insert projects" ON projects FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -228,8 +228,8 @@ CREATE POLICY "Admins can insert projects"
     )
   );
 
-CREATE POLICY "Admins can update projects"
-  ON projects FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update projects" ON projects;
+CREATE POLICY "Admins can update projects" ON projects FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -246,8 +246,8 @@ CREATE POLICY "Admins can update projects"
     )
   );
 
-CREATE POLICY "Admins can delete projects"
-  ON projects FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete projects" ON projects;
+CREATE POLICY "Admins can delete projects" ON projects FOR DELETE
   TO authenticated
   USING (
     EXISTS (
@@ -278,8 +278,8 @@ CREATE TABLE IF NOT EXISTS invoices (
 
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view all invoices"
-  ON invoices FOR SELECT
+DROP POLICY IF EXISTS "Admins can view all invoices" ON invoices;
+CREATE POLICY "Admins can view all invoices" ON invoices FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -289,8 +289,8 @@ CREATE POLICY "Admins can view all invoices"
     )
   );
 
-CREATE POLICY "Clients can view own invoices"
-  ON invoices FOR SELECT
+DROP POLICY IF EXISTS "Clients can view own invoices" ON invoices;
+CREATE POLICY "Clients can view own invoices" ON invoices FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -300,8 +300,8 @@ CREATE POLICY "Clients can view own invoices"
     )
   );
 
-CREATE POLICY "Admins can insert invoices"
-  ON invoices FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert invoices" ON invoices;
+CREATE POLICY "Admins can insert invoices" ON invoices FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -311,8 +311,8 @@ CREATE POLICY "Admins can insert invoices"
     )
   );
 
-CREATE POLICY "Admins can update invoices"
-  ON invoices FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update invoices" ON invoices;
+CREATE POLICY "Admins can update invoices" ON invoices FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -329,8 +329,8 @@ CREATE POLICY "Admins can update invoices"
     )
   );
 
-CREATE POLICY "Admins can delete invoices"
-  ON invoices FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete invoices" ON invoices;
+CREATE POLICY "Admins can delete invoices" ON invoices FOR DELETE
   TO authenticated
   USING (
     EXISTS (
@@ -372,14 +372,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_clients_updated_at ON clients;
 CREATE TRIGGER update_clients_updated_at BEFORE UPDATE ON clients
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_projects_updated_at ON projects;
 CREATE TRIGGER update_projects_updated_at BEFORE UPDATE ON projects
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON invoices;
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

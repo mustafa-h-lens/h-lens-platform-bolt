@@ -47,15 +47,15 @@ CREATE POLICY "Admins can insert project files"
   TO authenticated
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can update project files"
-  ON public.project_files
+DROP POLICY IF EXISTS "Admins can update project files" ON public.project_files;
+CREATE POLICY "Admins can update project files" ON public.project_files
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can delete project files"
-  ON public.project_files
+DROP POLICY IF EXISTS "Admins can delete project files" ON public.project_files;
+CREATE POLICY "Admins can delete project files" ON public.project_files
   FOR DELETE
   TO authenticated
   USING (is_admin());
@@ -69,15 +69,15 @@ CREATE POLICY "Admins can insert project items"
   TO authenticated
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can update project items"
-  ON public.project_items
+DROP POLICY IF EXISTS "Admins can update project items" ON public.project_items;
+CREATE POLICY "Admins can update project items" ON public.project_items
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can delete project items"
-  ON public.project_items
+DROP POLICY IF EXISTS "Admins can delete project items" ON public.project_items;
+CREATE POLICY "Admins can delete project items" ON public.project_items
   FOR DELETE
   TO authenticated
   USING (is_admin());
@@ -91,15 +91,15 @@ CREATE POLICY "Admins can insert project milestones"
   TO authenticated
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can update project milestones"
-  ON public.project_milestones
+DROP POLICY IF EXISTS "Admins can update project milestones" ON public.project_milestones;
+CREATE POLICY "Admins can update project milestones" ON public.project_milestones
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can delete project milestones"
-  ON public.project_milestones
+DROP POLICY IF EXISTS "Admins can delete project milestones" ON public.project_milestones;
+CREATE POLICY "Admins can delete project milestones" ON public.project_milestones
   FOR DELETE
   TO authenticated
   USING (is_admin());
@@ -113,15 +113,15 @@ CREATE POLICY "Admins can insert project tasks"
   TO authenticated
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can update project tasks"
-  ON public.project_tasks
+DROP POLICY IF EXISTS "Admins can update project tasks" ON public.project_tasks;
+CREATE POLICY "Admins can update project tasks" ON public.project_tasks
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can delete project tasks"
-  ON public.project_tasks
+DROP POLICY IF EXISTS "Admins can delete project tasks" ON public.project_tasks;
+CREATE POLICY "Admins can delete project tasks" ON public.project_tasks
   FOR DELETE
   TO authenticated
   USING (is_admin());
@@ -139,8 +139,8 @@ CREATE POLICY "Authenticated users can view role_permissions"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Super admin can insert role_permissions"
-  ON public.role_permissions
+DROP POLICY IF EXISTS "Super admin can insert role_permissions" ON public.role_permissions;
+CREATE POLICY "Super admin can insert role_permissions" ON public.role_permissions
   FOR INSERT
   TO authenticated
   WITH CHECK (EXISTS (
@@ -150,8 +150,8 @@ CREATE POLICY "Super admin can insert role_permissions"
       AND users.is_active = true
   ));
 
-CREATE POLICY "Super admin can update role_permissions"
-  ON public.role_permissions
+DROP POLICY IF EXISTS "Super admin can update role_permissions" ON public.role_permissions;
+CREATE POLICY "Super admin can update role_permissions" ON public.role_permissions
   FOR UPDATE
   TO authenticated
   USING (EXISTS (
@@ -167,8 +167,8 @@ CREATE POLICY "Super admin can update role_permissions"
       AND users.is_active = true
   ));
 
-CREATE POLICY "Super admin can delete role_permissions"
-  ON public.role_permissions
+DROP POLICY IF EXISTS "Super admin can delete role_permissions" ON public.role_permissions;
+CREATE POLICY "Super admin can delete role_permissions" ON public.role_permissions
   FOR DELETE
   TO authenticated
   USING (EXISTS (
@@ -188,8 +188,8 @@ CREATE POLICY "Authenticated users can view roles"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Super admin can insert roles"
-  ON public.roles
+DROP POLICY IF EXISTS "Super admin can insert roles" ON public.roles;
+CREATE POLICY "Super admin can insert roles" ON public.roles
   FOR INSERT
   TO authenticated
   WITH CHECK (EXISTS (
@@ -199,8 +199,8 @@ CREATE POLICY "Super admin can insert roles"
       AND users.is_active = true
   ));
 
-CREATE POLICY "Super admin can update roles"
-  ON public.roles
+DROP POLICY IF EXISTS "Super admin can update roles" ON public.roles;
+CREATE POLICY "Super admin can update roles" ON public.roles
   FOR UPDATE
   TO authenticated
   USING (EXISTS (
@@ -216,8 +216,8 @@ CREATE POLICY "Super admin can update roles"
       AND users.is_active = true
   ));
 
-CREATE POLICY "Super admin can delete roles"
-  ON public.roles
+DROP POLICY IF EXISTS "Super admin can delete roles" ON public.roles;
+CREATE POLICY "Super admin can delete roles" ON public.roles
   FOR DELETE
   TO authenticated
   USING (EXISTS (
@@ -237,15 +237,15 @@ CREATE POLICY "Admins can insert service items"
   TO authenticated
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can update service items"
-  ON public.service_items
+DROP POLICY IF EXISTS "Admins can update service items" ON public.service_items;
+CREATE POLICY "Admins can update service items" ON public.service_items
   FOR UPDATE
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Admins can delete service items"
-  ON public.service_items
+DROP POLICY IF EXISTS "Admins can delete service items" ON public.service_items;
+CREATE POLICY "Admins can delete service items" ON public.service_items
   FOR DELETE
   TO authenticated
   USING (is_admin());
@@ -309,8 +309,8 @@ CREATE POLICY "Admins can insert vendor fields"
       AND users.role = ANY(ARRAY['admin','super_admin'])
   ));
 
-CREATE POLICY "Admins can update vendor fields"
-  ON public.vendor_fields
+DROP POLICY IF EXISTS "Admins can update vendor fields" ON public.vendor_fields;
+CREATE POLICY "Admins can update vendor fields" ON public.vendor_fields
   FOR UPDATE
   TO authenticated
   USING (EXISTS (
@@ -324,8 +324,8 @@ CREATE POLICY "Admins can update vendor fields"
       AND users.role = ANY(ARRAY['admin','super_admin'])
   ));
 
-CREATE POLICY "Admins can delete vendor fields"
-  ON public.vendor_fields
+DROP POLICY IF EXISTS "Admins can delete vendor fields" ON public.vendor_fields;
+CREATE POLICY "Admins can delete vendor fields" ON public.vendor_fields
   FOR DELETE
   TO authenticated
   USING (EXISTS (
@@ -334,8 +334,8 @@ CREATE POLICY "Admins can delete vendor fields"
       AND users.role = ANY(ARRAY['admin','super_admin'])
   ));
 
-CREATE POLICY "Authenticated users can view vendor fields"
-  ON public.vendor_fields
+DROP POLICY IF EXISTS "Authenticated users can view vendor fields" ON public.vendor_fields;
+CREATE POLICY "Authenticated users can view vendor fields" ON public.vendor_fields
   FOR SELECT
   TO authenticated
   USING (true);

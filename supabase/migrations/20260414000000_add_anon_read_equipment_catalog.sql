@@ -14,25 +14,25 @@
 */
 
 -- equipment_categories: allow anon to read
-CREATE POLICY "Anon can read equipment_categories"
-  ON public.equipment_categories FOR SELECT
+DROP POLICY IF EXISTS "Anon can read equipment_categories" ON public.equipment_categories;
+CREATE POLICY "Anon can read equipment_categories" ON public.equipment_categories FOR SELECT
   TO anon
   USING (true);
 
 -- equipment_brands: allow anon to read
-CREATE POLICY "Anon can read equipment_brands"
-  ON public.equipment_brands FOR SELECT
+DROP POLICY IF EXISTS "Anon can read equipment_brands" ON public.equipment_brands;
+CREATE POLICY "Anon can read equipment_brands" ON public.equipment_brands FOR SELECT
   TO anon
   USING (true);
 
 -- equipment_catalog: allow anon to read
-CREATE POLICY "Anon can read equipment_catalog"
-  ON public.equipment_catalog FOR SELECT
+DROP POLICY IF EXISTS "Anon can read equipment_catalog" ON public.equipment_catalog;
+CREATE POLICY "Anon can read equipment_catalog" ON public.equipment_catalog FOR SELECT
   TO anon
   USING (true);
 
 -- brand_categories: allow anon to read (needed for filtering brands by category)
-CREATE POLICY "Anon can read brand_categories"
-  ON public.brand_categories FOR SELECT
+DROP POLICY IF EXISTS "Anon can read brand_categories" ON public.brand_categories;
+CREATE POLICY "Anon can read brand_categories" ON public.brand_categories FOR SELECT
   TO anon
   USING (true);

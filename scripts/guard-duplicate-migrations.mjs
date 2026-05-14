@@ -7,11 +7,10 @@ import { join } from 'path';
 const dir = 'D:/Half-Lens/h-lens-platform-bolt/supabase/migrations';
 const all = readdirSync(dir).filter(f => f.endsWith('.sql'));
 
-// Targets: the entire 20260314xxxxxx cluster + the duplicate add_expense_payments
-const targets = all.filter(f =>
-  /^20260314\d{6}_/.test(f) ||
-  /^20260308000000_add_expense_payments/.test(f)
-);
+// Targets: every migration (the guards are idempotent — DROP IF EXISTS is
+// a no-op when the object isn't there, and CREATE IF NOT EXISTS preserves
+// existing intent on a re-run).
+const targets = all;
 
 let totalEdits = 0;
 for (const f of targets) {

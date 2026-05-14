@@ -16,6 +16,7 @@ BEGIN
     SELECT 1 FROM pg_constraint 
     WHERE conname = 'vendors_email_unique'
   ) THEN
-    ALTER TABLE vendors ADD CONSTRAINT vendors_email_unique UNIQUE (email);
+    ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_email_unique;
+ALTER TABLE vendors ADD CONSTRAINT vendors_email_unique UNIQUE (email);
   END IF;
 END $$;

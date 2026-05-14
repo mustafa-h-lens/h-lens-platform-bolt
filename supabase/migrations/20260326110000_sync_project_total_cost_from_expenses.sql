@@ -52,8 +52,8 @@ $$;
 
 -- 2. Create trigger on vendor_invoices
 DROP TRIGGER IF EXISTS trg_sync_project_total_cost ON public.vendor_invoices;
-CREATE TRIGGER trg_sync_project_total_cost
-  AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
+DROP TRIGGER IF EXISTS trg_sync_project_total_cost ON public.vendor_invoices;
+CREATE TRIGGER trg_sync_project_total_cost AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_project_total_cost();
 

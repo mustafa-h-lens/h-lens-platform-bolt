@@ -19,14 +19,14 @@ CREATE TABLE IF NOT EXISTS public.client_document_types (
 ALTER TABLE public.client_document_types ENABLE ROW LEVEL SECURITY;
 
 -- 3. Everyone can read active types
-CREATE POLICY "Authenticated users can view client document types"
-  ON public.client_document_types FOR SELECT
+DROP POLICY IF EXISTS "Authenticated users can view client document types" ON public.client_document_types;
+CREATE POLICY "Authenticated users can view client document types" ON public.client_document_types FOR SELECT
   TO authenticated
   USING (true);
 
 -- 4. Only admins can manage
-CREATE POLICY "Admins can manage client document types"
-  ON public.client_document_types FOR ALL
+DROP POLICY IF EXISTS "Admins can manage client document types" ON public.client_document_types;
+CREATE POLICY "Admins can manage client document types" ON public.client_document_types FOR ALL
   TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
@@ -49,7 +49,7 @@ ALTER TABLE public.client_documents
 ADD COLUMN IF NOT EXISTS document_type_id uuid REFERENCES public.client_document_types(id) ON DELETE SET NULL;
 
 -- 7. Updated_at trigger
-CREATE TRIGGER client_document_types_updated_at
-  BEFORE UPDATE ON public.client_document_types
+DROP TRIGGER IF EXISTS client_document_types_updated_at ON public.client_document_types;
+CREATE TRIGGER client_document_types_updated_at BEFORE UPDATE ON public.client_document_types
   FOR EACH ROW
   EXECUTE FUNCTION public.update_roles_updated_at();
