@@ -61,7 +61,15 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_vendor_documents_uploaded_by ON public.vendor_documents(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_vendor_financial_data_bank_id ON public.vendor_financial_data(bank_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_invoices_client_id ON public.vendor_invoices(client_id);
-CREATE INDEX IF NOT EXISTS idx_vendor_registration_drafts_bank_id ON public.vendor_registration_drafts(bank_id);
+-- vendor_registration_drafts.bank_id only exists on prod via a manual addition;
+-- the column was never added through any migration in the repo. Guard so
+-- from-scratch replays (Supabase Branching) don't blow up.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='vendor_registration_drafts' AND column_name='bank_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_vendor_registration_drafts_bank_id ON public.vendor_registration_drafts(bank_id);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_vendors_bank_id ON public.vendors(bank_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_reviewed_by ON public.vendors(reviewed_by);
 
