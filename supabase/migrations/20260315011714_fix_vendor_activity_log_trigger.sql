@@ -13,7 +13,14 @@
   3. Changes
     - Modified `log_vendor_changes()` function to use `action` instead of `action_type`
     - Removed `entity_type` since it's redundant (always 'vendor' for this table)
+
+  4. Schema backfill
+    - The original create-table at 20260314225353 used `action_type`, but production
+      drift-added an `action` column manually. Add it idempotently here so a fresh
+      replay (Supabase Branching) has the column the trigger requires.
 */
+
+ALTER TABLE public.vendor_activity_log ADD COLUMN IF NOT EXISTS action text;
 
 CREATE OR REPLACE FUNCTION public.log_vendor_changes()
 RETURNS trigger
