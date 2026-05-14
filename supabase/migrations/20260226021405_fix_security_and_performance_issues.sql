@@ -37,6 +37,66 @@
 */
 
 -- ========================================
+-- الجزء 0: Backfill prod schema drift (idempotent)
+-- ========================================
+-- Production carries several tables/columns that were added manually and
+-- never captured by any migration in the repo. The blocks below ensure
+-- those exist before the rest of this migration references them, so a
+-- from-scratch replay (Supabase Branching, local supabase start, etc.)
+-- doesn't fail with "relation does not exist". On prod every block is a
+-- no-op because the objects already exist.
+
+-- vendors.reviewed_by
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendors' AND column_name='reviewed_by'
+  ) THEN
+    ALTER TABLE public.vendors ADD COLUMN reviewed_by uuid REFERENCES public.users(id);
+  END IF;
+END $$;
+
+-- vendor_registration_drafts.bank_id
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendor_registration_drafts' AND column_name='bank_id'
+  ) THEN
+    ALTER TABLE public.vendor_registration_drafts ADD COLUMN bank_id uuid REFERENCES public.banks(id);
+  END IF;
+END $$;
+
+-- vendor_notifications (in-app vendor portal notifications)
+CREATE TABLE IF NOT EXISTS public.vendor_notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid NOT NULL REFERENCES public.vendors(id) ON DELETE CASCADE,
+  type text DEFAULT 'general',
+  title text,
+  message text,
+  read boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_vendor_id ON public.vendor_notifications(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_created_at ON public.vendor_notifications(created_at DESC);
+ALTER TABLE public.vendor_notifications ENABLE ROW LEVEL SECURITY;
+
+-- vendor_activity_log (audit trail referenced by indexes + policies below)
+CREATE TABLE IF NOT EXISTS public.vendor_activity_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  performed_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  action_type text,
+  entity_type text,
+  details jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_vendor_id ON public.vendor_activity_log(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_created_at ON public.vendor_activity_log(created_at DESC);
+ALTER TABLE public.vendor_activity_log ENABLE ROW LEVEL SECURITY;
+
+-- ========================================
 -- الجزء 1: إضافة Indexes للـ Foreign Keys
 -- ========================================
 
