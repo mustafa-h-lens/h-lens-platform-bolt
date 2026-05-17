@@ -56,6 +56,7 @@ BEGIN
   END IF;
 END $$;
 
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 ALTER TABLE users ADD CONSTRAINT users_role_check
   CHECK (role IN ('admin', 'super_admin', 'client', 'client_user'));
 
@@ -76,8 +77,8 @@ CREATE INDEX IF NOT EXISTS idx_user_client_access_client_id ON user_client_acces
 
 ALTER TABLE user_client_access ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can manage client access"
-  ON user_client_access FOR ALL
+DROP POLICY IF EXISTS "Admins can manage client access" ON user_client_access;
+CREATE POLICY "Admins can manage client access" ON user_client_access FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
@@ -104,6 +105,7 @@ BEGIN
   END IF;
 END $$;
 
+ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_status_check;
 ALTER TABLE projects ADD CONSTRAINT projects_status_check
   CHECK (status IN (
     'request', 'quoted', 'invoiced', 'po_issued',
@@ -152,14 +154,14 @@ CREATE INDEX IF NOT EXISTS idx_service_items_created_by ON service_items(created
 
 ALTER TABLE service_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can manage service items"
-  ON service_items FOR ALL
+DROP POLICY IF EXISTS "Admins can manage service items" ON service_items;
+CREATE POLICY "Admins can manage service items" ON service_items FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "All authenticated users can view active items"
-  ON service_items FOR SELECT
+DROP POLICY IF EXISTS "All authenticated users can view active items" ON service_items;
+CREATE POLICY "All authenticated users can view active items" ON service_items FOR SELECT
   TO authenticated
   USING (is_active = true);
 
@@ -187,14 +189,14 @@ CREATE INDEX IF NOT EXISTS idx_project_items_service_item_id ON project_items(se
 
 ALTER TABLE project_items ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can manage project items"
-  ON project_items FOR ALL
+DROP POLICY IF EXISTS "Admins can manage project items" ON project_items;
+CREATE POLICY "Admins can manage project items" ON project_items FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Clients view own project items"
-  ON project_items FOR SELECT
+DROP POLICY IF EXISTS "Clients view own project items" ON project_items;
+CREATE POLICY "Clients view own project items" ON project_items FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -221,8 +223,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS update_project_total_on_items_change ON project_items;
-CREATE TRIGGER update_project_total_on_items_change
-AFTER INSERT OR UPDATE OR DELETE ON project_items
+DROP TRIGGER IF EXISTS update_project_total_on_items_change ON project_items;
+CREATE TRIGGER update_project_total_on_items_change AFTER INSERT OR UPDATE OR DELETE ON project_items
 FOR EACH ROW EXECUTE FUNCTION update_project_total_from_items();
 
 -- ================================================
@@ -249,14 +251,14 @@ CREATE INDEX IF NOT EXISTS idx_project_files_uploaded_by ON project_files(upload
 
 ALTER TABLE project_files ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins manage project files"
-  ON project_files FOR ALL
+DROP POLICY IF EXISTS "Admins manage project files" ON project_files;
+CREATE POLICY "Admins manage project files" ON project_files FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Clients view own project files"
-  ON project_files FOR SELECT
+DROP POLICY IF EXISTS "Clients view own project files" ON project_files;
+CREATE POLICY "Clients view own project files" ON project_files FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -291,14 +293,14 @@ CREATE INDEX IF NOT EXISTS idx_project_milestones_created_by ON project_mileston
 
 ALTER TABLE project_milestones ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins manage milestones"
-  ON project_milestones FOR ALL
+DROP POLICY IF EXISTS "Admins manage milestones" ON project_milestones;
+CREATE POLICY "Admins manage milestones" ON project_milestones FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Clients view own project milestones"
-  ON project_milestones FOR SELECT
+DROP POLICY IF EXISTS "Clients view own project milestones" ON project_milestones;
+CREATE POLICY "Clients view own project milestones" ON project_milestones FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -331,13 +333,13 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_action_type ON activity_logs(action
 
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins view all activity logs"
-  ON activity_logs FOR SELECT
+DROP POLICY IF EXISTS "Admins view all activity logs" ON activity_logs;
+CREATE POLICY "Admins view all activity logs" ON activity_logs FOR SELECT
   TO authenticated
   USING (is_admin());
 
-CREATE POLICY "Clients view own project activity"
-  ON activity_logs FOR SELECT
+DROP POLICY IF EXISTS "Clients view own project activity" ON activity_logs;
+CREATE POLICY "Clients view own project activity" ON activity_logs FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -390,8 +392,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS project_status_change_trigger ON projects;
-CREATE TRIGGER project_status_change_trigger
-AFTER INSERT OR UPDATE ON projects
+DROP TRIGGER IF EXISTS project_status_change_trigger ON projects;
+CREATE TRIGGER project_status_change_trigger AFTER INSERT OR UPDATE ON projects
 FOR EACH ROW EXECUTE FUNCTION log_project_status_change();
 
 -- Trigger لتسجيل إضافة/تعديل/حذف بنود المشروع
@@ -423,8 +425,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS project_item_changes_trigger ON project_items;
-CREATE TRIGGER project_item_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON project_items
+DROP TRIGGER IF EXISTS project_item_changes_trigger ON project_items;
+CREATE TRIGGER project_item_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON project_items
 FOR EACH ROW EXECUTE FUNCTION log_project_item_changes();
 
 -- Trigger لتسجيل رفع الملفات
@@ -450,8 +452,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS project_file_upload_trigger ON project_files;
-CREATE TRIGGER project_file_upload_trigger
-AFTER INSERT OR DELETE ON project_files
+DROP TRIGGER IF EXISTS project_file_upload_trigger ON project_files;
+CREATE TRIGGER project_file_upload_trigger AFTER INSERT OR DELETE ON project_files
 FOR EACH ROW EXECUTE FUNCTION log_project_file_upload();
 
 -- Trigger لتسجيل إنشاء الفواتير
@@ -489,8 +491,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS invoice_creation_trigger ON invoices;
-CREATE TRIGGER invoice_creation_trigger
-AFTER INSERT OR UPDATE ON invoices
+DROP TRIGGER IF EXISTS invoice_creation_trigger ON invoices;
+CREATE TRIGGER invoice_creation_trigger AFTER INSERT OR UPDATE ON invoices
 FOR EACH ROW EXECUTE FUNCTION log_invoice_creation();
 
 -- ================================================
@@ -518,14 +520,14 @@ CREATE INDEX IF NOT EXISTS idx_project_tasks_due_date ON project_tasks(due_date)
 
 ALTER TABLE project_tasks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins manage project tasks"
-  ON project_tasks FOR ALL
+DROP POLICY IF EXISTS "Admins manage project tasks" ON project_tasks;
+CREATE POLICY "Admins manage project tasks" ON project_tasks FOR ALL
   TO authenticated
   USING (is_admin())
   WITH CHECK (is_admin());
 
-CREATE POLICY "Clients view own project tasks"
-  ON project_tasks FOR SELECT
+DROP POLICY IF EXISTS "Clients view own project tasks" ON project_tasks;
+CREATE POLICY "Clients view own project tasks" ON project_tasks FOR SELECT
   TO authenticated
   USING (
     EXISTS (

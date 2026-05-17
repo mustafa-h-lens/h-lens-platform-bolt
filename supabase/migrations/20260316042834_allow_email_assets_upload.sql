@@ -13,8 +13,8 @@ BEGIN
       AND tablename = 'objects'
       AND policyname = 'Service role can upload email assets'
   ) THEN
-    CREATE POLICY "Service role can upload email assets"
-      ON storage.objects
+    DROP POLICY IF EXISTS "Service role can upload email assets" ON storage.objects;
+CREATE POLICY "Service role can upload email assets" ON storage.objects
       FOR INSERT
       TO service_role
       WITH CHECK (bucket_id = 'email-assets');
@@ -26,8 +26,8 @@ BEGIN
       AND tablename = 'objects'
       AND policyname = 'Public can read email assets'
   ) THEN
-    CREATE POLICY "Public can read email assets"
-      ON storage.objects
+    DROP POLICY IF EXISTS "Public can read email assets" ON storage.objects;
+CREATE POLICY "Public can read email assets" ON storage.objects
       FOR SELECT
       TO public
       USING (bucket_id = 'email-assets');

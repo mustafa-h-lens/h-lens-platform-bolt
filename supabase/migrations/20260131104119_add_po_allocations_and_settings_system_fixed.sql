@@ -92,8 +92,8 @@ BEGIN
 END $$;
 
 -- إنشاء فهارس لتحسين الأداء
-CREATE INDEX idx_task_po_allocations_task_id ON task_po_allocations(task_id);
-CREATE INDEX idx_task_po_allocations_po_id ON task_po_allocations(po_id);
+CREATE INDEX IF NOT EXISTS idx_task_po_allocations_task_id ON task_po_allocations(task_id);
+CREATE INDEX IF NOT EXISTS idx_task_po_allocations_po_id ON task_po_allocations(po_id);
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status);
 
 -- تفعيل RLS على الجداول الجديدة
@@ -101,35 +101,35 @@ ALTER TABLE task_po_allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE po_settings ENABLE ROW LEVEL SECURITY;
 
 -- سياسات الأمان لجدول task_po_allocations
-CREATE POLICY "Users can view task allocations"
-  ON task_po_allocations FOR SELECT
+DROP POLICY IF EXISTS "Users can view task allocations" ON task_po_allocations;
+CREATE POLICY "Users can view task allocations" ON task_po_allocations FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert task allocations"
-  ON task_po_allocations FOR INSERT
+DROP POLICY IF EXISTS "Users can insert task allocations" ON task_po_allocations;
+CREATE POLICY "Users can insert task allocations" ON task_po_allocations FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update task allocations"
-  ON task_po_allocations FOR UPDATE
+DROP POLICY IF EXISTS "Users can update task allocations" ON task_po_allocations;
+CREATE POLICY "Users can update task allocations" ON task_po_allocations FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Users can delete task allocations"
-  ON task_po_allocations FOR DELETE
+DROP POLICY IF EXISTS "Users can delete task allocations" ON task_po_allocations;
+CREATE POLICY "Users can delete task allocations" ON task_po_allocations FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات الأمان لجدول po_settings
-CREATE POLICY "Users can view PO settings"
-  ON po_settings FOR SELECT
+DROP POLICY IF EXISTS "Users can view PO settings" ON po_settings;
+CREATE POLICY "Users can view PO settings" ON po_settings FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can update PO settings"
-  ON po_settings FOR UPDATE
+DROP POLICY IF EXISTS "Users can update PO settings" ON po_settings;
+CREATE POLICY "Users can update PO settings" ON po_settings FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
@@ -144,12 +144,12 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- تطبيق الدالة على الجداول الجديدة
-CREATE TRIGGER update_task_po_allocations_updated_at
-  BEFORE UPDATE ON task_po_allocations
+DROP TRIGGER IF EXISTS update_task_po_allocations_updated_at ON task_po_allocations;
+CREATE TRIGGER update_task_po_allocations_updated_at BEFORE UPDATE ON task_po_allocations
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_po_settings_updated_at
-  BEFORE UPDATE ON po_settings
+DROP TRIGGER IF EXISTS update_po_settings_updated_at ON po_settings;
+CREATE TRIGGER update_po_settings_updated_at BEFORE UPDATE ON po_settings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();

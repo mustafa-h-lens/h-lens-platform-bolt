@@ -60,8 +60,8 @@ END;
 $$;
 
 -- Recreate the trigger
-CREATE TRIGGER trg_update_expense_from_payments
-  AFTER INSERT OR UPDATE OR DELETE ON public.expense_payments
+DROP TRIGGER IF EXISTS trg_update_expense_from_payments ON public.expense_payments;
+CREATE TRIGGER trg_update_expense_from_payments AFTER INSERT OR UPDATE OR DELETE ON public.expense_payments
   FOR EACH ROW
   EXECUTE FUNCTION public.update_expense_from_payments();
 

@@ -37,6 +37,111 @@
 */
 
 -- ========================================
+-- الجزء 0: Backfill prod schema drift (idempotent)
+-- ========================================
+-- Production carries several tables/columns that were added manually and
+-- never captured by any migration in the repo. The blocks below ensure
+-- those exist before the rest of this migration references them, so a
+-- from-scratch replay (Supabase Branching, local supabase start, etc.)
+-- doesn't fail with "relation does not exist". On prod every block is a
+-- no-op because the objects already exist.
+
+-- vendors.reviewed_by
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendors' AND column_name='reviewed_by'
+  ) THEN
+    ALTER TABLE public.vendors ADD COLUMN reviewed_by uuid REFERENCES public.users(id);
+  END IF;
+END $$;
+
+-- vendors.user_id (auth-user link — referenced by RLS policies below)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendors' AND column_name='user_id'
+  ) THEN
+    ALTER TABLE public.vendors ADD COLUMN user_id uuid REFERENCES public.users(id);
+  END IF;
+END $$;
+
+-- vendor_registration_drafts.bank_id
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendor_registration_drafts' AND column_name='bank_id'
+  ) THEN
+    ALTER TABLE public.vendor_registration_drafts ADD COLUMN bank_id uuid REFERENCES public.banks(id);
+  END IF;
+END $$;
+
+-- vendor_notifications (in-app vendor portal notifications)
+CREATE TABLE IF NOT EXISTS public.vendor_notifications (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid NOT NULL REFERENCES public.vendors(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  type text DEFAULT 'general',
+  title text,
+  message text,
+  read boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='vendor_notifications' AND column_name='user_id'
+  ) THEN
+    ALTER TABLE public.vendor_notifications ADD COLUMN user_id uuid REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_vendor_id ON public.vendor_notifications(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_notifications_created_at ON public.vendor_notifications(created_at DESC);
+ALTER TABLE public.vendor_notifications ENABLE ROW LEVEL SECURITY;
+
+-- vendor_activity_log (audit trail referenced by indexes + policies below)
+CREATE TABLE IF NOT EXISTS public.vendor_activity_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  performed_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  action_type text,
+  entity_type text,
+  details jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_vendor_id ON public.vendor_activity_log(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_created_at ON public.vendor_activity_log(created_at DESC);
+ALTER TABLE public.vendor_activity_log ENABLE ROW LEVEL SECURITY;
+
+-- legal_pages — terms & privacy content (prod-drift, manually added)
+CREATE TABLE IF NOT EXISTS public.legal_pages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  type text NOT NULL,
+  content jsonb DEFAULT '{}'::jsonb,
+  version text,
+  is_active boolean DEFAULT true,
+  created_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.legal_pages ENABLE ROW LEVEL SECURITY;
+
+-- legal_pages_history — version history for legal_pages (prod-drift)
+CREATE TABLE IF NOT EXISTS public.legal_pages_history (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  legal_page_id uuid REFERENCES public.legal_pages(id) ON DELETE CASCADE,
+  content jsonb,
+  version text,
+  created_by uuid REFERENCES public.users(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE public.legal_pages_history ENABLE ROW LEVEL SECURITY;
+
+-- ========================================
 -- الجزء 1: إضافة Indexes للـ Foreign Keys
 -- ========================================
 
@@ -50,11 +155,26 @@ CREATE INDEX IF NOT EXISTS idx_project_tasks_created_by ON public.project_tasks(
 CREATE INDEX IF NOT EXISTS idx_projects_created_by ON public.projects(created_by);
 CREATE INDEX IF NOT EXISTS idx_purchase_orders_created_by ON public.purchase_orders(created_by);
 CREATE INDEX IF NOT EXISTS idx_settings_config_updated_by ON public.settings_config(updated_by);
-CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_performed_by ON public.vendor_activity_log(performed_by);
+-- vendor_activity_log is created in a LATER migration (20260314170000); guard so
+-- a from-scratch replay (e.g. Supabase Branching) doesn't blow up here.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='vendor_activity_log') THEN
+    CREATE INDEX IF NOT EXISTS idx_vendor_activity_log_performed_by ON public.vendor_activity_log(performed_by);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_vendor_documents_uploaded_by ON public.vendor_documents(uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_vendor_financial_data_bank_id ON public.vendor_financial_data(bank_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_invoices_client_id ON public.vendor_invoices(client_id);
-CREATE INDEX IF NOT EXISTS idx_vendor_registration_drafts_bank_id ON public.vendor_registration_drafts(bank_id);
+-- vendor_registration_drafts.bank_id only exists on prod via a manual addition;
+-- the column was never added through any migration in the repo. Guard so
+-- from-scratch replays (Supabase Branching) don't blow up.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='vendor_registration_drafts' AND column_name='bank_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_vendor_registration_drafts_bank_id ON public.vendor_registration_drafts(bank_id);
+  END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_vendors_bank_id ON public.vendors(bank_id);
 CREATE INDEX IF NOT EXISTS idx_vendors_reviewed_by ON public.vendors(reviewed_by);
 
@@ -1427,18 +1547,24 @@ CREATE POLICY "يمكن تحديث رموز التفعيل عند الاستخ"
 -- الجزء 36: إصلاح Policies - Vendor Activity Log
 -- ========================================
 
-DROP POLICY IF EXISTS "المسؤولون يمكنهم إنشاء سجلات أنشط" ON public.vendor_activity_log;
-CREATE POLICY "المسؤولون يمكنهم إنشاء سجلات أنشط"
-  ON public.vendor_activity_log
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.users
-      WHERE users.id = (select auth.uid())
-      AND users.role IN ('admin', 'super_admin')
-    )
-  );
+-- vendor_activity_log is created in a LATER migration; guard for from-scratch replay.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='vendor_activity_log') THEN
+    DROP POLICY IF EXISTS "المسؤولون يمكنهم إنشاء سجلات أنشط" ON public.vendor_activity_log;
+    CREATE POLICY "المسؤولون يمكنهم إنشاء سجلات أنشط"
+      ON public.vendor_activity_log
+      FOR INSERT
+      TO authenticated
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM public.users
+          WHERE users.id = (select auth.uid())
+          AND users.role IN ('admin', 'super_admin')
+        )
+      );
+  END IF;
+END $$;
 
 -- ========================================
 -- الجزء 37: إصلاح Policies - Vendor Registration Drafts (Public)

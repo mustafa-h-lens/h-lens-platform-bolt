@@ -26,13 +26,13 @@ ON public.client_documents(client_id);
 ALTER TABLE public.client_documents ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS policies
-CREATE POLICY "Admins can view client documents"
-  ON public.client_documents FOR SELECT
+DROP POLICY IF EXISTS "Admins can view client documents" ON public.client_documents;
+CREATE POLICY "Admins can view client documents" ON public.client_documents FOR SELECT
   TO authenticated
   USING (public.is_admin());
 
-CREATE POLICY "Admins can manage client documents"
-  ON public.client_documents FOR ALL
+DROP POLICY IF EXISTS "Admins can manage client documents" ON public.client_documents;
+CREATE POLICY "Admins can manage client documents" ON public.client_documents FOR ALL
   TO authenticated
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
@@ -55,22 +55,22 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- 6. Storage policies
-CREATE POLICY "Public read client documents"
-  ON storage.objects FOR SELECT
+DROP POLICY IF EXISTS "Public read client documents" ON storage.objects;
+CREATE POLICY "Public read client documents" ON storage.objects FOR SELECT
   TO public
   USING (bucket_id = 'client-documents');
 
-CREATE POLICY "Authenticated upload client documents"
-  ON storage.objects FOR INSERT
+DROP POLICY IF EXISTS "Authenticated upload client documents" ON storage.objects;
+CREATE POLICY "Authenticated upload client documents" ON storage.objects FOR INSERT
   TO authenticated
   WITH CHECK (bucket_id = 'client-documents');
 
-CREATE POLICY "Authenticated update client documents"
-  ON storage.objects FOR UPDATE
+DROP POLICY IF EXISTS "Authenticated update client documents" ON storage.objects;
+CREATE POLICY "Authenticated update client documents" ON storage.objects FOR UPDATE
   TO authenticated
   USING (bucket_id = 'client-documents');
 
-CREATE POLICY "Authenticated delete client documents"
-  ON storage.objects FOR DELETE
+DROP POLICY IF EXISTS "Authenticated delete client documents" ON storage.objects;
+CREATE POLICY "Authenticated delete client documents" ON storage.objects FOR DELETE
   TO authenticated
   USING (bucket_id = 'client-documents');

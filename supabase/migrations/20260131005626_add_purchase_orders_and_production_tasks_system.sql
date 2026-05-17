@@ -120,73 +120,73 @@ ALTER TABLE task_po_allocations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE po_settings ENABLE ROW LEVEL SECURITY;
 
 -- سياسات أوامر الشراء
-CREATE POLICY "Users can view purchase orders"
-  ON purchase_orders FOR SELECT
+DROP POLICY IF EXISTS "Users can view purchase orders" ON purchase_orders;
+CREATE POLICY "Users can view purchase orders" ON purchase_orders FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert purchase orders"
-  ON purchase_orders FOR INSERT
+DROP POLICY IF EXISTS "Users can insert purchase orders" ON purchase_orders;
+CREATE POLICY "Users can insert purchase orders" ON purchase_orders FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = created_by);
 
-CREATE POLICY "Users can update purchase orders"
-  ON purchase_orders FOR UPDATE
+DROP POLICY IF EXISTS "Users can update purchase orders" ON purchase_orders;
+CREATE POLICY "Users can update purchase orders" ON purchase_orders FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Users can delete purchase orders"
-  ON purchase_orders FOR DELETE
+DROP POLICY IF EXISTS "Users can delete purchase orders" ON purchase_orders;
+CREATE POLICY "Users can delete purchase orders" ON purchase_orders FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات المهام الإنتاجية
-CREATE POLICY "Users can view production tasks"
-  ON production_tasks FOR SELECT
+DROP POLICY IF EXISTS "Users can view production tasks" ON production_tasks;
+CREATE POLICY "Users can view production tasks" ON production_tasks FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert production tasks"
-  ON production_tasks FOR INSERT
+DROP POLICY IF EXISTS "Users can insert production tasks" ON production_tasks;
+CREATE POLICY "Users can insert production tasks" ON production_tasks FOR INSERT
   TO authenticated
   WITH CHECK (auth.uid() = created_by);
 
-CREATE POLICY "Users can update production tasks"
-  ON production_tasks FOR UPDATE
+DROP POLICY IF EXISTS "Users can update production tasks" ON production_tasks;
+CREATE POLICY "Users can update production tasks" ON production_tasks FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "Users can delete production tasks"
-  ON production_tasks FOR DELETE
+DROP POLICY IF EXISTS "Users can delete production tasks" ON production_tasks;
+CREATE POLICY "Users can delete production tasks" ON production_tasks FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات التخصيصات
-CREATE POLICY "Users can view allocations"
-  ON task_po_allocations FOR SELECT
+DROP POLICY IF EXISTS "Users can view allocations" ON task_po_allocations;
+CREATE POLICY "Users can view allocations" ON task_po_allocations FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert allocations"
-  ON task_po_allocations FOR INSERT
+DROP POLICY IF EXISTS "Users can insert allocations" ON task_po_allocations;
+CREATE POLICY "Users can insert allocations" ON task_po_allocations FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can delete allocations"
-  ON task_po_allocations FOR DELETE
+DROP POLICY IF EXISTS "Users can delete allocations" ON task_po_allocations;
+CREATE POLICY "Users can delete allocations" ON task_po_allocations FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات الإعدادات
-CREATE POLICY "Users can view settings"
-  ON po_settings FOR SELECT
+DROP POLICY IF EXISTS "Users can view settings" ON po_settings;
+CREATE POLICY "Users can view settings" ON po_settings FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Admins can update settings"
-  ON po_settings FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update settings" ON po_settings;
+CREATE POLICY "Admins can update settings" ON po_settings FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
@@ -226,8 +226,8 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger لتحديث حالة PO
 DROP TRIGGER IF EXISTS trigger_update_po_status ON purchase_orders;
-CREATE TRIGGER trigger_update_po_status
-  BEFORE INSERT OR UPDATE OF used_amount, total_amount ON purchase_orders
+DROP TRIGGER IF EXISTS trigger_update_po_status ON purchase_orders;
+CREATE TRIGGER trigger_update_po_status BEFORE INSERT OR UPDATE OF used_amount, total_amount ON purchase_orders
   FOR EACH ROW
   EXECUTE FUNCTION update_po_status();
 
@@ -251,8 +251,8 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger لمزامنة used_amount
 DROP TRIGGER IF EXISTS trigger_sync_po_used_amount ON task_po_allocations;
-CREATE TRIGGER trigger_sync_po_used_amount
-  AFTER INSERT OR DELETE ON task_po_allocations
+DROP TRIGGER IF EXISTS trigger_sync_po_used_amount ON task_po_allocations;
+CREATE TRIGGER trigger_sync_po_used_amount AFTER INSERT OR DELETE ON task_po_allocations
   FOR EACH ROW
   EXECUTE FUNCTION sync_po_used_amount();
 
@@ -278,7 +278,7 @@ $$ LANGUAGE plpgsql;
 
 -- Trigger لمزامنة allocated_amount
 DROP TRIGGER IF EXISTS trigger_sync_task_allocated_amount ON task_po_allocations;
-CREATE TRIGGER trigger_sync_task_allocated_amount
-  AFTER INSERT OR DELETE ON task_po_allocations
+DROP TRIGGER IF EXISTS trigger_sync_task_allocated_amount ON task_po_allocations;
+CREATE TRIGGER trigger_sync_task_allocated_amount AFTER INSERT OR DELETE ON task_po_allocations
   FOR EACH ROW
   EXECUTE FUNCTION sync_task_allocated_amount();

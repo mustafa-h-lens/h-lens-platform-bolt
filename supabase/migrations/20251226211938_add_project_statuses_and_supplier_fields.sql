@@ -55,13 +55,13 @@ ALTER TABLE project_statuses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE supplier_fields ENABLE ROW LEVEL SECURITY;
 
 -- سياسات RLS لـ project_statuses
-CREATE POLICY "Users can read project statuses"
-  ON project_statuses FOR SELECT
+DROP POLICY IF EXISTS "Users can read project statuses" ON project_statuses;
+CREATE POLICY "Users can read project statuses" ON project_statuses FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Admins can insert project statuses"
-  ON project_statuses FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert project statuses" ON project_statuses;
+CREATE POLICY "Admins can insert project statuses" ON project_statuses FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -71,8 +71,8 @@ CREATE POLICY "Admins can insert project statuses"
     )
   );
 
-CREATE POLICY "Admins can update project statuses"
-  ON project_statuses FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update project statuses" ON project_statuses;
+CREATE POLICY "Admins can update project statuses" ON project_statuses FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -89,8 +89,8 @@ CREATE POLICY "Admins can update project statuses"
     )
   );
 
-CREATE POLICY "Admins can delete project statuses"
-  ON project_statuses FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete project statuses" ON project_statuses;
+CREATE POLICY "Admins can delete project statuses" ON project_statuses FOR DELETE
   TO authenticated
   USING (
     EXISTS (
@@ -101,13 +101,13 @@ CREATE POLICY "Admins can delete project statuses"
   );
 
 -- سياسات RLS لـ supplier_fields
-CREATE POLICY "Users can read supplier fields"
-  ON supplier_fields FOR SELECT
+DROP POLICY IF EXISTS "Users can read supplier fields" ON supplier_fields;
+CREATE POLICY "Users can read supplier fields" ON supplier_fields FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Admins can insert supplier fields"
-  ON supplier_fields FOR INSERT
+DROP POLICY IF EXISTS "Admins can insert supplier fields" ON supplier_fields;
+CREATE POLICY "Admins can insert supplier fields" ON supplier_fields FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -117,8 +117,8 @@ CREATE POLICY "Admins can insert supplier fields"
     )
   );
 
-CREATE POLICY "Admins can update supplier fields"
-  ON supplier_fields FOR UPDATE
+DROP POLICY IF EXISTS "Admins can update supplier fields" ON supplier_fields;
+CREATE POLICY "Admins can update supplier fields" ON supplier_fields FOR UPDATE
   TO authenticated
   USING (
     EXISTS (
@@ -135,8 +135,8 @@ CREATE POLICY "Admins can update supplier fields"
     )
   );
 
-CREATE POLICY "Admins can delete supplier fields"
-  ON supplier_fields FOR DELETE
+DROP POLICY IF EXISTS "Admins can delete supplier fields" ON supplier_fields;
+CREATE POLICY "Admins can delete supplier fields" ON supplier_fields FOR DELETE
   TO authenticated
   USING (
     EXISTS (

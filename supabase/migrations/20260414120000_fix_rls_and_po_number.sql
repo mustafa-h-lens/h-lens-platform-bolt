@@ -63,6 +63,7 @@ CREATE POLICY "Admins can read all approval logs" ON public.vendor_approval_log 
 
 -- Fix vendor_documents anon SELECT
 DROP POLICY IF EXISTS "Anon can view vendor documents during registration" ON public.vendor_documents;
+DROP POLICY IF EXISTS "Anon can view vendor_documents" ON public.vendor_documents;
 CREATE POLICY "Anon can view vendor_documents" ON public.vendor_documents FOR SELECT TO anon USING (true);
 
 -- Add PO number auto-generation

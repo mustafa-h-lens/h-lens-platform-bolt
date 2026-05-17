@@ -52,41 +52,41 @@ ALTER TABLE settings_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE banks ENABLE ROW LEVEL SECURITY;
 
 -- سياسات RLS لـ settings_config
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم قراءة الإعدادات"
-  ON settings_config FOR SELECT
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم قراءة الإعدادات" ON settings_config;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم قراءة الإعدادات" ON settings_config FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم تحديث الإعدادات"
-  ON settings_config FOR UPDATE
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم تحديث الإعدادات" ON settings_config;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم تحديث الإعدادات" ON settings_config FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم إدراج الإعدادات"
-  ON settings_config FOR INSERT
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم إدراج الإعدادات" ON settings_config;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم إدراج الإعدادات" ON settings_config FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
 -- سياسات RLS لـ banks
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم قراءة البنوك"
-  ON banks FOR SELECT
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم قراءة البنوك" ON banks;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم قراءة البنوك" ON banks FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم إدراج البنوك"
-  ON banks FOR INSERT
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم إدراج البنوك" ON banks;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم إدراج البنوك" ON banks FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم تحديث البنوك"
-  ON banks FOR UPDATE
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم تحديث البنوك" ON banks;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم تحديث البنوك" ON banks FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
-CREATE POLICY "المستخدمون المصادق عليهم يمكنهم حذف البنوك"
-  ON banks FOR DELETE
+DROP POLICY IF EXISTS "المستخدمون المصادق عليهم يمكنهم حذف البنوك" ON banks;
+CREATE POLICY "المستخدمون المصادق عليهم يمكنهم حذف البنوك" ON banks FOR DELETE
   TO authenticated
   USING (true);
 

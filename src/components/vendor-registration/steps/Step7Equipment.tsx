@@ -300,7 +300,7 @@ const Step7Equipment = ({ selectedIds, customNames, updateSelectedIds, updateCus
             rows={4}
             value={customDraft}
             onChange={e => setCustomDraft(e.target.value)}
-            placeholder={'اكتب اسم كل معدة في سطر منفصل\nمثال:\nسوني A7S III\nزووم H6'}
+            placeholder={'اكتب اسم كل معدة في سطر منفصل\nمثال:\nكاميرا سوني A7s III\nعدسة كانون 50mm F1.8'}
             style={{ resize: 'vertical', minHeight: 96, fontFamily: 'inherit' }}
           />
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>

@@ -31,22 +31,22 @@ CREATE TABLE IF NOT EXISTS brand_categories (
 ALTER TABLE brand_categories ENABLE ROW LEVEL SECURITY;
 
 -- سياسة القراءة
-CREATE POLICY "Authenticated users can view brand categories"
-  ON brand_categories
+DROP POLICY IF EXISTS "Authenticated users can view brand categories" ON brand_categories;
+CREATE POLICY "Authenticated users can view brand categories" ON brand_categories
   FOR SELECT
   TO authenticated
   USING (true);
 
 -- سياسة الإضافة
-CREATE POLICY "Authenticated users can insert brand categories"
-  ON brand_categories
+DROP POLICY IF EXISTS "Authenticated users can insert brand categories" ON brand_categories;
+CREATE POLICY "Authenticated users can insert brand categories" ON brand_categories
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
 -- سياسة الحذف
-CREATE POLICY "Authenticated users can delete brand categories"
-  ON brand_categories
+DROP POLICY IF EXISTS "Authenticated users can delete brand categories" ON brand_categories;
+CREATE POLICY "Authenticated users can delete brand categories" ON brand_categories
   FOR DELETE
   TO authenticated
   USING (true);

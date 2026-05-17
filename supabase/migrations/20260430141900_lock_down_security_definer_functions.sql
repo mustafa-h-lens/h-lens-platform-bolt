@@ -87,9 +87,13 @@ DECLARE
   ];
 BEGIN
   FOREACH fn IN ARRAY fn_list LOOP
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', fn);
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM anon', fn);
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM authenticated', fn);
+    BEGIN
+      EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC', fn);
+      EXECUTE format('REVOKE ALL ON FUNCTION %s FROM anon', fn);
+      EXECUTE format('REVOKE ALL ON FUNCTION %s FROM authenticated', fn);
+    EXCEPTION WHEN undefined_function THEN
+      RAISE NOTICE 'function % does not exist, skipping revoke', fn;
+    END;
   END LOOP;
 END $$;
 

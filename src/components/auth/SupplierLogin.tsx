@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabaseClient';
+import { normalizeSaudiPhone, saudiPhoneDigitsOnly, isValidSaudiPhone } from '../../lib/phoneUtils';
+import { toEnglishNumbers } from '../../lib/numberUtils';
 
 interface SupplierLoginProps {
-  onOTPSent: (email: string, otpCode?: string) => void;
+  onOTPSent: (phone: string, otpCode?: string) => void;
 }
 
 export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
-  const [email, setEmail]     = useState('');
+  const [phone, setPhone]     = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [focused, setFocused] = useState(false);
@@ -17,15 +19,20 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email || !email.includes('@')) { setError('يرجى إدخال بريد إلكتروني صالح'); return; }
+    if (!isValidSaudiPhone(phone)) {
+      setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+      return;
+    }
+    const phoneE164 = normalizeSaudiPhone(phone)!;
+    const phoneNine = saudiPhoneDigitsOnly(phone)!;
     setLoading(true);
     try {
-      // Auto-unblock expired blocks, then check block status
+      // Auto-unblock expired blocks, then check block status by phone.
       try { await supabase.rpc('auto_unblock_expired_vendors'); } catch {}
       const { data: vendorRow } = await supabase
         .from('vendors')
         .select('status, block_reason, blocked_until')
-        .ilike('email', email.trim())
+        .eq('phone', phoneNine)
         .maybeSingle();
       if (vendorRow?.status === 'blocked') {
         const untilTxt = vendorRow.blocked_until
@@ -37,14 +44,14 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         return;
       }
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-sms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, deviceInfo }),
+        body: JSON.stringify({ phone: phoneE164, deviceInfo, portal_type: 'vendor' }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'حدث خطأ أثناء إرسال رمز التحقق');
-      onOTPSent(email, data.otp);
+      onOTPSent(phoneE164, data.otp);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال');
     } finally { setLoading(false); }
@@ -100,24 +107,29 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
             {/* Title */}
             <div className="sl-title-wrap">
               <h1 className="sl-title">تسجيل الدخول</h1>
-              <p className="sl-subtitle">أدخل بريدك الإلكتروني وسنرسل إليك رمز تحقق</p>
+              <p className="sl-subtitle">أدخل رقم جوالك وسنرسل إليك رمز تحقق عبر رسالة نصية</p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit}>
               <div className="sl-field-wrap">
-                <label className="sl-label">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="example@email.com"
-                  disabled={loading}
-                  dir="ltr"
-                  className={`sl-input ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                />
+                <label className="sl-label">رقم الجوال</label>
+                <div className={`sl-phone-wrap ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}>
+                  <span className="sl-phone-prefix">+966</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    value={phone}
+                    onChange={e => setPhone(toEnglishNumbers(e.target.value).replace(/\D/g, '').slice(0, 10))}
+                    placeholder="5XXXXXXXX"
+                    disabled={loading}
+                    dir="ltr"
+                    className="sl-phone-input"
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                  />
+                </div>
               </div>
 
               {error && (
@@ -136,7 +148,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
 
             {/* Info note */}
             <div className="sl-info">
-              <p>💡 سيتم إرسال رمز التحقق إلى بريدك المسجل في النظام. الرمز صالح لمدة 10 دقائق.</p>
+              <p>💡 سيتم إرسال رمز التحقق إلى جوالك المسجل في النظام. الرمز صالح لمدة 10 دقائق.</p>
             </div>
           </div>
 
@@ -457,6 +469,44 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         .sl-input::placeholder {
           color: var(--sl-text-muted);
         }
+        .sl-phone-wrap {
+          display: flex;
+          align-items: stretch;
+          border-radius: 11px;
+          background: var(--sl-input-bg);
+          border: 1px solid var(--sl-input-border);
+          overflow: hidden;
+          transition: border 0.2s, box-shadow 0.2s;
+          backdrop-filter: blur(8px);
+          direction: ltr;
+        }
+        .sl-phone-prefix {
+          padding: 12px 14px;
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          font-size: 0.92rem;
+          font-weight: 700;
+          color: var(--sl-text-sub);
+          background: rgba(0, 0, 0, 0.04);
+          border-right: 1px solid var(--sl-input-border);
+          display: flex; align-items: center;
+        }
+        .sl-page[data-dark] .sl-phone-prefix {
+          background: rgba(255, 255, 255, 0.04);
+        }
+        .sl-phone-input {
+          flex: 1;
+          padding: 12px 14px;
+          background: transparent;
+          border: none;
+          color: var(--sl-text);
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          font-size: 0.95rem;
+          letter-spacing: 0.05em;
+          outline: none;
+          width: 100%;
+          text-align: left;
+        }
+        .sl-phone-input::placeholder { color: var(--sl-text-muted); letter-spacing: normal; }
 
         .sl-error {
           margin-bottom: 12px;

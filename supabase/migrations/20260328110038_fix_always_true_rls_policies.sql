@@ -60,27 +60,27 @@ DROP POLICY IF EXISTS "System can insert OTP codes" ON public.otp_codes;
 DROP POLICY IF EXISTS "System can delete expired OTP codes" ON public.otp_codes;
 DROP POLICY IF EXISTS "System can read OTP codes for verification" ON public.otp_codes;
 
-CREATE POLICY "Service role can insert OTP codes"
-  ON public.otp_codes
+DROP POLICY IF EXISTS "Service role can insert OTP codes" ON public.otp_codes;
+CREATE POLICY "Service role can insert OTP codes" ON public.otp_codes
   FOR INSERT
   TO service_role
   WITH CHECK (true);
 
-CREATE POLICY "Service role can delete OTP codes"
-  ON public.otp_codes
+DROP POLICY IF EXISTS "Service role can delete OTP codes" ON public.otp_codes;
+CREATE POLICY "Service role can delete OTP codes" ON public.otp_codes
   FOR DELETE
   TO service_role
   USING (true);
 
-CREATE POLICY "Service role can read OTP codes"
-  ON public.otp_codes
+DROP POLICY IF EXISTS "Service role can read OTP codes" ON public.otp_codes;
+CREATE POLICY "Service role can read OTP codes" ON public.otp_codes
   FOR SELECT
   TO service_role
   USING (true);
 
 -- Allow anon to read OTP codes by email for verification flow
-CREATE POLICY "Anon can read OTP codes for verification"
-  ON public.otp_codes
+DROP POLICY IF EXISTS "Anon can read OTP codes for verification" ON public.otp_codes;
+CREATE POLICY "Anon can read OTP codes for verification" ON public.otp_codes
   FOR SELECT
   TO anon
   USING (expires_at > now());
@@ -90,24 +90,24 @@ DROP POLICY IF EXISTS "Anon can delete vendor_equipment" ON public.vendor_equipm
 DROP POLICY IF EXISTS "Anon can insert vendor_equipment" ON public.vendor_equipment;
 DROP POLICY IF EXISTS "Anon can update vendor_equipment" ON public.vendor_equipment;
 
-CREATE POLICY "Anon can delete vendor_equipment during registration"
-  ON public.vendor_equipment
+DROP POLICY IF EXISTS "Anon can delete vendor_equipment during registration" ON public.vendor_equipment;
+CREATE POLICY "Anon can delete vendor_equipment during registration" ON public.vendor_equipment
   FOR DELETE
   TO anon
   USING (
     vendor_id IN (SELECT id FROM vendors WHERE status = 'draft')
   );
 
-CREATE POLICY "Anon can insert vendor_equipment during registration"
-  ON public.vendor_equipment
+DROP POLICY IF EXISTS "Anon can insert vendor_equipment during registration" ON public.vendor_equipment;
+CREATE POLICY "Anon can insert vendor_equipment during registration" ON public.vendor_equipment
   FOR INSERT
   TO anon
   WITH CHECK (
     vendor_id IN (SELECT id FROM vendors WHERE status = 'draft')
   );
 
-CREATE POLICY "Anon can update vendor_equipment during registration"
-  ON public.vendor_equipment
+DROP POLICY IF EXISTS "Anon can update vendor_equipment during registration" ON public.vendor_equipment;
+CREATE POLICY "Anon can update vendor_equipment during registration" ON public.vendor_equipment
   FOR UPDATE
   TO anon
   USING (

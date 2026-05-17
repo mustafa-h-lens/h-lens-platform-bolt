@@ -55,26 +55,26 @@ CREATE TABLE IF NOT EXISTS vendor_registration_drafts (
 ALTER TABLE vendor_registration_drafts ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to create drafts (for public registration)
-CREATE POLICY "Anyone can create vendor registration drafts"
-  ON vendor_registration_drafts
+DROP POLICY IF EXISTS "Anyone can create vendor registration drafts" ON vendor_registration_drafts;
+CREATE POLICY "Anyone can create vendor registration drafts" ON vendor_registration_drafts
   FOR INSERT
   WITH CHECK (true);
 
 -- Allow users to read their own drafts by session_id
-CREATE POLICY "Users can read own drafts by session"
-  ON vendor_registration_drafts
+DROP POLICY IF EXISTS "Users can read own drafts by session" ON vendor_registration_drafts;
+CREATE POLICY "Users can read own drafts by session" ON vendor_registration_drafts
   FOR SELECT
   USING (session_id = current_setting('request.jwt.claims', true)::json->>'session_id' OR true);
 
 -- Allow users to update their own drafts
-CREATE POLICY "Users can update own drafts by session"
-  ON vendor_registration_drafts
+DROP POLICY IF EXISTS "Users can update own drafts by session" ON vendor_registration_drafts;
+CREATE POLICY "Users can update own drafts by session" ON vendor_registration_drafts
   FOR UPDATE
   USING (true);
 
 -- Allow users to delete their own drafts
-CREATE POLICY "Users can delete own drafts"
-  ON vendor_registration_drafts
+DROP POLICY IF EXISTS "Users can delete own drafts" ON vendor_registration_drafts;
+CREATE POLICY "Users can delete own drafts" ON vendor_registration_drafts
   FOR DELETE
   USING (true);
 

@@ -27,8 +27,8 @@ CREATE INDEX IF NOT EXISTS idx_system_activity_log_action_type ON public.system_
 
 ALTER TABLE public.system_activity_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view system activity logs"
-  ON public.system_activity_log FOR SELECT
+DROP POLICY IF EXISTS "Admins can view system activity logs" ON public.system_activity_log;
+CREATE POLICY "Admins can view system activity logs" ON public.system_activity_log FOR SELECT
   TO authenticated
   USING (
     EXISTS (
@@ -38,8 +38,8 @@ CREATE POLICY "Admins can view system activity logs"
     )
   );
 
-CREATE POLICY "System can insert activity logs"
-  ON public.system_activity_log FOR INSERT
+DROP POLICY IF EXISTS "System can insert activity logs" ON public.system_activity_log;
+CREATE POLICY "System can insert activity logs" ON public.system_activity_log FOR INSERT
   TO authenticated
   WITH CHECK (
     EXISTS (
@@ -101,8 +101,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS client_changes_trigger ON public.clients;
-CREATE TRIGGER client_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.clients
+DROP TRIGGER IF EXISTS client_changes_trigger ON public.clients;
+CREATE TRIGGER client_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.clients
 FOR EACH ROW EXECUTE FUNCTION public.log_client_changes();
 
 -- ========================================
@@ -132,8 +132,8 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS user_changes_trigger ON public.users;
-CREATE TRIGGER user_changes_trigger
-AFTER INSERT OR UPDATE ON public.users
+DROP TRIGGER IF EXISTS user_changes_trigger ON public.users;
+CREATE TRIGGER user_changes_trigger AFTER INSERT OR UPDATE ON public.users
 FOR EACH ROW EXECUTE FUNCTION public.log_user_changes();
 
 -- ========================================

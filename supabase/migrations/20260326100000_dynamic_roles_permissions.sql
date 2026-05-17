@@ -87,13 +87,13 @@ ALTER TABLE public.roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
 
 -- 11. RLS policies for roles table
-CREATE POLICY "Authenticated users can view roles"
-  ON public.roles FOR SELECT
+DROP POLICY IF EXISTS "Authenticated users can view roles" ON public.roles;
+CREATE POLICY "Authenticated users can view roles" ON public.roles FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Only super_admin can manage roles"
-  ON public.roles FOR ALL
+DROP POLICY IF EXISTS "Only super_admin can manage roles" ON public.roles;
+CREATE POLICY "Only super_admin can manage roles" ON public.roles FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -113,13 +113,13 @@ CREATE POLICY "Only super_admin can manage roles"
   );
 
 -- 12. RLS policies for role_permissions table
-CREATE POLICY "Authenticated users can view role_permissions"
-  ON public.role_permissions FOR SELECT
+DROP POLICY IF EXISTS "Authenticated users can view role_permissions" ON public.role_permissions;
+CREATE POLICY "Authenticated users can view role_permissions" ON public.role_permissions FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Only super_admin can manage role_permissions"
-  ON public.role_permissions FOR ALL
+DROP POLICY IF EXISTS "Only super_admin can manage role_permissions" ON public.role_permissions;
+CREATE POLICY "Only super_admin can manage role_permissions" ON public.role_permissions FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -191,7 +191,7 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER roles_updated_at
-  BEFORE UPDATE ON public.roles
+DROP TRIGGER IF EXISTS roles_updated_at ON public.roles;
+CREATE TRIGGER roles_updated_at BEFORE UPDATE ON public.roles
   FOR EACH ROW
   EXECUTE FUNCTION public.update_roles_updated_at();

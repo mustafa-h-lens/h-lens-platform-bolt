@@ -92,8 +92,8 @@ CREATE POLICY "Vendors can view own selected fields"
     )
   );
 
-CREATE POLICY "Vendors can manage own selected fields"
-  ON public.vendor_selected_fields
+DROP POLICY IF EXISTS "Vendors can manage own selected fields" ON public.vendor_selected_fields;
+CREATE POLICY "Vendors can manage own selected fields" ON public.vendor_selected_fields
   FOR ALL
   TO authenticated
   USING (

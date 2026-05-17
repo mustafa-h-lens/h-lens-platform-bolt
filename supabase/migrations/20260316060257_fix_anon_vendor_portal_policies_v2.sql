@@ -11,9 +11,13 @@ BEGIN
     EXECUTE format('DROP POLICY IF EXISTS "Anon can update %1$s" ON public.%1$s', t);
     EXECUTE format('DROP POLICY IF EXISTS "Anon can delete %1$s" ON public.%1$s', t);
 
-    EXECUTE format('CREATE POLICY "Anon read %1$s" ON public.%1$s FOR SELECT TO anon USING (true)', t);
-    EXECUTE format('CREATE POLICY "Anon insert %1$s" ON public.%1$s FOR INSERT TO anon WITH CHECK (true)', t);
-    EXECUTE format('CREATE POLICY "Anon update %1$s" ON public.%1$s FOR UPDATE TO anon USING (true) WITH CHECK (true)', t);
-    EXECUTE format('CREATE POLICY "Anon delete %1$s" ON public.%1$s FOR DELETE TO anon USING (true)', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Anon read %1$s" ON public.%1$s;
+CREATE POLICY "Anon read %1$s" ON public.%1$s FOR SELECT TO anon USING (true)', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Anon insert %1$s" ON public.%1$s;
+CREATE POLICY "Anon insert %1$s" ON public.%1$s FOR INSERT TO anon WITH CHECK (true)', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Anon update %1$s" ON public.%1$s;
+CREATE POLICY "Anon update %1$s" ON public.%1$s FOR UPDATE TO anon USING (true) WITH CHECK (true)', t);
+    EXECUTE format('DROP POLICY IF EXISTS "Anon delete %1$s" ON public.%1$s;
+CREATE POLICY "Anon delete %1$s" ON public.%1$s FOR DELETE TO anon USING (true)', t);
   END LOOP;
 END $$;

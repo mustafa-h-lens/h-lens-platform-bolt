@@ -36,16 +36,16 @@ CREATE INDEX IF NOT EXISTS idx_system_activity_log_created_at ON public.system_a
 
 ALTER TABLE public.system_activity_log ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view system activity logs"
-  ON public.system_activity_log FOR SELECT TO authenticated
+DROP POLICY IF EXISTS "Admins can view system activity logs" ON public.system_activity_log;
+CREATE POLICY "Admins can view system activity logs" ON public.system_activity_log FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.users WHERE users.id = auth.uid() AND users.role IN ('admin', 'super_admin')));
 
-CREATE POLICY "System can insert activity logs"
-  ON public.system_activity_log FOR INSERT TO authenticated
+DROP POLICY IF EXISTS "System can insert activity logs" ON public.system_activity_log;
+CREATE POLICY "System can insert activity logs" ON public.system_activity_log FOR INSERT TO authenticated
   WITH CHECK (EXISTS (SELECT 1 FROM public.users WHERE users.id = auth.uid() AND users.role IN ('admin', 'super_admin')));
 
-CREATE POLICY "Service role can manage system activity logs"
-  ON public.system_activity_log FOR ALL TO service_role
+DROP POLICY IF EXISTS "Service role can manage system activity logs" ON public.system_activity_log;
+CREATE POLICY "Service role can manage system activity logs" ON public.system_activity_log FOR ALL TO service_role
   USING (true) WITH CHECK (true);
 
 -- 2. Add missing columns to vendor_activity_log
@@ -89,8 +89,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_changes_trigger ON public.vendors;
-CREATE TRIGGER vendor_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendors
+DROP TRIGGER IF EXISTS vendor_changes_trigger ON public.vendors;
+DROP TRIGGER IF EXISTS vendor_changes_trigger ON public.vendors;
+CREATE TRIGGER vendor_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendors
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_changes();
 
 -- 4. Equipment triggers
@@ -114,8 +115,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_equipment_changes_trigger ON public.vendor_equipment;
-CREATE TRIGGER vendor_equipment_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_equipment
+DROP TRIGGER IF EXISTS vendor_equipment_changes_trigger ON public.vendor_equipment;
+DROP TRIGGER IF EXISTS vendor_equipment_changes_trigger ON public.vendor_equipment;
+CREATE TRIGGER vendor_equipment_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_equipment
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_equipment_changes();
 
 -- 5. Documents triggers
@@ -138,8 +140,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_document_changes_trigger ON public.vendor_documents;
-CREATE TRIGGER vendor_document_changes_trigger
-AFTER INSERT OR DELETE ON public.vendor_documents
+DROP TRIGGER IF EXISTS vendor_document_changes_trigger ON public.vendor_documents;
+DROP TRIGGER IF EXISTS vendor_document_changes_trigger ON public.vendor_documents;
+CREATE TRIGGER vendor_document_changes_trigger AFTER INSERT OR DELETE ON public.vendor_documents
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_document_changes();
 
 -- 6. Invoices/expenses triggers
@@ -166,8 +169,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS vendor_invoice_changes_trigger ON public.vendor_invoices;
-CREATE TRIGGER vendor_invoice_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
+DROP TRIGGER IF EXISTS vendor_invoice_changes_trigger ON public.vendor_invoices;
+DROP TRIGGER IF EXISTS vendor_invoice_changes_trigger ON public.vendor_invoices;
+CREATE TRIGGER vendor_invoice_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.vendor_invoices
 FOR EACH ROW EXECUTE FUNCTION public.log_vendor_invoice_changes();
 
 -- 7. Expense payments triggers
@@ -192,8 +196,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS expense_payment_changes_trigger ON public.expense_payments;
-CREATE TRIGGER expense_payment_changes_trigger
-AFTER INSERT OR DELETE ON public.expense_payments
+DROP TRIGGER IF EXISTS expense_payment_changes_trigger ON public.expense_payments;
+DROP TRIGGER IF EXISTS expense_payment_changes_trigger ON public.expense_payments;
+CREATE TRIGGER expense_payment_changes_trigger AFTER INSERT OR DELETE ON public.expense_payments
 FOR EACH ROW EXECUTE FUNCTION public.log_expense_payment_changes();
 
 -- 8. Purchase orders triggers
@@ -218,8 +223,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS purchase_order_changes_trigger ON public.purchase_orders;
-CREATE TRIGGER purchase_order_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.purchase_orders
+DROP TRIGGER IF EXISTS purchase_order_changes_trigger ON public.purchase_orders;
+DROP TRIGGER IF EXISTS purchase_order_changes_trigger ON public.purchase_orders;
+CREATE TRIGGER purchase_order_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.purchase_orders
 FOR EACH ROW EXECUTE FUNCTION public.log_purchase_order_changes();
 
 -- 9. Production tasks triggers
@@ -243,8 +249,9 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS production_task_changes_trigger ON public.production_tasks;
-CREATE TRIGGER production_task_changes_trigger
-AFTER INSERT OR UPDATE OR DELETE ON public.production_tasks
+DROP TRIGGER IF EXISTS production_task_changes_trigger ON public.production_tasks;
+DROP TRIGGER IF EXISTS production_task_changes_trigger ON public.production_tasks;
+CREATE TRIGGER production_task_changes_trigger AFTER INSERT OR UPDATE OR DELETE ON public.production_tasks
 FOR EACH ROW EXECUTE FUNCTION public.log_production_task_changes();
 
 -- 10. Settings triggers
@@ -259,13 +266,15 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS settings_config_changes_trigger ON public.settings_config;
-CREATE TRIGGER settings_config_changes_trigger
-AFTER INSERT OR UPDATE ON public.settings_config
+DROP TRIGGER IF EXISTS settings_config_changes_trigger ON public.settings_config;
+DROP TRIGGER IF EXISTS settings_config_changes_trigger ON public.settings_config;
+CREATE TRIGGER settings_config_changes_trigger AFTER INSERT OR UPDATE ON public.settings_config
 FOR EACH ROW EXECUTE FUNCTION public.log_settings_changes();
 
 DROP TRIGGER IF EXISTS terms_privacy_changes_trigger ON public.terms_and_privacy_settings;
-CREATE TRIGGER terms_privacy_changes_trigger
-AFTER INSERT OR UPDATE ON public.terms_and_privacy_settings
+DROP TRIGGER IF EXISTS terms_privacy_changes_trigger ON public.terms_and_privacy_settings;
+DROP TRIGGER IF EXISTS terms_privacy_changes_trigger ON public.terms_and_privacy_settings;
+CREATE TRIGGER terms_privacy_changes_trigger AFTER INSERT OR UPDATE ON public.terms_and_privacy_settings
 FOR EACH ROW EXECUTE FUNCTION public.log_settings_changes();
 
 -- 11. Global activity log view

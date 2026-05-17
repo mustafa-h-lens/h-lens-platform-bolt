@@ -63,12 +63,12 @@ ALTER TABLE vendor_fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_selected_fields ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for vendor_fields
-CREATE POLICY "Anyone can view active vendor fields"
-  ON vendor_fields FOR SELECT
+DROP POLICY IF EXISTS "Anyone can view active vendor fields" ON vendor_fields;
+CREATE POLICY "Anyone can view active vendor fields" ON vendor_fields FOR SELECT
   USING (is_active = true);
 
-CREATE POLICY "Admins can manage vendor fields"
-  ON vendor_fields FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor fields" ON vendor_fields;
+CREATE POLICY "Admins can manage vendor fields" ON vendor_fields FOR ALL
   TO authenticated
   USING (
     EXISTS (
@@ -79,8 +79,8 @@ CREATE POLICY "Admins can manage vendor fields"
   );
 
 -- RLS Policies for vendor_selected_fields
-CREATE POLICY "Vendors can view own selected fields"
-  ON vendor_selected_fields FOR SELECT
+DROP POLICY IF EXISTS "Vendors can view own selected fields" ON vendor_selected_fields;
+CREATE POLICY "Vendors can view own selected fields" ON vendor_selected_fields FOR SELECT
   TO authenticated
   USING (
     vendor_id IN (
@@ -96,8 +96,8 @@ CREATE POLICY "Vendors can view own selected fields"
     )
   );
 
-CREATE POLICY "Admins can manage vendor selected fields"
-  ON vendor_selected_fields FOR ALL
+DROP POLICY IF EXISTS "Admins can manage vendor selected fields" ON vendor_selected_fields;
+CREATE POLICY "Admins can manage vendor selected fields" ON vendor_selected_fields FOR ALL
   TO authenticated
   USING (
     EXISTS (

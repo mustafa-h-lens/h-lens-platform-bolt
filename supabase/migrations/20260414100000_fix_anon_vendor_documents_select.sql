@@ -10,4 +10,5 @@
 */
 
 DROP POLICY IF EXISTS "Anon can view vendor documents during registration" ON public.vendor_documents;
+DROP POLICY IF EXISTS "Anon can view vendor_documents" ON public.vendor_documents;
 CREATE POLICY "Anon can view vendor_documents" ON public.vendor_documents FOR SELECT TO anon USING (true);

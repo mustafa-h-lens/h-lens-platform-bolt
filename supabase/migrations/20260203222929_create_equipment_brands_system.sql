@@ -36,30 +36,30 @@ CREATE TABLE IF NOT EXISTS equipment_brands (
 ALTER TABLE equipment_brands ENABLE ROW LEVEL SECURITY;
 
 -- سياسة القراءة للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can view brands"
-  ON equipment_brands
+DROP POLICY IF EXISTS "Authenticated users can view brands" ON equipment_brands;
+CREATE POLICY "Authenticated users can view brands" ON equipment_brands
   FOR SELECT
   TO authenticated
   USING (true);
 
 -- سياسة الإضافة للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can insert brands"
-  ON equipment_brands
+DROP POLICY IF EXISTS "Authenticated users can insert brands" ON equipment_brands;
+CREATE POLICY "Authenticated users can insert brands" ON equipment_brands
   FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
 -- سياسة التحديث للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can update brands"
-  ON equipment_brands
+DROP POLICY IF EXISTS "Authenticated users can update brands" ON equipment_brands;
+CREATE POLICY "Authenticated users can update brands" ON equipment_brands
   FOR UPDATE
   TO authenticated
   USING (true)
   WITH CHECK (true);
 
 -- سياسة الحذف للمستخدمين المصادقين
-CREATE POLICY "Authenticated users can delete brands"
-  ON equipment_brands
+DROP POLICY IF EXISTS "Authenticated users can delete brands" ON equipment_brands;
+CREATE POLICY "Authenticated users can delete brands" ON equipment_brands
   FOR DELETE
   TO authenticated
   USING (true);

@@ -20,13 +20,13 @@ CREATE INDEX IF NOT EXISTS idx_vendor_sessions_vendor_id ON vendor_sessions(vend
 CREATE INDEX IF NOT EXISTS idx_vendor_sessions_expires_at ON vendor_sessions(expires_at);
 
 -- Policy: vendors can read their own sessions
-CREATE POLICY "Vendors can read own sessions"
-  ON vendor_sessions FOR SELECT
+DROP POLICY IF EXISTS "Vendors can read own sessions" ON vendor_sessions;
+CREATE POLICY "Vendors can read own sessions" ON vendor_sessions FOR SELECT
   USING (true);
 
 -- Policy: service role can manage all sessions (via Edge Functions)
-CREATE POLICY "Service role can manage sessions"
-  ON vendor_sessions FOR ALL
+DROP POLICY IF EXISTS "Service role can manage sessions" ON vendor_sessions;
+CREATE POLICY "Service role can manage sessions" ON vendor_sessions FOR ALL
   TO service_role
   USING (true)
   WITH CHECK (true);

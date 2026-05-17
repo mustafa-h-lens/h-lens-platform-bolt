@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Loader2, ArrowLeft, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import OTPInput from '../auth/OTPInput';
+import { normalizeSaudiPhone, isValidSaudiPhone } from '../../lib/phoneUtils';
+import { toEnglishNumbers } from '../../lib/numberUtils';
 
 type AuthStep = 'login' | 'otp';
 
@@ -11,16 +13,16 @@ interface ClientAuthProps {
 
 export default function ClientAuth({ onSuccess }: ClientAuthProps) {
   const [step, setStep] = useState<AuthStep>('login');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [devOTP, setDevOTP] = useState<string | null>(null);
 
-  const handleOTPSent = (sentEmail: string, otpCode?: string) => {
-    setEmail(sentEmail);
+  const handleOTPSent = (sentPhone: string, otpCode?: string) => {
+    setPhone(sentPhone);
     setDevOTP(otpCode || null);
     setStep('otp');
   };
 
-  const handleBack = () => { setStep('login'); setEmail(''); setDevOTP(null); };
+  const handleBack = () => { setStep('login'); setPhone(''); setDevOTP(null); };
 
   const handleSuccess = (data: any) => {
     localStorage.setItem('client_session', JSON.stringify(data.session));
@@ -29,15 +31,15 @@ export default function ClientAuth({ onSuccess }: ClientAuthProps) {
   };
 
   if (step === 'otp') {
-    return <OTPInput email={email} onBack={handleBack} onSuccess={handleSuccess} devOTP={devOTP} portalType="client" />;
+    return <OTPInput phone={phone} onBack={handleBack} onSuccess={handleSuccess} devOTP={devOTP} portalType="client" />;
   }
 
   return <ClientLoginPage onOTPSent={handleOTPSent} />;
 }
 
 // ─── Client Login Page ─────────────────────────────────────────
-function ClientLoginPage({ onOTPSent }: { onOTPSent: (email: string, otpCode?: string) => void }) {
-  const [email, setEmail] = useState('');
+function ClientLoginPage({ onOTPSent }: { onOTPSent: (phone: string, otpCode?: string) => void }) {
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [focused, setFocused] = useState(false);
@@ -46,18 +48,22 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (email: string, otpCode?: s
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!email || !email.includes('@')) { setError('يرجى إدخال بريد إلكتروني صالح'); return; }
+    if (!isValidSaudiPhone(phone)) {
+      setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+      return;
+    }
+    const phoneE164 = normalizeSaudiPhone(phone)!;
     setLoading(true);
     try {
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-email`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-sms`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ email, deviceInfo, portal_type: 'client' }),
+        body: JSON.stringify({ phone: phoneE164, deviceInfo, portal_type: 'client' }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'حدث خطأ أثناء إرسال رمز التحقق');
-      onOTPSent(email, data.otp);
+      onOTPSent(phoneE164, data.otp);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ في الاتصال');
     } finally { setLoading(false); }
@@ -113,24 +119,29 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (email: string, otpCode?: s
             {/* Title */}
             <div className="sl-title-wrap">
               <h1 className="sl-title">بوابة العميل</h1>
-              <p className="sl-subtitle">أدخل بريدك الإلكتروني وسنرسل إليك رمز تحقق</p>
+              <p className="sl-subtitle">أدخل رقم جوالك وسنرسل إليك رمز تحقق عبر رسالة نصية</p>
             </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit}>
               <div className="sl-field-wrap">
-                <label className="sl-label">البريد الإلكتروني</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="client@company.com"
-                  disabled={loading}
-                  dir="ltr"
-                  className={`sl-input ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                />
+                <label className="sl-label">رقم الجوال</label>
+                <div className={`sl-phone-wrap ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}>
+                  <span className="sl-phone-prefix">+966</span>
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel-national"
+                    value={phone}
+                    onChange={e => setPhone(toEnglishNumbers(e.target.value).replace(/\D/g, '').slice(0, 10))}
+                    placeholder="5XXXXXXXX"
+                    disabled={loading}
+                    dir="ltr"
+                    className="sl-phone-input"
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                  />
+                </div>
               </div>
 
               {error && (
@@ -149,7 +160,7 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (email: string, otpCode?: s
 
             {/* Info note */}
             <div className="sl-info">
-              <p>💡 سيتم إرسال رمز التحقق إلى بريدك المسجل في النظام. الرمز صالح لمدة 10 دقائق.</p>
+              <p>💡 سيتم إرسال رمز التحقق إلى جوالك المسجل في النظام. الرمز صالح لمدة 10 دقائق.</p>
             </div>
           </div>
         </div>
@@ -259,6 +270,38 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (email: string, otpCode?: s
         .sl-input-focus { border-color: rgba(59,130,246,0.6) !important; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
         .sl-input-error { border-color: rgba(239,68,68,0.5) !important; }
         .sl-input::placeholder { color: var(--sl-text-muted); }
+        .sl-phone-wrap {
+          display: flex; align-items: stretch;
+          border-radius: 11px;
+          background: var(--sl-input-bg);
+          border: 1px solid var(--sl-input-border);
+          overflow: hidden;
+          transition: border 0.2s, box-shadow 0.2s;
+          backdrop-filter: blur(8px);
+          direction: ltr;
+        }
+        .sl-phone-prefix {
+          padding: 12px 14px;
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          font-size: 0.92rem; font-weight: 700;
+          color: var(--sl-text-sub);
+          background: rgba(0, 0, 0, 0.04);
+          border-right: 1px solid var(--sl-input-border);
+          display: flex; align-items: center;
+        }
+        .sl-page[data-dark] .sl-phone-prefix { background: rgba(255, 255, 255, 0.04); }
+        .sl-phone-input {
+          flex: 1;
+          padding: 12px 14px;
+          background: transparent;
+          border: none;
+          color: var(--sl-text);
+          font-family: ui-monospace, SFMono-Regular, monospace;
+          font-size: 0.95rem;
+          letter-spacing: 0.05em;
+          outline: none; width: 100%; text-align: left;
+        }
+        .sl-phone-input::placeholder { color: var(--sl-text-muted); letter-spacing: normal; }
         .sl-error { margin-bottom: 12px; padding: 10px 13px; border-radius: 10px; background: var(--sl-error-bg); border: 1px solid var(--sl-error-border); backdrop-filter: blur(8px); }
         .sl-error p { font-size: 0.8rem; color: var(--sl-error-text); text-align: right; margin: 0; }
         .sl-submit { width: 100%; padding: 13px; border-radius: 11px; border: none; background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; font-family: inherit; font-size: 0.92rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; box-shadow: 0 4px 20px rgba(37,99,235,0.35); transition: all 0.25s; margin-bottom: 16px; }

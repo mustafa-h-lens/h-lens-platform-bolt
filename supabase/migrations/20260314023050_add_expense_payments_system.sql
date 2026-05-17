@@ -54,6 +54,9 @@ CREATE INDEX IF NOT EXISTS idx_expense_payments_expense_id ON expense_payments(e
 ALTER TABLE expense_payments ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies: admin-only access
+-- DROP IF EXISTS first so a from-scratch replay (where 20260308000000
+-- already created identical policies) doesn't error on duplicate.
+DROP POLICY IF EXISTS "Admins can view expense payments" ON expense_payments;
 CREATE POLICY "Admins can view expense payments"
   ON expense_payments FOR SELECT
   USING (
@@ -64,6 +67,7 @@ CREATE POLICY "Admins can view expense payments"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can insert expense payments" ON expense_payments;
 CREATE POLICY "Admins can insert expense payments"
   ON expense_payments FOR INSERT
   WITH CHECK (
@@ -74,6 +78,7 @@ CREATE POLICY "Admins can insert expense payments"
     )
   );
 
+DROP POLICY IF EXISTS "Admins can delete expense payments" ON expense_payments;
 CREATE POLICY "Admins can delete expense payments"
   ON expense_payments FOR DELETE
   USING (
@@ -130,7 +135,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_update_expense_from_payments ON expense_payments;
-CREATE TRIGGER trg_update_expense_from_payments
-  AFTER INSERT OR UPDATE OR DELETE ON expense_payments
+DROP TRIGGER IF EXISTS trg_update_expense_from_payments ON expense_payments;
+DROP TRIGGER IF EXISTS trg_update_expense_from_payments ON expense_payments;
+CREATE TRIGGER trg_update_expense_from_payments AFTER INSERT OR UPDATE OR DELETE ON expense_payments
   FOR EACH ROW
   EXECUTE FUNCTION update_expense_from_payments();

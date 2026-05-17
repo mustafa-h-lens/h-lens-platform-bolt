@@ -24,5 +24,7 @@ INSERT INTO team_entities (name_ar, name_en, display_order) VALUES
 ON CONFLICT DO NOTHING;
 
 ALTER TABLE team_entities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Authenticated users can read team_entities" ON team_entities;
 CREATE POLICY "Authenticated users can read team_entities" ON team_entities FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Admins can manage team_entities" ON team_entities;
 CREATE POLICY "Admins can manage team_entities" ON team_entities FOR ALL TO authenticated USING (true);

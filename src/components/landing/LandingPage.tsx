@@ -426,7 +426,7 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         .landing-role-card {
           --c: #2563eb;
           position: relative;
-          padding: 32px 28px;
+          padding: 42px 34px;
           border-radius: 22px;
           background: var(--bg-surface);
           border: 1.5px solid var(--border-soft);
@@ -479,12 +479,12 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
         .landing-role-card:hover::before { opacity: 1; }
         .landing-role-card:hover::after { transform: scaleX(1); }
         .landing-role-icon {
-          width: 56px; height: 56px;
+          width: 60px; height: 60px;
           border-radius: 16px;
           background: color-mix(in srgb, var(--c) 14%, transparent);
           color: var(--c);
           display: flex; align-items: center; justify-content: center;
-          margin-bottom: 20px;
+          margin: 0 auto 22px;
           transition: transform 0.4s cubic-bezier(0.4,0,0.2,1),
                       background 0.3s, color 0.3s, box-shadow 0.3s;
           box-shadow: 0 6px 18px color-mix(in srgb, var(--c) 20%, transparent);
@@ -495,17 +495,19 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
           color: #ffffff;
         }
         .landing-role-title {
-          font-size: 22px;
+          font-size: 24px;
           font-weight: 900;
           color: var(--text-primary);
           margin-bottom: 10px;
           line-height: 1.2;
+          text-align: center;
         }
         .landing-role-tagline {
           font-size: 13.5px;
           color: var(--text-muted);
           line-height: 1.7;
-          margin-bottom: 20px;
+          margin-bottom: 22px;
+          text-align: center;
         }
         .landing-role-divider {
           height: 1px;
@@ -1058,11 +1060,10 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 tagline: 'منصة احترافية تجمع كل ما يحتاجه المورد لينمو مع Half Lens',
                 color: '#2563eb',
                 features: [
-                  'ملف احترافي يعرض معداتك ومهاراتك',
-                  'استقبال المهام مباشرة من فريق Half Lens',
-                  'متابعة الفواتير والمدفوعات بدقّة',
-                  'إدارة المستندات والمعدات بسهولة',
-                  'إشعارات فورية لكل تحديث',
+                  'معداتك ومهاراتك في ملف احترافي',
+                  'فواتيرك ومدفوعاتك بين يديك',
+                  'مستنداتك محفوظة بسرية تامة',
+                  'إشعار فوري لكل تحديث',
                 ],
               },
               {
@@ -1071,11 +1072,10 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 tagline: 'تابع مشاريعك مع Half Lens من بوابة شفّافة ومنظمة',
                 color: '#06b6d4',
                 features: [
-                  'متابعة المشاريع لحظة بلحظة',
-                  'الاطّلاع على الفواتير وحالة المدفوعات',
-                  'الوصول لوثائق ومخرجات المشاريع',
-                  'تواصل مباشر مع فريق Half Lens',
-                  'تاريخ كامل لمشاريعك السابقة',
+                  'تتابع مشروعك لحظة بلحظة',
+                  'تطّلع على فواتيرك بدون وسيط',
+                  'وثائق مشروعك جاهزة لك',
+                  'مشاريعك السابقة محفوظة',
                 ],
               },
               {
@@ -1084,11 +1084,10 @@ export const LandingPage = ({ onNavigate }: LandingPageProps) => {
                 tagline: 'لوحة تحكم موحّدة تُدير دورة العمل بالكامل داخل Half Lens',
                 color: '#7c3aed',
                 features: [
-                  'إدارة المشاريع والموردين والعملاء',
-                  'متابعة المدفوعات والمصروفات',
-                  'تقارير ربحية وأداء لحظية',
-                  'سجل نشاطات شامل وقابل للتصفية',
-                  'تخصيص الأدوار والصلاحيات',
+                  'تدير كل شيء من مكان واحد',
+                  'مدفوعاتك ومصروفاتك بوضوح',
+                  'كل نشاط مسجّل ومرتّب',
+                  'أدوار وصلاحيات بضغطة زر',
                 ],
               },
             ].map((role, i) => {

@@ -36,14 +36,14 @@ CREATE TABLE IF NOT EXISTS terms_and_privacy_settings (
 ALTER TABLE terms_and_privacy_settings ENABLE ROW LEVEL SECURITY;
 
 -- سياسة القراءة للجميع (النسخة النشطة فقط)
-CREATE POLICY "Anyone can read active terms and privacy"
-  ON terms_and_privacy_settings
+DROP POLICY IF EXISTS "Anyone can read active terms and privacy" ON terms_and_privacy_settings;
+CREATE POLICY "Anyone can read active terms and privacy" ON terms_and_privacy_settings
   FOR SELECT
   USING (is_active = true);
 
 -- سياسة القراءة الكاملة للمسؤولين
-CREATE POLICY "Admins can read all terms and privacy"
-  ON terms_and_privacy_settings
+DROP POLICY IF EXISTS "Admins can read all terms and privacy" ON terms_and_privacy_settings;
+CREATE POLICY "Admins can read all terms and privacy" ON terms_and_privacy_settings
   FOR SELECT
   TO authenticated
   USING (
@@ -55,8 +55,8 @@ CREATE POLICY "Admins can read all terms and privacy"
   );
 
 -- سياسة الإضافة للمسؤولين
-CREATE POLICY "Admins can insert terms and privacy"
-  ON terms_and_privacy_settings
+DROP POLICY IF EXISTS "Admins can insert terms and privacy" ON terms_and_privacy_settings;
+CREATE POLICY "Admins can insert terms and privacy" ON terms_and_privacy_settings
   FOR INSERT
   TO authenticated
   WITH CHECK (
@@ -68,8 +68,8 @@ CREATE POLICY "Admins can insert terms and privacy"
   );
 
 -- سياسة التعديل للمسؤولين
-CREATE POLICY "Admins can update terms and privacy"
-  ON terms_and_privacy_settings
+DROP POLICY IF EXISTS "Admins can update terms and privacy" ON terms_and_privacy_settings;
+CREATE POLICY "Admins can update terms and privacy" ON terms_and_privacy_settings
   FOR UPDATE
   TO authenticated
   USING (

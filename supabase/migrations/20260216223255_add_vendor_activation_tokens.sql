@@ -38,17 +38,17 @@ CREATE TABLE IF NOT EXISTS activation_tokens (
 ALTER TABLE activation_tokens ENABLE ROW LEVEL SECURITY;
 
 -- سياسات RLS
-CREATE POLICY "أي شخص يمكنه التحقق من رمز التفعيل"
-  ON activation_tokens FOR SELECT
+DROP POLICY IF EXISTS "أي شخص يمكنه التحقق من رمز التفعيل" ON activation_tokens;
+CREATE POLICY "أي شخص يمكنه التحقق من رمز التفعيل" ON activation_tokens FOR SELECT
   USING (true);
 
-CREATE POLICY "المسؤولون يمكنهم إنشاء رموز التفعيل"
-  ON activation_tokens FOR INSERT
+DROP POLICY IF EXISTS "المسؤولون يمكنهم إنشاء رموز التفعيل" ON activation_tokens;
+CREATE POLICY "المسؤولون يمكنهم إنشاء رموز التفعيل" ON activation_tokens FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "يمكن تحديث رموز التفعيل عند الاستخدام"
-  ON activation_tokens FOR UPDATE
+DROP POLICY IF EXISTS "يمكن تحديث رموز التفعيل عند الاستخدام" ON activation_tokens;
+CREATE POLICY "يمكن تحديث رموز التفعيل عند الاستخدام" ON activation_tokens FOR UPDATE
   USING (true)
   WITH CHECK (true);
 

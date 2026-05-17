@@ -193,128 +193,128 @@ ALTER TABLE vendor_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendor_invoices ENABLE ROW LEVEL SECURITY;
 
 -- سياسات vendors
-CREATE POLICY "Users can view all vendors"
-  ON vendors FOR SELECT
+DROP POLICY IF EXISTS "Users can view all vendors" ON vendors;
+CREATE POLICY "Users can view all vendors" ON vendors FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendors"
-  ON vendors FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendors" ON vendors;
+CREATE POLICY "Users can insert vendors" ON vendors FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendors"
-  ON vendors FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendors" ON vendors;
+CREATE POLICY "Users can update vendors" ON vendors FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendors"
-  ON vendors FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendors" ON vendors;
+CREATE POLICY "Users can delete vendors" ON vendors FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات vendor_travel_documents
-CREATE POLICY "Users can view vendor travel documents"
-  ON vendor_travel_documents FOR SELECT
+DROP POLICY IF EXISTS "Users can view vendor travel documents" ON vendor_travel_documents;
+CREATE POLICY "Users can view vendor travel documents" ON vendor_travel_documents FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendor travel documents"
-  ON vendor_travel_documents FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendor travel documents" ON vendor_travel_documents;
+CREATE POLICY "Users can insert vendor travel documents" ON vendor_travel_documents FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendor travel documents"
-  ON vendor_travel_documents FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendor travel documents" ON vendor_travel_documents;
+CREATE POLICY "Users can update vendor travel documents" ON vendor_travel_documents FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendor travel documents"
-  ON vendor_travel_documents FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendor travel documents" ON vendor_travel_documents;
+CREATE POLICY "Users can delete vendor travel documents" ON vendor_travel_documents FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات vendor_equipment
-CREATE POLICY "Users can view vendor equipment"
-  ON vendor_equipment FOR SELECT
+DROP POLICY IF EXISTS "Users can view vendor equipment" ON vendor_equipment;
+CREATE POLICY "Users can view vendor equipment" ON vendor_equipment FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendor equipment"
-  ON vendor_equipment FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendor equipment" ON vendor_equipment;
+CREATE POLICY "Users can insert vendor equipment" ON vendor_equipment FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendor equipment"
-  ON vendor_equipment FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendor equipment" ON vendor_equipment;
+CREATE POLICY "Users can update vendor equipment" ON vendor_equipment FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendor equipment"
-  ON vendor_equipment FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendor equipment" ON vendor_equipment;
+CREATE POLICY "Users can delete vendor equipment" ON vendor_equipment FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات vendor_financial_data
-CREATE POLICY "Users can view vendor financial data"
-  ON vendor_financial_data FOR SELECT
+DROP POLICY IF EXISTS "Users can view vendor financial data" ON vendor_financial_data;
+CREATE POLICY "Users can view vendor financial data" ON vendor_financial_data FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendor financial data"
-  ON vendor_financial_data FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendor financial data" ON vendor_financial_data;
+CREATE POLICY "Users can insert vendor financial data" ON vendor_financial_data FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendor financial data"
-  ON vendor_financial_data FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendor financial data" ON vendor_financial_data;
+CREATE POLICY "Users can update vendor financial data" ON vendor_financial_data FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendor financial data"
-  ON vendor_financial_data FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendor financial data" ON vendor_financial_data;
+CREATE POLICY "Users can delete vendor financial data" ON vendor_financial_data FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات vendor_documents
-CREATE POLICY "Users can view vendor documents"
-  ON vendor_documents FOR SELECT
+DROP POLICY IF EXISTS "Users can view vendor documents" ON vendor_documents;
+CREATE POLICY "Users can view vendor documents" ON vendor_documents FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendor documents"
-  ON vendor_documents FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendor documents" ON vendor_documents;
+CREATE POLICY "Users can insert vendor documents" ON vendor_documents FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendor documents"
-  ON vendor_documents FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendor documents" ON vendor_documents;
+CREATE POLICY "Users can update vendor documents" ON vendor_documents FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendor documents"
-  ON vendor_documents FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendor documents" ON vendor_documents;
+CREATE POLICY "Users can delete vendor documents" ON vendor_documents FOR DELETE
   TO authenticated
   USING (true);
 
 -- سياسات vendor_invoices
-CREATE POLICY "Users can view vendor invoices"
-  ON vendor_invoices FOR SELECT
+DROP POLICY IF EXISTS "Users can view vendor invoices" ON vendor_invoices;
+CREATE POLICY "Users can view vendor invoices" ON vendor_invoices FOR SELECT
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can insert vendor invoices"
-  ON vendor_invoices FOR INSERT
+DROP POLICY IF EXISTS "Users can insert vendor invoices" ON vendor_invoices;
+CREATE POLICY "Users can insert vendor invoices" ON vendor_invoices FOR INSERT
   TO authenticated
   WITH CHECK (true);
 
-CREATE POLICY "Users can update vendor invoices"
-  ON vendor_invoices FOR UPDATE
+DROP POLICY IF EXISTS "Users can update vendor invoices" ON vendor_invoices;
+CREATE POLICY "Users can update vendor invoices" ON vendor_invoices FOR UPDATE
   TO authenticated
   USING (true);
 
-CREATE POLICY "Users can delete vendor invoices"
-  ON vendor_invoices FOR DELETE
+DROP POLICY IF EXISTS "Users can delete vendor invoices" ON vendor_invoices;
+CREATE POLICY "Users can delete vendor invoices" ON vendor_invoices FOR DELETE
   TO authenticated
   USING (true);
 
