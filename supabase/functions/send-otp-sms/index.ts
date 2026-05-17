@@ -82,21 +82,26 @@ async function send4jawalySms(toE164: string, body: string): Promise<{ ok: true 
 }
 
 // ── SMS body ──
-// The trailing `@<origin> #<otp>` line is Apple's "Origin-Bound One-Time Codes"
-// format AND Android's WebOTP API format — both platforms guarantee auto-fill
-// recognition with this exact shape. Arabic OTP-keyword heuristics alone aren't
-// reliable on iOS (Apple's NLP is closed-source and inconsistent), so the
-// explicit origin/otp marker stays as the load-bearing line.
+// The `@<origin> #<otp>` trailing line is Apple's "Origin-Bound One-Time Codes"
+// format AND Android Chrome's WebOTP — both platforms guarantee auto-fill with
+// this exact shape. We INCLUDE it on production (where the origin is short and
+// brand-aligned, e.g. platform.h-lens.co) and SUPPRESS it on Netlify/Vercel
+// preview deploys (where the auto-generated URL is long and visually noisy).
 //
-// On prod (APP_ORIGIN=https://platform.h-lens.co) the suffix is short and clean.
-// On Netlify preview URLs the suffix is long; resolve that by wiring a stable
-// staging subdomain (e.g. staging.h-lens.co) when you set up staging DNS.
+// Trade-off: previews don't get auto-fill. Acceptable because previews are for
+// dev/QA only, not real users. To get auto-fill on staging too, point a stable
+// short subdomain (e.g. staging.h-lens.co) at the Netlify site and change
+// APP_ORIGIN accordingly.
 function buildSmsBody(code: string): string {
   const origin = Deno.env.get("APP_ORIGIN") || "https://platform.h-lens.co";
   const originBare = origin.replace(/^https?:\/\//, "");
-  return `رمز التحقق الخاص بك: ${code}
+  const isPreviewUrl = /\.(netlify|vercel)\.app$/i.test(originBare);
 
-Half Lens — صالح لمدة 10 دقائق ولا تشاركه مع أحد.
+  const body = `رمز التحقق الخاص بك: ${code}
+
+Half Lens — صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
+
+  return isPreviewUrl ? body : `${body}
 
 @${originBare} #${code}`;
 }
