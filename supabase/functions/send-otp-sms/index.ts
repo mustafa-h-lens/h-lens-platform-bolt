@@ -81,13 +81,17 @@ async function send4jawalySms(toE164: string, body: string): Promise<{ ok: true 
   }
 }
 
-// ── SMS body (iOS one-time-code autofill still works — it scans for digits) ──
-// Note: dropped the trailing `@<origin> #<otp>` WebOTP line by user request.
-// This disables Android Chrome auto-fill; iOS auto-fill is unaffected.
+// ── SMS body ──
+// iOS Safari auto-fill needs the digits immediately adjacent to an OTP keyword
+// (`رمز التحقق` here) with a colon separator — banks use this pattern because
+// iOS's Arabic NLP recognizes it reliably. Placing the brand on a second line
+// keeps the OTP-keyword/digits pair tight without losing branding context.
+// (Android Chrome WebOTP auto-fill is intentionally not used — user dropped
+//  the `@<origin> #<otp>` line for cleaner SMS appearance.)
 function buildSmsBody(code: string): string {
-  return `رمز التحقق الخاص بك في Half Lens ${code}
+  return `رمز التحقق الخاص بك: ${code}
 
-صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
+Half Lens — صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
 }
 
 Deno.serve(async (req: Request) => {
