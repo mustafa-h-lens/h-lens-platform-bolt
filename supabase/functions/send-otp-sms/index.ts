@@ -82,16 +82,23 @@ async function send4jawalySms(toE164: string, body: string): Promise<{ ok: true 
 }
 
 // ── SMS body ──
-// iOS Safari auto-fill needs the digits immediately adjacent to an OTP keyword
-// (`رمز التحقق` here) with a colon separator — banks use this pattern because
-// iOS's Arabic NLP recognizes it reliably. Placing the brand on a second line
-// keeps the OTP-keyword/digits pair tight without losing branding context.
-// (Android Chrome WebOTP auto-fill is intentionally not used — user dropped
-//  the `@<origin> #<otp>` line for cleaner SMS appearance.)
+// The trailing `@<origin> #<otp>` line is Apple's "Origin-Bound One-Time Codes"
+// format AND Android's WebOTP API format — both platforms guarantee auto-fill
+// recognition with this exact shape. Arabic OTP-keyword heuristics alone aren't
+// reliable on iOS (Apple's NLP is closed-source and inconsistent), so the
+// explicit origin/otp marker stays as the load-bearing line.
+//
+// On prod (APP_ORIGIN=https://platform.h-lens.co) the suffix is short and clean.
+// On Netlify preview URLs the suffix is long; resolve that by wiring a stable
+// staging subdomain (e.g. staging.h-lens.co) when you set up staging DNS.
 function buildSmsBody(code: string): string {
+  const origin = Deno.env.get("APP_ORIGIN") || "https://platform.h-lens.co";
+  const originBare = origin.replace(/^https?:\/\//, "");
   return `رمز التحقق الخاص بك: ${code}
 
-Half Lens — صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
+Half Lens — صالح لمدة 10 دقائق ولا تشاركه مع أحد.
+
+@${originBare} #${code}`;
 }
 
 Deno.serve(async (req: Request) => {
