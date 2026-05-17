@@ -213,17 +213,42 @@ Deno.serve(async (req: Request) => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else {
-      // Vendor
-      const vendorQuery = supabase
-        .from("vendors")
-        .select("id, email, full_name, vendor_type, phone");
-      const { data: vendor, error: vendorError } = await (
-        lookupCol === "phone"
-          ? vendorQuery.eq("phone", normalizedPhoneNine).maybeSingle()
-          : vendorQuery.eq("email", normalizedEmail).maybeSingle()
-      );
+      // Vendor — mirror the format-flexible client lookup so phone-OTP works
+      // for existing rows that may store phone as 9-digit, 10-digit with
+      // leading 0, or E.164.
+      let vendor: { id: string; email: string | null; full_name: string; vendor_type: string | null; phone: string | null } | null = null;
 
-      if (vendorError || !vendor) {
+      if (lookupCol === "phone") {
+        const { data: candidates, error: vendorError } = await supabase
+          .from("vendors")
+          .select("id, email, full_name, vendor_type, phone, created_at")
+          .not("phone", "is", null)
+          .order("created_at", { ascending: false });
+        if (vendorError) {
+          return new Response(
+            JSON.stringify({ error: "المورد غير موجود" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        vendor = (candidates || []).find(
+          (v) => saudiNineDigits((v as { phone: string | null }).phone || "") === normalizedPhoneNine
+        ) || null;
+      } else {
+        const { data, error: vendorError } = await supabase
+          .from("vendors")
+          .select("id, email, full_name, vendor_type, phone")
+          .eq("email", normalizedEmail)
+          .maybeSingle();
+        if (vendorError) {
+          return new Response(
+            JSON.stringify({ error: "المورد غير موجود" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        vendor = data;
+      }
+
+      if (!vendor) {
         return new Response(
           JSON.stringify({ error: "المورد غير موجود" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }

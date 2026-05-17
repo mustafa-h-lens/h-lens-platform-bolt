@@ -153,11 +153,14 @@ Deno.serve(async (req: Request) => {
       }
       entityName = match.name;
     } else {
-      const { data: vendor, error: vendorError } = await supabase
+      // Format-flexible vendor lookup: existing rows may store phone as
+      // 9-digit "501234001", 10-digit "0501234001", or E.164 "+966501234001".
+      // Normalize each stored value and compare against the normalized input.
+      const { data: candidates, error: vendorError } = await supabase
         .from("vendors")
-        .select("id, phone, full_name, status")
-        .eq("phone", phoneStored)
-        .maybeSingle();
+        .select("id, phone, full_name, status, created_at")
+        .not("phone", "is", null)
+        .order("created_at", { ascending: false });
       if (vendorError) {
         console.error("Vendor lookup error:", vendorError);
         return new Response(
@@ -165,6 +168,9 @@ Deno.serve(async (req: Request) => {
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
+      const vendor = (candidates || []).find(
+        (v: { phone: string | null }) => saudiNineDigits(v.phone || "") === nineDigit,
+      );
       if (!vendor) {
         return new Response(
           JSON.stringify({ error: "رقم الجوال غير مسجل في النظام" }),
