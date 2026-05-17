@@ -81,17 +81,13 @@ async function send4jawalySms(toE164: string, body: string): Promise<{ ok: true 
   }
 }
 
-// ── SMS body (works with iOS one-time-code AND Android WebOTP) ──
+// ── SMS body (iOS one-time-code autofill still works — it scans for digits) ──
+// Note: dropped the trailing `@<origin> #<otp>` WebOTP line by user request.
+// This disables Android Chrome auto-fill; iOS auto-fill is unaffected.
 function buildSmsBody(code: string): string {
-  // WebOTP needs the `@<origin> #<otp>` suffix on the last line where
-  // <origin> exactly matches window.location.origin in the browser.
-  const origin = Deno.env.get("APP_ORIGIN") || "https://platform.h-lens.co";
-  const originBare = origin.replace(/^https?:\/\//, "");
-  return `رمز التحقق الخاص بك في Half Lens: ${code}
+  return `رمز التحقق الخاص بك في Half Lens ${code}
 
-صالح لمدة 10 دقائق ولا تشاركه مع أحد.
-
-@${originBare} #${code}`;
+صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
 }
 
 Deno.serve(async (req: Request) => {
