@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Loader2, ArrowLeft, Sun, Moon, Phone as PhoneIcon, Mail } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import OTPInput from '../auth/OTPInput';
-import { normalizeSaudiPhone, isValidSaudiPhone } from '../../lib/phoneUtils';
+import { normalizeSaudiPhone, isValidSaudiPhone, stripLocalPhone } from '../../lib/phoneUtils';
 import { isValidEmail } from '../../lib/validators';
-import { toEnglishNumbers } from '../../lib/numberUtils';
+import { COUNTRY_CODES } from '../../lib/shared-data';
 
 type AuthStep = 'login' | 'otp';
 
@@ -52,12 +52,13 @@ export default function ClientAuth({ onSuccess }: ClientAuthProps) {
 // ─── Client Login Page ─────────────────────────────────────────
 function ClientLoginPage({ onOTPSent }: { onOTPSent: (identifier: string, mode: 'phone' | 'email', otpCode?: string) => void }) {
   // Primary channel: SMS-OTP. Email-OTP is a secondary tab toggle.
-  const [mode, setMode]       = useState<'phone' | 'email'>('phone');
-  const [phone, setPhone]     = useState('');
-  const [email, setEmail]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
-  const [focused, setFocused] = useState(false);
+  const [mode, setMode]               = useState<'phone' | 'email'>('phone');
+  const [countryCode, setCountryCode] = useState('+966');
+  const [phone, setPhone]             = useState('');
+  const [email, setEmail]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+  const [focused, setFocused]         = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,11 +69,19 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (identifier: string, mode: 
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
 
       if (mode === 'phone') {
-        if (!isValidSaudiPhone(phone)) {
-          setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+        const localStripped = stripLocalPhone(phone, countryCode);
+        if (countryCode === '+966') {
+          if (!isValidSaudiPhone(phone)) {
+            setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+            setLoading(false); return;
+          }
+        } else if (localStripped.length < 6 || localStripped.length > 15) {
+          setError('يرجى إدخال رقم جوال صالح');
           setLoading(false); return;
         }
-        const phoneE164 = normalizeSaudiPhone(phone)!;
+        const phoneE164 = countryCode === '+966'
+          ? normalizeSaudiPhone(phone)!
+          : `${countryCode}${localStripped}`;
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-otp-sms`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}` },
@@ -192,14 +201,28 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (identifier: string, mode: 
                   <>
                     <label className="sl-label">رقم الجوال</label>
                     <div className={`sl-phone-wrap ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}>
-                      <span className="sl-phone-prefix">+966</span>
+                      <select
+                        className="sl-phone-prefix sl-cc-select"
+                        value={countryCode}
+                        onChange={e => {
+                          const newCC = e.target.value;
+                          setCountryCode(newCC);
+                          setPhone(stripLocalPhone(phone, newCC));
+                        }}
+                        disabled={loading}
+                        aria-label="رمز الدولة"
+                      >
+                        {COUNTRY_CODES.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                        ))}
+                      </select>
                       <input
                         type="tel"
                         inputMode="numeric"
                         autoComplete="tel-national"
                         value={phone}
-                        onChange={e => setPhone(toEnglishNumbers(e.target.value).replace(/\D/g, '').slice(0, 10))}
-                        placeholder="5XXXXXXXX"
+                        onChange={e => setPhone(stripLocalPhone(e.target.value, countryCode))}
+                        placeholder={countryCode === '+966' ? '5XXXXXXXX' : 'XXXXXXXXX'}
                         disabled={loading}
                         dir="ltr"
                         className="sl-phone-input"
@@ -403,6 +426,17 @@ function ClientLoginPage({ onOTPSent }: { onOTPSent: (identifier: string, mode: 
           display: flex; align-items: center;
         }
         .sl-page[data-dark] .sl-phone-prefix { background: rgba(255, 255, 255, 0.04); }
+        /* Country-code <select> styled to match the chip look */
+        .sl-cc-select {
+          appearance: none; -webkit-appearance: none; -moz-appearance: none;
+          border: none; outline: none; cursor: pointer;
+          padding-right: 28px;
+          background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: left 8px center;
+        }
+        .sl-cc-select:disabled { cursor: not-allowed; opacity: 0.6; }
+        .sl-cc-select option { color: #0f172a; background: #fff; }
         .sl-phone-input {
           flex: 1;
           padding: 12px 14px;

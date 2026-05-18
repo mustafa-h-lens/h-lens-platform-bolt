@@ -8,11 +8,14 @@ import { useNotification } from '../../../../contexts/NotificationContext';
 import { getNationalityOptions } from '../../../../lib/countries';
 import { formatDateArabic } from '../../../../lib/formatters';
 import { DatePicker } from '../../../ui/DatePicker';
+import { COUNTRY_CODES } from '../../../../lib/shared-data';
+import { stripLocalPhone, splitStoredPhone } from '../../../../lib/phoneUtils';
 
 interface Vendor {
   id: string;
   full_name: string;
   phone: string;
+  country_code?: string;
   email?: string;
   profile_image?: string;
   id_image?: string;
@@ -55,9 +58,16 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
   const { showSuccess, showError } = useNotification();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Derive country code + local phone from the stored value. Prefer the
+  // explicit vendor.country_code if it's set; otherwise sniff via splitStoredPhone.
+  const initialSplit = splitStoredPhone(vendor.phone);
+  const initialCountryCode = vendor.country_code || initialSplit.countryCode;
+  const initialPhoneLocal = initialSplit.local;
+
   const [formData, setFormData] = useState({
     full_name: vendor.full_name,
-    phone: vendor.phone,
+    country_code: initialCountryCode,
+    phone: initialPhoneLocal,
     email: vendor.email || '',
     profile_image: vendor.profile_image || '',
     id_image: vendor.id_image || '',
@@ -158,7 +168,8 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
     try {
       const updateData = {
         full_name: formData.full_name.trim(),
-        phone: toEnglishNumbers(formData.phone.trim()),
+        country_code: formData.country_code || '+966',
+        phone: stripLocalPhone(formData.phone, formData.country_code || '+966'),
         email: formData.email.trim() || null,
         profile_image: formData.profile_image || null,
         id_image: formData.id_image || null,
@@ -200,9 +211,11 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
   };
 
   const handleCancel = () => {
+    const split = splitStoredPhone(vendor.phone);
     setFormData({
       full_name: vendor.full_name,
-      phone: vendor.phone,
+      country_code: vendor.country_code || split.countryCode,
+      phone: split.local,
       email: vendor.email || '',
       profile_image: vendor.profile_image || '',
       id_image: vendor.id_image || '',
@@ -690,14 +703,35 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
 
           <div className="input-group">
             <label className="input-label">رقم الجوال <span className="req">*</span></label>
-            <input
-              type="tel"
-              className="input"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })}
-              disabled={!isEditing}
-              dir="ltr"
-            />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+              <div style={{ width: 160, flexShrink: 0 }}>
+                <SearchableDropdown
+                  value={formData.country_code}
+                  onChange={(value) => setFormData({
+                    ...formData,
+                    country_code: value,
+                    // Re-strip the existing phone against the new country code
+                    // so a previously-included prefix doesn't linger after switching.
+                    phone: stripLocalPhone(formData.phone, value),
+                  })}
+                  options={COUNTRY_CODES.map(c => ({ value: c.code, label: `${c.flag} ${c.code} ${c.nameAr}` }))}
+                  placeholder="+966"
+                  disabled={!isEditing}
+                />
+              </div>
+              <input
+                type="tel"
+                className="input"
+                style={{ flex: 1 }}
+                value={formData.phone}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  phone: stripLocalPhone(e.target.value, formData.country_code || '+966'),
+                })}
+                disabled={!isEditing}
+                dir="ltr"
+              />
+            </div>
           </div>
 
           <div className="input-group">
