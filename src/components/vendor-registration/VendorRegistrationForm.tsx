@@ -277,11 +277,22 @@ export const VendorRegistrationForm = () => {
       return;
     }
 
-    // Forward navigation — every step BETWEEN current and target must be
-    // valid. If not, jump the user to the first invalid step (not the
-    // click target) and surface its errors. Closes the stepper-click
-    // loophole where users could skip ahead to step 8 with just step 1
-    // filled.
+    // Forward navigation — first, block if there are UNRESOLVED errors
+    // already visible on the current step. This catches async/server-side
+    // validation failures that validateStep() doesn't know about (e.g. the
+    // phone-duplicate check fires after Next is clicked and stores its error
+    // in validationErrors — validateStep would still return true because the
+    // phone format is locally valid).
+    if (Object.keys(validationErrors).length > 0) {
+      scrollToFirstError(validationErrors);
+      showError('يرجى تصحيح الأخطاء قبل المتابعة');
+      return;
+    }
+
+    // Then validate every step BETWEEN current and target via the sync rules.
+    // If any fails, jump the user to the first invalid step (not the click
+    // target) and surface its errors. Closes the stepper-click loophole
+    // where users could skip ahead to step 8 with just step 1 filled.
     for (let i = currentStep; i < step; i++) {
       if (!validateStep(i)) {
         const errs = getStepErrors(i);
@@ -435,6 +446,16 @@ export const VendorRegistrationForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Block submit if there are unresolved errors visible — same async-error
+    // safety net as goToStep. Catches the case where a user reached the
+    // submit button despite a server-side validation error (e.g. duplicate
+    // phone) still being displayed on a previous step.
+    if (Object.keys(validationErrors).length > 0) {
+      scrollToFirstError(validationErrors);
+      showError('يرجى تصحيح الأخطاء قبل إرسال الطلب');
+      return;
+    }
 
     // Defense-in-depth: validate EVERY step before submitting. Even if a
     // user bypassed goToStep's gating (browser extension, devtools state
