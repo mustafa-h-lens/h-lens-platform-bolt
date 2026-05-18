@@ -129,7 +129,12 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
     if (diff > 0) {
       const distance = Math.min(diff * 0.45, MAX_PULL);
       setPullDistance(distance);
-      if (distance > 10 && e.cancelable) e.preventDefault();
+      // No preventDefault: passive listener (see registration below) cannot
+      // call it. The html { overscroll-behavior-y: none } set in the effect
+      // above already suppresses iOS Safari's native pull-spinner — calling
+      // preventDefault here was redundant and required passive: false, which
+      // forced iOS to wait for the JS handler before every touch frame and
+      // killed momentum scroll site-wide.
     } else {
       pulling.current = false;
       setPullDistance(0);
@@ -156,7 +161,7 @@ export const PullToRefresh = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
     document.addEventListener('touchend', handleTouchEnd);
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);

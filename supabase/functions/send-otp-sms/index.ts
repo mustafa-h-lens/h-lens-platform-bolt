@@ -84,26 +84,13 @@ async function send4jawalySms(toE164: string, body: string): Promise<{ ok: true 
 // ── SMS body ──
 // English-first OTP keyword line triggers iOS Safari's pattern-matching
 // auto-fill — Apple's ML is heavily English-trained, so "Your Half Lens
-// code: <digits>" recognizes ~95% of the time even WITHOUT the origin-bound
-// suffix. Arabic line below preserves localization.
-//
-// On production (short clean origin like platform.h-lens.co), append the
-// Origin-Bound One-Time Codes suffix for guaranteed 100% auto-fill on both
-// iOS and Android. Suppressed on Netlify/Vercel preview deploys where the
-// long URL would dominate the SMS visually — heuristic English auto-fill is
-// good enough for dev/QA.
+// code: <digits>" recognizes ~95% of the time. Arabic line below preserves
+// localization. Per user preference, no origin-bound suffix is appended
+// (cleaner SMS appearance prioritized over deterministic auto-fill).
 function buildSmsBody(code: string): string {
-  const origin = Deno.env.get("APP_ORIGIN") || "https://platform.h-lens.co";
-  const originBare = origin.replace(/^https?:\/\//, "");
-  const isPreviewUrl = /\.(netlify|vercel)\.app$/i.test(originBare);
-
-  const body = `Your Half Lens code: ${code}
+  return `Your Half Lens code: ${code}
 
 صالح لمدة 10 دقائق ولا تشاركه مع أحد.`;
-
-  return isPreviewUrl ? body : `${body}
-
-@${originBare} #${code}`;
 }
 
 Deno.serve(async (req: Request) => {
