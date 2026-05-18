@@ -121,6 +121,29 @@ Deno.serve(async (req: Request) => {
     const phoneE164 = `+966${nineDigit}`;
     const phoneStored = nineDigit; // matches the format already in vendors.phone / clients.phone
 
+    // Per-IP rate limit: max 20 OTP requests / hour from a single IP. Defends
+    // against single-attacker cost-drain spam where the per-phone cap is
+    // bypassed by spreading requests across many fake numbers. Runs BEFORE
+    // the entity lookup so a spammer at the cap can't probe phone existence.
+    const ipAddr = (req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+      || req.headers.get("x-real-ip")
+      || "unknown");
+
+    if (ipAddr !== "unknown") {
+      const { count: ipReqCount } = await supabase
+        .from("otp_codes")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_address", ipAddr)
+        .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+
+      if (ipReqCount && ipReqCount >= 20) {
+        return new Response(
+          JSON.stringify({ error: "تم تجاوز الحد الأقصى للطلبات من هذا الجهاز. يرجى المحاولة لاحقاً" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Lookup the entity. Vendors store phone as 9-digit; client phones are
     // unstructured text — match by both digits-only and any prefix variant.
     let entityName = "";

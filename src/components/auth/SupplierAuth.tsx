@@ -9,17 +9,19 @@ interface SupplierAuthProps {
 }
 
 export default function SupplierAuth({ onSuccess }: SupplierAuthProps) {
-  const [step, setStep]     = useState<AuthStep>('login');
-  const [phone, setPhone]   = useState('');
-  const [devOTP, setDevOTP] = useState<string | null>(null);
+  const [step, setStep]             = useState<AuthStep>('login');
+  const [identifier, setIdentifier] = useState('');
+  const [mode, setMode]             = useState<'phone' | 'email'>('phone');
+  const [devOTP, setDevOTP]         = useState<string | null>(null);
 
-  const handleOTPSent = (sentPhone: string, otpCode?: string) => {
-    setPhone(sentPhone);
+  const handleOTPSent = (sentIdentifier: string, sentMode: 'phone' | 'email', otpCode?: string) => {
+    setIdentifier(sentIdentifier);
+    setMode(sentMode);
     setDevOTP(otpCode || null);
     setStep('otp');
   };
 
-  const handleBack = () => { setStep('login'); setPhone(''); setDevOTP(null); };
+  const handleBack = () => { setStep('login'); setIdentifier(''); setDevOTP(null); };
 
   const handleSuccess = (data: any) => {
     localStorage.setItem('vendor_session', JSON.stringify(data.session));
@@ -28,7 +30,17 @@ export default function SupplierAuth({ onSuccess }: SupplierAuthProps) {
   };
 
   if (step === 'otp') {
-    return <OTPInput phone={phone} onBack={handleBack} onSuccess={handleSuccess} devOTP={devOTP} portalType="vendor" />;
+    // OTPInput accepts either phone OR email and branches its API calls on
+    // whichever is set. We forward only the one that matches the login mode.
+    return (
+      <OTPInput
+        {...(mode === 'phone' ? { phone: identifier } : { email: identifier })}
+        onBack={handleBack}
+        onSuccess={handleSuccess}
+        devOTP={devOTP}
+        portalType="vendor"
+      />
+    );
   }
 
   return <SupplierLogin onOTPSent={handleOTPSent} />;

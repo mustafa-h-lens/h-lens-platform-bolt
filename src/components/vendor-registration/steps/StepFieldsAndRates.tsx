@@ -22,10 +22,10 @@ interface Props {
   updateSelectedFields: (fields: SelectedField[]) => void;
   portfolioUrl: string;
   updatePortfolioUrl: (url: string) => void;
-  errors?: Record<string, string>;
+  errors?: Record<string, React.ReactNode>;
 }
 
-const FieldError = ({ msg }: { msg?: string }) => msg ? (
+const FieldError = ({ msg }: { msg?: React.ReactNode }) => msg ? (
   <div className="field-error">✕ {msg}</div>
 ) : null;
 

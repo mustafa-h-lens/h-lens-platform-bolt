@@ -7,10 +7,10 @@ import { Toggle } from '../../ui/Toggle';
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
-  errors?: Record<string, string>;
+  errors?: Record<string, React.ReactNode>;
 }
 
-const FieldError = ({ msg }: { msg?: string }) => msg ? (
+const FieldError = ({ msg }: { msg?: React.ReactNode }) => msg ? (
   <div className="field-error">✕ {msg}</div>
 ) : null;
 
@@ -113,7 +113,30 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
               className="input phone-number"
               type="tel"
               value={formData.phone}
-              onChange={(e) => updateFormData({ phone: e.target.value.replace(/\D/g, '').slice(0, 9) })}
+              onChange={(e) => {
+                // Trim whitespace, strip non-digit chars (handles pasted formats like
+                // "+966 51 234 5678", "(05) 0123 4567", etc.) and the leading 0
+                // common in local Saudi typing — also strip a pasted country-code
+                // prefix matching whichever code is currently selected.
+                let v = e.target.value.replace(/\s+/g, '').replace(/\D/g, '');
+                const ccDigits = (formData.country_code || '+966').replace(/^\+/, '');
+                if (v.startsWith('00' + ccDigits)) v = v.slice(('00' + ccDigits).length);
+                else if (v.startsWith(ccDigits)) v = v.slice(ccDigits.length);
+                if (v.startsWith('0')) v = v.slice(1);
+                updateFormData({ phone: v.slice(0, 15) });
+              }}
+              onPaste={(e) => {
+                // Same normalization for paste — onChange will fire after, but
+                // catching paste explicitly avoids a flash of the raw pasted text.
+                e.preventDefault();
+                const raw = (e.clipboardData?.getData('text') || '').replace(/\s+/g, '').replace(/\D/g, '');
+                const ccDigits = (formData.country_code || '+966').replace(/^\+/, '');
+                let v = raw;
+                if (v.startsWith('00' + ccDigits)) v = v.slice(('00' + ccDigits).length);
+                else if (v.startsWith(ccDigits)) v = v.slice(ccDigits.length);
+                if (v.startsWith('0')) v = v.slice(1);
+                updateFormData({ phone: v.slice(0, 15) });
+              }}
               placeholder="5XXXXXXXX"
               dir="ltr"
               style={{ fontFamily: 'var(--font-mono)' }}

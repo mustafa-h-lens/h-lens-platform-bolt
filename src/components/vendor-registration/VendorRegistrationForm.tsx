@@ -196,7 +196,7 @@ export const VendorRegistrationForm = () => {
     }
   };
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<Record<string, React.ReactNode>>({});
 
   const updateFormData = (data: Partial<VendorFormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -266,18 +266,41 @@ export const VendorRegistrationForm = () => {
   };
 
   const goToStep = (step: number) => {
-    if (step < currentStep || validateStep(currentStep)) {
+    if (step === currentStep) return;
+
+    // Backward navigation — always allowed (users may want to review/edit
+    // a previous step without re-validating their way back).
+    if (step < currentStep) {
       setValidationErrors({});
       setCurrentStep(step);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const errs = getStepErrors(currentStep);
-      setValidationErrors(errs);
-      scrollToFirstError(errs);
+      return;
     }
+
+    // Forward navigation — every step BETWEEN current and target must be
+    // valid. If not, jump the user to the first invalid step (not the
+    // click target) and surface its errors. Closes the stepper-click
+    // loophole where users could skip ahead to step 8 with just step 1
+    // filled.
+    for (let i = currentStep; i < step; i++) {
+      if (!validateStep(i)) {
+        const errs = getStepErrors(i);
+        setValidationErrors(errs);
+        setCurrentStep(i);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToFirstError(errs);
+        showError(`يرجى إكمال الخطوة ${i} أولاً`);
+        return;
+      }
+    }
+
+    // All intermediate steps valid — allow the jump.
+    setValidationErrors({});
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const scrollToFirstError = (errs: Record<string, string>) => {
+  const scrollToFirstError = (errs: Record<string, unknown>) => {
     setTimeout(() => {
       const firstKey = Object.keys(errs)[0];
       if (firstKey) {
@@ -301,15 +324,46 @@ export const VendorRegistrationForm = () => {
     if (currentStep === 2) {
       setCheckingDuplicate(true);
       try {
-        const phone = `${formData.country_code}${formData.phone}`;
-        const { data: phoneVendor } = await supabase
-          .from('vendors')
-          .select('id, status')
-          .eq('phone', phone)
-          .maybeSingle();
+        // Format-flex phone duplicate check: vendors.phone is stored in mixed
+        // formats across the DB (9-digit, 10-digit with leading 0, E.164, etc.),
+        // so an exact `.eq()` match would miss real duplicates. Pull candidates
+        // with non-null phone, normalize both stored value and the input to the
+        // canonical 9-digit local form, then compare. Same pattern used in
+        // send-otp-sms and verify-otp edge functions.
+        const normalizePhone = (raw: string | null): string | null => {
+          if (!raw) return null;
+          let d = String(raw).replace(/\D/g, '');
+          if (d.startsWith('00966')) d = d.slice(5);
+          else if (d.startsWith('966')) d = d.slice(3);
+          else if (d.startsWith('0')) d = d.slice(1);
+          return /^5\d{8}$/.test(d) ? d : d; // return digits regardless; comparison is what matters
+        };
+        const inputDigits = normalizePhone(formData.phone);
 
-        if (phoneVendor && phoneVendor.status !== 'rejected') {
-          setValidationErrors({ phone: 'رقم الجوال مسجل بالفعل' });
+        const { data: phoneCandidates } = await supabase
+          .from('vendors')
+          .select('id, status, phone')
+          .not('phone', 'is', null);
+
+        const phoneDup = (phoneCandidates || []).find(v =>
+          v.status !== 'rejected' && normalizePhone(v.phone) === inputDigits
+        );
+
+        if (phoneDup) {
+          setValidationErrors({
+            phone: (
+              <>
+                رقم الجوال مسجل بالفعل.{' '}
+                <a
+                  href="/vendor/login"
+                  onClick={(e) => { e.preventDefault(); window.location.href = '/vendor/login'; }}
+                  style={{ color: 'var(--accent, #3b82f6)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  قم بتسجيل الدخول
+                </a>
+              </>
+            )
+          });
           scrollToFirstError({ phone: '' });
           return;
         }
@@ -318,11 +372,24 @@ export const VendorRegistrationForm = () => {
           const { data: emailVendor } = await supabase
             .from('vendors')
             .select('id, status')
-            .eq('email', formData.email)
+            .eq('email', formData.email.trim().toLowerCase())
             .maybeSingle();
 
           if (emailVendor && emailVendor.status !== 'rejected') {
-            setValidationErrors({ email: 'البريد الإلكتروني مسجل بالفعل. إذا كنت قد تقدمت سابقاً، يرجى انتظار مراجعة طلبك.' });
+            setValidationErrors({
+              email: (
+                <>
+                  البريد الإلكتروني مسجل بالفعل.{' '}
+                  <a
+                    href="/vendor/login"
+                    onClick={(e) => { e.preventDefault(); window.location.href = '/vendor/login'; }}
+                    style={{ color: 'var(--accent, #3b82f6)', textDecoration: 'underline', fontWeight: 600, cursor: 'pointer' }}
+                  >
+                    قم بتسجيل الدخول
+                  </a>
+                </>
+              )
+            });
             scrollToFirstError({ email: '' });
             return;
           }
@@ -368,6 +435,25 @@ export const VendorRegistrationForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Defense-in-depth: validate EVERY step before submitting. Even if a
+    // user bypassed goToStep's gating (browser extension, devtools state
+    // mutation, future refactor that exposes the submit button on a
+    // different path), submission itself refuses if any step is incomplete.
+    // We surface errors on the first invalid step instead of attempting
+    // a doomed insert.
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      if (!validateStep(i)) {
+        const errs = getStepErrors(i);
+        setValidationErrors(errs);
+        setCurrentStep(i);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToFirstError(errs);
+        showError(`الخطوة ${i} غير مكتملة. يرجى إكمالها قبل إرسال الطلب.`);
+        return;
+      }
+    }
+
     if (!termsAccepted) {
       showError('يرجى الموافقة على الشروط والأحكام وسياسة السرّية');
       return;
