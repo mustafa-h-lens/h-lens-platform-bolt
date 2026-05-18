@@ -123,7 +123,7 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
                 if (v.startsWith('00' + ccDigits)) v = v.slice(('00' + ccDigits).length);
                 else if (v.startsWith(ccDigits)) v = v.slice(ccDigits.length);
                 if (v.startsWith('0')) v = v.slice(1);
-                updateFormData({ phone: v.slice(0, 9) });
+                updateFormData({ phone: v.slice(0, 15) });
               }}
               onPaste={(e) => {
                 // Same normalization for paste — onChange will fire after, but
@@ -135,7 +135,7 @@ export const Step2Contact = ({ formData, updateFormData, errors = {} }: Props) =
                 if (v.startsWith('00' + ccDigits)) v = v.slice(('00' + ccDigits).length);
                 else if (v.startsWith(ccDigits)) v = v.slice(ccDigits.length);
                 if (v.startsWith('0')) v = v.slice(1);
-                updateFormData({ phone: v.slice(0, 9) });
+                updateFormData({ phone: v.slice(0, 15) });
               }}
               placeholder="5XXXXXXXX"
               dir="ltr"
