@@ -13,10 +13,10 @@ const PENDING_FILE_WATCHDOG_MS = 30000;
 interface Props {
   formData: VendorFormData;
   updateFormData: (data: Partial<VendorFormData>) => void;
-  errors?: Record<string, string>;
+  errors?: Record<string, React.ReactNode>;
 }
 
-const FieldError = ({ msg }: { msg?: string }) => msg ? (
+const FieldError = ({ msg }: { msg?: React.ReactNode }) => msg ? (
   <div className="field-error">✕ {msg}</div>
 ) : null;
 
