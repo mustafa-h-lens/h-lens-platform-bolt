@@ -266,15 +266,38 @@ export const VendorRegistrationForm = () => {
   };
 
   const goToStep = (step: number) => {
-    if (step < currentStep || validateStep(currentStep)) {
+    if (step === currentStep) return;
+
+    // Backward navigation — always allowed (users may want to review/edit
+    // a previous step without re-validating their way back).
+    if (step < currentStep) {
       setValidationErrors({});
       setCurrentStep(step);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const errs = getStepErrors(currentStep);
-      setValidationErrors(errs);
-      scrollToFirstError(errs);
+      return;
     }
+
+    // Forward navigation — every step BETWEEN current and target must be
+    // valid. If not, jump the user to the first invalid step (not the
+    // click target) and surface its errors. Closes the stepper-click
+    // loophole where users could skip ahead to step 8 with just step 1
+    // filled.
+    for (let i = currentStep; i < step; i++) {
+      if (!validateStep(i)) {
+        const errs = getStepErrors(i);
+        setValidationErrors(errs);
+        setCurrentStep(i);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToFirstError(errs);
+        showError(`يرجى إكمال الخطوة ${i} أولاً`);
+        return;
+      }
+    }
+
+    // All intermediate steps valid — allow the jump.
+    setValidationErrors({});
+    setCurrentStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const scrollToFirstError = (errs: Record<string, unknown>) => {
@@ -412,6 +435,25 @@ export const VendorRegistrationForm = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
+
+    // Defense-in-depth: validate EVERY step before submitting. Even if a
+    // user bypassed goToStep's gating (browser extension, devtools state
+    // mutation, future refactor that exposes the submit button on a
+    // different path), submission itself refuses if any step is incomplete.
+    // We surface errors on the first invalid step instead of attempting
+    // a doomed insert.
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      if (!validateStep(i)) {
+        const errs = getStepErrors(i);
+        setValidationErrors(errs);
+        setCurrentStep(i);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToFirstError(errs);
+        showError(`الخطوة ${i} غير مكتملة. يرجى إكمالها قبل إرسال الطلب.`);
+        return;
+      }
+    }
+
     if (!termsAccepted) {
       showError('يرجى الموافقة على الشروط والأحكام وسياسة السرّية');
       return;
