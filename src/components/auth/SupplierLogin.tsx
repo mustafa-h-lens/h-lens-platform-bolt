@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Loader2, ArrowLeft, Sun, Moon, Phone as PhoneIcon, Mail } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { supabase } from '../../lib/supabaseClient';
-import { normalizeSaudiPhone, saudiPhoneDigitsOnly, isValidSaudiPhone } from '../../lib/phoneUtils';
+import { normalizeSaudiPhone, saudiPhoneDigitsOnly, isValidSaudiPhone, stripLocalPhone } from '../../lib/phoneUtils';
 import { isValidEmail } from '../../lib/validators';
-import { toEnglishNumbers } from '../../lib/numberUtils';
+import { COUNTRY_CODES } from '../../lib/shared-data';
 
 interface SupplierLoginProps {
   onOTPSent: (identifier: string, mode: 'phone' | 'email', otpCode?: string) => void;
@@ -12,13 +12,14 @@ interface SupplierLoginProps {
 
 export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
   // Primary channel is SMS-OTP; email-OTP is the secondary fallback. Mode is
-  // tab-toggled by the user. Defaults to phone.
-  const [mode, setMode]       = useState<'phone' | 'email'>('phone');
-  const [phone, setPhone]     = useState('');
-  const [email, setEmail]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
-  const [focused, setFocused] = useState(false);
+  // tab-toggled by the user. Defaults to phone + Saudi country code.
+  const [mode, setMode]               = useState<'phone' | 'email'>('phone');
+  const [countryCode, setCountryCode] = useState('+966');
+  const [phone, setPhone]             = useState('');
+  const [email, setEmail]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+  const [focused, setFocused]         = useState(false);
   const { isDarkMode, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,18 +32,30 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
 
       if (mode === 'phone') {
-        if (!isValidSaudiPhone(phone)) {
-          setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+        // Validation: Saudi enforces the strict 5XXXXXXXX pattern; non-Saudi
+        // requires only a reasonable digit-length (since formats vary widely).
+        const localStripped = stripLocalPhone(phone, countryCode);
+        if (countryCode === '+966') {
+          if (!isValidSaudiPhone(phone)) {
+            setError('يرجى إدخال رقم جوال سعودي صالح (يبدأ بـ 5 ويتكون من 9 أرقام)');
+            setLoading(false); return;
+          }
+        } else if (localStripped.length < 6 || localStripped.length > 15) {
+          setError('يرجى إدخال رقم جوال صالح');
           setLoading(false); return;
         }
-        const phoneE164 = normalizeSaudiPhone(phone)!;
-        const phoneNine = saudiPhoneDigitsOnly(phone)!;
+        const phoneE164 = countryCode === '+966'
+          ? normalizeSaudiPhone(phone)!
+          : `${countryCode}${localStripped}`;
+        const phoneStored = countryCode === '+966'
+          ? saudiPhoneDigitsOnly(phone)!
+          : localStripped;
 
-        // Block check via stored phone
+        // Block check via stored phone (matches whatever the admin saved)
         const { data: vendorRow } = await supabase
           .from('vendors')
           .select('status, block_reason, blocked_until')
-          .eq('phone', phoneNine)
+          .eq('phone', phoneStored)
           .maybeSingle();
         if (vendorRow?.status === 'blocked') {
           const untilTxt = vendorRow.blocked_until
@@ -189,14 +202,28 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
                   <>
                     <label className="sl-label">رقم الجوال</label>
                     <div className={`sl-phone-wrap ${focused ? 'sl-input-focus' : ''} ${error ? 'sl-input-error' : ''}`}>
-                      <span className="sl-phone-prefix">+966</span>
+                      <select
+                        className="sl-phone-prefix sl-cc-select"
+                        value={countryCode}
+                        onChange={e => {
+                          const newCC = e.target.value;
+                          setCountryCode(newCC);
+                          setPhone(stripLocalPhone(phone, newCC));
+                        }}
+                        disabled={loading}
+                        aria-label="رمز الدولة"
+                      >
+                        {COUNTRY_CODES.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                        ))}
+                      </select>
                       <input
                         type="tel"
                         inputMode="numeric"
                         autoComplete="tel-national"
                         value={phone}
-                        onChange={e => setPhone(toEnglishNumbers(e.target.value).replace(/\D/g, '').slice(0, 10))}
-                        placeholder="5XXXXXXXX"
+                        onChange={e => setPhone(stripLocalPhone(e.target.value, countryCode))}
+                        placeholder={countryCode === '+966' ? '5XXXXXXXX' : 'XXXXXXXXX'}
                         disabled={loading}
                         dir="ltr"
                         className="sl-phone-input"
@@ -629,6 +656,17 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         .sl-page[data-dark] .sl-phone-prefix {
           background: rgba(255, 255, 255, 0.04);
         }
+        /* Country-code <select> styled to match the chip look */
+        .sl-cc-select {
+          appearance: none; -webkit-appearance: none; -moz-appearance: none;
+          border: none; outline: none; cursor: pointer;
+          padding-right: 28px;
+          background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: left 8px center;
+        }
+        .sl-cc-select:disabled { cursor: not-allowed; opacity: 0.6; }
+        .sl-cc-select option { color: #0f172a; background: #fff; }
         .sl-phone-input {
           flex: 1;
           padding: 12px 14px;

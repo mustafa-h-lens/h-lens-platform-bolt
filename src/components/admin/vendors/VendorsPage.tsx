@@ -4,6 +4,8 @@ import { supabase } from '../../../lib/supabaseClient';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { SearchableDropdown } from '../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { stripLocalPhone } from '../../../lib/phoneUtils';
+import { COUNTRY_CODES } from '../../../lib/shared-data';
 import { checkVendorDuplicates, duplicateMessage } from '../../../lib/vendorDuplicates';
 import { isValidEmail } from '../../../lib/validators';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -596,7 +598,7 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
   const [smartText, setSmartText] = useState('');
   const [showSmartParse, setShowSmartParse] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: '', phone: '', email: '', primary_field: '', primary_city: '',
+    full_name: '', country_code: '+966', phone: '', email: '', primary_field: '', primary_city: '',
     id_number: '', nationality: '', status: 'active' as 'active' | 'inactive' | 'blocked',
   });
   const [sendWelcomeEmail, setSendWelcomeEmail] = useState(true);
@@ -747,7 +749,8 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
       }
       const { data: vendor, error } = await supabase.from('vendors').insert([{
         full_name: formData.full_name.trim(),
-        phone: toEnglishNumbers(formData.phone.trim()),
+        country_code: formData.country_code || '+966',
+        phone: stripLocalPhone(formData.phone, formData.country_code || '+966'),
         email: formData.email.trim(),
         primary_field: formData.primary_field.trim() || null,
         primary_city: formData.primary_city.trim() || null,
@@ -892,7 +895,33 @@ const AddVendorModal = ({ onClose, onSuccess }: AddVendorModalProps) => {
               {/* Phone + Email */}
               <div className="input-group">
                 <label className="input-label">رقم الجوال <span className="req">*</span></label>
-                <input className="input" type="tel" required value={formData.phone} onChange={e => setFormData({ ...formData, phone: toEnglishNumbers(e.target.value) })} placeholder="05xxxxxxxx" dir="ltr" />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+                  <div style={{ width: 160, flexShrink: 0 }}>
+                    <SearchableDropdown
+                      value={formData.country_code}
+                      onChange={(value) => setFormData({
+                        ...formData,
+                        country_code: value,
+                        phone: stripLocalPhone(formData.phone, value),
+                      })}
+                      options={COUNTRY_CODES.map(c => ({ value: c.code, label: `${c.flag} ${c.code} ${c.nameAr}` }))}
+                      placeholder="+966"
+                    />
+                  </div>
+                  <input
+                    className="input"
+                    type="tel"
+                    required
+                    style={{ flex: 1 }}
+                    value={formData.phone}
+                    onChange={e => setFormData({
+                      ...formData,
+                      phone: stripLocalPhone(e.target.value, formData.country_code || '+966'),
+                    })}
+                    placeholder="5XXXXXXXX"
+                    dir="ltr"
+                  />
+                </div>
               </div>
               <div className="input-group">
                 <label className="input-label">البريد الإلكتروني <span className="req">*</span></label>
