@@ -30,13 +30,23 @@ interface VisaEntry {
 
 export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
   const [visas, setVisas] = useState<VisaEntry[]>(() => {
-    if (formData.visa_country) {
-      const country = VISA_COUNTRIES.find(c => c.name === formData.visa_country);
-      if (country) {
-        return [{ country: country.name, countryCode: country.code, flag: country.flag, doc: formData.visa_file_url ? { url: formData.visa_file_url, name: 'visa', size: '' } : null }];
-      }
-    }
-    return [];
+    // formData.visa_country is stored as a comma-separated list of country
+    // names ("USA, UK, Schengen") so a vendor can have multiple visas. Parse
+    // on mount and rebuild the chip-list state. The single visa_file_url (a
+    // legacy single-file storage limitation) is attached to the FIRST visa
+    // only — multi-file restoration would need a separate schema change.
+    const names = (formData.visa_country || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!names.length) return [];
+    return names.map((name, i) => {
+      const country = VISA_COUNTRIES.find(c => c.name === name);
+      if (!country) return null;
+      return {
+        country: country.name,
+        countryCode: country.code,
+        flag: country.flag,
+        doc: (i === 0 && formData.visa_file_url) ? { url: formData.visa_file_url, name: 'visa', size: '' } : null,
+      };
+    }).filter(Boolean) as VisaEntry[];
   });
 
   const [passportPreview, setPassportPreview] = useState<{ url: string; name: string; size: string } | null>(null);
@@ -87,7 +97,10 @@ export const Step4TravelInfo = ({ formData, updateFormData }: Props) => {
       updated = [...visas, { country: vc.name, countryCode: vc.code, flag: vc.flag, doc: null }];
     }
     setVisas(updated);
-    updateFormData({ visa_country: updated[0]?.country || '' });
+    // Persist ALL selected country names as a comma-separated list so they
+    // survive draft auto-save + appear on the review step. Was previously
+    // only updated[0] which silently dropped 2nd+ visa selections.
+    updateFormData({ visa_country: updated.map(v => v.country).join(', ') });
   };
 
   const handleVisaUpload = (code: string, file: File) => {

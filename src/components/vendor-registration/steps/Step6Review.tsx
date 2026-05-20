@@ -147,7 +147,28 @@ export const Step6Review = ({ formData, goToStep, termsAccepted, setTermsAccepte
               {formData.visa_country && (
                 <div className="review-row">
                   <span className="rv-label">التأشيرات</span>
-                  <span className="rv-value">{formData.visa_country}</span>
+                  <span className="rv-value">
+                    {/* visa_country is stored as a comma-separated list of
+                        selected country names (USA, UK, Schengen, ...). Split
+                        and render each with its flag if recognized. */}
+                    {formData.visa_country.split(',').map((raw, i, arr) => {
+                      const name = raw.trim();
+                      if (!name) return null;
+                      const flag =
+                        name === 'USA' ? '🇺🇸' :
+                        name === 'UK' ? '🇬🇧' :
+                        name === 'Schengen' ? '🇪🇺' :
+                        name === 'Japan' ? '🇯🇵' :
+                        '';
+                      return (
+                        <span key={name + i}>
+                          {flag && <span style={{ marginInlineEnd: 4 }}>{flag}</span>}
+                          {name}
+                          {i < arr.length - 1 && <span>، </span>}
+                        </span>
+                      );
+                    })}
+                  </span>
                 </div>
               )}
             </div>
