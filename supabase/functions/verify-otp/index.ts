@@ -137,12 +137,18 @@ Deno.serve(async (req: Request) => {
 
     // Verify the code
     if (otpRecord.code !== code) {
-      await supabase
-        .from("otp_codes")
-        .update({ failed_attempts: failedAttempts + 1 })
-        .eq("id", otpRecord.id);
+      // Atomic increment (RPC) so concurrent guesses can't race past the lock.
+      const { data: newCount } = await supabase.rpc("increment_otp_failed_attempts", {
+        p_id: otpRecord.id,
+      });
+      const attempts = typeof newCount === "number" ? newCount : failedAttempts + 1;
+      const remaining = Math.max(MAX_FAILED_ATTEMPTS - attempts, 0);
 
-      const remaining = MAX_FAILED_ATTEMPTS - failedAttempts - 1;
+      // Burn the code once attempts are exhausted.
+      if (remaining <= 0) {
+        await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
+      }
+
       return new Response(
         JSON.stringify({
           error: remaining > 0

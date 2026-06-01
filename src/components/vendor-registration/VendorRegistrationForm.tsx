@@ -94,7 +94,9 @@ export const VendorRegistrationForm = () => {
   const [sessionId] = useState(() => {
     const stored = localStorage.getItem('vendor_reg_session_id');
     if (stored) return stored;
-    const newId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Unguessable session id — drafts are reachable only by whoever holds it
+    // (RLS now gates the drafts table behind session-id-keyed RPCs).
+    const newId = `session_${crypto.randomUUID()}`;
     localStorage.setItem('vendor_reg_session_id', newId);
     return newId;
   });
@@ -149,15 +151,13 @@ export const VendorRegistrationForm = () => {
 
   const loadDraft = async () => {
     try {
-      const { data } = await supabase
-        .from('vendor_registration_drafts')
-        .select('*')
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
-      if (data && data.form_data) {
-        setFormData(prev => ({ ...prev, ...data.form_data }));
-        setCurrentStep(data.current_step || 1);
+      // Read via SECURITY DEFINER RPC keyed by session id (drafts table has no
+      // direct anon access — see security_lockdown_d migration).
+      const { data } = await supabase.rpc('get_vendor_draft', { p_session_id: sessionId });
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row && row.form_data) {
+        setFormData(prev => ({ ...prev, ...row.form_data }));
+        setCurrentStep(row.current_step || 1);
       }
     } catch (error) {
       console.error('Error loading draft:', error);
@@ -166,30 +166,13 @@ export const VendorRegistrationForm = () => {
 
   const saveDraft = async () => {
     try {
-      const draftData = {
-        session_id: sessionId,
-        form_data: formData,
-        current_step: currentStep,
-        phone: formData.phone,
-        updated_at: new Date().toISOString(),
-      };
-
-      const { data: existing } = await supabase
-        .from('vendor_registration_drafts')
-        .select('id')
-        .eq('session_id', sessionId)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('vendor_registration_drafts')
-          .update(draftData)
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('vendor_registration_drafts')
-          .insert([draftData]);
-      }
+      const { error } = await supabase.rpc('save_vendor_draft', {
+        p_session_id: sessionId,
+        p_form_data: formData,
+        p_current_step: currentStep,
+        p_phone: formData.phone || null,
+      });
+      if (error) throw error;
       setLastSavedAt(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -696,7 +679,7 @@ export const VendorRegistrationForm = () => {
       }]).then(() => {}).catch(console.error);
 
       // Clean up draft (fire-and-forget)
-      supabase.from('vendor_registration_drafts').delete().eq('session_id', sessionId).then(() => {}).catch(console.error);
+      supabase.rpc('delete_vendor_draft', { p_session_id: sessionId }).then(() => {}).catch(console.error);
       localStorage.removeItem('vendor_reg_session_id');
 
       // Send registration email (fire-and-forget)
