@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, CheckCircle, XCircle, Pencil, Clock, User, Phone, MapPin, Briefcase, CreditCard, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
+import { SignedImage } from '../../shared/SignedImage';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { canTransition, STATUS_LABELS, VendorStatus } from '../../../lib/vendorStatusMachine';
@@ -388,7 +389,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
           </button>
           <div className="flex items-center gap-3">
             {vendor.profile_image ? (
-              <img src={vendor.profile_image} alt={vendor.full_name} className="w-14 h-14 rounded-full object-cover" />
+              <SignedImage src={vendor.profile_image} alt={vendor.full_name} className="w-14 h-14 rounded-full object-cover" />
             ) : (
               <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold" style={{ backgroundColor: 'var(--color-background-hover)', color: 'var(--color-text-muted)' }}>
                 {vendor.full_name.charAt(0)}
@@ -486,7 +487,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
               {vendor.profile_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>الصورة الشخصية</p>
-                  <img
+                  <SignedImage
                     src={vendor.profile_image} alt="صورة شخصية"
                     className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ borderColor: 'var(--color-border)' }}
@@ -497,7 +498,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
               {vendor.id_image && (
                 <div>
                   <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>صورة الهوية</p>
-                  <img
+                  <SignedImage
                     src={vendor.id_image} alt="صورة الهوية"
                     className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ borderColor: 'var(--color-border)' }}
@@ -531,7 +532,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                         <div className="mt-2 mb-3">
                           <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>صورة جواز السفر</p>
                           {passportDoc.passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img
+                            <SignedImage
                               src={passportDoc.passport_file} alt="جواز السفر"
                               className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                               style={{ borderColor: 'var(--color-border)' }}
@@ -554,7 +555,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
                         <div className="mt-2">
                           <p className="text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-muted)' }}>مستند التأشيرة</p>
                           {visaDoc.visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img
+                            <SignedImage
                               src={visaDoc.visa_file} alt="التأشيرة"
                               className="w-full h-28 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
                               style={{ borderColor: 'var(--color-border)' }}
@@ -744,7 +745,7 @@ export const VendorRequestReview = ({ vendorId, onBack, onActionComplete }: Vend
               borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff',
               boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
             }}>
-              <img
+              <SignedImage
                 src={lightboxImage.url}
                 alt={lightboxImage.title}
                 style={{

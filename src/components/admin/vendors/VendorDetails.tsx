@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, LayoutDashboard, User, Plane, Package, DollarSign, FileText, FolderOpen, Pencil } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
+import { SignedImage } from '../../shared/SignedImage';
 import { VendorDashboard } from './vendor-tabs/VendorDashboard';
 import { VendorPersonalInfo } from './vendor-tabs/VendorPersonalInfo';
 import { VendorTravelDocs } from './vendor-tabs/VendorTravelDocs';
@@ -133,7 +134,7 @@ export const VendorDetails = ({ vendorId, onBack, initialTab, onTabChange, onVie
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {vendor.profile_image ? (
               <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--border-soft)', flexShrink: 0 }}>
-                <img src={vendor.profile_image} alt={vendor.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <SignedImage src={vendor.profile_image} alt={vendor.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
             ) : (
               <div className="avatar av-xl" style={{ width: 72, height: 72, fontSize: 22, background: vColor.bg, color: vColor.color, border: '3px solid var(--border-soft)', flexShrink: 0 }}>

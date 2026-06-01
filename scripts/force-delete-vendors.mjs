@@ -9,6 +9,14 @@ if (!TOKEN) {
   console.error('Set SUPABASE_ACCESS_TOKEN before running this script.');
   process.exit(1);
 }
+
+// SAFETY GUARD — DESTRUCTIVE: force-deletes vendors and dependent rows.
+if (process.env.CONFIRM_DESTRUCTIVE !== 'YES') {
+  console.error('REFUSING TO RUN: force-delete-vendors.mjs is DESTRUCTIVE.');
+  console.error('Re-run with:  CONFIRM_DESTRUCTIVE=YES node scripts/force-delete-vendors.mjs');
+  process.exit(1);
+}
+
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 async function sql(label, query, attempt = 1) {

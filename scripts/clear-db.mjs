@@ -6,6 +6,15 @@ const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!TOKEN) { console.error('Missing SUPABASE_ACCESS_TOKEN env var'); process.exit(1); }
 const REF = process.env.SUPABASE_PROJECT_REF;
 if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
+
+// SAFETY GUARD — this script TRUNCATEs vendors/projects/clients/etc. It refuses
+// to run unless you explicitly opt in, so it can never wipe the DB by accident.
+if (process.env.CONFIRM_DESTRUCTIVE !== 'YES') {
+  console.error('REFUSING TO RUN: clear-db.mjs is DESTRUCTIVE (wipes vendors, projects, clients, expenses...).');
+  console.error('If you really mean it, re-run with:  CONFIRM_DESTRUCTIVE=YES node scripts/clear-db.mjs');
+  process.exit(1);
+}
+
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 async function run(label, query, attempt = 1) {

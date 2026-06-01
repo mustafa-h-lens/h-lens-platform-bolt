@@ -13,6 +13,7 @@ import { toEnglishNumbers } from '../../lib/numberUtils';
 import { PageCard, TabButton, FieldLabel, TextInput, SelectInput, SaveButton, LoadingSpinner } from './shared';
 import type { VendorField, SelectedField, FinancialData, Bank } from './shared/types';
 import { ConfirmationModal } from '../shared/ConfirmationModal';
+import { SignedImage } from '../shared/SignedImage';
 import { getNationalityItems, getCountryCodeItems } from '../../lib/shared-data';
 import { SearchableSelect } from './profile/SearchableSelect';
 import { TravelDocsTab } from './profile/TravelDocsTab';
@@ -438,7 +439,7 @@ export function VendorProfile({ onDirtyChange, onSaved }: VendorProfileProps = {
       <PageCard className="vp-profile-hero" style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative' }}>
           {vendor?.profile_image ? (
-            <img src={vendor.profile_image} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', border: '2px solid var(--border)' }} />
+            <SignedImage src={vendor.profile_image} alt="" style={{ width: 64, height: 64, borderRadius: 16, objectFit: 'cover', border: '2px solid var(--border)' }} />
           ) : (
             <div style={{ width: 64, height: 64, borderRadius: 16, background: 'linear-gradient(135deg,#1d4ed8,#7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 800, color: 'white' }}>{initials}</div>
           )}

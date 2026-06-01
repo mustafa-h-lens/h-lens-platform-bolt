@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Save, Edit2, Trash2, FileText } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
+import { SignedImage } from '../../../shared/SignedImage';
+import { openSignedUrl } from '../../../../lib/storage';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { DatePicker } from '../../../ui/DatePicker';
@@ -412,16 +414,16 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                     {passportDoc.passport_file && (
                       <div style={{ width: 140 }}>
                         {passportDoc.passport_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img src={passportDoc.passport_file} alt="جواز السفر" style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(passportDoc.passport_file, '_blank')} />
+                          <SignedImage src={passportDoc.passport_file} alt="جواز السفر" style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => openSignedUrl(passportDoc.passport_file)} />
                         ) : (
-                          <button className="btn btn-ghost btn-sm" onClick={() => window.open(passportDoc.passport_file, '_blank')} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => openSignedUrl(passportDoc.passport_file)} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
                         )}
                       </div>
                     )}
                     {uploadedTravelFiles.filter(f => f.document_type === 'passport').map(doc => (
                       <div key={doc.id} style={{ width: 140 }}>
                         {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(doc.file_url, '_blank')} />
+                          <SignedImage src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => openSignedUrl(doc.file_url)} />
                         ) : (
                           <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
                         )}
@@ -441,7 +443,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                   {uploadedTravelFiles.filter(f => f.document_type === 'passport').map(doc => (
                     <div key={doc.id} style={{ width: 140 }}>
                       {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                        <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(doc.file_url, '_blank')} />
+                        <SignedImage src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => openSignedUrl(doc.file_url)} />
                       ) : (
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
                       )}
@@ -592,9 +594,9 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <div style={{ width: 140 }}>
                           {visa.visa_file.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                            <img src={visa.visa_file} alt={visa.visa_country} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => window.open(visa.visa_file, '_blank')} />
+                            <SignedImage src={visa.visa_file} alt={visa.visa_country} style={{ width: '100%', height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer' }} onClick={() => openSignedUrl(visa.visa_file)} />
                           ) : (
-                            <button className="btn btn-ghost btn-sm" onClick={() => window.open(visa.visa_file, '_blank')} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => openSignedUrl(visa.visa_file)} style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> عرض الملف</button>
                           )}
                         </div>
                       </div>
@@ -620,7 +622,7 @@ export const VendorTravelDocs = ({ vendorId }: VendorTravelDocsProps) => {
               {uploadedTravelFiles.filter(f => f.document_type !== 'passport').map(doc => (
                 <div key={doc.id} style={{ width: 160, textAlign: 'center' }}>
                   {doc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                    <img src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer', marginBottom: 4 }} onClick={() => window.open(doc.file_url, '_blank')} />
+                    <SignedImage src={doc.file_url} alt={doc.file_name} style={{ width: '100%', height: 100, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--color-border)', cursor: 'pointer', marginBottom: 4 }} onClick={() => openSignedUrl(doc.file_url)} />
                   ) : (
                     <a href={doc.file_url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ gap: 4, color: 'var(--accent-lighter)', fontSize: 12 }}><FileText size={14} /> {doc.file_name}</a>
                   )}

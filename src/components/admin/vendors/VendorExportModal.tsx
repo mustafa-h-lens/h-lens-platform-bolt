@@ -3,6 +3,8 @@ import { Download, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { toSignedUrl } from '../../../lib/storage';
+import { SignedImage } from '../../shared/SignedImage';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ExcelJS from 'exceljs';
@@ -230,9 +232,11 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
   const convertImageToBase64 = async (url: string): Promise<string> => {
     try {
+      // Private buckets (PII) need a signed URL; public URLs pass through.
+      const signed = (await toSignedUrl(url)) ?? url;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(url, { signal: controller.signal });
+      const response = await fetch(signed, { signal: controller.signal });
       clearTimeout(timeout);
       if (!response.ok) return '';
       const blob = await response.blob();
@@ -355,7 +359,9 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     compress = false,
   ): Promise<{ buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' } | null> => {
     try {
-      const r = await fetch(url);
+      // Private buckets (PII) need a signed URL; public URLs pass through.
+      const signed = (await toSignedUrl(url)) ?? url;
+      const r = await fetch(signed);
       if (!r.ok) return null;
       if (compress) {
         const blob = await r.blob();
@@ -1331,7 +1337,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
                   >
                     <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'var(--font-mono)', minWidth: 22 }}>{idx + 1}</span>
                     <span style={{ fontSize: 16, color: 'var(--text-disabled)', cursor: 'grab' }}>⠿</span>
-                    {v.profile_image && <img src={v.profile_image} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
+                    {v.profile_image && <SignedImage src={v.profile_image} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
                     <span style={{ fontWeight: 500 }}>{v.full_name}</span>
                     {v.primary_city && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 'auto' }}>{v.primary_city}</span>}
                   </div>

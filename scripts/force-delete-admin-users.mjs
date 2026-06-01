@@ -7,6 +7,14 @@ const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const REF = process.env.SUPABASE_PROJECT_REF;
 if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 if (!TOKEN) { console.error('Set SUPABASE_ACCESS_TOKEN.'); process.exit(1); }
+
+// SAFETY GUARD — DESTRUCTIVE: deletes admin users from auth.users.
+if (process.env.CONFIRM_DESTRUCTIVE !== 'YES') {
+  console.error('REFUSING TO RUN: force-delete-admin-users.mjs is DESTRUCTIVE.');
+  console.error('Re-run with:  CONFIRM_DESTRUCTIVE=YES node scripts/force-delete-admin-users.mjs');
+  process.exit(1);
+}
+
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 async function sql(label, query, attempt = 1) {

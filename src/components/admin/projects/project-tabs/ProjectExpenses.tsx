@@ -4,6 +4,7 @@ import { BulkExpenseModal } from './BulkExpenseModal';
 import { DatePicker } from '../../../ui/DatePicker';
 import { FileUploader } from '../../../ui/FileUploader';
 import { supabase } from '../../../../lib/supabaseClient';
+import { openSignedUrl } from '../../../../lib/storage';
 import { formatCurrency, formatDateArabic } from '../../../../lib/formatters';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useHideAmounts } from '../../../../contexts/HideAmountsContext';
@@ -1114,7 +1115,7 @@ export const ProjectExpenses = ({ projectId, currency }: ProjectExpensesProps) =
                         <td className="px-4 py-3">
                           {expense.invoice_file_url ? (
                             <button
-                              onClick={() => window.open(expense.invoice_file_url!, '_blank')}
+                              onClick={() => openSignedUrl(expense.invoice_file_url)}
                               className="p-1 rounded transition-colors"
                               style={{ color: 'var(--color-primary)' }}
                               title="عرض الفاتورة"
