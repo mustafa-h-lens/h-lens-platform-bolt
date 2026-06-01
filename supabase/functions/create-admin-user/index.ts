@@ -220,14 +220,12 @@ Deno.serve(async (req: Request) => {
       .eq("id", callerUser.id)
       .maybeSingle();
 
-    const isAdmin =
-      callerProfile?.is_active &&
-      (callerProfile.role === "super_admin" ||
-        callerProfile.role === "project_manager" ||
-        callerProfile.role_id != null);
+    // Only the system super admin may create admin users.
+    const isSuperAdmin =
+      callerProfile?.is_active && callerProfile.role === "super_admin";
 
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
+    if (!isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "ليس لديك صلاحية" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -242,6 +240,16 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Whitelist the textual role that may be assigned to the new user.
+    const allowedRoles = ["super_admin", "project_manager"];
+    const assignedRole = role || "project_manager";
+    if (!allowedRoles.includes(assignedRole)) {
+      return new Response(JSON.stringify({ error: "الدور غير مسموح به" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Always create user directly with confirmed email — we handle the invite email ourselves
     const { data: authData, error: authError } = await serviceClient.auth.admin.createUser({
       email,
@@ -251,7 +259,8 @@ Deno.serve(async (req: Request) => {
     });
 
     if (authError) {
-      return new Response(JSON.stringify({ error: authError.message }), {
+      console.error("Failed to create auth user:", authError);
+      return new Response(JSON.stringify({ error: "تعذر إنشاء المستخدم" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -270,13 +279,14 @@ Deno.serve(async (req: Request) => {
       full_name,
       username: username || null,
       phone: phone || null,
-      role: role || "project_manager",
+      role: assignedRole,
       role_id,
     });
 
     if (profileError) {
+      console.error("Failed to create user profile:", profileError);
       await serviceClient.auth.admin.deleteUser(authData.user.id);
-      return new Response(JSON.stringify({ error: profileError.message }), {
+      return new Response(JSON.stringify({ error: "تعذر إنشاء ملف المستخدم" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -351,8 +361,9 @@ Deno.serve(async (req: Request) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("create-admin-user error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
+      JSON.stringify({ error: "حدث خطأ غير متوقع" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

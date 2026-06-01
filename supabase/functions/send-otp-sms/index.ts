@@ -8,10 +8,18 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 // ─────────────────────────────────────────────────────────────────────
 
 const corsHeaders = {
+  // NOTE: ALLOWED_ORIGIN should be set to the real production origin (env-overridable).
+  // Falling back to "*" is acceptable for dev only; lock it down in production.
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+// Global daily ceiling on cost-bearing SMS sends. Backstop against toll-fraud:
+// the per-IP cap is bypassable (x-forwarded-for is spoofable and skipped when
+// IP is "unknown") and the per-phone cap is defeated by spraying many distinct
+// valid numbers. This whole-table cap bounds worst-case spend regardless.
+const MAX_SMS_PER_DAY = 500;
 
 interface OTPRequest {
   phone: string;
@@ -162,6 +170,9 @@ Deno.serve(async (req: Request) => {
       }
       const match = (clients || []).find((c: { phone: string | null }) => saudiNineDigits(c.phone || "") === nineDigit);
       if (!match) {
+        // ENUMERATION TRADEOFF: a distinct 404 reveals whether a phone is a
+        // registered client. Left as-is because the login UX depends on this
+        // message to direct users to their project manager.
         return new Response(
           JSON.stringify({ error: "رقم الجوال غير مسجل كعميل في النظام. يرجى التواصل مع مدير المشروع" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -194,6 +205,9 @@ Deno.serve(async (req: Request) => {
         (v: { phone: string | null }) => saudiNineDigits(v.phone || "") === nineDigit,
       );
       if (!vendor) {
+        // ENUMERATION TRADEOFF: a distinct 404 reveals whether a phone is a
+        // registered vendor. Left as-is because the login UX depends on this
+        // message; unifying it would break the expected frontend flow.
         return new Response(
           JSON.stringify({ error: "رقم الجوال غير مسجل في النظام" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -239,6 +253,30 @@ Deno.serve(async (req: Request) => {
     if (dailyCount && dailyCount >= 10) {
       return new Response(
         JSON.stringify({ error: "تم تجاوز الحد الأقصى لطلبات رمز التحقق اليومية. يرجى المحاولة غداً" }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // GLOBAL daily SMS ceiling (additional backstop to the per-IP / per-phone
+    // caps above). Counts all SMS OTP rows (phone not null) created in the last
+    // 24h across the whole table; if it exceeds MAX_SMS_PER_DAY, refuse before
+    // incurring any cost-bearing send. head/count-only query for efficiency.
+    const { count: globalSmsCount, error: globalSmsCountError } = await supabase
+      .from("otp_codes")
+      .select("id", { count: "exact", head: true })
+      .not("phone", "is", null)
+      .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+    if (globalSmsCountError) {
+      // TRADEOFF: fail OPEN on count error. Failing closed here would let a
+      // transient DB/count error become a self-inflicted global outage that
+      // blocks all legitimate logins. The per-IP and per-phone caps remain in
+      // force, so the residual toll-fraud exposure during a count outage is
+      // bounded. Logged for monitoring.
+      console.error("Global SMS cap count failed; continuing without global cap:", globalSmsCountError);
+    } else if (globalSmsCount && globalSmsCount >= MAX_SMS_PER_DAY) {
+      return new Response(
+        JSON.stringify({ error: "تم تجاوز الحد المسموح، حاول لاحقاً" }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

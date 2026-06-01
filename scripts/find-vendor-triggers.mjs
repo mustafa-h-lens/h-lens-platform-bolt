@@ -1,5 +1,6 @@
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 if (!TOKEN) { console.error('Set SUPABASE_ACCESS_TOKEN.'); process.exit(1); }
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 

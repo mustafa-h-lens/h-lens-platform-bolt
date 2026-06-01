@@ -7,6 +7,10 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ExcelJS from 'exceljs';
 
+const escapeHtml = (v: unknown): string => String(v ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 interface Vendor {
   id: string;
   full_name: string;
@@ -931,7 +935,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
             td.style.textAlign = 'right';
             td.style.padding = '12px';
             td.style.lineHeight = '1.8';
-            td.innerHTML = equipment.map(e => `${toEnglishNumbers(e.quantity.toString())} ${e.name}`).join('<br>');
+            td.innerHTML = equipment.map(e => `${toEnglishNumbers(e.quantity.toString())} ${escapeHtml(e.name)}`).join('<br>');
           } else {
             td.textContent = '-';
           }
@@ -1053,7 +1057,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       else if (field.key === 'vehicle_plate_number') value = vendor.vehicle_plate_number ? toEnglishNumbers(vendor.vehicle_plate_number) : '-';
       else value = (vendor[field.key as keyof Vendor] as string) || '-';
 
-      cell.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">${field.label}</div><div style="font-size:14px;font-weight:600;color:#1e293b;direction:${['phone','id_number','vehicle_registration_number','vehicle_plate_number'].includes(field.key) ? 'ltr;text-align:left' : 'rtl'}">${value}</div>`;
+      cell.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">${field.label}</div><div style="font-size:14px;font-weight:600;color:#1e293b;direction:${['phone','id_number','vehicle_registration_number','vehicle_plate_number'].includes(field.key) ? 'ltr;text-align:left' : 'rtl'}">${escapeHtml(value)}</div>`;
       infoGrid.appendChild(cell);
     }
     profileSection.appendChild(infoGrid);

@@ -11,7 +11,9 @@ interface OTPInputProps {
   portalType?: 'vendor' | 'client';
 }
 
-export default function OTPInput({ email, phone, onBack, onSuccess, devOTP, portalType = 'vendor' }: OTPInputProps) {
+export default function OTPInput({ email, phone, onBack, onSuccess, portalType = 'vendor' }: OTPInputProps) {
+  // NOTE: devOTP is intentionally ignored — the verification code must never be
+  // rendered in the UI. The prop remains on the interface for call-site compat.
   const [otp, setOtp]         = useState(['','','','','','']);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -177,14 +179,6 @@ export default function OTPInput({ email, phone, onBack, onSuccess, devOTP, port
                   : 'تم إرسال رمز مكون من 6 أرقام إلى بريدك'}
               </p>
             </div>
-
-            {/* DEV OTP */}
-            {devOTP && (
-              <div className="otp-dev">
-                <p className="otp-dev-label">🔧 وضع التطوير - رمز التحقق:</p>
-                <p className="otp-dev-code" dir="ltr">{devOTP}</p>
-              </div>
-            )}
 
             {/* OTP Inputs */}
             <div className="otp-inputs" dir="ltr">

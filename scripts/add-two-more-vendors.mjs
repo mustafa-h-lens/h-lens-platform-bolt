@@ -8,10 +8,12 @@
 import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
 
-const TOKEN = 'sbp_8e1c5c20236afde3110411820241cfd9da90118c';
-const REF = 'akcpkjzfhtmurtwzyzhn';
-const SERVICE_ROLE =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrY3BranpmaHRtdXJ0d3p5emhuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njc2MzI4OCwiZXhwIjoyMDgyMzM5Mjg4fQ.CQY7hTL29xq82c06Y0GGVWWlJMDAeFmclCEgGIHtl2g';
+const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+if (!TOKEN) { console.error('Missing SUPABASE_ACCESS_TOKEN env var'); process.exit(1); }
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_ROLE) { console.error('Missing SUPABASE_SERVICE_ROLE_KEY env var'); process.exit(1); }
 
 const BUCKET = 'vendor-images';
 const PROJECT_HOST = `https://${REF}.supabase.co`;

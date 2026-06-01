@@ -71,6 +71,7 @@ const ROUTES = {
 // ─────────────────────────────────────────────────────────────
 interface VendorSession {
   token: string;
+  access_token?: string;
   expiresAt: string;
 }
 
@@ -120,6 +121,7 @@ interface ClientData {
 
 interface ClientSession {
   token: string;
+  access_token?: string;
   expiresAt: string;
 }
 

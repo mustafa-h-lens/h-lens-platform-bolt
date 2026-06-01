@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, setPortalAccessToken } from '../lib/supabaseClient';
 import { runWithNavReveal } from '../lib/navTransition';
 
 export interface ClientProfile {
@@ -11,6 +11,8 @@ export interface ClientProfile {
 
 export interface ClientSession {
   token: string;
+  /** Supabase JWT used as the Authorization bearer so RLS scopes portal reads. */
+  access_token?: string;
   expiresAt: string;
 }
 
@@ -45,6 +47,9 @@ export const ClientPortalProvider = ({ children, initialClient, initialSession }
   const [session] = useState<ClientSession>(initialSession);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState<ClientPage>('dashboard');
+
+  // Activate the portal JWT before any data-fetch effect runs (see VendorContext).
+  useState(() => { setPortalAccessToken(initialSession.access_token ?? null); return null; });
 
   // Check session expiry
   useEffect(() => {
@@ -114,6 +119,7 @@ export const ClientPortalProvider = ({ children, initialClient, initialSession }
 
   const signOut = () => {
     void runWithNavReveal(async () => {
+      setPortalAccessToken(null);
       localStorage.removeItem('client_session');
       localStorage.removeItem('client_data');
       window.history.pushState({}, '', '/client');

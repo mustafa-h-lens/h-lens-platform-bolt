@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, setPortalAccessToken } from '../lib/supabaseClient';
 import { runWithNavReveal } from '../lib/navTransition';
 
 // ─────────────────────────────────────────────────────────────
@@ -26,6 +26,8 @@ export interface VendorProfile {
 
 export interface VendorSession {
   token: string;
+  /** Supabase JWT used as the Authorization bearer so RLS scopes portal reads. */
+  access_token?: string;
   expiresAt: string;
 }
 
@@ -75,6 +77,12 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
   const [session]                  = useState<VendorSession>(initialSession);
   const [loading, setLoading]      = useState(false);
   const [currentPage, setCurrentPage] = useState<VendorPage>('dashboard');
+
+  // Activate the portal JWT before any data-fetch effect runs, so every
+  // Supabase query from the vendor portal is authenticated and RLS-scoped.
+  // Lazy useState guarantees this executes during the first render, ahead of
+  // the data-loading effects below.
+  useState(() => { setPortalAccessToken(initialSession.access_token ?? null); return null; });
 
   // Check session expiry
   useEffect(() => {
@@ -148,6 +156,7 @@ export const VendorProvider = ({ children, initialVendor, initialSession }: Vend
 
   const signOut = async () => {
     await runWithNavReveal(async () => {
+      setPortalAccessToken(null);
       localStorage.removeItem('vendor_session');
       localStorage.removeItem('vendor_data');
       await supabase.auth.signOut();

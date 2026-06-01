@@ -9,7 +9,7 @@ import '../../styles/half-lens-ds.css';
 import '../../styles/vendor-registration.css';
 
 import { isValidEmail } from '../../lib/validators';
-import { checkVendorDuplicates, duplicateMessage } from '../../lib/vendorDuplicates';
+import { duplicateMessage, type DuplicateMatch } from '../../lib/vendorDuplicates';
 
 import { Step1BasicIdentity } from './steps/Step1BasicIdentity';
 import { Step2Contact } from './steps/Step2Contact';
@@ -524,34 +524,39 @@ export const VendorRegistrationForm = () => {
       // Step 1: Insert/update vendor as 'draft' so RLS allows secondary inserts
       let vendor: any = null;
 
-      // Reject duplicates on email / phone / id_number (active, pending,
-      // inactive, blocked). Rejected rows are intentionally allowed through so
-      // the re-application flow below can reuse them.
-      const dup = await checkVendorDuplicates({
-        email: formData.email,
-        phone,
-        id_number: formData.id_number,
-        ignoreRejected: true,
-      });
-      if (dup) {
-        throw new Error(duplicateMessage(dup));
+      // Duplicate + rejected-row lookup runs through a SECURITY DEFINER RPC so
+      // the anonymous registration flow never needs a blanket read of the
+      // vendors table (RLS no longer permits anon SELECT on vendors). The RPC
+      // returns ONLY a conflict field name and a reusable rejected-row id — no
+      // PII. Rejected rows are intentionally reusable in self-registration.
+      const { data: regCheckRows, error: regCheckErr } = await supabase.rpc(
+        'vendor_registration_check',
+        {
+          p_email: formData.email || null,
+          p_phone: phone,
+          p_id_number: formData.id_number || null,
+        },
+      );
+      if (regCheckErr) console.error('Vendor registration check error:', regCheckErr);
+      const regCheck = Array.isArray(regCheckRows) ? regCheckRows[0] : regCheckRows;
+
+      if (regCheck?.conflict_field) {
+        throw new Error(duplicateMessage({ field: regCheck.conflict_field } as DuplicateMatch));
       }
 
-      // Check for existing rejected vendor by phone — that row gets reused.
-      const { data: existingVendor, error: checkErr } = await supabase
-        .from('vendors')
-        .select('id, status')
-        .eq('phone', phone)
-        .eq('status', 'rejected')
-        .maybeSingle();
+      // One-time secret that binds the post-registration auto-login to THIS
+      // browser. Stored on the vendor row, returned to nobody, and required by
+      // create-post-registration-session. An attacker who somehow learns the
+      // new vendor's id still cannot mint a session without this nonce.
+      const regNonce = crypto.randomUUID();
 
-      if (checkErr) console.error('Vendor check error:', checkErr);
+      const rejectedVendorId: string | null = regCheck?.rejected_vendor_id ?? null;
 
-      if (existingVendor && existingVendor.status === 'rejected') {
+      if (rejectedVendorId) {
         const { data: updatedVendor, error: updateErr } = await supabase
           .from('vendors')
-          .update({ ...vendorBaseData, status: 'pending_approval' })
-          .eq('id', existingVendor.id)
+          .update({ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce })
+          .eq('id', rejectedVendorId)
           .select()
           .single();
         if (updateErr) {
@@ -572,7 +577,7 @@ export const VendorRegistrationForm = () => {
       } else {
         const { data: newVendor, error: insertErr } = await supabase
           .from('vendors')
-          .insert([{ ...vendorBaseData, status: 'pending_approval' }])
+          .insert([{ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce }])
           .select()
           .single();
         if (insertErr) {
@@ -710,7 +715,7 @@ export const VendorRegistrationForm = () => {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
             },
-            body: JSON.stringify({ vendor_id: vendor.id }),
+            body: JSON.stringify({ vendor_id: vendor.id, nonce: regNonce }),
           }
         );
         const sessionData = await sessionResp.json();

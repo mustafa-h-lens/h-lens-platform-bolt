@@ -3,7 +3,8 @@
 // stored escape sequences as text instead of LF chars, so the public legal
 // page rendered "\n\n" inline instead of breaking lines.
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 if (!TOKEN) {
   console.error('Set SUPABASE_ACCESS_TOKEN before running this script.');
   process.exit(1);
