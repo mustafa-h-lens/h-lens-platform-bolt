@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Plus, Download, Trash2, Clock, Store, BadgeCheck, Users, RotateCcw, MoreHorizontal, Eye, Pencil, Ban, ChevronRight, ChevronLeft, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
+import { SignedImage } from '../../shared/SignedImage';
 import { SearchableDropdown } from '../../shared/SearchableDropdown';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
 import { stripLocalPhone } from '../../../lib/phoneUtils';
@@ -455,7 +456,7 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
                           <div className="user-row">
                             <div className="avatar av-md" style={{ background: vStyle.bg, color: vStyle.color }}>
                               {vendor.profile_image ? (
-                                <img src={vendor.profile_image} alt={vendor.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <SignedImage src={vendor.profile_image} alt={vendor.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               ) : (
                                 vendor.full_name.substring(0, 2)
                               )}

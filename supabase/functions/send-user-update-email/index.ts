@@ -103,6 +103,23 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Authorization: only the system super admin may trigger PII-laden update emails.
+    const { data: callerProfile } = await serviceClient
+      .from("users")
+      .select("role, is_active")
+      .eq("id", callerUser.id)
+      .maybeSingle();
+
+    const isSuperAdmin =
+      callerProfile?.is_active && callerProfile.role === "super_admin";
+
+    if (!isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "ليس لديك صلاحية" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { user_id, changes } = (await req.json()) as UpdateEmailRequest;
 
     if (!user_id || !changes || changes.length === 0) {
@@ -188,7 +205,7 @@ Deno.serve(async (req: Request) => {
     console.error("send-user-update-email error:", err);
     return new Response(
       JSON.stringify({
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: "حدث خطأ غير متوقع",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

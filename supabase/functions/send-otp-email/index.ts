@@ -5,10 +5,17 @@ import { createTransport } from "npm:nodemailer@6.9.8";
 import { buildEmail } from "../_shared/email/builder.ts";
 
 const corsHeaders = {
+  // NOTE: ALLOWED_ORIGIN should be set to the real production origin (env-overridable).
+  // Falling back to "*" is acceptable for dev only; lock it down in production.
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+// Strict email validator used to gate values BEFORE they are interpolated into
+// any PostgREST filter string (.or(...) / .filter(...)). Disallows PostgREST
+// metacharacters ( , ( ) * : " ' ) so a crafted email cannot alter the query.
+const SAFE_EMAIL = /^[^\s,():*"']+@[^\s,():*"']+\.[^\s,():*"']+$/;
 
 interface OTPRequest {
   email: string;
@@ -142,6 +149,16 @@ Deno.serve(async (req: Request) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    // Strict validation BEFORE the email is interpolated into any PostgREST
+    // filter (see the .or(...) lookup below). Rejects PostgREST metacharacters
+    // to prevent filter-string injection that could alter the query.
+    if (!SAFE_EMAIL.test(normalizedEmail)) {
+      return new Response(
+        JSON.stringify({ error: "البريد الإلكتروني غير صالح" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     // Per-IP rate limit: max 20 OTP requests / hour from a single IP. Defends
     // against single-attacker cost-drain spam where the per-email cap is
     // bypassed by spreading requests across many fake addresses. Runs BEFORE
@@ -185,6 +202,9 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!client) {
+        // ENUMERATION TRADEOFF: a distinct 404 reveals whether an email is a
+        // registered client. Left as-is because the login UX depends on this
+        // specific message to guide users to contact their project manager.
         return new Response(
           JSON.stringify({ error: "العميل غير موجود في النظام. يرجى التواصل مع مدير المشروع" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -216,6 +236,9 @@ Deno.serve(async (req: Request) => {
       }
 
       if (!vendor) {
+        // ENUMERATION TRADEOFF: a distinct 404 reveals whether an email is a
+        // registered vendor. Left as-is because the login UX depends on this
+        // specific message; unifying it would break the expected frontend flow.
         return new Response(
           JSON.stringify({ error: "المورد غير موجود في النظام" }),
           { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },

@@ -51,14 +51,12 @@ Deno.serve(async (req: Request) => {
       .eq("id", callerUser.id)
       .maybeSingle();
 
-    const isAdmin =
-      callerProfile?.is_active &&
-      (callerProfile.role === "super_admin" ||
-        callerProfile.role === "project_manager" ||
-        callerProfile.role_id != null);
+    // Only the system super admin may delete admin users.
+    const isSuperAdmin =
+      callerProfile?.is_active && callerProfile.role === "super_admin";
 
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
+    if (!isSuperAdmin) {
+      return new Response(JSON.stringify({ error: "ليس لديك صلاحية" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -88,7 +86,8 @@ Deno.serve(async (req: Request) => {
       .eq("id", user_id);
 
     if (profileError) {
-      return new Response(JSON.stringify({ error: profileError.message }), {
+      console.error("Failed to delete user profile:", profileError);
+      return new Response(JSON.stringify({ error: "تعذر حذف المستخدم" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -106,8 +105,9 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("delete-admin-user error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Unknown error" }),
+      JSON.stringify({ error: "حدث خطأ غير متوقع" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

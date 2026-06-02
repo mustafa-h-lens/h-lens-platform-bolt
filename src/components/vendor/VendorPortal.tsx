@@ -17,6 +17,7 @@ import { VendorNotifications } from './VendorNotifications';
 import { VendorSuggestions } from './VendorSuggestions';
 import { VendorEditSubmission } from './VendorEditSubmission';
 import { ErrorBoundary } from '../shared/ErrorBoundary';
+import { SignedImage } from '../shared/SignedImage';
 import { useDisablePullToRefresh } from '../shared/PullToRefresh';
 import { usePageTransition } from '../../lib/usePageTransition';
 import '../../styles/vendor-portal.css';
@@ -193,7 +194,7 @@ export const VendorPortal = () => {
 
   const AvatarEl = ({ size = 38 }: { size?: number }) => (
     vendor?.profile_image ? (
-      <img src={vendor.profile_image} alt="" style={{ width: size, height: size, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
+      <SignedImage src={vendor.profile_image} alt="" style={{ width: size, height: size, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
     ) : (
       <div style={{
         width: size, height: size, borderRadius: 12, flexShrink: 0,
@@ -243,7 +244,7 @@ export const VendorPortal = () => {
                 fontSize: '.62rem', fontWeight: 700, color: 'white',
               }}>
                 {vendor?.profile_image ? (
-                  <img src={vendor.profile_image} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
+                  <SignedImage src={vendor.profile_image} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }} />
                 ) : initials}
               </div>
               <div style={{ minWidth: 0 }}>

@@ -1,8 +1,10 @@
 // Add three vendors + their equipment with image URLs.
 // Idempotent: skips vendors whose phone already exists; skips equipment rows
 // whose (vendor_id, name) pair already exists.
-const TOKEN = process.env.SUPABASE_ACCESS_TOKEN || 'sbp_8e1c5c20236afde3110411820241cfd9da90118c';
-const REF = process.env.SUPABASE_PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
+if (!TOKEN) { console.error('Missing SUPABASE_ACCESS_TOKEN env var'); process.exit(1); }
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 async function run(label, query, attempt = 1) {

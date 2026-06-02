@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Folder, File, Download, Trash2, FileText, Image, FileArchive } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
+import { openSignedUrl } from '../../../../lib/storage';
 import { formatDateArabic } from '../../../../lib/formatters';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
@@ -222,7 +223,7 @@ export const ProjectFiles = ({ projectId }: ProjectFilesProps) => {
 
                   <div className="flex items-center gap-2 w-full">
                     <button
-                      onClick={() => window.open(file.file_url, '_blank')}
+                      onClick={() => openSignedUrl(file.file_url)}
                       className="flex-1 flex items-center justify-center gap-2 px-3 py-2
                         bg-slate-100 dark:bg-slate-700 text-[#0A2A66] dark:text-[#47A1FF]
                         rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-all text-sm font-medium"

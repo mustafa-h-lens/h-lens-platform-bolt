@@ -3,6 +3,7 @@ import { Plus, FileText, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { DatePicker } from '../../../ui/DatePicker';
 import { FileUploader } from '../../../ui/FileUploader';
 import { supabase } from '../../../../lib/supabaseClient';
+import { openSignedUrl } from '../../../../lib/storage';
 import { Modal } from '../../../shared/Modal';
 import { useNotification } from '../../../../contexts/NotificationContext';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
@@ -264,7 +265,7 @@ export const ClientDocuments = ({ clientId }: ClientDocumentsProps) => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <button
                           className="p-1.5 rounded-lg transition-colors"
-                          onClick={() => window.open(doc.file_url, '_blank')}
+                          onClick={() => openSignedUrl(doc.file_url)}
                           title="تحميل"
                           style={{ color: 'var(--color-primary)' }}
                         >

@@ -3,9 +3,15 @@ import { Download, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { toEnglishNumbers } from '../../../lib/numberUtils';
+import { toSignedUrl } from '../../../lib/storage';
+import { SignedImage } from '../../shared/SignedImage';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import ExcelJS from 'exceljs';
+
+const escapeHtml = (v: unknown): string => String(v ?? '')
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 interface Vendor {
   id: string;
@@ -226,9 +232,11 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
 
   const convertImageToBase64 = async (url: string): Promise<string> => {
     try {
+      // Private buckets (PII) need a signed URL; public URLs pass through.
+      const signed = (await toSignedUrl(url)) ?? url;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
-      const response = await fetch(url, { signal: controller.signal });
+      const response = await fetch(signed, { signal: controller.signal });
       clearTimeout(timeout);
       if (!response.ok) return '';
       const blob = await response.blob();
@@ -351,7 +359,9 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
     compress = false,
   ): Promise<{ buffer: ArrayBuffer; ext: 'png' | 'jpeg' | 'gif' } | null> => {
     try {
-      const r = await fetch(url);
+      // Private buckets (PII) need a signed URL; public URLs pass through.
+      const signed = (await toSignedUrl(url)) ?? url;
+      const r = await fetch(signed);
       if (!r.ok) return null;
       if (compress) {
         const blob = await r.blob();
@@ -931,7 +941,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
             td.style.textAlign = 'right';
             td.style.padding = '12px';
             td.style.lineHeight = '1.8';
-            td.innerHTML = equipment.map(e => `${toEnglishNumbers(e.quantity.toString())} ${e.name}`).join('<br>');
+            td.innerHTML = equipment.map(e => `${toEnglishNumbers(e.quantity.toString())} ${escapeHtml(e.name)}`).join('<br>');
           } else {
             td.textContent = '-';
           }
@@ -1053,7 +1063,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
       else if (field.key === 'vehicle_plate_number') value = vendor.vehicle_plate_number ? toEnglishNumbers(vendor.vehicle_plate_number) : '-';
       else value = (vendor[field.key as keyof Vendor] as string) || '-';
 
-      cell.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">${field.label}</div><div style="font-size:14px;font-weight:600;color:#1e293b;direction:${['phone','id_number','vehicle_registration_number','vehicle_plate_number'].includes(field.key) ? 'ltr;text-align:left' : 'rtl'}">${value}</div>`;
+      cell.innerHTML = `<div style="font-size:11px;color:#94a3b8;margin-bottom:3px;">${field.label}</div><div style="font-size:14px;font-weight:600;color:#1e293b;direction:${['phone','id_number','vehicle_registration_number','vehicle_plate_number'].includes(field.key) ? 'ltr;text-align:left' : 'rtl'}">${escapeHtml(value)}</div>`;
       infoGrid.appendChild(cell);
     }
     profileSection.appendChild(infoGrid);
@@ -1327,7 +1337,7 @@ export const VendorExportModal = ({ vendors: initialVendors, onClose, onSuccess 
                   >
                     <span style={{ fontSize: 11, color: 'var(--text-disabled)', fontFamily: 'var(--font-mono)', minWidth: 22 }}>{idx + 1}</span>
                     <span style={{ fontSize: 16, color: 'var(--text-disabled)', cursor: 'grab' }}>⠿</span>
-                    {v.profile_image && <img src={v.profile_image} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
+                    {v.profile_image && <SignedImage src={v.profile_image} style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
                     <span style={{ fontWeight: 500 }}>{v.full_name}</span>
                     {v.primary_city && <span style={{ fontSize: 11, color: 'var(--text-muted)', marginRight: 'auto' }}>{v.primary_city}</span>}
                   </div>

@@ -3,11 +3,20 @@
 // INSERT into vendor_activity_log referencing the now-deleted vendor and
 // blow up the cascade. Triggers re-enabled after the delete.
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 if (!TOKEN) {
   console.error('Set SUPABASE_ACCESS_TOKEN before running this script.');
   process.exit(1);
 }
+
+// SAFETY GUARD — DESTRUCTIVE: force-deletes vendors and dependent rows.
+if (process.env.CONFIRM_DESTRUCTIVE !== 'YES') {
+  console.error('REFUSING TO RUN: force-delete-vendors.mjs is DESTRUCTIVE.');
+  console.error('Re-run with:  CONFIRM_DESTRUCTIVE=YES node scripts/force-delete-vendors.mjs');
+  process.exit(1);
+}
+
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 async function sql(label, query, attempt = 1) {

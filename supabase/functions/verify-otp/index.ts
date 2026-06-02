@@ -1,5 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { mintSupabaseJWT } from "../_shared/auth/jwt.ts";
+
+// Strict email check — disallows PostgREST filter metacharacters (, ( ) * :)
+// so a user-supplied value can never break out of an `eq` filter.
+const SAFE_EMAIL = /^[^\s,():*"']+@[^\s,():*"']+\.[^\s,():*"']+$/;
+
+// Vendor statuses that may NOT log in (defence-in-depth; the send side also gates).
+const BLOCKED_VENDOR_STATUSES = new Set(["rejected", "inactive", "blocked", "suspended"]);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -78,7 +86,7 @@ Deno.serve(async (req: Request) => {
       normalizedPhoneNine = nine;
       lookupCol = "phone";
       lookupVal = nine;
-    } else if (email && email.includes("@")) {
+    } else if (email && SAFE_EMAIL.test(email.trim())) {
       normalizedEmail = email.toLowerCase().trim();
       lookupCol = "email";
       lookupVal = normalizedEmail;
@@ -129,12 +137,18 @@ Deno.serve(async (req: Request) => {
 
     // Verify the code
     if (otpRecord.code !== code) {
-      await supabase
-        .from("otp_codes")
-        .update({ failed_attempts: failedAttempts + 1 })
-        .eq("id", otpRecord.id);
+      // Atomic increment (RPC) so concurrent guesses can't race past the lock.
+      const { data: newCount } = await supabase.rpc("increment_otp_failed_attempts", {
+        p_id: otpRecord.id,
+      });
+      const attempts = typeof newCount === "number" ? newCount : failedAttempts + 1;
+      const remaining = Math.max(MAX_FAILED_ATTEMPTS - attempts, 0);
 
-      const remaining = MAX_FAILED_ATTEMPTS - failedAttempts - 1;
+      // Burn the code once attempts are exhausted.
+      if (remaining <= 0) {
+        await supabase.from("otp_codes").update({ used: true }).eq("id", otpRecord.id);
+      }
+
       return new Response(
         JSON.stringify({
           error: remaining > 0
@@ -197,6 +211,14 @@ Deno.serve(async (req: Request) => {
         .eq("id", client.id)
         .eq("invitation_status", "pending");
 
+      // Mint a Supabase JWT scoped to this client so RLS gates portal reads.
+      const minted = await mintSupabaseJWT({
+        sub: client.id,
+        portal: "client",
+        client_id: client.id,
+        email: client.portal_email || client.email,
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -208,7 +230,11 @@ Deno.serve(async (req: Request) => {
             name: client.name,
             client_image: client.client_image,
           },
-          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
+          session: {
+            token: sessionToken,
+            access_token: minted.token,
+            expiresAt: minted.expiresAt,
+          },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -216,12 +242,12 @@ Deno.serve(async (req: Request) => {
       // Vendor — mirror the format-flexible client lookup so phone-OTP works
       // for existing rows that may store phone as 9-digit, 10-digit with
       // leading 0, or E.164.
-      let vendor: { id: string; email: string | null; full_name: string; vendor_type: string | null; phone: string | null } | null = null;
+      let vendor: { id: string; email: string | null; full_name: string; vendor_type: string | null; phone: string | null; status: string | null } | null = null;
 
       if (lookupCol === "phone") {
         const { data: candidates, error: vendorError } = await supabase
           .from("vendors")
-          .select("id, email, full_name, vendor_type, phone, created_at")
+          .select("id, email, full_name, vendor_type, phone, status, created_at")
           .not("phone", "is", null)
           .order("created_at", { ascending: false });
         if (vendorError) {
@@ -236,7 +262,7 @@ Deno.serve(async (req: Request) => {
       } else {
         const { data, error: vendorError } = await supabase
           .from("vendors")
-          .select("id, email, full_name, vendor_type, phone")
+          .select("id, email, full_name, vendor_type, phone, status")
           .eq("email", normalizedEmail)
           .maybeSingle();
         if (vendorError) {
@@ -255,6 +281,15 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Defence-in-depth: refuse login for blocked/rejected/inactive vendors
+      // even if they hold a still-valid code (the send side already gates).
+      if (vendor.status && BLOCKED_VENDOR_STATUSES.has(vendor.status)) {
+        return new Response(
+          JSON.stringify({ error: "لا يمكن تسجيل الدخول لهذا الحساب" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       const { error: sessionError } = await supabase
         .from("vendor_sessions")
         .insert({
@@ -264,6 +299,14 @@ Deno.serve(async (req: Request) => {
           ip_address: ipAddress,
         });
       if (sessionError) console.error("Vendor session creation error:", sessionError);
+
+      // Mint a Supabase JWT scoped to this vendor so RLS gates portal reads.
+      const minted = await mintSupabaseJWT({
+        sub: vendor.id,
+        portal: "vendor",
+        vendor_id: vendor.id,
+        email: vendor.email,
+      });
 
       return new Response(
         JSON.stringify({
@@ -276,7 +319,11 @@ Deno.serve(async (req: Request) => {
             name: vendor.full_name,
             vendor_type: vendor.vendor_type,
           },
-          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
+          session: {
+            token: sessionToken,
+            access_token: minted.token,
+            expiresAt: minted.expiresAt,
+          },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

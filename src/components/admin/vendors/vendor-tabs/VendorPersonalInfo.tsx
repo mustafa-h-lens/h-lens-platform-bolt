@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Save, Upload, X, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '../../../../lib/supabaseClient';
 import { SearchableDropdown } from '../../../shared/SearchableDropdown';
+import { SignedImage } from '../../../shared/SignedImage';
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
 import { toEnglishNumbers } from '../../../../lib/numberUtils';
 import { useNotification } from '../../../../contexts/NotificationContext';
@@ -553,7 +554,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
             >
               <div style={{ width: 120, height: 120, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--border-soft)', flexShrink: 0 }}>
                 {formData.profile_image ? (
-                  <img
+                  <SignedImage
                     src={formData.profile_image}
                     alt="Profile"
                     style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
@@ -602,7 +603,7 @@ export const VendorPersonalInfo = ({ vendor, onUpdate }: VendorPersonalInfoProps
               onDrop={isEditing ? (e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.style.borderColor = 'var(--border-soft)'; const file = e.dataTransfer.files[0]; if (file) { const dt = new DataTransfer(); dt.items.add(file); if (idImageInputRef.current) { idImageInputRef.current.files = dt.files; idImageInputRef.current.dispatchEvent(new Event('change', { bubbles: true })); } } } : undefined}
             >
               {formData.id_image ? (
-                <img
+                <SignedImage
                   src={formData.id_image}
                   alt="ID"
                   style={{ width: '100%', maxHeight: 160, borderRadius: 'var(--radius-md)', objectFit: 'contain', border: '2px solid var(--border-soft)' }}

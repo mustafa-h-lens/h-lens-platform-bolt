@@ -6,6 +6,7 @@ import { useNotification } from '../../contexts/NotificationContext';
 import { PageCard, EmptyState, LoadingSpinner } from './shared';
 import type { VendorDoc } from './shared/types';
 import { ConfirmationModal } from '../shared/ConfirmationModal';
+import { openSignedUrl } from '../../lib/storage';
 
 const DOC_TYPES = [
   { k: 'contract',    l: 'عقد',    Icon: FileText  },
@@ -153,9 +154,9 @@ export function VendorDocuments() {
                     {dt?.l} · {new Date(doc.created_at).toLocaleDateString('en-US')}
                   </div>
                 </div>
-                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', display: 'flex', padding: '4px 6px' }} title="تحميل">
+                <button onClick={() => openSignedUrl(doc.file_url)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', display: 'flex', padding: '4px 6px' }} title="تحميل">
                   <FileText size={16} />
-                </a>
+                </button>
                 <button onClick={() => deleteDoc(doc.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '4px 6px', borderRadius: 5, display: 'flex' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}>

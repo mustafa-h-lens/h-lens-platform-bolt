@@ -56,6 +56,9 @@ supabase/.branches/
 # Claude Code local settings (may contain tokens in command history)
 .claude/settings.local.json
 
+# local agent/tooling scratch
+.claude/
+
 # Test/seed files with hardcoded credentials
 seed-test-vendors.html
 

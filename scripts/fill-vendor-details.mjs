@@ -6,7 +6,7 @@
 //
 // Requires (or defaults to the project's existing pinned creds in env):
 //   SUPABASE_ACCESS_TOKEN   — Supabase management-API PAT
-//   SUPABASE_PROJECT_REF    — project ref (the akcpkjzfhtmurtwzyzhn one)
+//   SUPABASE_PROJECT_REF    — project ref
 //
 // Behaviour:
 //   - Reads each target by an ILIKE %name% match. If multiple rows match, prints
@@ -16,7 +16,8 @@
 //   - Prints a final summary table: matched / skipped (multi) / not found.
 
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const REF = process.env.SUPABASE_PROJECT_REF || 'akcpkjzfhtmurtwzyzhn';
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 if (!TOKEN) {
   console.error('Missing SUPABASE_ACCESS_TOKEN env var. See scripts/add-three-vendors.mjs for the pinned dev token if you want to reuse it.');
   process.exit(2);

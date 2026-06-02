@@ -48,18 +48,51 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // SSRF protection: only allow HTTPS URLs from known domains
+    // Resolve the trusted Supabase storage host. Hard-fail if it is unset so
+    // the allowlist can never be empty-and-skipped (open SSRF).
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (!supabaseUrl) {
+      console.error('SUPABASE_URL is not configured');
+      return new Response(
+        JSON.stringify({ error: 'خطأ في إعدادات الخادم' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    const supabaseHost = new URL(supabaseUrl).hostname;
+
+    // Reject hosts that are IP literals or known private/link-local/metadata targets.
+    const isBlockedHost = (host: string): boolean => {
+      const h = host.toLowerCase();
+      if (h === 'localhost' || h === 'metadata.google.internal') return true;
+      if (h === '::1' || h === '[::1]') return true;
+      // 169.254.* (link-local / cloud metadata), 127.* (loopback), 10.* (private)
+      if (/^169\.254\./.test(h)) return true;
+      if (/^127\./.test(h)) return true;
+      if (/^10\./.test(h)) return true;
+      // 192.168.* (private)
+      if (/^192\.168\./.test(h)) return true;
+      // 172.16.* - 172.31.* (private)
+      if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return true;
+      return false;
+    };
+
+    // SSRF protection: require HTTPS AND the exact Supabase storage host.
     try {
       const parsedUrl = new URL(imageUrl);
       if (parsedUrl.protocol !== 'https:') {
         throw new Error('Only HTTPS URLs are allowed');
       }
-      const supabaseHost = Deno.env.get("SUPABASE_URL");
-      const allowedHosts = supabaseHost ? [new URL(supabaseHost).hostname] : [];
-      if (allowedHosts.length > 0 && !allowedHosts.includes(parsedUrl.hostname)) {
+      if (isBlockedHost(parsedUrl.hostname)) {
+        throw new Error('URL host is not allowed');
+      }
+      if (parsedUrl.hostname !== supabaseHost) {
         throw new Error('URL domain not allowed');
       }
     } catch (urlError) {
+      console.error('Rejected image URL:', urlError);
       return new Response(
         JSON.stringify({ error: 'عنوان URL غير صالح أو غير مسموح به' }),
         {
@@ -69,7 +102,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const imageResponse = await fetch(imageUrl);
+    // Do not follow redirects — a 3xx could redirect to an internal/metadata host.
+    const imageResponse = await fetch(imageUrl, { redirect: 'manual' });
+    if (imageResponse.status >= 300 && imageResponse.status < 400) {
+      console.error('Image URL returned a redirect:', imageResponse.status);
+      return new Response(
+        JSON.stringify({ error: 'عنوان URL غير صالح أو غير مسموح به' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
     if (!imageResponse.ok) {
       throw new Error('Failed to fetch image');
     }
@@ -166,19 +210,12 @@ Deno.serve(async (req: Request) => {
       const errorData = await anthropicResponse.text();
       console.error('Anthropic API error:', anthropicResponse.status, errorData);
 
-      let errorMessage = 'Failed to analyze image with AI';
+      let errorMessage = 'فشل تحليل الصورة بواسطة الذكاء الاصطناعي';
 
       if (anthropicResponse.status === 401) {
         errorMessage = 'مفتاح Anthropic API غير صحيح. يرجى التحقق من الإعدادات.';
       } else if (anthropicResponse.status === 429) {
         errorMessage = 'تم تجاوز حد الاستخدام لـ Anthropic API';
-      } else {
-        try {
-          const parsedError = JSON.parse(errorData);
-          errorMessage = parsedError.error?.message || errorMessage;
-        } catch (e) {
-          errorMessage = `خطأ من Anthropic API: ${errorData.substring(0, 200)}`;
-        }
       }
 
       throw new Error(errorMessage);
@@ -226,11 +263,9 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error: unknown) {
     console.error('Error extracting document data:', error);
-    const errMsg = error instanceof Error ? error.message : 'Failed to extract data from image';
     return new Response(
       JSON.stringify({
-        error: errMsg,
-        details: String(error),
+        error: 'فشل استخراج البيانات من الصورة',
       }),
       {
         status: 500,

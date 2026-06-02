@@ -5,7 +5,8 @@ if (!TOKEN) {
   console.error('Missing SUPABASE_ACCESS_TOKEN env var.');
   process.exit(2);
 }
-const REF = 'akcpkjzfhtmurtwzyzhn';
+const REF = process.env.SUPABASE_PROJECT_REF;
+if (!REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 const URL = `https://api.supabase.com/v1/projects/${REF}/database/query`;
 
 const newBody =

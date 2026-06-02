@@ -6,7 +6,8 @@
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 if (!TOKEN) { console.error('Missing SUPABASE_ACCESS_TOKEN'); process.exit(1); }
 
-const PROJECT_REF = 'akcpkjzfhtmurtwzyzhn';
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+if (!PROJECT_REF) { console.error('Missing SUPABASE_PROJECT_REF env var'); process.exit(1); }
 
 const content = {
   lastUpdated: '4 مايو 2026',

@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Upload, Image as ImageIcon, Search, Filter, Package } from 'lucide-react';
+import { useState, useEffect, useRef, Fragment } from 'react';
+import { Plus, Edit2, Trash2, Save, X, Upload, Image as ImageIcon, Search, Filter, Package, ChevronDown } from 'lucide-react';
 import { Modal } from '../../shared/Modal';
 import { supabase } from '../../../lib/supabaseClient';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -47,6 +47,41 @@ export const EquipmentCatalogSettings = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [usageCounts, setUsageCounts] = useState<Record<string, number>>({});
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [usageVendors, setUsageVendors] = useState<Record<string, { id: string; full_name: string; status: string; quantity: number; condition: string }[]>>({});
+  const [loadingUsage, setLoadingUsage] = useState<string | null>(null);
+
+  // Toggle the expandable "X مورد" usage cell: lazily load which vendors own
+  // this catalog item (via vendor_equipment) the first time it's opened.
+  const toggleUsage = async (itemId: string) => {
+    if (expandedItemId === itemId) { setExpandedItemId(null); return; }
+    setExpandedItemId(itemId);
+    if (!usageVendors[itemId]) {
+      setLoadingUsage(itemId);
+      try {
+        const { data, error } = await supabase
+          .from('vendor_equipment')
+          .select('quantity, condition, vendors(id, full_name, status)')
+          .eq('catalog_item_id', itemId);
+        if (!error && data) {
+          const list = (data as any[])
+            .filter(r => r.vendors)
+            .map(r => ({
+              id: r.vendors.id,
+              full_name: r.vendors.full_name,
+              status: r.vendors.status,
+              quantity: r.quantity,
+              condition: r.condition,
+            }));
+          setUsageVendors(prev => ({ ...prev, [itemId]: list }));
+        }
+      } catch (e) {
+        console.error('Error loading usage vendors:', e);
+      } finally {
+        setLoadingUsage(null);
+      }
+    }
+  };
   const [uploadingImage, setUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -574,7 +609,8 @@ export const EquipmentCatalogSettings = () => {
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredItems.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                <Fragment key={item.id}>
+                <tr className="hover:bg-slate-50 transition-colors">
                   <td className="px-6 py-4">
                     {item.image_url ? (
                       <img
@@ -618,7 +654,19 @@ export const EquipmentCatalogSettings = () => {
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     {usageCounts[item.id] ? (
-                      <span className="badge badge-blue">{usageCounts[item.id]} مورد</span>
+                      <button
+                        type="button"
+                        className="badge badge-blue"
+                        onClick={() => toggleUsage(item.id)}
+                        title="عرض الموردين الذين يملكون هذه المعدة"
+                        style={{ cursor: 'pointer', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
+                        {usageCounts[item.id]} مورد
+                        <ChevronDown
+                          className="w-3 h-3"
+                          style={{ transform: expandedItemId === item.id ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}
+                        />
+                      </button>
                     ) : (
                       <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>-</span>
                     )}
@@ -654,6 +702,32 @@ export const EquipmentCatalogSettings = () => {
                     </div>
                   </td>
                 </tr>
+                {expandedItemId === item.id && (
+                  <tr>
+                    <td colSpan={8} style={{ background: 'var(--bg-overlay, rgba(2,6,23,0.35))', padding: '12px 24px' }}>
+                      {loadingUsage === item.id ? (
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>جارٍ التحميل...</span>
+                      ) : usageVendors[item.id]?.length ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>الموردون:</span>
+                          {usageVendors[item.id].map((v) => (
+                            <span
+                              key={v.id}
+                              className="badge"
+                              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                            >
+                              {v.full_name}
+                              {v.quantity ? <span style={{ color: 'var(--text-muted)' }}>×{v.quantity}</span> : null}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>لا يوجد موردون</span>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
               {filteredItems.length === 0 && (
                 <tr>
