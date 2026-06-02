@@ -95,7 +95,7 @@ export const AdminSuggestions = () => {
   // Promote-to-catalog state (per expanded suggestion)
   const [promoteOpen, setPromoteOpen] = useState<string | null>(null);
   const [promoteForm, setPromoteForm] = useState({
-    name: '', name_en: '', category_id: '', brand_id: '', image_url: '',
+    name: '', name_en: '', category_id: '', brand_id: '', image_url: '', quantity: 1,
   });
   const [promoteSaving, setPromoteSaving] = useState(false);
   const [eqCategories, setEqCategories] = useState<{ id: string; name: string }[]>([]);
@@ -150,12 +150,13 @@ export const AdminSuggestions = () => {
       category_id: '',
       brand_id: '',
       image_url: '',
+      quantity: 1,
     });
   };
 
   const closePromote = () => {
     setPromoteOpen(null);
-    setPromoteForm({ name: '', name_en: '', category_id: '', brand_id: '', image_url: '' });
+    setPromoteForm({ name: '', name_en: '', category_id: '', brand_id: '', image_url: '', quantity: 1 });
   };
 
   const handlePromote = async (s: EquipSuggestion) => {
@@ -186,7 +187,7 @@ export const AdminSuggestions = () => {
           catalog_item_id: catRow!.id,
           name: catRow!.name,
           type: catName,
-          quantity: 1,
+          quantity: Math.max(1, Number(promoteForm.quantity) || 1),
           condition: 'good',
         }]);
       if (veErr) throw veErr;
@@ -676,6 +677,18 @@ export const AdminSuggestions = () => {
                                     ))}
                                   </select>
                                 </div>
+                              </div>
+                              <div className="input-group" style={{ margin: '12px 0 0', maxWidth: 160 }}>
+                                <label className="input-label">الكمية المضافة لملف المورد</label>
+                                <input
+                                  className="input"
+                                  type="number"
+                                  min={1}
+                                  value={promoteForm.quantity}
+                                  onChange={e => setPromoteForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
+                                  dir="ltr"
+                                  style={{ textAlign: 'center' }}
+                                />
                               </div>
                               <div className="input-group" style={{ margin: '12px 0 0' }}>
                                 <label className="input-label">صورة المعدة</label>
