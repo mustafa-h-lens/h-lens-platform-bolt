@@ -46,7 +46,7 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
   const handleDelete = async (id: string) => {
     const ok = await confirm({
       title: 'حذف البند',
-      message: 'هل أنت متأكد من حذف هذا البند؟',
+      message: 'سيتم حذف هذا البند نهائياً من الكتالوج. هل أنت متأكد؟',
       confirmText: 'حذف',
       cancelText: 'إلغاء',
       type: 'danger',
@@ -56,7 +56,7 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
     try {
       const { error } = await supabase
         .from('service_items')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id);
 
       if (error) throw error;
@@ -136,15 +136,14 @@ export const ServiceItemsCatalog = ({ onBack }: ServiceItemsCatalogProps) => {
                       >
                         <Edit2 size={14} />
                       </button>
-                      {item.is_active && (
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => handleDelete(item.id)}
-                          style={{ color: 'var(--danger-text)', padding: 6 }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => handleDelete(item.id)}
+                        style={{ color: 'var(--danger-text)', padding: 6 }}
+                        title="حذف"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </td>
                 </tr>
