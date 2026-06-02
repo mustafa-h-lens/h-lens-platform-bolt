@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Lightbulb, Send, Clock, CheckCircle, XCircle, Eye, Zap,
   MessageSquare, ChevronDown, ChevronUp, User, Camera, Package,
-  RotateCcw, Inbox, Plus,
+  RotateCcw, Inbox, Plus, Upload, Image as ImageIcon, X,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabaseClient';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { formatDateArabic } from '../../../lib/formatters';
 
@@ -94,11 +95,37 @@ export const AdminSuggestions = () => {
   // Promote-to-catalog state (per expanded suggestion)
   const [promoteOpen, setPromoteOpen] = useState<string | null>(null);
   const [promoteForm, setPromoteForm] = useState({
-    name: '', name_en: '', category_id: '', brand_id: '',
+    name: '', name_en: '', category_id: '', brand_id: '', image_url: '',
   });
   const [promoteSaving, setPromoteSaving] = useState(false);
   const [eqCategories, setEqCategories] = useState<{ id: string; name: string }[]>([]);
   const [eqBrands, setEqBrands] = useState<{ id: string; name: string }[]>([]);
+  const { showError, showSuccess } = useNotification();
+  const promoteFileRef = useRef<HTMLInputElement>(null);
+  const [promoteUploading, setPromoteUploading] = useState(false);
+
+  // Upload an equipment image to the same bucket/path the catalog uses.
+  const handlePromoteImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showError('حجم الصورة يجب أن يكون أقل من 5MB'); return; }
+    setPromoteUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `equipment/${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('images').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(filePath);
+      setPromoteForm(f => ({ ...f, image_url: publicUrl }));
+      showSuccess('تم رفع الصورة بنجاح');
+    } catch (error) {
+      console.error('Error uploading equipment image:', error);
+      showError('فشل رفع الصورة');
+    } finally {
+      setPromoteUploading(false);
+      if (promoteFileRef.current) promoteFileRef.current.value = '';
+    }
+  };
 
   useEffect(() => { fetchVendorSuggestions(); fetchEquipSuggestions(); fetchEqMeta(); }, []);
 
@@ -122,12 +149,13 @@ export const AdminSuggestions = () => {
       name_en: '',
       category_id: '',
       brand_id: '',
+      image_url: '',
     });
   };
 
   const closePromote = () => {
     setPromoteOpen(null);
-    setPromoteForm({ name: '', name_en: '', category_id: '', brand_id: '' });
+    setPromoteForm({ name: '', name_en: '', category_id: '', brand_id: '', image_url: '' });
   };
 
   const handlePromote = async (s: EquipSuggestion) => {
@@ -142,6 +170,7 @@ export const AdminSuggestions = () => {
           name_en: promoteForm.name_en.trim() || null,
           category_id: promoteForm.category_id || null,
           brand_id: promoteForm.brand_id || null,
+          image_url: promoteForm.image_url || null,
           is_active: true,
         }])
         .select('id, name, equipment_categories(name)')
@@ -647,6 +676,31 @@ export const AdminSuggestions = () => {
                                     ))}
                                   </select>
                                 </div>
+                              </div>
+                              <div className="input-group" style={{ margin: '12px 0 0' }}>
+                                <label className="input-label">صورة المعدة</label>
+                                <input
+                                  ref={promoteFileRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handlePromoteImageUpload}
+                                  style={{ display: 'none' }}
+                                />
+                                {promoteForm.image_url ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <img src={promoteForm.image_url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-subtle)' }} />
+                                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => promoteFileRef.current?.click()} disabled={promoteUploading} style={{ gap: 6 }}>
+                                      <Upload size={13} /> تغيير
+                                    </button>
+                                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPromoteForm(f => ({ ...f, image_url: '' }))} disabled={promoteUploading} style={{ gap: 6 }}>
+                                      <X size={13} /> إزالة
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => promoteFileRef.current?.click()} disabled={promoteUploading} style={{ gap: 6 }}>
+                                    {promoteUploading ? <><ImageIcon size={13} /> جاري الرفع...</> : <><Upload size={13} /> رفع صورة</>}
+                                  </button>
+                                )}
                               </div>
                               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                                 <button
