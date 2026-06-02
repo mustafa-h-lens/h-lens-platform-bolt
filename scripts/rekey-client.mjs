@@ -94,8 +94,11 @@ async function main() {
     return;
   }
 
-  // 5. Apply: re-key inside one transaction with FK triggers disabled so the
-  //    parent + children can be updated together. No row is deleted.
+  // 5. Apply: re-key inside one transaction. Supabase roles can't disable FK
+  //    triggers (session_replication_role is denied), so instead we temporarily
+  //    add ON UPDATE CASCADE to every FK that references clients(id), update the
+  //    id (which cascades to all children), then restore each FK to its original
+  //    definition. Schema ends identical; no row is deleted.
   console.log('\nApplying re-key...');
   await q('rekey', `
     DO $$
@@ -107,18 +110,24 @@ async function main() {
       IF EXISTS (SELECT 1 FROM public.clients WHERE id = v_new) THEN
         RAISE EXCEPTION 'new id % already exists', v_new;
       END IF;
-      PERFORM set_config('session_replication_role', 'replica', true); -- txn-local: pause FK/triggers
-      UPDATE public.clients SET id = v_new WHERE id = v_old;
-      FOR r IN
-        SELECT (c.conrelid::regclass)::text AS tbl, a.attname AS col
+      CREATE TEMP TABLE _fk_backup ON COMMIT DROP AS
+        SELECT c.conname,
+               (c.conrelid::regclass)::text AS tbl,
+               pg_get_constraintdef(c.oid)  AS def
         FROM pg_constraint c
-        JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
-        WHERE c.contype = 'f' AND c.confrelid = 'public.clients'::regclass
-      LOOP
-        EXECUTE format('UPDATE %s SET %I = $1 WHERE %I = $2', r.tbl, r.col, r.col)
-          USING v_new, v_old;
+        WHERE c.contype = 'f' AND c.confrelid = 'public.clients'::regclass;
+      -- add ON UPDATE CASCADE
+      FOR r IN SELECT * FROM _fk_backup LOOP
+        EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
+        EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s ON UPDATE CASCADE', r.tbl, r.conname, r.def);
       END LOOP;
-      PERFORM set_config('session_replication_role', 'origin', true);
+      -- re-key; children follow automatically
+      UPDATE public.clients SET id = v_new WHERE id = v_old;
+      -- restore FKs to their original definitions
+      FOR r IN SELECT * FROM _fk_backup LOOP
+        EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', r.tbl, r.conname);
+        EXECUTE format('ALTER TABLE %s ADD CONSTRAINT %I %s', r.tbl, r.conname, r.def);
+      END LOOP;
     END $$;`);
 
   // 6. Verify: new id present, old id gone, child counts preserved.
