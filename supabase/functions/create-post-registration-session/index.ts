@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { mintSupabaseJWT } from "../_shared/auth/jwt.ts";
+import { issuePortalSession } from "../_shared/auth/native_session.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     // guards: pending_approval status, created in the last 5 minutes.
     const { data: vendor, error: vendorError } = await supabase
       .from("vendors")
-      .select("id, email, full_name, vendor_type, profile_image, status, created_at, registration_nonce")
+      .select("id, email, full_name, vendor_type, profile_image, status, created_at, registration_nonce, auth_user_id")
       .eq("id", vendor_id)
       .maybeSingle();
 
@@ -104,11 +104,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const minted = await mintSupabaseJWT({
-      sub: vendor.id,
+    // Issue a NATIVE Supabase session (one-time token → real session in browser).
+    const portalSession = await issuePortalSession(supabase, {
       portal: "vendor",
-      vendor_id: vendor.id,
-      email: vendor.email,
+      rowId: vendor.id,
+      table: "vendors",
+      authUserId: vendor.auth_user_id,
     });
 
     // Return only what the portal shell needs to render — NO id_number /
@@ -124,11 +125,8 @@ Deno.serve(async (req: Request) => {
           profile_image: vendor.profile_image,
           status: vendor.status,
         },
-        session: {
-          token: sessionToken,
-          access_token: minted.token,
-          expiresAt: minted.expiresAt,
-        },
+        auth: portalSession, // native session bootstrap { token_hash, email }
+        session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
