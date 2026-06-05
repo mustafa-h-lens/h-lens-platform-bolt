@@ -24,8 +24,8 @@ export default function SupplierAuth({ onSuccess }: SupplierAuthProps) {
   const handleBack = () => { setStep('login'); setIdentifier(''); setDevOTP(null); };
 
   const handleSuccess = (data: any) => {
-    localStorage.setItem('vendor_session', JSON.stringify(data.session));
-    localStorage.setItem('vendor_data',    JSON.stringify(data.vendor));
+    // The native Supabase session was already established by OTPInput; just
+    // continue (App routes by the session's app_metadata).
     onSuccess?.(data);
   };
 

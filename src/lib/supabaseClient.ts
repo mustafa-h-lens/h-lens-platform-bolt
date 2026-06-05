@@ -7,33 +7,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// ─────────────────────────────────────────────────────────────
-// Portal access token (vendor / client portals)
-// ─────────────────────────────────────────────────────────────
-// The vendor and client portals do not use Supabase Auth (gotrue). Instead,
-// `verify-otp` mints a Supabase-compatible JWT (role=authenticated, with a
-// vendor_id/client_id claim) that RLS uses to scope every read/write. When a
-// portal session is active we inject that token as the Authorization bearer on
-// every request below, replacing the anon bearer. The `apikey` header stays the
-// anon key (PostgREST/Kong need it for routing). The admin app never sets a
-// portal token, so it keeps using its real gotrue session unchanged.
-let portalAccessToken: string | null = null;
-
-export function setPortalAccessToken(token: string | null): void {
-  portalAccessToken = token;
-}
-
-const portalFetch: typeof fetch = (input, init = {}) => {
-  if (portalAccessToken) {
-    const headers = new Headers(init.headers ?? {});
-    headers.set('Authorization', `Bearer ${portalAccessToken}`);
-    init = { ...init, headers };
-  }
-  return fetch(input, init);
-};
-
+// Single client. Admin, vendor, and client portals all authenticate via NATIVE
+// Supabase Auth (gotrue). supabase-js stores the session (localStorage) and
+// attaches it + auto-refreshes it on every request. RLS scopes each portal by
+// the session user's app_metadata claim (portal + vendor_id/client_id).
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  global: { fetch: portalFetch },
+  auth: { persistSession: true, autoRefreshToken: true },
 });
 
 export interface Database {

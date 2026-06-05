@@ -8,7 +8,6 @@ import { ClientPortalProvider } from './contexts/ClientPortalContext';
 import { HideAmountsProvider } from './contexts/HideAmountsContext';
 import { getTheme } from './theme/tokens';
 import { useRouteTracking, getLastVisitedPage, navigate } from './lib/router';
-import { supabase } from './lib/supabaseClient';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { NavTransitionOverlay } from './components/NavTransitionOverlay';
 import { BootSplash } from './components/BootSplash';
@@ -18,9 +17,6 @@ import { BootSplash } from './components/BootSplash';
 // ─────────────────────────────────────────────────────────────
 const NewAdminDashboard = lazy(() =>
   import('./components/admin/NewAdminDashboard').then(m => ({ default: m.NewAdminDashboard }))
-);
-const ClientDashboard = lazy(() =>
-  import('./components/client/ClientDashboard').then(m => ({ default: m.ClientDashboard }))
 );
 const VendorPortal = lazy(() =>
   import('./components/vendor/VendorPortal').then(m => ({ default: m.VendorPortal }))
@@ -50,102 +46,16 @@ const PrivacyPolicy = lazy(() =>
 // ROUTE CONSTANTS
 // ─────────────────────────────────────────────────────────────
 const ROUTES = {
-  // Public
   VENDOR_REGISTRATION: '/join',
   VENDOR_LOGIN:        '/vendor/login',
   VENDOR_PORTAL:       '/vendor',
   TERMS:               '/terms-and-conditions',
   PRIVACY:             '/privacy-policy',
-
-  // Client Portal
   CLIENT_LOGIN:        '/client',
   CLIENT_PORTAL:       '/client/dashboard',
-
-  // Protected
   ADMIN_LOGIN:         '/admin',
   ADMIN_DASHBOARD:     '/admin',
 } as const;
-
-// ─────────────────────────────────────────────────────────────
-// VENDOR SESSION HELPERS
-// ─────────────────────────────────────────────────────────────
-interface VendorSession {
-  token: string;
-  access_token?: string;
-  expiresAt: string;
-}
-
-interface VendorData {
-  id: string;
-  email: string;
-  name: string;
-  vendor_type?: string;
-  primary_city?: string;
-  profile_image?: string;
-  nationality?: string;
-  id_number?: string;
-  phone?: string;
-  status?: string;
-}
-
-function getStoredVendorSession(): { vendor: VendorData; session: VendorSession } | null {
-  try {
-    const sessionRaw = localStorage.getItem('vendor_session');
-    const vendorRaw  = localStorage.getItem('vendor_data');
-    if (!sessionRaw || !vendorRaw) return null;
-
-    const session: VendorSession = JSON.parse(sessionRaw);
-    const vendor: VendorData     = JSON.parse(vendorRaw);
-
-    if (new Date(session.expiresAt) < new Date()) {
-      localStorage.removeItem('vendor_session');
-      localStorage.removeItem('vendor_data');
-      return null;
-    }
-
-    return { vendor, session };
-  } catch {
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────────────────────
-// CLIENT SESSION HELPERS
-// ─────────────────────────────────────────────────────────────
-interface ClientData {
-  id: string;
-  email: string;
-  name: string;
-  client_image?: string | null;
-}
-
-interface ClientSession {
-  token: string;
-  access_token?: string;
-  expiresAt: string;
-}
-
-function getStoredClientSession(): { client: ClientData; session: ClientSession } | null {
-  try {
-    const sessionRaw = localStorage.getItem('client_session');
-    const clientRaw = localStorage.getItem('client_data');
-    if (!sessionRaw || !clientRaw) return null;
-
-    const session: ClientSession = JSON.parse(sessionRaw);
-    const client: ClientData = JSON.parse(clientRaw);
-
-    if (new Date(session.expiresAt) < new Date()) {
-      localStorage.removeItem('client_session');
-      localStorage.removeItem('client_data');
-      return null;
-    }
-
-    return { client, session };
-  } catch {
-    return null;
-  }
-}
-
 
 // ─────────────────────────────────────────────────────────────
 // LOADING FALLBACK FOR SUSPENSE
@@ -160,23 +70,13 @@ function LoadingFallback() {
       backgroundColor: '#f9fafb',
     }}>
       <div className="page-loading-placeholder" />
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column' as const,
-        alignItems: 'center',
-        gap: '12px',
-      }}>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '12px' }}>
         <div style={{
-          width: '36px',
-          height: '36px',
-          border: '3px solid #e5e7eb',
-          borderTopColor: '#6366f1',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
+          width: '36px', height: '36px',
+          border: '3px solid #e5e7eb', borderTopColor: '#6366f1',
+          borderRadius: '50%', animation: 'spin 0.8s linear infinite',
         }} />
-        <span style={{ color: '#6b7280', fontSize: '15px', fontFamily: 'sans-serif' }}>
-          جاري التحميل...
-        </span>
+        <span style={{ color: '#6b7280', fontSize: '15px', fontFamily: 'sans-serif' }}>جاري التحميل...</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
@@ -195,6 +95,13 @@ function AppContent() {
   const [hasRestoredRoute, setHasRestoredRoute] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Native portal identity comes from the Supabase session's app_metadata.
+  const appMeta = (user?.app_metadata ?? {}) as { portal?: 'vendor' | 'client'; vendor_id?: string; client_id?: string };
+  const vendorId = appMeta.portal === 'vendor' ? appMeta.vendor_id : undefined;
+  const clientId = appMeta.portal === 'client' ? appMeta.client_id : undefined;
+  const isVendorSession = !!user && !!vendorId;
+  const isClientSession = !!user && !!clientId;
+
   // Track route changes and save to localStorage
   useRouteTracking();
 
@@ -211,12 +118,9 @@ function AppContent() {
     return () => window.removeEventListener('pull-to-refresh', handleRefresh);
   }, []);
 
-  // Clear admin session when on vendor portal (once, not on every render)
-  useEffect(() => {
-    if (currentPath === ROUTES.VENDOR_PORTAL && user) {
-      supabase.auth.signOut().catch(() => {});
-    }
-  }, [currentPath]);
+  // NOTE: the old "sign out the admin session when on /vendor" effect was
+  // removed — with native auth the vendor IS a Supabase session and must not be
+  // signed out. Portal vs admin is decided by app_metadata.portal below.
 
   // Restore last visited page on initial load (any portal, not just admin)
   useEffect(() => {
@@ -231,7 +135,6 @@ function AppContent() {
       return;
     }
 
-    // Parse the saved page into pathname + hash parts
     let savedPathname = lastVisitedPage;
     let savedHash = '';
     const hashIdx = lastVisitedPage.indexOf('#');
@@ -240,27 +143,22 @@ function AppContent() {
       savedHash = lastVisitedPage.slice(hashIdx);
     }
 
-    // Case 1: plain /admin with no hash — restore deep admin page if authenticated
     const onPlainAdmin = currentPathname === ROUTES.ADMIN_LOGIN && !currentHash;
     if (onPlainAdmin && user && profile) {
       const isDeepAdminPage = lastVisitedPage.startsWith('/admin#') || lastVisitedPage.startsWith('/admin/');
-      if (isDeepAdminPage) {
-        window.history.replaceState({}, '', lastVisitedPage);
-        // NewAdminDashboard reads hash on mount via parseHash()
-      }
+      if (isDeepAdminPage) window.history.replaceState({}, '', lastVisitedPage);
       setHasRestoredRoute(true);
       return;
     }
 
-    // Case 2: on landing (/) with a saved deep page — restore if the matching session exists
     if (currentPathname === '/' && !currentHash) {
       if (savedPathname.startsWith('/admin') && user && profile) {
         window.history.replaceState({}, '', lastVisitedPage);
         setCurrentPath(savedPathname);
-      } else if (savedPathname.startsWith('/vendor') && getStoredVendorSession()) {
+      } else if (savedPathname.startsWith('/vendor') && isVendorSession) {
         window.history.replaceState({}, '', lastVisitedPage);
         setCurrentPath(savedPathname);
-      } else if (savedPathname.startsWith('/client') && getStoredClientSession()) {
+      } else if (savedPathname.startsWith('/client') && isClientSession) {
         window.history.replaceState({}, '', lastVisitedPage);
         setCurrentPath(savedPathname);
       }
@@ -268,84 +166,66 @@ function AppContent() {
       return;
     }
 
-    // Case 3: on a portal root without hash — restore the saved sub-page/hash of that portal
     const onVendorRoot = currentPathname === ROUTES.VENDOR_PORTAL && !currentHash;
-    if (onVendorRoot && savedPathname === ROUTES.VENDOR_PORTAL && savedHash && getStoredVendorSession()) {
+    if (onVendorRoot && savedPathname === ROUTES.VENDOR_PORTAL && savedHash && isVendorSession) {
       window.history.replaceState({}, '', lastVisitedPage);
       setHasRestoredRoute(true);
       return;
     }
 
     const onClientRoot = currentPathname === ROUTES.CLIENT_PORTAL && !currentHash;
-    if (onClientRoot && savedPathname === ROUTES.CLIENT_PORTAL && savedHash && getStoredClientSession()) {
+    if (onClientRoot && savedPathname === ROUTES.CLIENT_PORTAL && savedHash && isClientSession) {
       window.history.replaceState({}, '', lastVisitedPage);
       setHasRestoredRoute(true);
       return;
     }
 
     setHasRestoredRoute(true);
-  }, [loading, user, profile, hasRestoredRoute]);
+  }, [loading, user, profile, hasRestoredRoute, isVendorSession, isClientSession]);
 
-  const renderVendorPortal = (stored: { vendor: VendorData; session: VendorSession }) => (
-    <VendorProvider
-      initialVendor={{
-        id:            stored.vendor.id,
-        email:         stored.vendor.email,
-        full_name:     stored.vendor.name,
-        phone:         stored.vendor.phone || '',
-        status:        stored.vendor.status || 'active',
-        vendor_type:   stored.vendor.vendor_type,
-        primary_city:  stored.vendor.primary_city,
-        profile_image: stored.vendor.profile_image,
-        nationality:   stored.vendor.nationality,
-        id_number:     stored.vendor.id_number,
-      }}
-      initialSession={stored.session}
-    >
-      <VendorPortal />
-    </VendorProvider>
+  const portalLoading = (
+    <div style={{ minHeight: '100vh', backgroundColor: theme.background.page, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="page-loading-placeholder" />
+      <div style={{ color: theme.text.secondary }}>جارٍ التحميل...</div>
+    </div>
   );
 
   // ── PUBLIC ROUTES ──
-
   if (currentPath === '/') {
     return <Suspense fallback={<div className="page-loading-placeholder" />}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
   }
-
   if (currentPath === ROUTES.VENDOR_REGISTRATION) {
     return <ErrorBoundary><VendorRegistrationForm /></ErrorBoundary>;
   }
-
   if (currentPath === ROUTES.TERMS || currentPath === '/terms') {
     return <TermsAndConditions />;
   }
-
   if (currentPath === ROUTES.PRIVACY || currentPath === '/privacy') {
     return <PrivacyPolicy />;
   }
 
   // ── VENDOR ROUTES ──
-
-  // /vendor → has session? show portal : redirect to login
   if (currentPath === ROUTES.VENDOR_PORTAL) {
-    const stored = getStoredVendorSession();
-    if (stored) {
-      return <ErrorBoundary key={refreshKey}>{renderVendorPortal(stored)}</ErrorBoundary>;
+    if (loading) return portalLoading;
+    if (isVendorSession) {
+      return (
+        <ErrorBoundary key={refreshKey}>
+          <VendorProvider vendorId={vendorId!}>
+            <VendorPortal />
+          </VendorProvider>
+        </ErrorBoundary>
+      );
     }
     navigate(ROUTES.VENDOR_LOGIN);
     return null;
   }
 
-  // /vendor-login → has session? go to portal : show login
   if (currentPath === ROUTES.VENDOR_LOGIN) {
-    const stored = getStoredVendorSession();
-    if (stored) {
+    if (loading) return portalLoading;
+    if (isVendorSession) {
       navigate(ROUTES.VENDOR_PORTAL);
       return null;
     }
-    // Clear vendor session if accessing vendor login
-    localStorage.removeItem('vendor_session');
-    localStorage.removeItem('vendor_data');
     return (
       <SupplierAuth
         onSuccess={() => navigate(ROUTES.VENDOR_PORTAL, false, { reveal: true, forceDark: true })}
@@ -353,42 +233,26 @@ function AppContent() {
     );
   }
 
-  // ── CLIENT PORTAL ROUTES ──
-  // Catch ALL /client* paths before admin routes
+  // ── CLIENT PORTAL ROUTES (catch all /client* before admin) ──
   if (currentPath.startsWith('/client')) {
-    const stored = getStoredClientSession();
-
-    // Has valid session → show portal (regardless of exact sub-path)
-    if (stored) {
-      // If on login page, redirect to dashboard
+    if (loading) return portalLoading;
+    if (isClientSession) {
       if (currentPath === ROUTES.CLIENT_LOGIN) {
         navigate(ROUTES.CLIENT_PORTAL);
         return null;
       }
       return (
         <ErrorBoundary key={refreshKey}>
-          <ClientPortalProvider
-            initialClient={{
-              id: stored.client.id,
-              email: stored.client.email,
-              name: stored.client.name,
-              client_image: stored.client.client_image || null,
-            }}
-            initialSession={stored.session}
-          >
+          <ClientPortalProvider clientId={clientId!}>
             <ClientPortal />
           </ClientPortalProvider>
         </ErrorBoundary>
       );
     }
-
-    // No session → show login
     if (currentPath !== ROUTES.CLIENT_LOGIN) {
       navigate(ROUTES.CLIENT_LOGIN);
       return null;
     }
-    localStorage.removeItem('client_session');
-    localStorage.removeItem('client_data');
     return (
       <ClientAuth
         onSuccess={() => navigate(ROUTES.CLIENT_PORTAL, false, { reveal: true, forceDark: true })}
@@ -397,13 +261,8 @@ function AppContent() {
   }
 
   // ── ADMIN ROUTES ──
-
-  const isAdminPath =
-    currentPath === ROUTES.ADMIN_LOGIN ||
-    currentPath.startsWith('/admin');
-
+  const isAdminPath = currentPath === ROUTES.ADMIN_LOGIN || currentPath.startsWith('/admin');
   if (!isAdminPath) {
-    // Don't redirect public paths to admin — show landing page as fallback
     if (currentPath === '/' || currentPath === '') {
       return <Suspense fallback={<div className="page-loading-placeholder" />}><LandingPage onNavigate={(path) => navigate(path)} /></Suspense>;
     }
@@ -411,23 +270,9 @@ function AppContent() {
     return null;
   }
 
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: theme.background.page,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <div className="page-loading-placeholder" />
-        <div style={{ color: theme.text.secondary }}>جارٍ التحميل...</div>
-      </div>
-    );
-  }
+  if (loading) return portalLoading;
 
   if (!user || !profile) {
-    // Clear vendor session if accessing admin portal
-    localStorage.removeItem('vendor_session');
-    localStorage.removeItem('vendor_data');
     return <Login />;
   }
 

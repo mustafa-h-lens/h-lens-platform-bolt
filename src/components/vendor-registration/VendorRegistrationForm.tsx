@@ -702,9 +702,14 @@ export const VendorRegistrationForm = () => {
           }
         );
         const sessionData = await sessionResp.json();
-        if (sessionResp.ok && sessionData?.session && sessionData?.vendor) {
-          localStorage.setItem('vendor_session', JSON.stringify(sessionData.session));
-          localStorage.setItem('vendor_data', JSON.stringify(sessionData.vendor));
+        if (sessionResp.ok && sessionData?.auth?.token_hash) {
+          // Establish a NATIVE Supabase session so the success screen can land
+          // the new vendor straight in the portal.
+          const { error: authErr } = await supabase.auth.verifyOtp({
+            token_hash: sessionData.auth.token_hash,
+            type: 'magiclink',
+          });
+          if (authErr) console.error('Post-registration session exchange failed:', authErr);
         }
       } catch (err) {
         console.error('Auto-session error:', err);
