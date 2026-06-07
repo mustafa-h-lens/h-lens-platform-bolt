@@ -29,27 +29,34 @@ needs **B and D**, not B alone.
 
 ---
 
-## 1. Migration-history reconciliation (do FIRST; no downtime, no effect change)
+## 1. Migration-history handling — AMENDED (Option A, 2026-06-07)
 
-The history is desynced, so a blanket `db push` would try to (re)apply A/0604/0607.
-Reconcile **before** touching anything, so the only genuinely-pending migrations become B/C/D.
+**The original full-reconciliation §1 is superseded.** It assumed only A/0604/0607/stub were
+unrecorded-but-applied, so repairing them would leave pending = {B,C,D}. The live read-only diff
+(Management API on `schema_migrations`) disproved this: **45 local migrations are unrecorded on
+prod and 10 recorded versions are not in git** — a pre-existing, systemic history divergence
+**not caused by this cutover** (prod's history was built from a different baseline). `migration
+list --project-ref` is also unsupported in CLI 2.105.0.
 
-1. Get the authoritative diff:
-   ```bash
-   export SUPABASE_ACCESS_TOKEN=<FRESH_sbp>
-   supabase migration list --project-ref akcpkjzfhtmurtwzyzhn
+**Decision (Option A, approved):** do **not** attempt full history reconciliation. The 39 older
+unrecorded migrations (2026-02-25 → 2026-05-05) are **out of scope** — their effects are already
+live and they are irrelevant to native auth. Controlled-apply runs each migration's SQL directly
+and does not depend on a clean history.
+
+**This cutover therefore only:**
+1. Applies the genuinely-missing migrations **D → B → C** (verified absent by the audit), one at a
+   time, via the Management API (guarded `scripts/apply-migration-prod.mjs`), **never `db push`**.
+2. After verifying each **by effect**, **records only that migration** via one controlled insert
+   (the controlled equivalent of `repair --status applied`, since `repair --project-ref` is
+   unsupported and `--linked` needs the DB password):
+   ```sql
+   INSERT INTO supabase_migrations.schema_migrations (version, name)
+   VALUES ('<version>', '<name>') ON CONFLICT (version) DO NOTHING;
    ```
-2. For every migration whose **effect is already present but is unrecorded**, mark it applied **without executing** it:
-   ```bash
-   supabase migration repair --status applied 20260601000000 --project-ref akcpkjzfhtmurtwzyzhn  # A
-   supabase migration repair --status applied 20260604000000 --project-ref akcpkjzfhtmurtwzyzhn  # auth_user_id
-   supabase migration repair --status applied 20260607000000 --project-ref akcpkjzfhtmurtwzyzhn  # CONTRACT enum
-   supabase migration repair --status applied 20260405122259 --project-ref akcpkjzfhtmurtwzyzhn  # stub, if unrecorded
-   ```
-   (Confirm each against `migration list` first; only repair versions whose effect the audit proved present.)
-3. Re-run `migration list` → **expected: only `20260601000100` (B), `…000200` (C), `…000300` (D) pending.**
+3. Does **not** touch the 39 older unrecorded migrations or the 10 phantom recorded ones.
 
-> ⛔ STOP if, after repair, anything other than B/C/D shows pending. Do not continue until the pending set is exactly {B, C, D}.
+**Reconciliation gate (amended):** after applying, **D, B, C each exist by effect AND are recorded**.
+No `pending == {B,C,D}` expectation.
 
 ---
 
