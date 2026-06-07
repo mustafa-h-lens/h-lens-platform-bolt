@@ -37,14 +37,20 @@ let failed = false;
 
 const sqlLit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 async function runSql(query) {
-  const res = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(`Mgmt SQL ${res.status}: ${JSON.stringify(body).slice(0, 300)}`);
-  return body; // array of rows
+  let lastErr;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(`Mgmt SQL ${res.status}: ${JSON.stringify(body).slice(0, 300)}`);
+      return body; // array of rows
+    } catch (e) { lastErr = e; await new Promise((r) => setTimeout(r, 500 * attempt)); }
+  }
+  throw lastErr;
 }
 
 const stamp = Date.now();
@@ -56,27 +62,34 @@ const code    = '654321';
 const expISO  = new Date(stamp + 10 * 60 * 1000).toISOString();
 const synthEmailA = `c-${clientA}@portal.h-lens.co`;
 let projectA = null;
+const adminUid = randomUUID();
+const adminEmail = `otp-test-admin-${stamp}@portal.h-lens.co`;
 
 async function main() {
   console.log(`\n=== CLIENT-portal OTP validation against ${URL} ===\n`);
 
   // SEED (Management API — throwaway rows on the preview only) -----------------
   console.log('Seeding throwaway client rows + OTP (Management API):');
-  await runSql(`insert into public.clients (id, name, phone, invitation_status)
-                values (${sqlLit(clientA)}, ${sqlLit('Client OTP Test A ' + stamp)}, ${sqlLit(phoneA)}, 'pending'),
-                       (${sqlLit(clientB)}, ${sqlLit('Client OTP Test B ' + stamp)}, ${sqlLit(phoneB)}, 'pending');`);
+
+  // clients.created_by + projects.created_by are NOT NULL FKs to public.users,
+  // and public.users.id is an FK to auth.users. The preview has no staff user, so
+  // seed a throwaway one (auth.users needs only id). Cleaned up last (cascades).
+  await runSql(`insert into auth.users (id, email) values (${sqlLit(adminUid)}, ${sqlLit(adminEmail)});`);
+  await runSql(`insert into public.users (id, email, full_name, role)
+                values (${sqlLit(adminUid)}, ${sqlLit(adminEmail)}, ${sqlLit('OTP Test Admin')}, 'super_admin');`);
+  ok(`throwaway staff user ${adminUid} (for created_by)`);
+
+  await runSql(`insert into public.clients (id, name, phone, invitation_status, created_by)
+                values (${sqlLit(clientA)}, ${sqlLit('Client OTP Test A ' + stamp)}, ${sqlLit(phoneA)}, 'pending', ${sqlLit(adminUid)}),
+                       (${sqlLit(clientB)}, ${sqlLit('Client OTP Test B ' + stamp)}, ${sqlLit(phoneB)}, 'pending', ${sqlLit(adminUid)});`);
   ok(`clients A=${clientA} B=${clientB}`);
 
-  // Best-effort: a project for A (needs a created_by user). Skipped if no users.
+  // A project for A so we can positively assert client-scoped RLS on projects.
   try {
-    const users = await runSql(`select id from public.users limit 1;`);
-    const uid = users?.[0]?.id;
-    if (uid) {
-      const pid = randomUUID();
-      await runSql(`insert into public.projects (id, client_id, name, created_by)
-                    values (${sqlLit(pid)}, ${sqlLit(clientA)}, ${sqlLit('OTP Test Project ' + stamp)}, ${sqlLit(uid)});`);
-      projectA = pid; ok(`seeded project ${pid} for client A (positive RLS check enabled)`);
-    } else { console.log('  ℹ️ no users row — skipping project seed (clients-only scoping check)'); }
+    const pid = randomUUID();
+    await runSql(`insert into public.projects (id, client_id, name, created_by)
+                  values (${sqlLit(pid)}, ${sqlLit(clientA)}, ${sqlLit('OTP Test Project ' + stamp)}, ${sqlLit(adminUid)});`);
+    projectA = pid; ok(`seeded project ${pid} for client A (positive RLS check enabled)`);
   } catch (e) { console.log(`  ℹ️ project seed skipped: ${e.message.slice(0, 120)}`); }
 
   await runSql(`insert into public.otp_codes (phone, code, expires_at, used, failed_attempts)
@@ -143,6 +156,8 @@ async function cleanup() {
     await runSql(`delete from public.client_sessions where client_id in (${sqlLit(clientA)}, ${sqlLit(clientB)});`);
     await runSql(`delete from public.clients where id in (${sqlLit(clientA)}, ${sqlLit(clientB)});`);
     await runSql(`delete from auth.users where email = ${sqlLit(synthEmailA)};`);
+    // The throwaway staff user last — clients.created_by referenced it (cascades public.users).
+    await runSql(`delete from auth.users where id = ${sqlLit(adminUid)};`);
     console.log('  ✅ throwaway rows removed');
   } catch (e) { console.log(`  ⚠️ cleanup issue (remove manually): ${e.message.slice(0, 200)}`); }
 }
