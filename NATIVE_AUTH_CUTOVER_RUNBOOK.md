@@ -105,6 +105,28 @@ Only if not already live on prod. Apply `…000200_security_lockdown_c_private_b
 
 ## 3. Smoke tests (Operator) — immediately after 2.3
 
+### 3a. Automated harness — `scripts/smoke-test-native-auth.mjs`
+Runnable PASS/FAIL checks with clear exit codes. Two modes:
+
+**Production — SAFE read-only (no writes; run this first against prod):**
+```bash
+SMOKE_URL=https://akcpkjzfhtmurtwzyzhn.supabase.co \
+SMOKE_ANON_KEY=<prod anon key> \
+node scripts/smoke-test-native-auth.mjs
+```
+Verifies, **without writing anything**: anon lockdown on `vendors`/`clients`/`otp_codes`/`vendor_sessions`/`client_sessions`, and that `verify-otp` + `create-post-registration-session` are deployed & reachable (probed with a random non-matching identifier → 401/400, never mutates data). A `404` here means a function isn't deployed.
+
+**Preview — FULL login/session/RLS/isolation (seeds + cleans throwaway data; TEST MODE):**
+```bash
+SMOKE_URL=https://ikzccfjgrupjmuzdkzzg.supabase.co SMOKE_ANON_KEY=<preview anon> \
+SMOKE_TEST_MODE=1 SMOKE_ACCESS_TOKEN=sbp_<fresh> SMOKE_PROJECT_REF=ikzccfjgrupjmuzdkzzg \
+node scripts/smoke-test-native-auth.mjs
+```
+Runs Phase A **plus** vendor registration auto-login + vendor OTP login + client OTP login, each → native session → app_metadata claim → Migration B RLS own-row → tenant isolation → project scoping, then deletes every throwaway row it created. Last validated **25/25 green** on the preview.
+
+> ⚠️ Do **not** run TEST MODE against production. The full flow is validated on the preview; production gets the read-only Phase A only.
+
+### 3b. Manual checklist (Operator)
 Run against `https://platform.h-lens.co`. All must pass.
 
 1. **Vendor registration → auto-login:** complete a new vendor registration; the success screen should land in the vendor portal with a native session (no manual OTP).
