@@ -5,9 +5,14 @@
 -- create-post-registration-session) and the frontend that mints/sends portal
 -- JWTs are deployed, then TEST the vendor + client portals and registration.
 --
--- Context: vendor/client portals now authenticate with a Supabase JWT minted by
--- verify-otp / create-post-registration-session. The token carries role
--- 'authenticated' plus a `vendor_id` or `client_id` claim. This migration:
+-- Context: vendor/client portals authenticate with a NATIVE Supabase session.
+-- After our own OTP is verified, verify-otp / create-post-registration-session
+-- ask Supabase to mint a one-time magic-link token (admin.generateLink) for the
+-- portal user's Auth account; the browser exchanges it via supabase.auth.verifyOtp
+-- for a real Supabase session. The token carries role 'authenticated' plus an
+-- `app_metadata` object holding `vendor_id` or `client_id` — so RLS reads the
+-- claim as (auth.jwt() -> 'app_metadata' ->> 'vendor_id'), NOT a top-level claim.
+-- This migration:
 --   1. Adds vendors.registration_nonce (one-time post-registration auto-login).
 --   2. Replaces the `anon USING(true)` SELECT leaks on vendor PII tables with
 --      authenticated, claim-scoped SELECT policies (vendor reads ONLY its own
@@ -53,7 +58,7 @@ END $$;
 DROP POLICY IF EXISTS "portal_vendor_read_own_profile" ON public.vendors;
 CREATE POLICY "portal_vendor_read_own_profile" ON public.vendors
   FOR SELECT TO authenticated
-  USING ( id = (auth.jwt() ->> 'vendor_id')::uuid OR public.is_admin() );
+  USING ( id = (auth.jwt() -> 'app_metadata' ->> 'vendor_id')::uuid OR public.is_admin() );
 
 DO $$
 DECLARE t text;
@@ -68,7 +73,7 @@ BEGIN
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', 'portal_vendor_read_own_' || t, t);
     EXECUTE format(
       'CREATE POLICY %I ON public.%I FOR SELECT TO authenticated '
-      || 'USING ( vendor_id = (auth.jwt() ->> ''vendor_id'')::uuid OR public.is_admin() )',
+      || 'USING ( vendor_id = (auth.jwt() -> ''app_metadata'' ->> ''vendor_id'')::uuid OR public.is_admin() )',
       'portal_vendor_read_own_' || t, t);
   END LOOP;
 END $$;
@@ -77,17 +82,17 @@ END $$;
 DROP POLICY IF EXISTS "portal_client_read_own_client" ON public.clients;
 CREATE POLICY "portal_client_read_own_client" ON public.clients
   FOR SELECT TO authenticated
-  USING ( id = (auth.jwt() ->> 'client_id')::uuid OR public.is_admin() );
+  USING ( id = (auth.jwt() -> 'app_metadata' ->> 'client_id')::uuid OR public.is_admin() );
 
 DROP POLICY IF EXISTS "portal_client_read_own_projects" ON public.projects;
 CREATE POLICY "portal_client_read_own_projects" ON public.projects
   FOR SELECT TO authenticated
-  USING ( client_id = (auth.jwt() ->> 'client_id')::uuid OR public.is_admin() );
+  USING ( client_id = (auth.jwt() -> 'app_metadata' ->> 'client_id')::uuid OR public.is_admin() );
 
 DROP POLICY IF EXISTS "portal_client_read_own_invoices" ON public.invoices;
 CREATE POLICY "portal_client_read_own_invoices" ON public.invoices
   FOR SELECT TO authenticated
-  USING ( client_id = (auth.jwt() ->> 'client_id')::uuid OR public.is_admin() );
+  USING ( client_id = (auth.jwt() -> 'app_metadata' ->> 'client_id')::uuid OR public.is_admin() );
 
 -- project_milestones is scoped through its parent project's client_id.
 DO $$
@@ -99,7 +104,7 @@ BEGIN
       'CREATE POLICY "portal_client_read_own_milestones" ON public.project_milestones '
       || 'FOR SELECT TO authenticated USING ( '
       || 'project_id IN (SELECT id FROM public.projects '
-      || 'WHERE client_id = (auth.jwt() ->> ''client_id'')::uuid) OR public.is_admin() )';
+      || 'WHERE client_id = (auth.jwt() -> ''app_metadata'' ->> ''client_id'')::uuid) OR public.is_admin() )';
   END IF;
 END $$;
 
