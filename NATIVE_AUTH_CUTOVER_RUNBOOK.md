@@ -18,6 +18,7 @@ Supabase Auth**. Validated end-to-end on the preview project `ikzccfjgrupjmuzdkz
 | Preview Supabase ref (already validated) | `ikzccfjgrupjmuzdkzzg` |
 | Public URL (must not change) | `https://platform.h-lens.co` |
 | Hosting | Cloudflare Pages (`h-lens-platform-bolt.pages.dev`), DNS on Hostinger, registrar GoDaddy |
+| Frontend deploy mechanism | Cloudflare Pages auto-builds & publishes on **push to GitHub `main`** — the push *is* the publish. Prod frontend deploy = merge `feat/native-auth` → `main`. |
 | Branch under test | `feat/native-auth` |
 | Edge functions to deploy | `verify-otp`, `create-post-registration-session` |
 | Migration to apply (this cutover) | `supabase/migrations/20260601000100_security_lockdown_b_portal_jwt_rls.sql` (the `app_metadata` claim-path version) |
@@ -86,7 +87,8 @@ supabase functions deploy create-post-registration-session --project-ref akcpkjz
 > ⛔ **STOP if:** either deploy fails after retries. The current site is unaffected; investigate before continuing.
 
 ### 2.2 Deploy native frontend to prod (Cloudflare Pages)
-Trigger the production Pages deployment for `feat/native-auth` — either by merging/pushing to the branch Cloudflare Pages is connected to, **or** by uploading the `dist/` build via the Pages dashboard ("Create deployment"). Public URL stays `https://platform.h-lens.co`.
+**Cloudflare Pages is connected to the GitHub `main` branch — every push to `main` auto-builds (`npm run build`) and publishes to `https://platform.h-lens.co`. The push *is* the publish.** Therefore the production frontend deploy = **merging `feat/native-auth` → `main`**. This is the PR merge that has been deliberately deferred; **merging it IS the frontend go-live**, so do it only at this point in the window. A failed build leaves the previous deployment live (no downtime). Public URL stays `https://platform.h-lens.co`.
+- Alternative (no merge): upload the local `dist/` build via the Pages dashboard → "Create deployment". Use only if you must deploy without merging to `main`.
 - **Expected result:** `https://platform.h-lens.co` serves the native-auth build. Portal **reads may be empty until 2.3 is applied** — this is expected; proceed immediately to 2.3.
 
 > ⛔ **STOP if:** the deployment fails or the site 500s. Roll back the Pages deployment (§5.1) — the old functions still work, so the previous build is fully functional.
