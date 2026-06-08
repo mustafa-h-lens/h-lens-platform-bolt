@@ -536,17 +536,18 @@ export const VendorRegistrationForm = () => {
       const rejectedVendorId: string | null = regCheck?.rejected_vendor_id ?? null;
 
       if (rejectedVendorId) {
-        const { data: updatedVendor, error: updateErr } = await supabase
+        // No .select() RETURNING: anon has no SELECT on vendors (security lockdown
+        // B), so RETURNING is denied. We already know the id, so update by it and
+        // reuse it directly.
+        const { error: updateErr } = await supabase
           .from('vendors')
           .update({ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce })
-          .eq('id', rejectedVendorId)
-          .select()
-          .single();
+          .eq('id', rejectedVendorId);
         if (updateErr) {
           console.error('Vendor update error:', updateErr);
           throw new Error('فشل تحديث بيانات المورد: ' + updateErr.message);
         }
-        vendor = updatedVendor;
+        vendor = { id: rejectedVendorId };
         // Clear old secondary data before re-inserting
         if (vendor) {
           await Promise.all([
@@ -558,11 +559,14 @@ export const VendorRegistrationForm = () => {
           ]);
         }
       } else {
-        const { data: newVendor, error: insertErr } = await supabase
+        // Generate the id client-side and insert WITHOUT .select() RETURNING: anon
+        // has no SELECT on vendors (security lockdown B), so RETURNING would be
+        // denied (this was the "new row violates row-level security policy" error).
+        // We know the id we sent, so reuse it directly.
+        const newVendorId = crypto.randomUUID();
+        const { error: insertErr } = await supabase
           .from('vendors')
-          .insert([{ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce }])
-          .select()
-          .single();
+          .insert([{ ...vendorBaseData, id: newVendorId, status: 'pending_approval', registration_nonce: regNonce }]);
         if (insertErr) {
           console.error('Vendor insert error:', insertErr);
           if (insertErr.message?.includes('vendors_email_unique')) {
@@ -570,7 +574,7 @@ export const VendorRegistrationForm = () => {
           }
           throw new Error('فشل تسجيل المورد: ' + insertErr.message);
         }
-        vendor = newVendor;
+        vendor = { id: newVendorId };
       }
 
       if (!vendor?.id) {
