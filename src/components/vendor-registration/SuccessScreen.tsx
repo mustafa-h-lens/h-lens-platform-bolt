@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { clearNavTransition } from '../../lib/navTransition';
 
@@ -66,7 +67,12 @@ export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
     return { id: i, color, left, duration, delay, size, drift, rotate, isCircle, opacity };
   });
 
-  return (
+  // Portal to <body> so position:fixed is relative to the viewport, NOT to the
+  // PullToRefresh content wrapper (which has transform: translate3d + will-change:
+  // transform, making it a containing block for fixed descendants). Without this,
+  // .success-fullscreen collapses to the wrapper's height (~32px) and the card
+  // renders off-screen, leaving only the dark <body> background visible.
+  return createPortal(
     <div className="success-fullscreen" style={{ display: show ? 'flex' : 'none' }}>
       {/* Animated gradient background */}
       <div className="success-bg-gradient" />
@@ -150,6 +156,7 @@ export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
           الذهاب إلى لوحة التحكم ({countdown})
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
