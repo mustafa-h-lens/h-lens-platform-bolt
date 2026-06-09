@@ -5,9 +5,18 @@ const VISIBLE_MS = 600;
 const FADE_MS = 400;
 
 export function BootSplash() {
-  const [stage, setStage] = useState<'visible' | 'leaving' | 'gone'>('visible');
+  // Show only on the genuine first load of a browser session. On any later App
+  // re-mount (e.g. the post-registration hard redirect reloads the app) the
+  // splash must NOT re-appear — otherwise this z-index:100000 dark veil covers
+  // whatever renders (e.g. the registration SuccessScreen).
+  const [stage, setStage] = useState<'visible' | 'leaving' | 'gone'>(() => {
+    try { return sessionStorage.getItem('hl_boot_splash_shown') ? 'gone' : 'visible'; }
+    catch { return 'visible'; }
+  });
 
   useEffect(() => {
+    if (stage === 'gone') return;
+    try { sessionStorage.setItem('hl_boot_splash_shown', '1'); } catch { /* ignore */ }
     let cancelled = false;
     const t1 = window.setTimeout(() => {
       if (!cancelled) setStage('leaving');
