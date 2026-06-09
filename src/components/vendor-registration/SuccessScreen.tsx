@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { clearNavTransition } from '../../lib/navTransition';
 
 const SPARKLE_COLORS = [
   '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
@@ -25,6 +26,10 @@ export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setHasSession(!!data.session));
   }, []);
+
+  // Clear any stuck nav-transition overlay so the dark veil can't cover the
+  // success page (the overlay is z-index 99999, far above this screen).
+  useEffect(() => { clearNavTransition(); }, []);
 
   const redirectUrl = hasSession
     ? '/vendor'

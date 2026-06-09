@@ -140,6 +140,15 @@ export async function runWithNavReveal<T>(
   }
 }
 
+// Force the overlay back to idle immediately. Used when a terminal screen mounts
+// (e.g. the registration SuccessScreen) so a stuck/leftover transition phase can't
+// leave the dark veil covering the page.
+export function clearNavTransition() {
+  clearTimers();
+  setForceDark(false);
+  setPhase('idle');
+}
+
 // Called by router when popstate fires (browser back/forward).
 // We can't pre-empt the route swap, but we can reveal the overlay immediately
 // and play the waiting/exiting phases on top of the new page mount.
