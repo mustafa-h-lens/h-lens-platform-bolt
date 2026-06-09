@@ -116,8 +116,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('vendor_session');
     localStorage.removeItem('vendor_data');
 
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    await supabase.auth.signOut();
+    // Hard redirect (full reload): tears down all components cleanly so nothing
+    // keeps fetching profile/storage under the cleared session. Redirect regardless
+    // of any signOut error so the user is always logged out of the UI.
+    window.location.replace('/');
   };
 
   const refreshProfile = async () => {

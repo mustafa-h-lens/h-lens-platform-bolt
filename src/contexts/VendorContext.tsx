@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { runWithNavReveal } from '../lib/navTransition';
 
 // ─────────────────────────────────────────────────────────────
 // TYPES
@@ -118,12 +117,12 @@ export const VendorProvider = ({ children, vendorId }: { children: ReactNode; ve
 
   const setVendor = (v: VendorProfile) => setVendorState(v);
 
-  const signOut = () => {
-    void runWithNavReveal(async () => {
-      await supabase.auth.signOut();
-      window.history.pushState({}, '', '/vendor/login');
-      window.dispatchEvent(new PopStateEvent('popstate', { state: { __programmatic: true } }));
-    }, { targetPath: '/vendor/login', forceDark: true });
+  const signOut = async () => {
+    // Hard redirect (full reload) on logout: tears down the portal instantly so no
+    // component keeps fetching profile/storage under the cleared session, and avoids
+    // the nav-reveal overlay getting stuck on a lingering loading placeholder.
+    await supabase.auth.signOut();
+    window.location.replace('/vendor/login');
   };
 
   // Hold the portal until the vendor row is loaded.

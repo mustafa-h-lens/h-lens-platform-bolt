@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { runWithNavReveal } from '../lib/navTransition';
 
 export interface ClientProfile {
   id: string;
@@ -84,12 +83,12 @@ export const ClientPortalProvider = ({ children, clientId }: { children: ReactNo
     }
   };
 
-  const signOut = () => {
-    void runWithNavReveal(async () => {
-      await supabase.auth.signOut();
-      window.history.pushState({}, '', '/client');
-      window.dispatchEvent(new PopStateEvent('popstate', { state: { __programmatic: true } }));
-    }, { targetPath: '/client', forceDark: true });
+  const signOut = async () => {
+    // Hard redirect (full reload) on logout: tears down the portal instantly so no
+    // component keeps fetching profile/storage under the cleared session, and avoids
+    // the nav-reveal overlay getting stuck on a lingering loading placeholder.
+    await supabase.auth.signOut();
+    window.location.replace('/client');
   };
 
   if (loading || !client) {
