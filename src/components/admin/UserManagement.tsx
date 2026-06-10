@@ -348,6 +348,7 @@ export const UserManagement = ({ onBack }: UserManagementProps) => {
               user={editingUser}
               clients={clients}
               roles={roles}
+              users={users}
               onClose={() => {
                 setShowModal(false);
                 setEditingUser(null);
@@ -369,11 +370,12 @@ interface UserModalProps {
   user: User | null;
   clients: Client[];
   roles: Role[];
+  users: User[];
   onClose: () => void;
   onSuccess: () => void;
 }
 
-const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps) => {
+const UserModal = ({ user, clients, roles, users, onClose, onSuccess }: UserModalProps) => {
   const { showError } = useNotification();
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
@@ -381,6 +383,7 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
     phone: (user as any)?.phone || '',
     username: user?.username || '',
     role_id: user?.role_id || roles.find(r => !r.is_system)?.id || '',
+    manager_id: (user as any)?.manager_id || '',
     password: '',
     sendInvite: true,
   });
@@ -395,18 +398,26 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
       return;
     }
 
+    // Determine the legacy role text from role_id
+    const selectedRole = roles.find(r => r.id === formData.role_id);
+    const roleName = (selectedRole?.name || '').toLowerCase();
+    const legacyRole = selectedRole?.is_system
+      ? 'super_admin'
+      : (roleName.includes('محاسب') || roleName.includes('accountant'))
+        ? 'accountant'
+        : 'project_manager';
+
+    // مساعد مدير مشروع must be linked to a responsible manager
+    const isAssistant = (selectedRole?.name || '').includes('مساعد');
+    const managerId = isAssistant ? (formData.manager_id || null) : null;
+    if (isAssistant && !managerId) {
+      showError('يرجى اختيار المدير المسؤول للمساعد');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Determine the legacy role text from role_id
-      const selectedRole = roles.find(r => r.id === formData.role_id);
-      const roleName = (selectedRole?.name || '').toLowerCase();
-      const legacyRole = selectedRole?.is_system
-        ? 'super_admin'
-        : (roleName.includes('محاسب') || roleName.includes('accountant'))
-          ? 'accountant'
-          : 'project_manager';
-
       if (user) {
         const { error } = await supabase
           .from('users')
@@ -416,6 +427,7 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
             phone: formData.phone || null,
             role: legacyRole,
             role_id: formData.role_id,
+            manager_id: managerId,
           })
           .eq('id', user.id);
 
@@ -482,6 +494,11 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
         let result: any;
         try { result = JSON.parse(text); } catch { result = { error: text }; }
         if (!res.ok) throw new Error(result.error || result.message || result.msg || 'حدث خطأ أثناء إنشاء المستخدم');
+
+        // create-admin-user doesn't take manager_id — persist the assistant→manager link here
+        if (managerId) {
+          await supabase.from('users').update({ manager_id: managerId }).eq('email', formData.email.trim());
+        }
       }
 
       onSuccess();
@@ -561,6 +578,29 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
             </select>
           </div>
         </div>
+
+        {/* المدير المسؤول — shown only when the selected role is مساعد مدير مشروع */}
+        {(() => {
+          const selRole = roles.find(r => r.id === formData.role_id);
+          if (!selRole || !(selRole.name || '').includes('مساعد')) return null;
+          const managers = users.filter(u => (u as any).roles?.name === 'مدير مشاريع' && u.id !== user?.id);
+          return (
+            <div className="input-group">
+              <label className="input-label">المدير المسؤول <span className="req">*</span></label>
+              <select
+                className="input"
+                value={formData.manager_id}
+                onChange={(e) => setFormData({ ...formData, manager_id: e.target.value })}
+                required
+              >
+                <option value="" disabled>اختر المدير المسؤول</option>
+                {managers.map(m => (
+                  <option key={m.id} value={m.id}>{m.full_name}</option>
+                ))}
+              </select>
+            </div>
+          );
+        })()}
 
         {/* Password (only for new user) */}
         {!user && (
