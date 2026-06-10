@@ -27,8 +27,6 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
     setError('');
     setLoading(true);
     try {
-      // Auto-unblock expired blocks before the lookup (runs once per submit, fast).
-      try { await supabase.rpc('auto_unblock_expired_vendors'); } catch {}
       const deviceInfo = navigator.userAgent.includes('Mobile') ? 'جوال' : 'كمبيوتر';
 
       if (mode === 'phone') {

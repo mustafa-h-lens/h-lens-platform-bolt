@@ -169,8 +169,6 @@ export const VendorsPage = ({ initialVendorId, onVendorSelect, initialTab, onTab
 
   const fetchVendors = async () => {
     try {
-      // Auto-unblock any vendors whose blocked_until has passed
-      await supabase.rpc('auto_unblock_expired_vendors');
       const from = page * pageSize;
       const to = from + pageSize - 1;
       let query = supabase
