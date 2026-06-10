@@ -382,20 +382,13 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
     username: user?.username || '',
     role_id: user?.role_id || roles.find(r => !r.is_system)?.id || '',
     password: '',
-    confirmPassword: '',
     sendInvite: true,
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!user && formData.password !== formData.confirmPassword) {
-      showError('كلمة المرور وتأكيدها غير متطابقتين');
-      return;
-    }
 
     if (!formData.role_id) {
       showError('يرجى اختيار الدور');
@@ -569,53 +562,28 @@ const UserModal = ({ user, clients, roles, onClose, onSuccess }: UserModalProps)
           </div>
         </div>
 
-        {/* Row 3: Passwords (only for new user) */}
+        {/* Password (only for new user) */}
         {!user && (
-          <div className="form-grid">
-            <div className="input-group">
-              <label className="input-label">كلمة المرور <span className="req">*</span></label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="input"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  required
-                  minLength={6}
-                  dir="ltr"
-                  style={{ paddingLeft: 40 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="input-group">
-              <label className="input-label">تأكيد كلمة المرور <span className="req">*</span></label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  className="input"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  required
-                  minLength={6}
-                  dir="ltr"
-                  style={{ paddingLeft: 40 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
-                >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+          <div className="input-group">
+            <label className="input-label">كلمة المرور <span className="req">*</span></label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="input"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                required
+                minLength={6}
+                dir="ltr"
+                style={{ paddingLeft: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
         )}
