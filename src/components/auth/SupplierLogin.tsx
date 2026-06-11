@@ -480,7 +480,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
           background: var(--sl-card-bg);
           border: 1px solid var(--sl-card-border);
           border-radius: 24px;
-          padding: 2.25rem 2rem 2rem;
+          padding: 2.75rem 2.25rem 2.25rem;
           backdrop-filter: blur(24px);
           -webkit-backdrop-filter: blur(24px);
           box-shadow: var(--sl-card-shadow);
@@ -498,7 +498,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         .sl-icon-wrap {
           display: flex;
           justify-content: center;
-          margin-bottom: 22px;
+          margin-bottom: 26px;
           position: relative;
           width: 100px; height: 100px;
           margin-left: auto; margin-right: auto;
@@ -545,7 +545,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         }
 
         /* ══════════ TITLE ══════════ */
-        .sl-title-wrap { text-align: center; margin-bottom: 22px; }
+        .sl-title-wrap { text-align: center; margin-bottom: 30px; }
         .sl-title {
           font-size: 1.7rem;
           font-weight: 900;
@@ -563,7 +563,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         .sl-tabs {
           display: flex; gap: 6px;
           padding: 4px;
-          margin-bottom: 18px;
+          margin-bottom: 26px;
           background: var(--sl-input-bg);
           border: 1px solid var(--sl-input-border);
           border-radius: 12px;
@@ -597,13 +597,13 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
         }
 
         /* ══════════ FORM ══════════ */
-        .sl-field-wrap { margin-bottom: 14px; }
+        .sl-field-wrap { margin-bottom: 22px; }
         .sl-label {
           display: block;
           font-size: 0.82rem;
           font-weight: 700;
           color: var(--sl-text-sub);
-          margin-bottom: 8px;
+          margin-bottom: 10px;
           text-align: right;
         }
         .sl-input {
@@ -737,7 +737,7 @@ export default function SupplierLogin({ onOTPSent }: SupplierLoginProps) {
           gap: 9px;
           box-shadow: 0 4px 20px rgba(37,99,235,0.35);
           transition: all 0.25s;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
         }
         .sl-submit:hover:not(:disabled) {
           transform: translateY(-2px);
