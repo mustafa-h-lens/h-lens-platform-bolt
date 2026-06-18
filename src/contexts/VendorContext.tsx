@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, setPortalAccessToken } from '../lib/supabaseClient';
 import { runWithNavReveal } from '../lib/navTransition';
 
 // ─────────────────────────────────────────────────────────────
@@ -24,6 +24,13 @@ export interface VendorProfile {
   created_at?: string;
 }
 
+export interface VendorSession {
+  token: string;
+  /** Supabase JWT used as the Authorization bearer so RLS scopes portal reads. */
+  access_token?: string;
+  expiresAt: string;
+}
+
 export type VendorPage =
   | 'dashboard'
   | 'profile'
@@ -36,6 +43,7 @@ export type VendorPage =
 
 interface VendorContextType {
   vendor: VendorProfile | null;
+  session: VendorSession | null;
   loading: boolean;
   currentPage: VendorPage;
   navigateTo: (page: VendorPage) => void;
@@ -43,9 +51,6 @@ interface VendorContextType {
   refreshVendor: () => Promise<void>;
   setVendor: (v: VendorProfile) => void;
 }
-
-const VENDOR_COLS =
-  'id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image, country_code, vehicle_registration_image';
 
 // ─────────────────────────────────────────────────────────────
 // CONTEXT
@@ -61,42 +66,69 @@ export const useVendor = () => {
 // ─────────────────────────────────────────────────────────────
 // PROVIDER
 // ─────────────────────────────────────────────────────────────
-// Native auth: the vendor is identified by the Supabase session's
-// app_metadata.vendor_id (passed in as `vendorId`). We load the vendor row
-// under that authenticated session and don't render the portal until it's ready
-// (consumers assume `vendor` is non-null).
-export const VendorProvider = ({ children, vendorId }: { children: ReactNode; vendorId: string }) => {
-  const [vendor, setVendorState]      = useState<VendorProfile | null>(null);
-  const [loading, setLoading]         = useState(true);
+interface VendorProviderProps {
+  children: ReactNode;
+  initialVendor: VendorProfile;
+  initialSession: VendorSession;
+}
+
+export const VendorProvider = ({ children, initialVendor, initialSession }: VendorProviderProps) => {
+  const [vendor, setVendorState]   = useState<VendorProfile>(initialVendor);
+  const [session]                  = useState<VendorSession>(initialSession);
+  const [loading, setLoading]      = useState(false);
   const [currentPage, setCurrentPage] = useState<VendorPage>('dashboard');
 
+  // Activate the portal JWT before any data-fetch effect runs, so every
+  // Supabase query from the vendor portal is authenticated and RLS-scoped.
+  // Lazy useState guarantees this executes during the first render, ahead of
+  // the data-loading effects below.
+  useState(() => { setPortalAccessToken(initialSession.access_token ?? null); return null; });
+
+  // Check session expiry
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    (async () => {
-      try {
-        const { data, error } = await supabase.from('vendors').select(VENDOR_COLS).eq('id', vendorId).single();
-        if (active && !error && data) setVendorState(data as VendorProfile);
-      } catch (err) {
-        console.error('Error loading vendor:', err);
-      } finally {
-        if (active) setLoading(false);
+    const checkExpiry = () => {
+      if (session?.expiresAt) {
+        const expiresAt = new Date(session.expiresAt).getTime();
+        if (Date.now() > expiresAt) {
+          signOut();
+        }
       }
-    })();
-    return () => { active = false; };
-  }, [vendorId]);
+    };
+    checkExpiry();
+    const interval = setInterval(checkExpiry, 60000); // check every minute
+    return () => clearInterval(interval);
+  }, [session?.expiresAt]);
 
   // Sync page with URL hash
   useEffect(() => {
     const syncFromHash = () => {
       const hash = window.location.hash.replace('#', '') as VendorPage;
       const valid: VendorPage[] = ['dashboard','profile','projects','invoices','equipment','notifications','suggestions'];
-      setCurrentPage(valid.includes(hash) ? hash : 'dashboard');
+      if (valid.includes(hash)) setCurrentPage(hash);
+      else setCurrentPage('dashboard');
     };
     syncFromHash();
     window.addEventListener('hashchange', syncFromHash);
     return () => window.removeEventListener('hashchange', syncFromHash);
   }, []);
+
+  // Fetch full vendor data from DB on mount (localStorage may have partial data)
+  useEffect(() => {
+    if (initialVendor?.id) {
+      (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('vendors')
+            .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image, country_code, vehicle_registration_image')
+            .eq('id', initialVendor.id)
+            .single();
+          if (!error && data) setVendorState(data as VendorProfile);
+        } catch (err) {
+          console.error('Error fetching full vendor data:', err);
+        }
+      })();
+    }
+  }, [initialVendor?.id]);
 
   const navigateTo = (page: VendorPage) => {
     setCurrentPage(page);
@@ -104,10 +136,14 @@ export const VendorProvider = ({ children, vendorId }: { children: ReactNode; ve
   };
 
   const refreshVendor = async () => {
-    if (!vendorId) return;
+    if (!vendor?.id) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('vendors').select(VENDOR_COLS).eq('id', vendorId).single();
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('id, full_name, phone, email, status, vendor_type, primary_city, profile_image, nationality, id_number, id_expiry_date, available_other_cities, other_cities, portfolio_url, primary_field, created_at, id_image, country_code, vehicle_registration_image')
+        .eq('id', vendor.id)
+        .single();
       if (!error && data) setVendorState(data as VendorProfile);
     } catch (err) {
       console.error('Error refreshing vendor:', err);
@@ -118,26 +154,22 @@ export const VendorProvider = ({ children, vendorId }: { children: ReactNode; ve
 
   const setVendor = (v: VendorProfile) => setVendorState(v);
 
-  const signOut = () => {
-    void runWithNavReveal(async () => {
+  const signOut = async () => {
+    await runWithNavReveal(async () => {
+      setPortalAccessToken(null);
+      localStorage.removeItem('vendor_session');
+      localStorage.removeItem('vendor_data');
       await supabase.auth.signOut();
       window.history.pushState({}, '', '/vendor/login');
       window.dispatchEvent(new PopStateEvent('popstate', { state: { __programmatic: true } }));
     }, { targetPath: '/vendor/login', forceDark: true });
   };
 
-  // Hold the portal until the vendor row is loaded.
-  if (loading || !vendor) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, background: 'var(--bg-page, #050d1e)' }}>
-        <div className="page-loading-placeholder" />
-        <span style={{ color: 'var(--text-muted, #94a3b8)', fontSize: 14 }}>جارٍ التحميل...</span>
-      </div>
-    );
-  }
-
   return (
-    <VendorContext.Provider value={{ vendor, loading, currentPage, navigateTo, signOut, refreshVendor, setVendor }}>
+    <VendorContext.Provider value={{
+      vendor, session, loading, currentPage,
+      navigateTo, signOut, refreshVendor, setVendor,
+    }}>
       {children}
     </VendorContext.Provider>
   );

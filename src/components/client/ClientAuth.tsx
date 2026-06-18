@@ -28,8 +28,8 @@ export default function ClientAuth({ onSuccess }: ClientAuthProps) {
   const handleBack = () => { setStep('login'); setIdentifier(''); setDevOTP(null); };
 
   const handleSuccess = (data: any) => {
-    // The native Supabase session was already established by OTPInput; just
-    // continue (App routes by the session's app_metadata).
+    localStorage.setItem('client_session', JSON.stringify(data.session));
+    localStorage.setItem('client_data', JSON.stringify(data.client));
     onSuccess?.(data);
   };
 

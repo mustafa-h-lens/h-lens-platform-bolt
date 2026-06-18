@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { issuePortalSession } from "../_shared/auth/native_session.ts";
+import { mintSupabaseJWT } from "../_shared/auth/jwt.ts";
 
 // Strict email check — disallows PostgREST filter metacharacters (, ( ) * :)
 // so a user-supplied value can never break out of an `eq` filter.
@@ -170,18 +170,18 @@ Deno.serve(async (req: Request) => {
 
     if (portal_type === "client") {
       // Look up client by phone or email depending on which was used
-      let client: { id: string; email: string | null; name: string; client_image: string | null; portal_email: string | null; auth_user_id: string | null } | null = null;
+      let client: { id: string; email: string | null; name: string; client_image: string | null; portal_email: string | null } | null = null;
 
       if (lookupCol === "phone") {
         const { data: clients } = await supabase
           .from("clients")
-          .select("id, email, name, client_image, portal_email, auth_user_id, phone")
+          .select("id, email, name, client_image, portal_email, phone")
           .not("phone", "is", null);
         client = (clients || []).find((c) => saudiNineDigits((c as { phone: string | null }).phone || "") === normalizedPhoneNine) || null;
       } else {
         const { data } = await supabase
           .from("clients")
-          .select("id, email, name, client_image, portal_email, auth_user_id")
+          .select("id, email, name, client_image, portal_email")
           .or(`email.eq.${normalizedEmail},portal_email.eq.${normalizedEmail}`)
           .maybeSingle();
         client = data;
@@ -211,13 +211,12 @@ Deno.serve(async (req: Request) => {
         .eq("id", client.id)
         .eq("invitation_status", "pending");
 
-      // Issue a NATIVE Supabase session: a one-time token the browser exchanges
-      // for a real Supabase session. Replaces the old custom-JWT minting.
-      const portalSession = await issuePortalSession(supabase, {
+      // Mint a Supabase JWT scoped to this client so RLS gates portal reads.
+      const minted = await mintSupabaseJWT({
+        sub: client.id,
         portal: "client",
-        rowId: client.id,
-        table: "clients",
-        authUserId: client.auth_user_id,
+        client_id: client.id,
+        email: client.portal_email || client.email,
       });
 
       return new Response(
@@ -231,11 +230,11 @@ Deno.serve(async (req: Request) => {
             name: client.name,
             client_image: client.client_image,
           },
-          // Native session bootstrap for the new frontend ({ token_hash, email }).
-          auth: portalSession,
-          // Backward-compat for the old frontend (it falls back to anon if it
-          // cannot use `auth`); carries no custom JWT anymore.
-          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
+          session: {
+            token: sessionToken,
+            access_token: minted.token,
+            expiresAt: minted.expiresAt,
+          },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -243,12 +242,12 @@ Deno.serve(async (req: Request) => {
       // Vendor — mirror the format-flexible client lookup so phone-OTP works
       // for existing rows that may store phone as 9-digit, 10-digit with
       // leading 0, or E.164.
-      let vendor: { id: string; email: string | null; full_name: string; vendor_type: string | null; phone: string | null; status: string | null; auth_user_id: string | null } | null = null;
+      let vendor: { id: string; email: string | null; full_name: string; vendor_type: string | null; phone: string | null; status: string | null } | null = null;
 
       if (lookupCol === "phone") {
         const { data: candidates, error: vendorError } = await supabase
           .from("vendors")
-          .select("id, email, full_name, vendor_type, phone, status, auth_user_id, created_at")
+          .select("id, email, full_name, vendor_type, phone, status, created_at")
           .not("phone", "is", null)
           .order("created_at", { ascending: false });
         if (vendorError) {
@@ -263,7 +262,7 @@ Deno.serve(async (req: Request) => {
       } else {
         const { data, error: vendorError } = await supabase
           .from("vendors")
-          .select("id, email, full_name, vendor_type, phone, status, auth_user_id")
+          .select("id, email, full_name, vendor_type, phone, status")
           .eq("email", normalizedEmail)
           .maybeSingle();
         if (vendorError) {
@@ -301,13 +300,12 @@ Deno.serve(async (req: Request) => {
         });
       if (sessionError) console.error("Vendor session creation error:", sessionError);
 
-      // Issue a NATIVE Supabase session (one-time token → real session in the
-      // browser). Replaces the old custom-JWT minting.
-      const portalSession = await issuePortalSession(supabase, {
+      // Mint a Supabase JWT scoped to this vendor so RLS gates portal reads.
+      const minted = await mintSupabaseJWT({
+        sub: vendor.id,
         portal: "vendor",
-        rowId: vendor.id,
-        table: "vendors",
-        authUserId: vendor.auth_user_id,
+        vendor_id: vendor.id,
+        email: vendor.email,
       });
 
       return new Response(
@@ -321,10 +319,11 @@ Deno.serve(async (req: Request) => {
             name: vendor.full_name,
             vendor_type: vendor.vendor_type,
           },
-          // Native session bootstrap for the new frontend ({ token_hash, email }).
-          auth: portalSession,
-          // Backward-compat for the old frontend (falls back to anon); no custom JWT.
-          session: { token: sessionToken, expiresAt: sessionExpiry.toISOString() },
+          session: {
+            token: sessionToken,
+            access_token: minted.token,
+            expiresAt: minted.expiresAt,
+          },
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

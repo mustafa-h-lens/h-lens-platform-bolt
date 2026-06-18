@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, CheckCircle2, AlertCircle, RefreshCw, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { supabase } from '../../lib/supabaseClient';
 
 interface OTPInputProps {
   email?: string;
@@ -97,20 +96,6 @@ export default function OTPInput({ email, phone, onBack, onSuccess, portalType =
         if (data.remainingAttempts !== undefined) setRemainingAttempts(data.remainingAttempts);
         throw new Error(data.error || 'رمز التحقق غير صحيح');
       }
-
-      // Establish a NATIVE Supabase session from the one-time token that
-      // verify-otp returned. supabase-js stores + refreshes it automatically.
-      if (data?.auth?.token_hash) {
-        const { error: authErr } = await supabase.auth.verifyOtp({
-          token_hash: data.auth.token_hash,
-          type: 'magiclink',
-        });
-        if (authErr) {
-          console.error('Native session exchange failed:', authErr);
-          throw new Error('تعذّر إنشاء الجلسة. يرجى المحاولة مرة أخرى.');
-        }
-      }
-
       setSuccess(true);
       setTimeout(() => onSuccess(data), 1500);
     } catch (err) {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
 
 const SPARKLE_COLORS = [
   '#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444',
@@ -19,12 +18,9 @@ export const SuccessScreen = ({ email }: SuccessScreenProps = {}) => {
 
   // If the registration flow created an auto-session, send the user straight
   // to the vendor portal. Otherwise fall back to the login page.
-  // After registration the post-reg flow may have established a native Supabase
-  // session — if so, land the vendor straight in the portal.
-  const [hasSession, setHasSession] = useState(false);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setHasSession(!!data.session));
-  }, []);
+  const hasSession = typeof window !== 'undefined'
+    && !!localStorage.getItem('vendor_session')
+    && !!localStorage.getItem('vendor_data');
 
   const redirectUrl = hasSession
     ? '/vendor'

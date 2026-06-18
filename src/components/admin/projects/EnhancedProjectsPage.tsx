@@ -50,7 +50,6 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [allTotals, setAllTotals] = useState({ budget: 0, cost: 0 });
   const [filters, setFilters] = useState({
     status: [] as string[],
     client: [] as string[],
@@ -76,7 +75,7 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
     try {
       const from = page * pageSize;
       const to = from + pageSize - 1;
-      const [projectsRes, clientsRes, managersRes, totalsRes] = await Promise.all([
+      const [projectsRes, clientsRes, managersRes] = await Promise.all([
         supabase
           .from('projects')
           .select(`
@@ -96,9 +95,6 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
           .range(from, to),
         supabase.from('clients').select('id, name').order('name'),
         supabase.from('users').select('id, full_name').order('full_name'),
-        // All projects' financials (unpaginated) so the summary cards reflect
-        // the whole portfolio — not just the current page or active filters.
-        supabase.from('projects').select('total_price, total_cost'),
       ]);
 
       if (projectsRes.error) throw projectsRes.error;
@@ -109,13 +105,6 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
       setTotalCount(projectsRes.count || 0);
       setClients(clientsRes.data || []);
       setManagers(managersRes.data || []);
-      if (!totalsRes.error && totalsRes.data) {
-        const rows = totalsRes.data as { total_price: number | null; total_cost: number | null }[];
-        setAllTotals({
-          budget: rows.reduce((s, r) => s + (r.total_price || 0), 0),
-          cost: rows.reduce((s, r) => s + (r.total_cost || 0), 0),
-        });
-      }
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -170,11 +159,9 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
     setSearchTerm('');
   };
 
-  // Compute stats. The financial totals (budget/cost/profit) reflect ALL
-  // projects in the portfolio — not the filtered/paginated table — so they
-  // stay constant regardless of the active filters or current page.
-  const totalBudget = allTotals.budget;
-  const totalCost = allTotals.cost;
+  // Compute stats
+  const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.total_price || 0), 0);
+  const totalCost = filteredProjects.reduce((sum, p) => sum + (p.total_cost || 0), 0);
   const totalProfit = totalBudget - totalCost;
   const profitMargin = totalBudget > 0 ? (totalProfit / totalBudget) * 100 : 0;
   const profitStatus: 'good' | 'warning' | 'danger' = profitMargin < 0 ? 'danger' : profitMargin < 20 ? 'warning' : 'good';
@@ -204,7 +191,7 @@ export const EnhancedProjectsPage = ({ onSelectProject, onCreateProject }: Enhan
         <div className="stat-card sc-blue">
           <div className="stat-icon-box"><Briefcase size={18} /></div>
           <div className="stat-sub">إجمالي المشاريع</div>
-          <div className="stat-val">{formatNumber(totalCount)}</div>
+          <div className="stat-val">{formatNumber(filteredProjects.length)}</div>
         </div>
         <div className="stat-card sc-green">
           <div className="stat-icon-box"><Wallet size={18} /></div>

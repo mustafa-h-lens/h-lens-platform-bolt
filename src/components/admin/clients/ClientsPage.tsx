@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { Plus, Search, Users, UserCheck, UserPlus, HeartHandshake, Globe, Eye, Pencil, FolderPlus, Trash2, MoreHorizontal, ChevronRight, ChevronLeft, RotateCcw } from 'lucide-react';
 import { MultiSelectFilter } from '../../shared/MultiSelectFilter';
 import { supabase } from '../../../lib/supabaseClient';
@@ -49,9 +48,6 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
-  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [stats, setStats] = useState({ total: 0, active: 0, newThisQuarter: 0, retention: 0 });
   const [projectModalClient, setProjectModalClient] = useState<Client | null>(null);
 
@@ -59,60 +55,11 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
   useEffect(() => { setPage(0); }, [searchQuery, statusFilter]);
   useEffect(() => { if (initialShowAdd) { setSelectedClient(null); setShowModal(true); onShowAddConsumed?.(); } }, [initialShowAdd]);
 
-  // Position the portaled dropdown right under its trigger button
-  const computeDropdownPosition = (triggerId: string) => {
-    const btn = triggerRefs.current[triggerId];
-    if (!btn) return null;
-    const rect = btn.getBoundingClientRect();
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
-    const dropdownW = 200; // approx — covers min-width 180 + a little
-    const dropdownH = 200; // approx — 4 items × ~40px + separators/padding
-
-    // Anchor to the right edge of the button (RTL — natural for Arabic).
-    let right = viewportW - rect.right;
-    // If that pushes off-screen to the left, fall back to left-anchor.
-    if (right + dropdownW > viewportW - 8) right = Math.max(8, viewportW - rect.left - dropdownW);
-
-    // Open below by default; flip above if not enough space.
-    let top = rect.bottom + 4;
-    if (top + dropdownH > viewportH - 8 && rect.top - 4 - dropdownH > 8) {
-      top = rect.top - 4 - dropdownH;
-    }
-    return { top, right };
-  };
-
-  // Recompute on scroll/resize while open so the dropdown sticks to its trigger
-  useLayoutEffect(() => {
-    if (!openDropdown) { setDropdownPos(null); return; }
-    const update = () => {
-      const pos = computeDropdownPosition(openDropdown);
-      if (pos) setDropdownPos(pos);
-      else setOpenDropdown(null);
-    };
-    update();
-    window.addEventListener('scroll', update, true);
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update, true);
-      window.removeEventListener('resize', update);
-    };
-  }, [openDropdown]);
-
-  // Close on any click outside the dropdown (and outside the active trigger)
   useEffect(() => {
-    if (!openDropdown) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const trigger = triggerRefs.current[openDropdown];
-      if (dropdownRef.current?.contains(target)) return;
-      if (trigger?.contains(target)) return;
-      setOpenDropdown(null);
-    };
-    // Use capture so we beat any inner stopPropagation
-    document.addEventListener('mousedown', handleClick, true);
-    return () => document.removeEventListener('mousedown', handleClick, true);
-  }, [openDropdown]);
+    const handleClick = () => setOpenDropdown(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
 
   const loadClients = async () => {
     try {
@@ -348,12 +295,20 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
                     <td className="td-primary">{formatNumber(client.projects_count || 0)}</td>
                     <td className="actions-cell" onClick={e => e.stopPropagation()}>
                       <button
-                        ref={el => { triggerRefs.current[client.id] = el; }}
                         className={`actions-btn ${openDropdown === client.id ? 'open' : ''}`}
                         onClick={(e) => { e.stopPropagation(); setOpenDropdown(openDropdown === client.id ? null : client.id); }}
                       >
                         <MoreHorizontal size={15} />
                       </button>
+                      {openDropdown === client.id && (
+                        <div className="actions-dropdown show">
+                          <button className="dd-item" onClick={() => { onViewClient?.(client.id); setOpenDropdown(null); }}><Eye size={15} /> عرض التفاصيل</button>
+                          <button className="dd-item" onClick={() => { setSelectedClient(client); setShowModal(true); setOpenDropdown(null); }}><Pencil size={15} /> تعديل العميل</button>
+                          <button className="dd-item" onClick={() => { setProjectModalClient(client); setOpenDropdown(null); }}><FolderPlus size={15} /> إضافة مشروع</button>
+                          <div className="dd-sep" />
+                          <button className="dd-item dd-danger" onClick={() => { handleDelete(client); setOpenDropdown(null); }}><Trash2 size={15} /> حذف العميل</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -397,30 +352,6 @@ export const ClientsPage = ({ onViewClient, initialShowAdd, onShowAddConsumed }:
           preSelectedClientId={projectModalClient.id}
           preSelectedClientName={projectModalClient.name}
         />
-      )}
-
-      {/* Row-action dropdown — portaled to body so it isn't clipped by .table-wrap's
-          overflow rules (overflow-x:auto forces overflow-y to auto in practice). */}
-      {openDropdown && dropdownPos && createPortal(
-        (() => {
-          const client = filtered.find(c => c.id === openDropdown);
-          if (!client) return null;
-          return (
-            <div
-              ref={dropdownRef}
-              className="actions-dropdown show actions-dropdown--portal"
-              style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, left: 'auto', margin: 0, zIndex: 1000 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <button className="dd-item" onClick={() => { onViewClient?.(client.id); setOpenDropdown(null); }}><Eye size={15} /> عرض التفاصيل</button>
-              <button className="dd-item" onClick={() => { setSelectedClient(client); setShowModal(true); setOpenDropdown(null); }}><Pencil size={15} /> تعديل العميل</button>
-              <button className="dd-item" onClick={() => { setProjectModalClient(client); setOpenDropdown(null); }}><FolderPlus size={15} /> إضافة مشروع</button>
-              <div className="dd-sep" />
-              <button className="dd-item dd-danger" onClick={() => { handleDelete(client); setOpenDropdown(null); }}><Trash2 size={15} /> حذف العميل</button>
-            </div>
-          );
-        })(),
-        document.body
       )}
     </div>
   );

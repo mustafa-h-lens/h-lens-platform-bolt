@@ -536,18 +536,17 @@ export const VendorRegistrationForm = () => {
       const rejectedVendorId: string | null = regCheck?.rejected_vendor_id ?? null;
 
       if (rejectedVendorId) {
-        // No .select() RETURNING: anon has no SELECT on vendors (security lockdown
-        // B), so RETURNING is denied. We already know the id, so update by it and
-        // reuse it directly.
-        const { error: updateErr } = await supabase
+        const { data: updatedVendor, error: updateErr } = await supabase
           .from('vendors')
           .update({ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce })
-          .eq('id', rejectedVendorId);
+          .eq('id', rejectedVendorId)
+          .select()
+          .single();
         if (updateErr) {
           console.error('Vendor update error:', updateErr);
           throw new Error('فشل تحديث بيانات المورد: ' + updateErr.message);
         }
-        vendor = { id: rejectedVendorId };
+        vendor = updatedVendor;
         // Clear old secondary data before re-inserting
         if (vendor) {
           await Promise.all([
@@ -559,14 +558,11 @@ export const VendorRegistrationForm = () => {
           ]);
         }
       } else {
-        // Generate the id client-side and insert WITHOUT .select() RETURNING: anon
-        // has no SELECT on vendors (security lockdown B), so RETURNING would be
-        // denied (this was the "new row violates row-level security policy" error).
-        // We know the id we sent, so reuse it directly.
-        const newVendorId = crypto.randomUUID();
-        const { error: insertErr } = await supabase
+        const { data: newVendor, error: insertErr } = await supabase
           .from('vendors')
-          .insert([{ ...vendorBaseData, id: newVendorId, status: 'pending_approval', registration_nonce: regNonce }]);
+          .insert([{ ...vendorBaseData, status: 'pending_approval', registration_nonce: regNonce }])
+          .select()
+          .single();
         if (insertErr) {
           console.error('Vendor insert error:', insertErr);
           if (insertErr.message?.includes('vendors_email_unique')) {
@@ -574,7 +570,7 @@ export const VendorRegistrationForm = () => {
           }
           throw new Error('فشل تسجيل المورد: ' + insertErr.message);
         }
-        vendor = { id: newVendorId };
+        vendor = newVendor;
       }
 
       if (!vendor?.id) {
@@ -706,14 +702,9 @@ export const VendorRegistrationForm = () => {
           }
         );
         const sessionData = await sessionResp.json();
-        if (sessionResp.ok && sessionData?.auth?.token_hash) {
-          // Establish a NATIVE Supabase session so the success screen can land
-          // the new vendor straight in the portal.
-          const { error: authErr } = await supabase.auth.verifyOtp({
-            token_hash: sessionData.auth.token_hash,
-            type: 'magiclink',
-          });
-          if (authErr) console.error('Post-registration session exchange failed:', authErr);
+        if (sessionResp.ok && sessionData?.session && sessionData?.vendor) {
+          localStorage.setItem('vendor_session', JSON.stringify(sessionData.session));
+          localStorage.setItem('vendor_data', JSON.stringify(sessionData.vendor));
         }
       } catch (err) {
         console.error('Auto-session error:', err);
